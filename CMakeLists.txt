@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.22)
 
 project(PedalCues VERSION 0.1.0 LANGUAGES C CXX)
 
+option(PEDALCUES_COPY_PLUGIN "Install plugins into the system plug-in folders after building" ON)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version")
@@ -31,7 +33,7 @@ juce_add_plugin(PedalCues
     NEEDS_MIDI_OUTPUT TRUE
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
-    COPY_PLUGIN_AFTER_BUILD TRUE)
+    COPY_PLUGIN_AFTER_BUILD ${PEDALCUES_COPY_PLUGIN})
 
 target_sources(PedalCues PRIVATE
     Source/CueModel.cpp

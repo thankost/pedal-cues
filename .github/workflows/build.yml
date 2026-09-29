@@ -1,0 +1,76 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: Windows
+          - os: macos-latest
+            name: macOS
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get JUCE
+        run: git clone --depth 1 --branch 8.0.8 https://github.com/juce-framework/JUCE.git external/JUCE
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DPEDALCUES_COPY_PLUGIN=OFF
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Test
+        run: |
+          exe=build/PedalCuesTests_artefacts/Release/PedalCuesTests
+          [ -f "$exe.exe" ] && exe="$exe.exe"
+          "$exe"
+
+      - name: Package
+        run: |
+          out="PedalCues-${{ matrix.name }}"
+          art=build/PedalCues_artefacts/Release
+          mkdir -p "$out"
+          cp -R "$art/VST3/PedalCues.vst3" "$out/"
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            cp -R "$art/AU/PedalCues.component" "$out/"
+            cp -R "$art/Standalone/PedalCues.app" "$out/"
+            ditto -c -k --keepParent "$out" "$out.zip"
+          else
+            cp "$art/Standalone/PedalCues.exe" "$out/"
+            7z a "$out.zip" "$out" > /dev/null
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PedalCues-${{ matrix.name }}
+          path: PedalCues-${{ matrix.name }}.zip
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: "*.zip"
+          generate_release_notes: true

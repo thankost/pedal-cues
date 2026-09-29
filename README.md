@@ -29,6 +29,23 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 Preset/scene names are entered in the plugin (double-click to rename, right-click for colour/reorder).
 CueDrop-style USB sync would rely on Neural DSP's undocumented protocol, so it isn't included.
 
+## Install (no code needed)
+
+Download the zip for your system from the repo's **Releases** page (or from the latest *Build* run's artifacts).
+
+**Windows**
+1. Unzip, copy `PedalCues.vst3` to `C:\Program Files\Common Files\VST3\`.
+2. Reaper: *Options > Preferences > Plug-ins > VST > Re-scan*. `PedalCues.exe` is the standalone version.
+
+**macOS**
+1. Unzip, copy `PedalCues.vst3` to `~/Library/Audio/Plug-Ins/VST3/` and `PedalCues.component` to
+   `~/Library/Audio/Plug-Ins/Components/`.
+2. The build is not notarised, so clear the download quarantine once:
+   `xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/PedalCues.vst3 ~/Library/Audio/Plug-Ins/Components/PedalCues.component`
+3. Re-scan plug-ins in Reaper.
+
+To publish a new release: `git tag v0.1.1 && git push origin v0.1.1`.
+
 ## Build (macOS)
 
 ```bash
