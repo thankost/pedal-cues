@@ -1,5 +1,5 @@
 // Renders the images used by docs/GUIDE.md from the real UI components.
-// Usage: DocShots <outputDirectory>
+// Usage: DocShots <outputDirectory> [iconPngPath]
 
 #include "../Source/PluginEditor.h"
 #include "../Source/PluginProcessor.h"
@@ -66,6 +66,108 @@ void fillDemoState (juce::ValueTree root)
 juce::Image snapshot (juce::Component& c)
 {
     return c.createComponentSnapshot (c.getLocalBounds(), true, scale);
+}
+
+juce::Image drawIcon (int size)
+{
+    juce::Image img (juce::Image::ARGB, size, size, true);
+    juce::Graphics g (img);
+    g.addTransform (juce::AffineTransform::scale ((float) size / 1024.0f));
+
+    // macOS-style squircle: 824 px body on a 1024 canvas.
+    const juce::Rectangle<float> body (100.0f, 100.0f, 824.0f, 824.0f);
+    juce::Path shape;
+    shape.addRoundedRectangle (body, 185.0f);
+
+    g.setColour (juce::Colours::black.withAlpha (0.22f));
+    g.fillPath (shape, juce::AffineTransform::translation (0.0f, 8.0f));
+
+    g.setGradientFill (juce::ColourGradient (juce::Colour (0xff2b303b), body.getX(), body.getY(),
+                                             juce::Colour (0xff0c0d10), body.getX(), body.getBottom(), false));
+    g.fillPath (shape);
+    g.setColour (juce::Colours::white.withAlpha (0.10f));
+    g.strokePath (shape, juce::PathStrokeType (4.0f));
+
+    g.saveState();
+    g.reduceClipRegion (shape);
+
+    // Timeline lane
+    const juce::Rectangle<float> lane (100.0f, 640.0f, 824.0f, 170.0f);
+    g.setColour (juce::Colours::white.withAlpha (0.05f));
+    g.fillRect (lane);
+    g.setColour (juce::Colours::white.withAlpha (0.10f));
+    for (float x = 170.0f; x < 924.0f; x += 131.0f)
+        g.fillRect (x, lane.getY(), 3.0f, lane.getHeight());
+
+    auto clip = [&g] (juce::Rectangle<float> r, juce::Colour c)
+    {
+        g.setColour (c.withAlpha (0.35f));
+        g.fillRoundedRectangle (r, 18.0f);
+        g.setColour (c);
+        g.fillRoundedRectangle (r.withHeight (46.0f), 18.0f);
+        g.fillRect (r.withHeight (46.0f).withTrimmedTop (23.0f));
+        g.drawRoundedRectangle (r, 18.0f, 6.0f);
+    };
+    clip ({ 150.0f, 665.0f, 220.0f, 120.0f }, qcBlue);
+    clip ({ 654.0f, 665.0f, 220.0f, 120.0f }, whammyRed);
+
+    // Drop target
+    const juce::Rectangle<float> target (402.0f, 665.0f, 220.0f, 120.0f);
+    g.setColour (accent.withAlpha (0.18f));
+    g.fillRoundedRectangle (target, 18.0f);
+    juce::Path outline, dashed;
+    outline.addRoundedRectangle (target, 18.0f);
+    const float dashes[] = { 22.0f, 14.0f };
+    juce::PathStrokeType (6.0f).createDashedStroke (dashed, outline, dashes, 2);
+    g.setColour (accent);
+    g.fillPath (dashed);
+
+    // Playhead
+    g.setColour (accent);
+    g.fillRect (512.0f - 3.0f, 600.0f, 6.0f, 324.0f);
+    g.restoreState();
+
+    // The tile being dropped: an amber footswitch cue, slightly tilted.
+    const juce::Rectangle<float> tile (322.0f, 170.0f, 380.0f, 300.0f);
+    const auto tilt = juce::AffineTransform::rotation (-0.10f, tile.getCentreX(), tile.getCentreY());
+    juce::Path tilePath;
+    tilePath.addRoundedRectangle (tile, 44.0f);
+
+    g.setColour (juce::Colours::black.withAlpha (0.45f));
+    g.fillPath (tilePath, tilt.translated (10.0f, 22.0f));
+    g.setGradientFill (juce::ColourGradient (accent.brighter (0.25f), tile.getX(), tile.getY(),
+                                             accent.darker (0.35f), tile.getX(), tile.getBottom(), false));
+    g.fillPath (tilePath, tilt);
+
+    g.saveState();
+    g.addTransform (tilt);
+    const auto knob = juce::Rectangle<float> (0.0f, 0.0f, 170.0f, 170.0f).withCentre (tile.getCentre().translated (0.0f, 12.0f));
+    g.setColour (juce::Colour (0xff15171c));
+    g.fillEllipse (knob.expanded (18.0f));
+    g.setGradientFill (juce::ColourGradient (juce::Colour (0xffe8ebf0), knob.getX(), knob.getY(),
+                                             juce::Colour (0xff7d838f), knob.getRight(), knob.getBottom(), false));
+    g.fillEllipse (knob);
+    g.setColour (juce::Colour (0xff15171c).withAlpha (0.35f));
+    g.drawEllipse (knob.reduced (26.0f), 6.0f);
+    // LED
+    const auto led = juce::Rectangle<float> (0.0f, 0.0f, 34.0f, 34.0f).withCentre ({ tile.getCentreX(), tile.getY() + 42.0f });
+    g.setColour (ledGreen.withAlpha (0.35f));
+    g.fillEllipse (led.expanded (14.0f));
+    g.setColour (ledGreen.brighter (0.3f));
+    g.fillEllipse (led);
+    g.restoreState();
+
+    // Arrow into the gap
+    juce::Path arrow;
+    arrow.startNewSubPath (512.0f, 500.0f);
+    arrow.lineTo (512.0f, 585.0f);
+    g.setColour (juce::Colours::white);
+    g.strokePath (arrow, juce::PathStrokeType (22.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    juce::Path head;
+    head.addTriangle (462.0f, 575.0f, 562.0f, 575.0f, 512.0f, 635.0f);
+    g.fillPath (head);
+
+    return img;
 }
 } // namespace
 
@@ -357,5 +459,8 @@ int main (int argc, char** argv)
 
     save (drawTimeline (proc), outDir.getChildFile ("timeline.png"));
     save (drawRouting(), outDir.getChildFile ("routing.png"));
+    save (drawIcon (1024), outDir.getChildFile ("icon.png"));
+    if (argc > 2)
+        save (drawIcon (1024), juce::File::getCurrentWorkingDirectory().getChildFile (argv[2]));
     return 0;
 }

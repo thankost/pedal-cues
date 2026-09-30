@@ -24,6 +24,7 @@ endif()
 juce_add_plugin(PedalCues
     COMPANY_NAME "athkost"
     BUNDLE_ID "com.athkost.pedalcues"
+    ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/Resources/icon.png"
     PLUGIN_MANUFACTURER_CODE Athk
     PLUGIN_CODE Pdcu
     FORMATS VST3 AU Standalone
