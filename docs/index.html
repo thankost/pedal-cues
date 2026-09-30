@@ -68,7 +68,23 @@
 
     .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
     .gallery figure { margin: 0; background: var(--surface); border: 1px solid var(--outline); border-radius: 12px; overflow: hidden; }
-    .gallery img { width: 100%; display: block; }
+    .gallery img { width: 100%; aspect-ratio: 16 / 10; object-fit: contain; background: #0d0e11; display: block; cursor: zoom-in; transition: filter .15s; }
+    .gallery img:hover { filter: brightness(1.12); }
+    .gallery figure { display: flex; flex-direction: column; }
+
+    /* Click-to-zoom viewer */
+    .lightbox { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; flex-direction: column;
+                gap: 14px; padding: 24px 16px; background: rgba(5, 6, 8, .92); }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-width: min(1400px, 100%); max-height: calc(100vh - 110px); border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.6); cursor: zoom-out; }
+    .lightbox .caption { color: var(--text); font-size: 15px; text-align: center; }
+    .lightbox button { position: absolute; background: rgba(255,255,255,.08); color: var(--text); border: 1px solid var(--outline);
+                       width: 46px; height: 46px; border-radius: 50%; font-size: 22px; cursor: pointer; }
+    .lightbox button:hover { background: rgba(255,255,255,.16); }
+    .lightbox .close { top: 16px; right: 16px; }
+    .lightbox .prev { left: 16px; top: 50%; transform: translateY(-50%); }
+    .lightbox .next { right: 16px; top: 50%; transform: translateY(-50%); }
+    @media (max-width: 640px) { .lightbox .prev, .lightbox .next { top: auto; bottom: 16px; transform: none; } }
     .gallery figcaption { padding: 10px 14px; color: var(--dim); font-size: 14px; }
 
     .install { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
@@ -152,7 +168,7 @@
       <div class="card"><h3><span class="dot" style="background:var(--amber)"></span>Named MIDI clips</h3>
         <p>Every drop is a clip called "Chorus" or "Whammy Dive 1 bar", so you read your show at a glance.</p></div>
       <div class="card"><h3><span class="dot" style="background:var(--amber)"></span>Guided setup</h3>
-        <p>A quick first-run tour and step-by-step Reaper setup for both ways of wiring the Whammy. Note: the Quad Cortex doesn't pass USB MIDI on through MIDI Thru, so the Whammy needs a 5-pin MIDI Out from an interface.</p></div>
+        <p>A quick first-run tour and step-by-step Reaper setup for three ways of connecting your pedals. Note: the Quad Cortex's MIDI Thru doesn't pass on USB MIDI, so the Whammy needs a 5-pin MIDI path from an interface.</p></div>
     </div>
   </div>
 </section>
@@ -160,13 +176,18 @@
 <section>
   <div class="wrap">
     <h2>A look inside</h2>
-    <p class="sub">Drag any tile onto the arrangement. Click its play button to test it on the pedal first.</p>
+    <p class="sub">Drag any tile onto the arrangement. Click its play button to test it on the pedal first. Click a picture to enlarge it.</p>
     <div class="gallery">
+      <figure><img src="images/quad-cortex.png" alt="Quad Cortex page" loading="lazy"><figcaption>Quad Cortex presets, scenes, stomps and utilities</figcaption></figure>
       <figure><img src="images/whammy.png" alt="Whammy V page" loading="lazy"><figcaption>Whammy V modes and treadle moves</figcaption></figure>
       <figure><img src="images/whammy-draw.png" alt="Draw a treadle move" loading="lazy"><figcaption>Draw your own treadle move</figcaption></figure>
       <figure><img src="images/timeline.png" alt="Cues in the Reaper timeline" loading="lazy"><figcaption>Named cues on the timeline</figcaption></figure>
       <figure><img src="images/preset-target.png" alt="Which preset scenes act on" loading="lazy"><figcaption>Scenes load their preset first, or use the current one</figcaption></figure>
-      <figure><img src="images/routing.png" alt="Routing options" loading="lazy"><figcaption>Two ways to connect the Whammy</figcaption></figure>
+      <figure><img src="images/routing.png" alt="Routing options" loading="lazy"><figcaption>Three ways to connect your rig, and one that doesn't work</figcaption></figure>
+      <figure><img src="images/settings.png" alt="Settings page" loading="lazy"><figcaption>MIDI channels and step-by-step Reaper setup</figcaption></figure>
+      <figure><img src="images/settings-qc-chain.png" alt="Settings, chain through the QC" loading="lazy"><figcaption>Setup steps for chaining through the QC's MIDI In</figcaption></figure>
+      <figure><img src="images/tour-welcome.png" alt="Quick tour" loading="lazy"><figcaption>A quick tour on first launch</figcaption></figure>
+      <figure><img src="images/tour-target.png" alt="Quick tour step" loading="lazy"><figcaption>The tour explains every area</figcaption></figure>
     </div>
   </div>
 </section>
@@ -248,6 +269,45 @@
       });
     });
   });
+
+  // Click-to-zoom viewer for the gallery (Esc closes, arrow keys browse).
+  (function () {
+    var imgs = Array.prototype.slice.call(document.querySelectorAll('.gallery img'));
+    var box = document.createElement('div');
+    box.className = 'lightbox';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.innerHTML = '<button class="close" aria-label="Close">&times;</button>'
+                  + '<button class="prev" aria-label="Previous">&#8249;</button>'
+                  + '<img alt=""><div class="caption"></div>'
+                  + '<button class="next" aria-label="Next">&#8250;</button>';
+    document.body.appendChild(box);
+    var big = box.querySelector('img'), cap = box.querySelector('.caption'), current = 0;
+
+    function show(i) {
+      current = (i + imgs.length) % imgs.length;
+      big.src = imgs[current].src;
+      big.alt = imgs[current].alt;
+      var fc = imgs[current].parentNode.querySelector('figcaption');
+      cap.textContent = fc ? fc.textContent : '';
+      box.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function close() { box.classList.remove('open'); document.body.style.overflow = ''; }
+
+    imgs.forEach(function (img, i) { img.addEventListener('click', function () { show(i); }); });
+    box.querySelector('.close').addEventListener('click', close);
+    box.querySelector('.prev').addEventListener('click', function (e) { e.stopPropagation(); show(current - 1); });
+    box.querySelector('.next').addEventListener('click', function (e) { e.stopPropagation(); show(current + 1); });
+    big.addEventListener('click', close);
+    box.addEventListener('click', function (e) { if (e.target === box) close(); });
+    document.addEventListener('keydown', function (e) {
+      if (!box.classList.contains('open')) return;
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowLeft') show(current - 1);
+      else if (e.key === 'ArrowRight') show(current + 1);
+    });
+  })();
 </script>
 </body>
 </html>

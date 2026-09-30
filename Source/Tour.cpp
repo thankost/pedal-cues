@@ -42,9 +42,9 @@ const std::vector<TourStep>& tourSteps()
         { 2, { "set.midi" }, "7. Match the MIDI channels",
           "Set the channel of each pedal here, and give the QC and the Whammy different channels." },
         { 2, { "set.setup" }, "8. Hook it up once",
-          "Pick how the Whammy is connected: from your audio interface's MIDI Out (one cue track per pedal), or chained "
-          "through the QC's 5-pin MIDI In and MIDI Thru. The QC does not pass USB MIDI on to the Whammy. "
-          "Follow the steps once, and the arrangement plays your whole show." },
+          "Pick how your pedals are connected: one cue track per pedal (QC on USB or its own MIDI cable, Whammy on an "
+          "interface MIDI Out), or one track daisy-chained through the QC's MIDI In and Thru. The QC does not pass USB "
+          "MIDI on to the Whammy. Follow the steps once, and the arrangement plays your whole show." },
         { 2, { "hdr.help" }, "You are ready",
           "Reopen this tour or the illustrated user guide at any time from the ? button. Have a great show!" },
     };

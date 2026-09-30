@@ -78,19 +78,17 @@ cmake --build build --target PedalCuesTests
 
 ## Reaper setup
 
-1. Create a track named **Pedal Cues** and insert *PedalCues* on it.
-2. In the track's routing, add **MIDI Hardware Output → Quad Cortex** (USB MIDI port). Enable the device
-   under *Preferences > MIDI Devices* first.
-3. In the plugin's **Settings** tab, set the MIDI channels to match the pedals:
-   - QC: *Settings > MIDI Settings > MIDI Channel*
-   - Whammy: hold the Whammy footswitch while powering up, turn the knob to pick the channel, press the footswitch
-   - Use **different channels** for the QC and the Whammy.
-4. Connect the Whammy one of two ways (the plugin's **Settings** tab has a switch for both):
-   - **Option A: Whammy via audio interface (recommended).** Interface **MIDI Out → Whammy MIDI In**. Use two cue tracks: **QC Cues** (output = Quad Cortex) and **Whammy Cues** (output = interface MIDI Out).
-   - **Option B: chain through the QC.** Interface **MIDI Out → QC MIDI In**, QC **MIDI Out/Thru → Whammy MIDI In**, **MIDI Thru** on. One cue track, output = interface MIDI Out.
-   - ⚠️ **Known QC limitation:** MIDI Thru doesn't forward MIDI the QC receives over **USB**. With the QC on USB only, a Whammy on the QC's MIDI Out won't respond.
-   - Details and pictures: [guide, section 3](docs/GUIDE.md#3-set-up-reaper-once).
-5. Turn snapping on and drag tiles onto the **Pedal Cues** track at the bars you want.
+1. Connect the pedals one of three ways (the plugin's **Settings** tab shows the steps):
+   - **Daisy chain:** interface **MIDI Out → QC MIDI In**, QC **MIDI Thru → Whammy MIDI In** (MIDI Thru on). One cue track, output = interface MIDI Out.
+   - **Separate MIDI cables:** interface **MIDI Out 1 → QC**, **MIDI Out 2 → Whammy**. Two cue tracks, one per MIDI Out.
+   - **QC over USB + interface:** QC on USB, interface **MIDI Out → Whammy MIDI In**. Two cue tracks: **QC Cues** (output = Quad Cortex) and **Whammy Cues** (output = interface MIDI Out).
+   - ⚠️ **Known QC limitation:** MIDI Thru doesn't forward MIDI the QC receives over **USB**, so "QC on USB, Whammy on the QC's Thru" doesn't work.
+2. Give the pedals **different MIDI channels** (defaults: QC 1 via *Settings > MIDI Settings*, not Omni; Whammy 2, see its manual) and set the same numbers in the plugin's **Settings** tab.
+3. In *Preferences > MIDI Devices*, enable the MIDI outputs you use.
+4. Insert *PedalCues* on each cue track and set the track's *I/O > MIDI Hardware Output* to that track's output.
+5. Turn snapping on and drag tiles onto the cue track(s) at the bars you want.
+
+Details and pictures: [guide, section 2](docs/GUIDE.md#2-connect-your-rig).
 
 ## Verify with your pedals
 

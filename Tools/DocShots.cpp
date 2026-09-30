@@ -295,7 +295,7 @@ void arrow (juce::Graphics& g, juce::Point<float> a, juce::Point<float> b, juce:
 
 juce::Image drawRouting()
 {
-    constexpr int w = 1120, h = 560;
+    constexpr int w = 1120, h = 900;
     juce::Image img (juce::Image::ARGB, (int) (w * scale), (int) (h * scale), true);
     juce::Graphics g (img);
     g.addTransform (juce::AffineTransform::scale (scale));
@@ -305,50 +305,86 @@ juce::Image drawRouting()
     {
         g.setColour (text);
         g.setFont (font (13.0f, true));
-        g.drawText (title, juce::Rectangle<float> (40.0f, y, 600.0f, 20.0f), juce::Justification::centredLeft);
+        g.drawText (title, juce::Rectangle<float> (40.0f, y, 1040.0f, 20.0f), juce::Justification::centredLeft);
         g.setColour (dim);
         g.setFont (font (12.0f));
         g.drawText (sub, juce::Rectangle<float> (40.0f, y + 20.0f, 1040.0f, 18.0f), juce::Justification::centredLeft);
     };
+    auto divider = [&g] (float y) { g.setColour (outline); g.fillRect (40.0f, y, 1040.0f, 1.0f); };
     const auto grey = juce::Colour (0xff9aa0ac);
+    constexpr float bh = 76.0f;
 
-    heading (20.0f, "OPTION A  -  WHAMMY VIA AUDIO INTERFACE  (recommended)",
-             "Two cue tracks, one per pedal. The QC over USB, the Whammy from any interface with a 5-pin MIDI Out.");
-    const juce::Rectangle<float> qcTrack (40.0f, 70.0f, 280.0f, 96.0f);
-    const juce::Rectangle<float> qc (420.0f, 70.0f, 280.0f, 96.0f);
-    const juce::Rectangle<float> whTrack (40.0f, 190.0f, 280.0f, 96.0f);
-    const juce::Rectangle<float> iface (420.0f, 190.0f, 280.0f, 96.0f);
-    const juce::Rectangle<float> wh (800.0f, 190.0f, 280.0f, 96.0f);
-    box (g, qcTrack, accent, "Reaper: QC Cues", "MIDI Hardware Output = Quad Cortex");
-    box (g, qc, qcBlue, "Quad Cortex / Mini", "Channel 1");
-    box (g, whTrack, accent, "Reaper: Whammy Cues", "MIDI Hardware Output = interface");
-    box (g, iface, grey, "Audio / MIDI interface", "Any interface with a 5-pin MIDI Out");
-    box (g, wh, whammyRed, "Whammy V", "Channel 2");
-    arrow (g, { qcTrack.getRight(), qcTrack.getCentreY() }, { qc.getX(), qc.getCentreY() }, accent, "USB", false);
-    arrow (g, { whTrack.getRight(), whTrack.getCentreY() }, { iface.getX(), iface.getCentreY() }, accent, "USB", false);
-    arrow (g, { iface.getRight(), iface.getCentreY() }, { wh.getX(), wh.getCentreY() }, grey, "MIDI", false);
+    // Four boxes in a row, 220 wide with 53 px gaps.
+    auto col = [] (int i) { return 40.0f + (float) i * 273.3f; };
+    auto rect = [&] (int i, float y) { return juce::Rectangle<float> (col (i), y, 220.0f, bh); };
+    auto link = [&] (juce::Rectangle<float> a, juce::Rectangle<float> b, juce::Colour c, const juce::String& label)
+    {
+        arrow (g, { a.getRight(), a.getCentreY() }, { b.getX(), b.getCentreY() }, c, label, false);
+    };
 
-    g.setColour (outline);
-    g.fillRect (40.0f, 318.0f, 1040.0f, 1.0f);
+    // 1. Daisy chain.
+    heading (20.0f, "DAISY CHAIN  (what we use)", "One cue track is enough: both pedals share one cable, their channels keep the cues apart. Two tracks to the same MIDI Out also work.");
+    {
+        const auto y = 66.0f;
+        const auto t = rect (0, y), i = rect (1, y), q = rect (2, y), wh = rect (3, y);
+        box (g, t, accent, "Pedal Cues track", "Output = interface MIDI Out");
+        box (g, i, grey, "Audio interface", "MIDI Out");
+        box (g, q, qcBlue, "Quad Cortex", "Ch 1. MIDI In, Thru on");
+        box (g, wh, whammyRed, "Whammy V", "Channel 2");
+        link (t, i, accent, "USB");
+        link (i, q, grey, "MIDI");
+        link (q, wh, qcBlue, "Thru");
+    }
+    divider (166.0f);
 
-    heading (338.0f, "OPTION B  -  CHAIN THROUGH THE QC'S MIDI IN",
-             "One cue track. The QC's MIDI Thru only passes on 5-pin MIDI, not USB, so the chain starts at an interface's MIDI Out.");
-    const juce::Rectangle<float> track (40.0f, 390.0f, 220.0f, 96.0f);
-    const juce::Rectangle<float> iface2 (310.0f, 390.0f, 220.0f, 96.0f);
-    const juce::Rectangle<float> qc2 (580.0f, 390.0f, 220.0f, 96.0f);
-    const juce::Rectangle<float> wh2 (860.0f, 390.0f, 220.0f, 96.0f);
-    box (g, track, accent, "Reaper: Pedal Cues", "Output = interface MIDI Out");
-    box (g, iface2, grey, "Audio / MIDI interface", "5-pin MIDI Out");
-    box (g, qc2, qcBlue, "Quad Cortex", "Ch 1. MIDI In, MIDI Thru on");
-    box (g, wh2, whammyRed, "Whammy V", "Channel 2");
-    arrow (g, { track.getRight(), track.getCentreY() }, { iface2.getX(), iface2.getCentreY() }, accent, "USB", false);
-    arrow (g, { iface2.getRight(), iface2.getCentreY() }, { qc2.getX(), qc2.getCentreY() }, grey, "MIDI", false);
-    arrow (g, { qc2.getRight(), qc2.getCentreY() }, { wh2.getX(), wh2.getCentreY() }, qcBlue, "Thru", false);
+    // 2. Separate MIDI cables.
+    heading (182.0f, "SEPARATE MIDI CABLES", "Two cue tracks, one per MIDI Out (an interface with two MIDI Outs, or two USB MIDI interfaces).");
+    {
+        const auto y1 = 228.0f, y2 = y1 + bh + 16.0f;
+        const auto t1 = rect (0, y1), o1 = rect (1, y1), q = rect (2, y1);
+        const auto t2 = rect (0, y2), o2 = rect (1, y2), wh = rect (2, y2);
+        box (g, t1, accent, "QC Cues track", "Output = MIDI Out 1");
+        box (g, o1, grey, "Interface", "MIDI Out 1");
+        box (g, q, qcBlue, "Quad Cortex", "Channel 1");
+        box (g, t2, accent, "Whammy Cues track", "Output = MIDI Out 2");
+        box (g, o2, grey, "Interface", "MIDI Out 2");
+        box (g, wh, whammyRed, "Whammy V", "Channel 2");
+        link (t1, o1, accent, "USB");
+        link (o1, q, grey, "MIDI");
+        link (t2, o2, accent, "USB");
+        link (o2, wh, grey, "MIDI");
+    }
+    divider (430.0f);
 
-    g.setColour (whammyRed);
-    g.setFont (font (12.0f, true));
-    g.drawText ("Not supported: QC on USB only, with QC MIDI Out > Whammy. The QC does not forward USB MIDI to its MIDI Out.",
-                juce::Rectangle<float> (40.0f, 510.0f, 1040.0f, 20.0f), juce::Justification::centredLeft);
+    // 3. QC over USB + interface.
+    heading (446.0f, "QC OVER USB + INTERFACE", "Two cue tracks. The QC gets its MIDI over USB, the Whammy from the interface's MIDI Out.");
+    {
+        const auto y1 = 492.0f, y2 = y1 + bh + 16.0f;
+        const auto t1 = rect (0, y1), q = rect (1, y1);
+        const auto t2 = rect (0, y2), o = rect (1, y2), wh = rect (2, y2);
+        box (g, t1, accent, "QC Cues track", "Output = Quad Cortex");
+        box (g, q, qcBlue, "Quad Cortex", "Channel 1");
+        box (g, t2, accent, "Whammy Cues track", "Output = interface");
+        box (g, o, grey, "Audio interface", "MIDI Out");
+        box (g, wh, whammyRed, "Whammy V", "Channel 2");
+        link (t1, q, accent, "USB");
+        link (t2, o, accent, "USB");
+        link (o, wh, grey, "MIDI");
+    }
+    divider (694.0f);
+
+    // 4. Does not work.
+    heading (710.0f, "DOES NOT WORK:  QC OVER USB, WHAMMY ON THE QC'S THRU",
+             "Known Quad Cortex limitation: MIDI Thru only passes on 5-pin MIDI, not MIDI received over USB.");
+    {
+        const auto y = 756.0f;
+        const auto t = rect (0, y), q = rect (1, y), wh = rect (2, y);
+        box (g, t, grey, "Pedal Cues track", "Output = Quad Cortex");
+        box (g, q, grey, "Quad Cortex", "USB, MIDI Thru on");
+        box (g, wh, grey, "Whammy V", "Never changes");
+        link (t, q, grey, "USB");
+        arrow (g, { q.getRight(), q.getCentreY() }, { wh.getX(), wh.getCentreY() }, whammyRed, "no USB Thru", true);
+    }
 
     return img;
 }
