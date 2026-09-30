@@ -26,7 +26,7 @@ public:
         presetView.setScrollBarThickness (8);
         addAndMakeVisible (presetView);
 
-        comboToggle.setTooltip ("Scene tiles also load their preset first (the scene follows 1/4 beat later)");
+        comboToggle.setTooltip ("Scene and stomp tiles also load their preset first (the scene or footswitch follows 1/4 beat later)");
         comboToggle.onClick = [this] { state.setProperty (IDs::comboPresetScene, comboToggle.getToggleState(), nullptr); };
         addAndMakeVisible (comboToggle);
 
@@ -95,8 +95,9 @@ public:
             t->title = stomp[IDs::name].toString();
             t->subtitle = "FS " + cues::qc::letter (f) + (stompOn ? "  ON" : "  OFF");
             t->active = stompOn;
-            t->setTooltip ("Drag to switch footswitch " + cues::qc::letter (f) + (stompOn ? " on" : " off") + ". Double-click to rename.");
-            t->makeCue = [this, stomp, f] { return cues::qc::stomp (qcChannel(), f, (bool) state[IDs::stompOn], stomp[IDs::name].toString()); };
+            t->setTooltip ("Drag to switch footswitch " + cues::qc::letter (f) + (stompOn ? " on" : " off")
+                           + (combo ? " (loads " + presetLocation (preset) + " first)" : juce::String()) + ". Double-click to rename.");
+            t->makeCue = [this, sel, f] { return stompCue (sel, f); };
             t->onDoubleClick = [stomp] { renameNode (stomp, "Rename footswitch"); };
             t->onContextMenu = [this, stomp] { nodeMenu (stomp, false, {}); };
             addAndMakeVisible (t);
@@ -119,8 +120,8 @@ public:
         addUtil ("Tuner On",    "TUN", "CC#45 = 127", qcBlue,         [this] { return cues::qc::tuner (qcChannel(), true); });
         addUtil ("Tuner Off",   "TUN", "CC#45 = 0",   raised.brighter (0.2f), [this] { return cues::qc::tuner (qcChannel(), false); });
         addUtil ("Preset Mode", "PRE", "CC#47 = 0",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 0); });
-        addUtil ("Scene Mode",  "SCN", "CC#47 = 1",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 1); });
-        addUtil ("Stomp Mode",  "STO", "CC#47 = 2",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 2); });
+        addUtil ("Scene Mode",  "SCN", "CC#47 = 2",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 1); });
+        addUtil ("Stomp Mode",  "STO", "CC#47 = 1",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 2); });
 
         resized();
     }
@@ -217,6 +218,25 @@ private:
         cues::qc::addPresetLoad (c, qcChannel(), (int) p[IDs::setlist], (int) p[IDs::bank], (int) p[IDs::slot],
                                  (bool) state[IDs::sendSetlist], 0.0);
         cues::qc::addScene (c, qcChannel(), sceneIndex, 0.25);
+        return c;
+    }
+
+    cues::Cue stompCue (int presetIndex, int footswitch) const
+    {
+        const auto p = qcTree().getChild (presetIndex);
+        const auto stompName = nthOfType (p, IDs::Stomp, footswitch)[IDs::name].toString();
+        const auto on = (bool) state[IDs::stompOn];
+        auto c = cues::qc::stomp (qcChannel(), footswitch, on, stompName);
+
+        if (! (bool) state[IDs::comboPresetScene])
+            return c;
+
+        const auto stompMessage = c.events.front().second;
+        c.events.clear();
+        c.name = "QC " + p[IDs::name].toString() + " > " + c.name.fromFirstOccurrenceOf ("QC ", false, false);
+        cues::qc::addPresetLoad (c, qcChannel(), (int) p[IDs::setlist], (int) p[IDs::bank], (int) p[IDs::slot],
+                                 (bool) state[IDs::sendSetlist], 0.0);
+        c.add (0.25, stompMessage);
         return c;
     }
 

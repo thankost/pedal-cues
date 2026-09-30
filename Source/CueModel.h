@@ -36,7 +36,7 @@ namespace qc
         constexpr int stompA  = 35; // 35..42 = footswitch A..H, 0-63 off / 64-127 on
         constexpr int scene   = 43; // 0..7 = scene A..H
         constexpr int tuner   = 45; // 0-63 off / 64-127 on
-        constexpr int gigMode = 47; // 0 preset, 1 scene, 2 stomp
+        constexpr int gigMode = 47; // 0 preset, 1 stomp, 2 scene (tested on a QC)
     }
 
     juce::String letter (int zeroBasedIndex);

@@ -135,7 +135,8 @@ namespace qc
 
         Cue c;
         c.name = juce::String ("QC ") + names[m] + " Mode";
-        c.add (0.0, juce::MidiMessage::controllerEvent (clampChannel (channel), cc::gigMode, m));
+        static const int values[] = { 0, 2, 1 }; // CC#47 values for preset, scene, stomp
+        c.add (0.0, juce::MidiMessage::controllerEvent (clampChannel (channel), cc::gigMode, values[m]));
         return c;
     }
 }

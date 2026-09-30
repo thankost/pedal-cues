@@ -43,7 +43,7 @@ xattr -cr ~/Downloads/PedalCues-macOS
 
 In **Reaper**, go to *Options > Preferences > Plug-ins > VST* and click **Re-scan**. PedalCues appears under *Instruments*.
 
-> There's also a Standalone app (`PedalCues.exe` / `PedalCues.app`) for testing tiles against the pedal without a DAW.
+> There's also a Standalone app (`PedalCues.exe` / `PedalCues.app`) for testing tiles against the pedal without a DAW. In its *Options > Audio/MIDI Settings*, set **MIDI Output** to the Quad Cortex and pick a working audio **Output** device (any one). The app only sends MIDI while an audio device is running. Leave the MIDI inputs unticked.
 
 ---
 
@@ -120,7 +120,7 @@ The first time you open PedalCues, a quick tour walks you through every area. It
 | **Presets** (left) | Your QC presets. Click one to open it; drag it to load that preset. | `CC#0` bank page, optional `CC#32` setlist, then Program Change |
 | **Loaded preset** screen | The opened preset, with its location and scene colours. Drag it like a preset. | Same as above |
 | **Scenes** | 8 scenes laid out like the QC display: **A-D top, E-H bottom**. | `CC#43` = 0-7 |
-| **Also load the preset** switch | Scene tiles load their preset first, then the scene a 1/16 later. Handy after a preset change. | Preset + `CC#43` |
+| **Also load the preset** switch | Scene and stomp tiles load their preset first, then the scene or footswitch a 1/16 later, so they work whatever preset the QC is on. | Preset + `CC#43` / `CC#35-42` |
 | **Stomps** | Switch one footswitch A-H. The header switch picks whether tiles send **ON** or **OFF**. | `CC#35-42` |
 | **Utilities** | Tuner on/off and gig view mode (Preset / Scene / Stomp). | `CC#45`, `CC#47` |
 
@@ -225,8 +225,11 @@ The drawing is saved with your project and stretches to whatever *Length* you pi
 | Problem | Fix |
 |---|---|
 | Nothing happens on the pedal | Check the track's MIDI Hardware Output and that the QC's MIDI device is enabled in Reaper preferences. Try a tile's play button. |
+| Standalone app: tiles do nothing | In *Options > Audio/MIDI Settings*, choose a real audio **Output** device (not *None*) and set **MIDI Output** to the Quad Cortex. On Windows, close Reaper first; only one program can use a MIDI port. |
+| Scene or stomp changes the wrong preset | Scene and stomp tiles act on whatever preset the QC has loaded. Turn on **Also load the preset** so they load their own preset first. |
+| A stomp tile changes scenes | The QC is in Scene mode, where footswitch A-H select scenes. Put the QC in Stomp mode (or drop the **Stomp Mode** tile before your stomp cues). Before v0.4.2 the Scene Mode and Stomp Mode tiles were swapped; drag those clips in again. |
 | Wrong preset loads | Check setlist, bank and slot in *Edit preset*. If presets are in other setlists, turn on *Send setlist*. |
-| Whammy doesn't react | Check the MIDI cable direction and the channels. Option A: turn on QC MIDI Thru. If that still fails, switch to option B (interface MIDI Out). |
+| Whammy doesn't react | Check the MIDI cable direction and the channels. Set the QC to a fixed channel, not *Omni*. Option A: turn on QC MIDI Thru. If that still fails, switch to option B (interface MIDI Out). |
 | Whammy clips do nothing (option B) | Whammy clips must be on the **Whammy Cues** track, whose output is the interface. |
 | Whammy mode is one off | *Settings > Whammy program numbering > Zero-based*. |
 | Clip lands between bars | Turn on snap to grid in Reaper before dropping. |

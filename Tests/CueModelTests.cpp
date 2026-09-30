@@ -30,7 +30,8 @@ int main()
 
     CHECK (isCC (qc::tuner (1, true).events[0].second, 1, 45, 127));
     CHECK (isCC (qc::stomp (1, 7, false, {}).events[0].second, 1, 42, 0));
-    CHECK (isCC (qc::gigMode (1, 1).events[0].second, 1, 47, 1));
+    CHECK (isCC (qc::gigMode (1, 1).events[0].second, 1, 47, 2)); // scene
+    CHECK (isCC (qc::gigMode (1, 2).events[0].second, 1, 47, 1)); // stomp
 
     // Whammy V program numbers (manual, 1-based)
     CHECK (whammy::programNumber (1, false, false) == 2);   // Oct Up
