@@ -107,6 +107,8 @@ The first time you open PedalCues, a quick tour walks you through every area. It
 
 ![Quad Cortex page](images/quad-cortex.png)
 
+**Presets vs scenes:** a *preset* is a whole rig on the QC (often one per song), such as *Clean Rig* or *Drop C Heavy*. *Scenes* are the parts of the song inside that preset, such as *Intro*, *Verse* and *Chorus*. Load the preset once where the song starts, then switch scenes as the song moves on.
+
 | Area | What it does | MIDI sent |
 |---|---|---|
 | **Presets** (left) | Your QC presets. Click one to open it; drag it to load that preset. | `CC#0` bank page, optional `CC#32` setlist, then Program Change |
@@ -135,7 +137,7 @@ The first time you open PedalCues, a quick tour walks you through every area. It
 
 This example covers a song with a clean verse, a crunchy chorus and a Whammy solo.
 
-1. **Load the preset at bar 1.** Click *Clean Verse* in the list, then drag the **Loaded preset** screen to bar 1.
+1. **Load the preset at bar 1.** Click *Clean Rig* in the list, then drag the **Loaded preset** screen to bar 1.
 2. **Set the intro scene.** Drag the **Intro** scene tile to bar 1 as well, just after the preset clip. You can also turn on *Also load the preset* and use one clip.
 3. **Mark every section.** Drag **Verse** to bar 3, **Chorus** to bar 9, **Solo** to bar 13, and so on. Each clip is named after the scene, so the arrangement reads like a setlist.
 4. **Whammy mode for the solo.** On the Whammy tab, drag **Oct Up** to one beat before the solo.

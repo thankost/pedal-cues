@@ -28,11 +28,11 @@ void fillDemoState (juce::ValueTree root)
 
     struct Demo { const char* name; int bank, slot, colour; const char* scenes[8]; };
     const Demo demos[] = {
-        { "Clean Verse",   1, 0, 4, { "Intro", "Verse", "Pre", "Chorus", "Bridge", "Solo", "Breakdown", "Outro" } },
-        { "Crunch Chorus", 1, 1, 1, { "Riff", "Verse", "Build", "Chorus", "Half-time", "Lead", "Stop", "Ring out" } },
-        { "Lead Solo",     1, 2, 0, { "Rhythm", "Solo", "Octave", "Harmony", "Dry", "Wet", "Feedback", "Tail" } },
-        { "Ambient Intro", 2, 0, 6, { "Pad", "Swell", "Shimmer", "Clean", "Freeze", "Delay", "Verb", "Silence" } },
-        { "Heavy Drop",    2, 1, 2, { "Chug", "Verse", "Drop", "Chorus", "Breakdown", "Solo", "Gallop", "End" } },
+        { "Clean Rig",     1, 0, 4, { "Intro", "Verse", "Pre", "Chorus", "Bridge", "Solo", "Breakdown", "Outro" } },
+        { "Plexi Crunch",  1, 1, 1, { "Riff", "Verse", "Build", "Chorus", "Half-time", "Lead", "Stop", "Ring out" } },
+        { "Lead Rig",      1, 2, 0, { "Rhythm", "Solo", "Octave", "Harmony", "Dry", "Wet", "Feedback", "Tail" } },
+        { "Ambient Pads",  2, 0, 6, { "Pad", "Swell", "Shimmer", "Clean", "Freeze", "Delay", "Verb", "Silence" } },
+        { "Drop C Heavy",  2, 1, 2, { "Chug", "Verse", "Drop", "Chorus", "Breakdown", "Solo", "Gallop", "End" } },
     };
 
     const int sceneColours[8] = { 6, 4, 7, 1, 3, 0, 5, 9 };
@@ -177,7 +177,7 @@ juce::Image drawTimeline (PedalCuesProcessor& proc)
     const auto whY = qcY + trackH + 8.0f;
     auto item = [&] (float bar, float bars, float y) { return juce::Rectangle<float> (barX (bar) + 1.0f, y + 6.0f, bars * barW - 2.0f, trackH - 12.0f); };
 
-    drawItem (g, item (1.0f, 1.9f, qcY), ui::paletteColour (4), "QC Clean Verse");
+    drawItem (g, item (1.0f, 1.9f, qcY), ui::paletteColour (4), "QC Clean Rig");
     drawItem (g, item (3.0f, 1.9f, qcY), ui::paletteColour (4), "Verse");
     drawItem (g, item (9.0f, 1.9f, qcY), ui::paletteColour (1), "Chorus");
     drawItem (g, item (13.0f, 1.9f, qcY), ui::paletteColour (0), "Solo");

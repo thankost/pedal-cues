@@ -12,7 +12,7 @@ const std::vector<TourStep>& tourSteps()
           "Pedal changes become drag and drop: every tile you see turns into a named MIDI clip when you drop it on "
           "your timeline. This one-minute tour shows you around. Use the arrow keys or the buttons below." },
         { 0, { "qc.presetList" }, "1. Add your presets",
-          "Add each Quad Cortex preset you use in the show with '+ Preset'. Enter its name, setlist, bank and slot "
+          "Add each Quad Cortex preset (a whole rig, often one per song) with '+ Preset'. Enter its name, setlist, bank and slot "
           "exactly as on the pedal. Click a preset to open it, double-click to edit, right-click to recolour or reorder." },
         { 0, { "qc.screen" }, "2. Load a preset",
           "This screen shows the preset you opened. Drag it onto the timeline where the song starts: the clip "
