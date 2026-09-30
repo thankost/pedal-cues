@@ -40,11 +40,12 @@ Show the user screenshots before pushing a visual change.
 
 Use the `release` skill (`.claude/skills/release/SKILL.md`). In short:
 1. Bump `project(PedalCues VERSION x.y.z)` in `CMakeLists.txt`.
-2. Build and run the tests.
-3. Commit with a message that works as release notes: the first line is `vX.Y.Z: summary`, then `- bullet` lines. CI copies the tagged commit's message into the GitHub release, and the plugin's update window shows it under "What's new".
-4. Push `main`, then tag `vX.Y.Z` and push the tag. CI (`.github/workflows/build.yml`) builds the macOS and Windows zips and publishes the release.
-5. Wait for one release to finish before tagging the next. CI marks only the highest version as Latest.
-6. Confirm the release has `PedalCues-macOS.zip` and `PedalCues-Windows.zip`, is Latest, and the commit shows as verified.
+2. Add the version at the top of `CHANGELOG.md`, in plain words for musicians.
+3. Build and run the tests.
+4. Commit with a message that works as release notes: the first line is `vX.Y.Z: summary`, then `- bullet` lines. CI copies the tagged commit's message into the GitHub release, and the plugin's update window shows it under "What's new".
+5. Push `main`, then tag `vX.Y.Z` and push the tag. CI (`.github/workflows/build.yml`) builds the macOS and Windows zips and publishes the release.
+6. Wait for one release to finish before tagging the next. CI marks only the highest version as Latest.
+7. Confirm the release has `PedalCues-macOS.zip` and `PedalCues-Windows.zip`, is Latest, and the commit shows as verified.
 
 ## Domain facts (verified on real gear or by the user)
 
@@ -58,10 +59,11 @@ Use the `release` skill (`.claude/skills/release/SKILL.md`). In short:
   - Not working: QC on USB only, with the Whammy on the QC's Thru.
 - Default channels: QC 1 (never Omni), Whammy 2. Don't state the Whammy V channel-setting procedure from memory; point to its manual.
 - Scene and stomp tiles "Load 1A first" by default (preset PC, then the scene or footswitch 1/4 beat later), or act on the "Current QC preset".
-- Standalone app: it sends MIDI only while an audio output device is running.
+- Standalone app (`Source/StandaloneApp.cpp`, custom JUCE standalone): no audio inputs, no Audio/MIDI settings window. Tiles go straight to the MIDI port picked in MIDI Setup > Test output or Options > MIDI Output (`PedalCuesProcessor::setDirectMidiOutput`, saved as `standaloneMidiOutput` in settings.xml). Menus: macOS app menu (About, Check for Updates, auto-check toggle), Options (MIDI Output), Help. The tempo is set by the user (`setManualBpm`, `standaloneBpm`).
+- The third tab is called **MIDI Setup** (it used to be "Settings").
 
 ## Links used in the app and docs
 
 - Donations (optional, never pop up by themselves): Buy Me a Coffee `https://buymeacoffee.com/athkost`, PayPal `https://paypal.me/athkost`, Revolut `https://revolut.me/athkost`. They're shown in brand colours (#FFDD00, #0070BA, white). `.github/FUNDING.yml` drives the repo's Sponsor button. Add `github: thankost` once GitHub Sponsors is approved.
 - The support text mentions the author's band **ORIA** (progressive groove metal, Thessaloniki) and bandmate Leo.
-- The update check calls `https://api.github.com/repos/thankost/pedal-cues/releases/latest` (`Source/Update.*`). It can be turned off in Settings.
+- The update check (`Source/Update.*`) reads the redirect of `https://github.com/thankost/pedal-cues/releases/latest` to find the newest tag. Don't use `api.github.com` for it: that's limited to 60 requests an hour per IP, and shared networks run out. The API is only used, best-effort, for the release notes when an update exists. The check can be turned off in Settings.

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include "CueModel.h"
@@ -43,6 +44,15 @@ public:
 
     double getHostBpm() const { return hostBpm.load(); }
 
+    // Standalone app only: tiles are sent straight to this MIDI output on their own clock,
+    // so no audio device is needed. Empty = none (falls back to the audio/MIDI settings).
+    static bool isStandalone() { return juce::JUCEApplicationBase::isStandaloneApp(); }
+    void setDirectMidiOutput (const juce::String& deviceIdentifier);
+    juce::String getDirectMidiOutput() const { return directOutId; }
+
+    // Standalone app only: there is no host tempo, so the user sets it (remembered between sessions).
+    void setManualBpm (double bpm);
+
     juce::ValueTree state { state::createDefault() };
 
 private:
@@ -51,6 +61,9 @@ private:
         juce::int64 sampleTime;
         juce::MidiMessage message;
     };
+
+    std::unique_ptr<juce::MidiOutput> directOut;
+    juce::String directOutId;
 
     juce::CriticalSection pendingLock;
     std::vector<Scheduled> pending;

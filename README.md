@@ -10,11 +10,11 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 
 ![PedalCues - Quad Cortex page](docs/images/quad-cortex.png)
 
-📖 **[User guide with pictures and step-by-step instructions](docs/GUIDE.md)**. A quick tour also starts the first time you open the plugin (open it again later from the **?** button).
+📖 **[User guide with pictures and step-by-step instructions](docs/GUIDE.md)** · 📝 **[What's new (changelog)](CHANGELOG.md)**. A quick tour also starts the first time you open the plugin (open it again later from the **?** button).
 
-| Whammy V | Settings |
+| Whammy V | MIDI Setup |
 |---|---|
-| ![Whammy page](docs/images/whammy.png) | ![Settings page](docs/images/settings.png) |
+| ![Whammy page](docs/images/whammy.png) | ![MIDI Setup tab](docs/images/settings.png) |
 
 ## Features
 
@@ -34,7 +34,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
   optional return to heel afterwards
 
 **Workflow**
-- Update notice: the header shows your version and whether a newer release is out (one GitHub request when it opens, can be turned off in Settings)
+- Update notice: the header shows your version and whether a newer release is out (one GitHub request when it opens; turn it off in the ? menu)
 - Everything is stored in the Reaper project, and you can save a **default library** that new instances load
 - Export/import library as XML (back it up, share it with the band)
 - MIDI passes through, so the dropped items and the live preview share one track and one route
@@ -79,12 +79,12 @@ cmake --build build --target PedalCuesTests
 
 ## Reaper setup
 
-1. Connect the pedals one of three ways (the plugin's **Settings** tab shows the steps):
+1. Connect the pedals one of three ways (the plugin's **MIDI Setup** tab shows the steps):
    - **Daisy chain:** interface **MIDI Out → QC MIDI In**, QC **MIDI Thru → Whammy MIDI In** (MIDI Thru on). Both cue tracks output to that interface MIDI Out.
    - **Separate MIDI cables:** interface **MIDI Out 1 → QC**, **MIDI Out 2 → Whammy**. QC Cues → MIDI Out 1, Whammy Cues → MIDI Out 2.
    - **QC over USB + interface:** QC on USB, interface **MIDI Out → Whammy MIDI In**. QC Cues → Quad Cortex, Whammy Cues → interface MIDI Out.
    - ⚠️ **Known QC limitation:** MIDI Thru doesn't forward MIDI the QC receives over **USB**, so "QC on USB, Whammy on the QC's Thru" doesn't work.
-2. Give the pedals **different MIDI channels** (defaults: QC 1 via *Settings > MIDI Settings*, not Omni; Whammy 2, see its manual) and set the same numbers in the plugin's **Settings** tab.
+2. Give the pedals **different MIDI channels** (defaults: QC 1 via *Settings > MIDI Settings*, not Omni; Whammy 2, see its manual) and set the same numbers in the plugin's **MIDI Setup** tab.
 3. In *Preferences > MIDI Devices*, enable the MIDI outputs you use.
 4. Create two tracks, **QC Cues** and **Whammy Cues**, insert *PedalCues* on each, and set each track's *I/O > MIDI Hardware Output* as above (leave *Send to original channels*).
 5. Turn snapping on and drag QC tiles onto QC Cues and Whammy tiles onto Whammy Cues at the bars you want.
@@ -94,7 +94,7 @@ Details and pictures: [guide, section 2](docs/GUIDE.md#2-connect-your-rig).
 ## Verify with your pedals
 
 - **Whammy numbering:** the plugin uses the manual's 1-based numbers (Classic 1–21 on / 22–42 bypassed,
-  Chords 43–63 on / 64–84 bypassed). If every mode arrives one step off, change *Settings → Whammy program
+  Chords 43–63 on / 64–84 bypassed). If every mode arrives one step off, change *MIDI Setup → Whammy program
   numbering*. Mode names can be renamed if your chart differs.
 - **QC setlist:** `CC#32` = setlist number − 1. Leave *Send setlist* off if all presets are in the active setlist.
 

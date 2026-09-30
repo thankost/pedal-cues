@@ -41,7 +41,7 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     tabBar.setComponentID ("hdr.tabs");
     addAndMakeVisible (tabBar);
 
-    const char* names[] = { "Quad Cortex", "Whammy V", "Settings" };
+    const char* names[] = { "Quad Cortex", "Whammy V", "MIDI Setup" };
     for (int i = 0; i < 3; ++i)
     {
         auto* b = tabButtons.add (new juce::TextButton (names[i]));
@@ -56,14 +56,14 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     }
 
     updateBadge.setComponentID ("hdr.update");
-    updateBadge.onOpen = [this] { showUpdateDialog(); };
+    updateBadge.onOpen = [this] { showUpdateDialog (updateBadge.info); };
     updateBadge.onRefresh = [this] { checkForUpdates (true); };
     addAndMakeVisible (updateBadge);
     checkForUpdates (false);
 
     helpButton.setComponentID ("hdr.help");
     helpButton.setTooltip ("Quick tour and user guide");
-    helpButton.onClick = [this] { showHelpMenu(); };
+    helpButton.onClick = [this] { showHelpMenu (&helpButton); };
     addAndMakeVisible (helpButton);
 
     pages.push_back (ui::makeQcPage (p));
@@ -151,7 +151,21 @@ void PedalCuesEditor::closeTour (bool)
     });
 }
 
-void PedalCuesEditor::showHelpMenu()
+void PedalCuesEditor::setHelpInMenuBar (bool inMenuBar)
+{
+    helpButton.setVisible (! inMenuBar);
+}
+
+void PedalCuesEditor::showAboutDialog()
+{
+    juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "PedalCues " JucePlugin_VersionString,
+                                            "Drag-and-drop MIDI cues for the Quad Cortex and Whammy V.\n\n"
+                                            "Created by " + ui::author + "\n" + ui::repoUrl + "\n\n"
+                                            "Free software under the MIT License. Built with JUCE.\n"
+                                            "Not affiliated with Neural DSP or DigiTech.");
+}
+
+void PedalCuesEditor::showHelpMenu (juce::Component* target, const juce::String& extraItemName, std::function<void()> extra)
 {
     juce::PopupMenu m;
     m.addSectionHeader ("PedalCues " JucePlugin_VersionString);
@@ -162,9 +176,16 @@ void PedalCuesEditor::showHelpMenu()
     m.addItem (4, "Project on GitHub");
     m.addSeparator();
     m.addItem (5, "Support PedalCues (optional)...");
+    m.addSeparator();
+    m.addItem (7, "Check for updates automatically", true, ! state::getFlag (update::disabledFlag));
+    if (extra)
+    {
+        m.addSeparator();
+        m.addItem (6, extraItemName);
+    }
 
     juce::Component::SafePointer<PedalCuesEditor> safe (this);
-    m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&helpButton), [safe] (int result)
+    m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (target), [safe, extra] (int result)
     {
         if (safe == nullptr)
             return;
@@ -173,15 +194,15 @@ void PedalCuesEditor::showHelpMenu()
         else if (result == 2)
             juce::URL (ui::guideUrl).launchInDefaultBrowser();
         else if (result == 3)
-            juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "PedalCues " JucePlugin_VersionString,
-                                                    "Drag-and-drop MIDI cues for the Quad Cortex and Whammy V.\n\n"
-                                                    "Created by " + ui::author + "\n" + ui::repoUrl + "\n\n"
-                                                    "Free software under the MIT License. Built with JUCE.\n"
-                                                    "Not affiliated with Neural DSP or DigiTech.");
+            safe->showAboutDialog();
         else if (result == 4)
             juce::URL (ui::repoUrl).launchInDefaultBrowser();
         else if (result == 5)
             safe->showSupportDialog();
+        else if (result == 6 && extra)
+            extra();
+        else if (result == 7)
+            state::setFlag (update::disabledFlag, ! state::getFlag (update::disabledFlag));
     });
 }
 
@@ -308,7 +329,7 @@ void PedalCuesEditor::UpdateBadge::setInfo (const update::Info& newInfo)
     setTooltip (info.status == S::available ? "A newer PedalCues is out. Click to see what's new and download it."
               : info.status == S::upToDate  ? "You have the latest PedalCues."
               : info.status == S::failed    ? "Couldn't reach GitHub to check for updates."
-              : info.status == S::disabled  ? "Update check is off (Settings)."
+              : info.status == S::disabled  ? "Automatic update check is off (? menu)."
                                             : juce::String());
     layoutRefresh();
     repaint();
@@ -317,32 +338,100 @@ void PedalCuesEditor::UpdateBadge::setInfo (const update::Info& newInfo)
 juce::String PedalCuesEditor::UpdateBadge::label() const
 {
     using S = update::Info::Status;
-    if (info.status == S::available)
-        return "Update available: v" + info.latest;
-
-    auto l = juce::String ("v") + JucePlugin_VersionString;
-    if (info.status == S::upToDate)       l << "  -  Up to date";
-    else if (info.status == S::checking)  l << "  -  checking for updates...";
-    else if (info.status == S::failed)    l << "  -  couldn't check for updates";
-    return l;
+    switch (info.status)
+    {
+        case S::available: return "Update to v" + info.latest;
+        case S::upToDate:  return "Up to date";
+        case S::checking:  return "Checking...";
+        case S::failed:    return "Couldn't check";
+        case S::disabled:  break;
+    }
+    return {};
 }
 
+namespace
+{
+constexpr float iconSize = 14.0f, versionGap = 10.0f;
+
+juce::String versionText() { return juce::String ("v") + JucePlugin_VersionString; }
+juce::Font versionFont()   { return font (11.5f); }
+juce::Font statusFont()    { return font (12.0f, true); }
+
+// Two curved arrows chasing each other (sync / refresh).
+void drawSyncIcon (juce::Graphics& g, juce::Rectangle<float> b, float thickness)
+{
+    const auto c = b.getCentre();
+    const auto r = b.getWidth() * 0.36f;
+    const auto pi = juce::MathConstants<float>::pi;
+
+    for (int half = 0; half < 2; ++half)
+    {
+        const auto start = (float) half * pi + 0.35f, end = start + pi - 0.7f;
+        juce::Path arc;
+        arc.addCentredArc (c.x, c.y, r, r, 0.0f, start, end, true);
+        g.strokePath (arc, juce::PathStrokeType (thickness, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+        // Arrowhead at the end of the arc, pointing along the direction of travel.
+        const juce::Point<float> tip (c.x + r * std::sin (end), c.y - r * std::cos (end));
+        const juce::Point<float> along (std::cos (end), std::sin (end));
+        const juce::Point<float> across (std::sin (end), -std::cos (end));
+        const auto s = thickness * 2.2f;
+        juce::Path head;
+        head.addTriangle (tip + along * s, tip - along * (s * 0.3f) + across * s, tip - along * (s * 0.3f) - across * s);
+        g.fillPath (head);
+    }
+}
+
+void drawStatusIcon (juce::Graphics& g, update::Info::Status status, juce::Rectangle<float> b)
+{
+    using S = update::Info::Status;
+    const auto circle = b.reduced (0.75f);
+    g.drawEllipse (circle, 1.4f);
+
+    juce::Path p;
+    if (status == S::upToDate)
+    {
+        p.startNewSubPath (b.getX() + b.getWidth() * 0.30f, b.getY() + b.getHeight() * 0.52f);
+        p.lineTo (b.getX() + b.getWidth() * 0.45f, b.getY() + b.getHeight() * 0.67f);
+        p.lineTo (b.getX() + b.getWidth() * 0.72f, b.getY() + b.getHeight() * 0.36f);
+    }
+    else if (status == S::available)   // down arrow
+    {
+        p.startNewSubPath (b.getCentreX(), b.getY() + b.getHeight() * 0.28f);
+        p.lineTo (b.getCentreX(), b.getY() + b.getHeight() * 0.70f);
+        p.startNewSubPath (b.getX() + b.getWidth() * 0.33f, b.getY() + b.getHeight() * 0.53f);
+        p.lineTo (b.getCentreX(), b.getY() + b.getHeight() * 0.72f);
+        p.lineTo (b.getX() + b.getWidth() * 0.67f, b.getY() + b.getHeight() * 0.53f);
+    }
+    else                                // exclamation mark
+    {
+        p.startNewSubPath (b.getCentreX(), b.getY() + b.getHeight() * 0.27f);
+        p.lineTo (b.getCentreX(), b.getY() + b.getHeight() * 0.57f);
+        g.fillEllipse (juce::Rectangle<float> (1.8f, 1.8f).withCentre ({ b.getCentreX(), b.getY() + b.getHeight() * 0.73f }));
+    }
+    g.strokePath (p, juce::PathStrokeType (1.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+}
+} // namespace
+
+// The clickable/status part, right of the version number.
 juce::Rectangle<float> PedalCuesEditor::UpdateBadge::textArea() const
 {
     using S = update::Info::Status;
-    const auto available = info.status == S::available;
-    const juce::Font f (font (available ? 11.5f : 11.0f, available || info.status == S::upToDate));
-    auto w = juce::GlyphArrangement::getStringWidth (f, label()) + (available ? 22.0f : 0.0f);
-    if (info.status == S::upToDate)
-        w += 10.0f; // status dot
-    return getLocalBounds().toFloat().withWidth (juce::jmin ((float) getWidth() - 24.0f, w));
+    const auto x = juce::GlyphArrangement::getStringWidth (versionFont(), versionText()) + versionGap;
+    if (info.status == S::disabled)
+        return { x, 0.0f, 0.0f, (float) getHeight() };
+
+    auto w = iconSize + 5.0f + juce::GlyphArrangement::getStringWidth (statusFont(), label());
+    if (info.status == S::available)
+        w += 16.0f; // pill padding
+    return { x, 0.0f, juce::jmin ((float) getWidth() - x - 24.0f, w), (float) getHeight() };
 }
 
 void PedalCuesEditor::UpdateBadge::layoutRefresh()
 {
     using S = update::Info::Status;
     const auto area = textArea();
-    refresh.setBounds (juce::roundToInt (area.getRight()) + 6, (getHeight() - 18) / 2, 18, 18);
+    refresh.setBounds (juce::roundToInt (area.getRight()) + 5, (getHeight() - 20) / 2, 20, 20);
     refresh.setVisible (info.status != S::disabled);
     refresh.setEnabled (info.status != S::checking);
 }
@@ -361,52 +450,48 @@ void PedalCuesEditor::UpdateBadge::RefreshButton::paintButton (juce::Graphics& g
         g.setColour (juce::Colours::white.withAlpha (down ? 0.18f : 0.1f));
         g.fillEllipse (b);
     }
-
-    // Circular arrow.
-    const auto c = b.getCentre();
-    const auto r = b.getWidth() * 0.3f;
-    juce::Path arc;
-    arc.addCentredArc (c.x, c.y, r, r, 0.0f, 0.5f, juce::MathConstants<float>::twoPi - 0.2f, true);
-    const auto colour = isEnabled() ? (over ? theme::text : dim) : dim.withAlpha (0.4f);
-    g.setColour (colour);
-    g.strokePath (arc, juce::PathStrokeType (1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-
-    const auto tip = arc.getCurrentPosition();
-    juce::Path head;
-    head.addTriangle (tip.x - 3.2f, tip.y - 2.6f, tip.x + 2.8f, tip.y - 0.2f, tip.x - 1.0f, tip.y + 3.4f);
-    g.fillPath (head);
+    g.setColour (isEnabled() ? (over ? theme::text : dim) : dim.withAlpha (0.45f));
+    drawSyncIcon (g, b.reduced (3.0f), 1.5f);
 }
 
 void PedalCuesEditor::UpdateBadge::paint (juce::Graphics& g)
 {
     using S = update::Info::Status;
-    auto b = textArea();
+    const auto h = (float) getHeight();
+
+    g.setColour (dim);
+    g.setFont (versionFont());
+    g.drawText (versionText(), juce::Rectangle<float> (0.0f, 0.0f, textArea().getX(), h), juce::Justification::centredLeft);
+
+    if (info.status == S::disabled)
+        return;
+
+    auto area = textArea();
+    auto colour = info.status == S::upToDate ? ledGreen : dim;
 
     if (info.status == S::available)
     {
-        const auto pill = b.reduced (0.0f, 1.0f);
+        const auto pill = area.reduced (0.0f, 1.0f);
         g.setColour (isMouseOver() ? accent.brighter (0.15f) : accent);
         g.fillRoundedRectangle (pill, pill.getHeight() * 0.5f);
-        g.setColour (juce::Colours::black);
-        g.setFont (font (11.5f, true));
-        g.drawText (label(), pill, juce::Justification::centred);
-        return;
+        area = pill.reduced (8.0f, 0.0f);
+        colour = juce::Colours::black;
     }
 
-    if (info.status == S::upToDate)
-    {
-        g.setColour (ledGreen);
-        g.fillEllipse (juce::Rectangle<float> (6.0f, 6.0f).withCentre ({ 3.0f, b.getCentreY() }));
-        b.removeFromLeft (10.0f);
-    }
-    g.setColour (info.status == S::upToDate ? ledGreen : dim);
-    g.setFont (font (11.0f, info.status == S::upToDate));
-    g.drawText (label(), b, juce::Justification::centredLeft);
+    g.setColour (colour);
+    const auto icon = area.removeFromLeft (iconSize).withSizeKeepingCentre (iconSize, iconSize);
+    if (info.status == S::checking)
+        drawSyncIcon (g, icon, 1.4f);
+    else
+        drawStatusIcon (g, info.status, icon);
+
+    area.removeFromLeft (5.0f);
+    g.setFont (statusFont());
+    g.drawText (label(), area, juce::Justification::centredLeft);
 }
 
-void PedalCuesEditor::showUpdateDialog()
+void PedalCuesEditor::showUpdateDialog (const update::Info& info)
 {
-    const auto info = updateBadge.info;
     juce::StringArray lines;
     lines.addLines (info.notes.replace ("\r", "").replace ("**", "").replace ("## ", ""));
     for (int i = lines.size(); --i >= 0;)
@@ -479,11 +564,10 @@ void PedalCuesEditor::paint (juce::Graphics& g)
     g.setFont (font (20.0f, true));
     g.drawText ("PedalCues", titleArea.removeFromTop (titleArea.getHeight() / 2 + 6), juce::Justification::bottomLeft);
 
-    // Tempo pill on the right, left of the help button.
-    auto right = header.reduced (18, 0);
-    right.removeFromRight (44);
-    const auto pill = right.removeFromRight (190).withSizeKeepingCentre (190, 30).toFloat();
-    g.setColour (background);
+    // Tempo pill on the right, left of the help button. In the standalone app it's clickable (set tempo).
+    const auto pill = tempoPill();
+    const auto manual = PedalCuesProcessor::isStandalone();
+    g.setColour (manual && isMouseOver() && pill.contains (getMouseXYRelative().toFloat()) ? surfaceHi : background);
     g.fillRoundedRectangle (pill, 15.0f);
     g.setColour (outline);
     g.drawRoundedRectangle (pill.reduced (0.5f), 15.0f, 1.0f);
@@ -494,7 +578,105 @@ void PedalCuesEditor::paint (juce::Graphics& g)
     g.drawText (juce::String (shownBpm, 1) + " BPM", pill.withTrimmedLeft (28.0f).withWidth (80.0f), juce::Justification::centredLeft);
     g.setColour (dim);
     g.setFont (font (11.5f));
-    g.drawText ("host tempo", pill.withTrimmedLeft (104.0f), juce::Justification::centredLeft);
+    g.drawText (manual ? "set tempo" : "host tempo", pill.withTrimmedLeft (104.0f), juce::Justification::centredLeft);
+}
+
+juce::Rectangle<float> PedalCuesEditor::tempoPill() const
+{
+    auto right = getLocalBounds().removeFromTop (64).reduced (18, 0);
+    right.removeFromRight (44);
+    return right.removeFromRight (190).withSizeKeepingCentre (190, 30).toFloat();
+}
+
+void PedalCuesEditor::mouseMove (const juce::MouseEvent& e)
+{
+    if (! PedalCuesProcessor::isStandalone())
+        return;
+    const auto over = tempoPill().contains (e.position);
+    setMouseCursor (over ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
+    repaint (tempoPill().toNearestInt().expanded (2));
+}
+
+void PedalCuesEditor::mouseUp (const juce::MouseEvent& e)
+{
+    if (PedalCuesProcessor::isStandalone() && tempoPill().contains (e.position))
+        showTempoEditor();
+}
+
+namespace
+{
+// Tempo for the standalone app: type it, drag it, or tap it.
+class TempoPanel final : public juce::Component
+{
+public:
+    explicit TempoPanel (PedalCuesProcessor& p) : proc (p)
+    {
+        title.setText ("Song tempo (BPM)", juce::dontSendNotification);
+        title.setFont (font (12.0f, true));
+        title.setColour (juce::Label::textColourId, dim);
+        addAndMakeVisible (title);
+
+        slider.setSliderStyle (juce::Slider::LinearHorizontal);
+        slider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 64, 26);
+        slider.setRange (20.0, 300.0, 0.5);
+        slider.setValue (proc.getHostBpm(), juce::dontSendNotification);
+        slider.onValueChange = [this] { proc.setManualBpm (slider.getValue()); };
+        addAndMakeVisible (slider);
+
+        tap.setTooltip ("Click in time with the song a few times");
+        tap.onClick = [this] { tapped(); };
+        addAndMakeVisible (tap);
+
+        hint.setText ("Sets how long treadle moves last when you click their play button "
+                      "(Whammy V tab). In your DAW the plugin follows the project tempo.", juce::dontSendNotification);
+        hint.setFont (font (11.0f));
+        hint.setColour (juce::Label::textColourId, dim);
+        hint.setJustificationType (juce::Justification::topLeft);
+        addAndMakeVisible (hint);
+
+        setSize (320, 132);
+    }
+
+    void resized() override
+    {
+        auto r = getLocalBounds().reduced (12, 10);
+        title.setBounds (r.removeFromTop (20));
+        r.removeFromTop (4);
+        auto row = r.removeFromTop (30);
+        tap.setBounds (row.removeFromRight (56));
+        row.removeFromRight (8);
+        slider.setBounds (row);
+        r.removeFromTop (8);
+        hint.setBounds (r);
+    }
+
+private:
+    void tapped()
+    {
+        const auto now = juce::Time::getMillisecondCounterHiRes();
+        if (! taps.empty() && now - taps.back() > 2000.0)
+            taps.clear();
+        taps.push_back (now);
+        if (taps.size() > 8)
+            taps.erase (taps.begin());
+        if (taps.size() >= 2)
+            slider.setValue (60000.0 * (double) (taps.size() - 1) / (taps.back() - taps.front()), juce::sendNotification);
+    }
+
+    PedalCuesProcessor& proc;
+    juce::Label title, hint;
+    juce::Slider slider;
+    juce::TextButton tap { "Tap" };
+    std::vector<double> taps;
+};
+} // namespace
+
+void PedalCuesEditor::showTempoEditor()
+{
+    juce::CallOutBox::launchAsynchronously (std::make_unique<TempoPanel> (pedalProcessor),
+                                            getScreenBounds().getPosition().toFloat().isOrigin() ? tempoPill().toNearestInt()
+                                                                                                  : tempoPill().toNearestInt(),
+                                            this);
 }
 
 void PedalCuesEditor::resized()

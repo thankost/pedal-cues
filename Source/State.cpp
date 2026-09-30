@@ -139,6 +139,24 @@ static juce::File settingsFile()
     return defaultLibraryFile().getSiblingFile ("settings.xml");
 }
 
+juce::String getSetting (const juce::String& name)
+{
+    if (auto xml = juce::XmlDocument::parse (settingsFile()))
+        return xml->getStringAttribute (name);
+    return {};
+}
+
+void setSetting (const juce::String& name, const juce::String& value)
+{
+    auto xml = juce::XmlDocument::parse (settingsFile());
+    if (xml == nullptr)
+        xml = std::make_unique<juce::XmlElement> ("PedalCuesSettings");
+
+    xml->setAttribute (name, value);
+    settingsFile().getParentDirectory().createDirectory();
+    xml->writeTo (settingsFile());
+}
+
 bool getFlag (const juce::String& name)
 {
     if (auto xml = juce::XmlDocument::parse (settingsFile()))
@@ -148,13 +166,7 @@ bool getFlag (const juce::String& name)
 
 void setFlag (const juce::String& name, bool value)
 {
-    auto xml = juce::XmlDocument::parse (settingsFile());
-    if (xml == nullptr)
-        xml = std::make_unique<juce::XmlElement> ("PedalCuesSettings");
-
-    xml->setAttribute (name, value);
-    settingsFile().getParentDirectory().createDirectory();
-    xml->writeTo (settingsFile());
+    setSetting (name, value ? "1" : "0");
 }
 
 bool saveLibrary (const juce::ValueTree& root, const juce::File& file)

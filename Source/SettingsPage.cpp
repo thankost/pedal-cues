@@ -113,10 +113,25 @@ class SettingsPage final : public Page
 {
 public:
     SettingsPage (PedalCuesProcessor& p, std::function<void()> tour)
-        : state (p.state), startTour (std::move (tour))
+        : proc (p), state (p.state), startTour (std::move (tour))
     {
         for (auto* c : std::initializer_list<juce::Component*> { &midiSection, &librarySection, &setupSection })
             addAndMakeVisible (c);
+
+        // Standalone app only: which MIDI port the tiles' play buttons send to (no audio device needed).
+        addChildComponent (testSection);
+        addChildComponent (testOutBox);
+        addChildComponent (testHint);
+        testOutBox.onChange = [this]
+        {
+            const auto i = testOutBox.getSelectedItemIndex();
+            proc.setDirectMidiOutput (juce::isPositiveAndBelow (i - 1, testDevices.size()) ? testDevices[i - 1].identifier : juce::String());
+        };
+        testHint.setText ("Click any tile's round play button to send it to this port. In your DAW the plugin "
+                          "uses the track's MIDI output instead.", juce::dontSendNotification);
+        testHint.setFont (font (12.0f));
+        testHint.setColour (juce::Label::textColourId, dim);
+        testHint.setJustificationType (juce::Justification::topLeft);
 
         styleCaption (qcChannelLabel, "Quad Cortex channel");
         styleCaption (whChannelLabel, "Whammy V channel");
@@ -136,9 +151,7 @@ public:
         pcBaseBox.onChange    = [this] { state.setProperty (IDs::whPcBase, pcBaseBox.getSelectedId() == 1 ? 1 : 0, nullptr); };
         setlistToggle.onClick = [this] { state.setProperty (IDs::sendSetlist, setlistToggle.getToggleState(), nullptr); };
         setlistToggle.setTooltip ("Also send CC#32 (setlist) before each preset change. Leave off if all presets are in the active setlist.");
-        updateToggle.setTooltip ("Ask GitHub for the latest PedalCues release when PedalCues opens (nothing else is sent). "
-                                 "Takes effect the next time PedalCues opens.");
-        updateToggle.onClick = [this] { state::setFlag (update::disabledFlag, ! updateToggle.getToggleState()); };
+
 
         saveDefaultButton.onClick = [this]
         {
@@ -221,7 +234,7 @@ public:
         guideButton.onClick = [] { juce::URL (guideUrl).launchInDefaultBrowser(); };
 
         for (auto* c : std::initializer_list<juce::Component*> { &qcChannelLabel, &whChannelLabel, &pcBaseLabel,
-                                                                 &qcChannelBox, &whChannelBox, &pcBaseBox, &setlistToggle, &updateToggle,
+                                                                 &qcChannelBox, &whChannelBox, &pcBaseBox, &setlistToggle,
                                                                  &saveDefaultButton, &loadDefaultButton, &exportButton,
                                                                  &importButton, &statusLabel, &libraryInfo, &steps, &viaQcButton, &viaInterfaceButton,
                                                                  &tourButton, &guideButton })
@@ -236,7 +249,34 @@ public:
         whChannelBox.setSelectedId ((int) state[IDs::whChannel], juce::dontSendNotification);
         pcBaseBox.setSelectedId ((int) state[IDs::whPcBase] == 1 ? 1 : 2, juce::dontSendNotification);
         setlistToggle.setToggleState ((bool) state[IDs::sendSetlist], juce::dontSendNotification);
-        updateToggle.setToggleState (! state::getFlag (update::disabledFlag), juce::dontSendNotification);
+        refreshTestDevices();
+    }
+
+    void visibilityChanged() override
+    {
+        if (isVisible())
+            refreshTestDevices();
+    }
+
+    void refreshTestDevices()
+    {
+        const auto standalone = PedalCuesProcessor::isStandalone();
+        for (auto* c : std::initializer_list<juce::Component*> { &testSection, &testOutBox, &testHint })
+            c->setVisible (standalone);
+        if (! standalone)
+            return;
+
+        testDevices = juce::MidiOutput::getAvailableDevices();
+        testOutBox.clear (juce::dontSendNotification);
+        testOutBox.addItem ("None", 1);
+        int selected = 0;
+        for (int i = 0; i < testDevices.size(); ++i)
+        {
+            testOutBox.addItem (testDevices[i].name, i + 2);
+            if (testDevices[i].identifier == proc.getDirectMidiOutput())
+                selected = i + 1;
+        }
+        testOutBox.setSelectedItemIndex (selected, juce::dontSendNotification);
     }
 
     void resized() override
@@ -246,9 +286,19 @@ public:
         auto left = r.removeFromLeft (juce::jmax (380, r.getWidth() * 2 / 5));
         r.removeFromLeft (12);
 
-        midiSection.setBounds (left.removeFromTop (Section::headerHeight + 4 * 62 + 44));
+        midiSection.setBounds (left.removeFromTop (Section::headerHeight + 4 * 62 + 8));
         left.removeFromTop (12);
         librarySection.setBounds (left);
+
+        if (PedalCuesProcessor::isStandalone())
+        {
+            testSection.setBounds (r.removeFromTop (Section::headerHeight + 76));
+            r.removeFromTop (12);
+            auto t = testSection.contentArea().reduced (6, 2);
+            testOutBox.setBounds (t.removeFromTop (32));
+            t.removeFromTop (6);
+            testHint.setBounds (t);
+        }
         setupSection.setBounds (r);
 
         {
@@ -263,7 +313,7 @@ public:
             field (whChannelLabel, whChannelBox);
             field (pcBaseLabel, pcBaseBox);
             setlistToggle.setBounds (m.removeFromTop (40));
-            updateToggle.setBounds (m.removeFromTop (36));
+
         }
 
         {
@@ -328,17 +378,23 @@ private:
 
     void setStatus (const juce::String& t) { statusLabel.setText (t, juce::dontSendNotification); }
 
+    PedalCuesProcessor& proc;
     juce::ValueTree state;
     std::function<void()> startTour;
 
+
     Section midiSection    { "set.midi", "MIDI", "channels & numbering" };
     Section librarySection { "set.library", "Library", "your names, saved per project" };
+    Section testSection    { "set.test", "Test output", "standalone app: where play buttons send", ledGreen };
+    juce::ComboBox testOutBox;
+    juce::Label testHint;
+    juce::Array<juce::MidiDeviceInfo> testDevices;
     Section setupSection   { "set.setup", "Setup in Reaper", "five steps, once", qcBlue };
 
     juce::Label qcChannelLabel, whChannelLabel, pcBaseLabel, statusLabel, libraryInfo;
     juce::ComboBox qcChannelBox, whChannelBox, pcBaseBox;
     juce::ToggleButton setlistToggle { "Send setlist (CC#32) with preset changes" };
-    juce::ToggleButton updateToggle { "Check for updates when PedalCues opens" };
+
     juce::TextButton saveDefaultButton { "Save as default" };
     juce::TextButton loadDefaultButton { "Load default" };
     juce::TextButton exportButton { "Export..." };

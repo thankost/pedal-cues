@@ -20,6 +20,8 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
+    void mouseUp (const juce::MouseEvent&) override;
+    void mouseMove (const juce::MouseEvent&) override;
 
     // TourHost
     void showPage (int index) override;
@@ -28,40 +30,17 @@ public:
 
     void startTour (int step = 0);
     void showSupportDialog();
-    void showUpdateDialog();
-    bool isTourVisible() const { return tour != nullptr; }
-    void refreshNow() { cancelPendingUpdate(); handleAsyncUpdate(); }
+    void showUpdateDialog (const update::Info&);
 
-    static constexpr const char* tourDoneFlag = "tourDone";
+    // Opens the ? menu under target. extraItemName/extra add an app-only item (standalone: audio/MIDI settings).
+    void showHelpMenu (juce::Component* target, const juce::String& extraItemName = {}, std::function<void()> extra = {});
 
-private:
-    void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override { triggerAsyncUpdate(); }
-    void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override { triggerAsyncUpdate(); }
-    void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override { triggerAsyncUpdate(); }
-    void valueTreeChildOrderChanged (juce::ValueTree&, int, int) override { triggerAsyncUpdate(); }
-    void valueTreeRedirected (juce::ValueTree&) override { triggerAsyncUpdate(); }
+    // Standalone: the app's menu bar has Options/Help, so the header's ? button is hidden.
+    void setHelpInMenuBar (bool);
+    void showAboutDialog();
+    void checkForUpdates (bool force);
 
-    void handleAsyncUpdate() override;
-    void timerCallback() override;
-    void showHelpMenu();
-
-    // Must outlive every child component, so it is declared first.
-    juce::SharedResourcePointer<theme::LookAndFeel> lookAndFeel;
-
-    PedalCuesProcessor& pedalProcessor;
-    juce::ValueTree state;
-
-    juce::TooltipWindow tooltips { this, 600 };
-
-    struct TabBar final : public juce::Component
-    {
-        void paint (juce::Graphics&) override;
-    } tabBar;
-
-    juce::OwnedArray<juce::TextButton> tabButtons;
-    juce::TextButton helpButton { "?" };
-
-    // Version and update status, under the title in the header.
+    // Version and update status: under the title in the header, or in the standalone window's title bar.
     // The "Update available" pill opens the update window; the small refresh button checks again.
     struct UpdateBadge final : public juce::Component, public juce::SettableTooltipClient
     {
@@ -85,13 +64,46 @@ private:
             RefreshButton() : juce::Button ("Check for updates") {}
             void paintButton (juce::Graphics&, bool over, bool down) override;
         } refresh;
-    } updateBadge;
+    };
 
-    void checkForUpdates (bool force);
+    bool isTourVisible() const { return tour != nullptr; }
+    void refreshNow() { cancelPendingUpdate(); handleAsyncUpdate(); }
+
+    static constexpr const char* tourDoneFlag = "tourDone";
+
+private:
+    void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override { triggerAsyncUpdate(); }
+    void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override { triggerAsyncUpdate(); }
+    void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override { triggerAsyncUpdate(); }
+    void valueTreeChildOrderChanged (juce::ValueTree&, int, int) override { triggerAsyncUpdate(); }
+    void valueTreeRedirected (juce::ValueTree&) override { triggerAsyncUpdate(); }
+
+    void handleAsyncUpdate() override;
+    void timerCallback() override;
+
+    // Must outlive every child component, so it is declared first.
+    juce::SharedResourcePointer<theme::LookAndFeel> lookAndFeel;
+
+    PedalCuesProcessor& pedalProcessor;
+    juce::ValueTree state;
+
+    juce::TooltipWindow tooltips { this, 600 };
+
+    struct TabBar final : public juce::Component
+    {
+        void paint (juce::Graphics&) override;
+    } tabBar;
+
+    juce::OwnedArray<juce::TextButton> tabButtons;
+    juce::TextButton helpButton { "?" };
+
+    UpdateBadge updateBadge;
     std::vector<std::unique_ptr<ui::Page>> pages;
     std::unique_ptr<ui::TourOverlay> tour;
     int currentPage = 0;
     double shownBpm = 0.0;
+    juce::Rectangle<float> tempoPill() const;
+    void showTempoEditor();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PedalCuesEditor)
 };

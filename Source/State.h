@@ -58,6 +58,8 @@ namespace state
     // Per-user flags stored next to the library (e.g. whether the quick tour was shown).
     bool getFlag (const juce::String& name);
     void setFlag (const juce::String& name, bool value);
+    juce::String getSetting (const juce::String& name);
+    void setSetting (const juce::String& name, const juce::String& value);
     bool saveLibrary (const juce::ValueTree& root, const juce::File&);
     bool loadLibrary (juce::ValueTree& root, const juce::File&);
 }

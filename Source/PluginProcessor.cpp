@@ -9,6 +9,34 @@ PedalCuesProcessor::PedalCuesProcessor()
     const auto lib = state::defaultLibraryFile();
     if (lib.existsAsFile())
         state::loadLibrary (state, lib);
+
+    if (isStandalone())
+    {
+        setDirectMidiOutput (state::getSetting ("standaloneMidiOutput"));
+        const auto bpm = state::getSetting ("standaloneBpm").getDoubleValue();
+        hostBpm = bpm >= 20.0 ? bpm : 120.0;
+    }
+}
+
+void PedalCuesProcessor::setManualBpm (double bpm)
+{
+    hostBpm = juce::jlimit (20.0, 300.0, bpm);
+    state::setSetting ("standaloneBpm", juce::String (hostBpm.load(), 1));
+}
+
+void PedalCuesProcessor::setDirectMidiOutput (const juce::String& id)
+{
+    directOut.reset();
+    directOutId = {};
+
+    if (id.isNotEmpty())
+        if ((directOut = juce::MidiOutput::openDevice (id)) != nullptr)
+        {
+            directOut->startBackgroundThread();
+            directOutId = id;
+        }
+
+    state::setSetting ("standaloneMidiOutput", id);
 }
 
 void PedalCuesProcessor::prepareToPlay (double sampleRate, int)
@@ -33,7 +61,7 @@ void PedalCuesProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
     for (auto ch = getTotalNumInputChannels(); ch < getTotalNumOutputChannels(); ++ch)
         buffer.clear (ch, 0, buffer.getNumSamples());
 
-    if (auto* playHead = getPlayHead())
+    if (auto* playHead = isStandalone() ? nullptr : getPlayHead())
         if (const auto position = playHead->getPosition())
             if (const auto bpm = position->getBpm())
                 if (*bpm > 0.0)
@@ -69,6 +97,17 @@ void PedalCuesProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
 
 void PedalCuesProcessor::preview (const cues::Cue& cue)
 {
+    if (directOut != nullptr)
+    {
+        // Timestamps in milliseconds: sendBlockOfMessages is told the "sample rate" is 1000.
+        const auto msPerBeat = 60000.0 / juce::jmax (20.0, hostBpm.load());
+        juce::MidiBuffer block;
+        for (const auto& [beat, message] : cue.events)
+            block.addEvent (message, juce::roundToInt (beat * msPerBeat));
+        directOut->sendBlockOfMessages (block, juce::Time::getMillisecondCounterHiRes() + 2.0, 1000.0);
+        return;
+    }
+
     const auto samplesPerBeat = 60.0 / juce::jmax (20.0, hostBpm.load()) * currentSampleRate.load();
     const auto now = sampleCounter.load();
 
