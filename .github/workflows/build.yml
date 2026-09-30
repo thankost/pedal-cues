@@ -31,7 +31,10 @@ jobs:
         run: git clone --depth 1 --branch 8.0.8 https://github.com/juce-framework/JUCE.git external/JUCE
 
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DPEDALCUES_COPY_PLUGIN=OFF
+        run: |
+          extra=""
+          [ "${{ runner.os }}" = "macOS" ] && extra="-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DPEDALCUES_COPY_PLUGIN=OFF $extra
 
       - name: Build
         run: cmake --build build --config Release --parallel
@@ -51,6 +54,13 @@ jobs:
           if [ "${{ runner.os }}" = "macOS" ]; then
             cp -R "$art/AU/PedalCues.component" "$out/"
             cp -R "$art/Standalone/PedalCues.app" "$out/"
+            # Re-seal each bundle with an ad-hoc signature; a broken seal makes macOS report the app as "damaged".
+            for b in "$out"/PedalCues.app "$out"/PedalCues.vst3 "$out"/PedalCues.component; do
+              xattr -cr "$b"
+              codesign --force --deep --sign - --timestamp=none "$b"
+              codesign --verify --deep --strict --verbose=2 "$b"
+            done
+            lipo -archs "$out/PedalCues.app/Contents/MacOS/PedalCues"
             ditto -c -k --keepParent "$out" "$out.zip"
           else
             cp "$art/Standalone/PedalCues.exe" "$out/"

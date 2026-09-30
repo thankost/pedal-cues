@@ -46,11 +46,12 @@ Download the zip for your system from the repo's **Releases** page (or from the 
 1. Unzip, copy `PedalCues.vst3` to `C:\Program Files\Common Files\VST3\`.
 2. Reaper: *Options > Preferences > Plug-ins > VST > Re-scan*. `PedalCues.exe` is the standalone version.
 
-**macOS**
-1. Unzip, copy `PedalCues.vst3` to `~/Library/Audio/Plug-Ins/VST3/` and `PedalCues.component` to
-   `~/Library/Audio/Plug-Ins/Components/`.
-2. The build is not notarised, so clear the download quarantine once:
-   `xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/PedalCues.vst3 ~/Library/Audio/Plug-Ins/Components/PedalCues.component`
+**macOS** (Apple Silicon and Intel, macOS 11 or later)
+1. Unzip. The build is not notarised by Apple, so clear the download quarantine once in Terminal:
+   `xattr -cr ~/Downloads/PedalCues-macOS`
+   (without this, macOS says *"PedalCues is damaged and can't be opened"*).
+2. Drag `PedalCues.app` (standalone) to *Applications*. Copy `PedalCues.vst3` to `~/Library/Audio/Plug-Ins/VST3/` and
+   `PedalCues.component` to `~/Library/Audio/Plug-Ins/Components/`.
 3. Re-scan plug-ins in Reaper.
 
 To publish a new release: `git tag v0.1.1 && git push origin v0.1.1`.
