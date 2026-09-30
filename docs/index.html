@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PedalCues - drag-and-drop MIDI cues for Quad Cortex and Whammy V</title>
+  <meta name="description" content="Free VST3/AU plugin: drag Quad Cortex presets, scenes and Whammy V moves onto your DAW timeline as named MIDI clips. Windows and macOS.">
+  <link rel="icon" type="image/png" href="images/icon.png">
+  <meta property="og:title" content="PedalCues">
+  <meta property="og:description" content="Drag-and-drop MIDI cues for Neural DSP Quad Cortex and DigiTech Whammy V.">
+  <meta property="og:image" content="images/quad-cortex.png">
+  <style>
+    :root {
+      --bg: #0f1115; --surface: #181b21; --raised: #20242c; --outline: #2c313a;
+      --text: #eceef2; --dim: #9aa1ad; --amber: #f5a623; --qc: #4cc3ff; --wh: #e5304a;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    a { color: var(--qc); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    header.top { border-bottom: 1px solid var(--outline); background: #0c0e12cc; position: sticky; top: 0; backdrop-filter: blur(8px); z-index: 5; }
+    header.top .wrap { display: flex; align-items: center; gap: 12px; height: 64px; }
+    header.top img { width: 36px; height: 36px; }
+    header.top b { font-size: 20px; letter-spacing: .2px; }
+    header.top nav { margin-left: auto; display: flex; gap: 22px; }
+    header.top nav a { color: var(--dim); text-decoration: none; font-weight: 600; font-size: 14px; }
+    header.top nav a:hover { color: var(--text); }
+
+    .hero { padding: 72px 0 40px; text-align: center; background:
+      radial-gradient(600px 260px at 25% 0%, #4cc3ff22, transparent 70%),
+      radial-gradient(600px 260px at 75% 0%, #e5304a22, transparent 70%); }
+    .hero img.logo { width: 112px; height: 112px; filter: drop-shadow(0 12px 30px #0008); }
+    .hero h1 { font-size: 46px; line-height: 1.1; margin: 18px 0 12px; }
+    .hero h1 .qc { color: var(--qc); } .hero h1 .wh { color: var(--wh); }
+    .hero p.lead { color: var(--dim); font-size: 19px; max-width: 720px; margin: 0 auto 30px; }
+
+    .downloads { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 12px; padding: 14px 22px; border-radius: 12px;
+      text-decoration: none; font-weight: 700; font-size: 17px; border: 1px solid transparent; transition: transform .08s, filter .15s; }
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
+    .btn small { display: block; font-weight: 500; font-size: 12px; opacity: .75; }
+    .btn svg { width: 26px; height: 26px; flex: none; }
+    .btn.primary { background: var(--amber); color: #111; }
+    .btn.secondary { background: var(--raised); color: var(--text); border-color: var(--outline); }
+    .btn.recommended { outline: 3px solid #f5a62355; }
+    .meta { color: var(--dim); font-size: 13px; margin-top: 14px; }
+
+    .shot { margin: 44px auto 0; max-width: 1000px; border-radius: 14px; overflow: hidden; border: 1px solid var(--outline); box-shadow: 0 30px 80px #000a; }
+    .shot img { display: block; width: 100%; }
+
+    section { padding: 64px 0; border-top: 1px solid var(--outline); }
+    h2 { font-size: 30px; margin: 0 0 8px; }
+    .sub { color: var(--dim); margin: 0 0 32px; }
+
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .card { background: var(--surface); border: 1px solid var(--outline); border-radius: 12px; padding: 20px; }
+    .card h3 { margin: 0 0 6px; font-size: 17px; display: flex; align-items: center; gap: 8px; }
+    .card p { margin: 0; color: var(--dim); font-size: 15px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+    .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+    .gallery figure { margin: 0; background: var(--surface); border: 1px solid var(--outline); border-radius: 12px; overflow: hidden; }
+    .gallery img { width: 100%; display: block; }
+    .gallery figcaption { padding: 10px 14px; color: var(--dim); font-size: 14px; }
+
+    .install { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+    .install ol { margin: 0; padding-left: 20px; }
+    .install li { margin: 8px 0; }
+    code { background: var(--raised); border: 1px solid var(--outline); border-radius: 6px; padding: 1px 6px; font-size: 14px; }
+    pre { background: #0a0c10; border: 1px solid var(--outline); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 8px 0; position: relative; }
+    pre code { background: none; border: 0; padding: 0; }
+    .copy { position: absolute; top: 8px; right: 8px; background: var(--raised); color: var(--dim); border: 1px solid var(--outline);
+      border-radius: 6px; font-size: 12px; padding: 3px 8px; cursor: pointer; }
+    .note { color: var(--dim); font-size: 14px; }
+
+    footer { border-top: 1px solid var(--outline); padding: 32px 0 48px; color: var(--dim); font-size: 14px; }
+    footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; }
+
+    @media (max-width: 640px) { .hero h1 { font-size: 34px; } header.top nav { display: none; } }
+  </style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <img src="images/icon.png" alt="">
+    <b>PedalCues</b>
+    <nav>
+      <a href="#features">Features</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/thankost/pedal-cues/blob/main/docs/GUIDE.md">User guide</a>
+      <a href="https://github.com/thankost/pedal-cues">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <img class="logo" src="images/icon.png" alt="PedalCues icon">
+    <h1>Drag-and-drop MIDI cues for<br><span class="qc">Quad Cortex</span> &amp; <span class="wh">Whammy V</span></h1>
+    <p class="lead">Stop typing CC numbers into MIDI clips. Drag a preset, a scene or a treadle move onto your DAW timeline,
+      and it lands as a named MIDI clip at that bar. Press play, and your rig follows the song.</p>
+
+    <div class="downloads">
+      <a id="dl-win" class="btn primary" href="https://github.com/thankost/pedal-cues/releases/latest/download/PedalCues-Windows.zip">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.4v7.1H3V5.5Zm0 13 7.5 1.1v-7H3v5.9Zm8.4 1.2L21 21v-8.4h-9.6v7.1Zm0-15.4v7.2H21V3l-9.6 1.3Z"/></svg>
+        <span>Download for Windows<small>VST3 + Standalone &middot; Windows 10/11</small></span>
+      </a>
+      <a id="dl-mac" class="btn secondary" href="https://github.com/thankost/pedal-cues/releases/latest/download/PedalCues-macOS.zip">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8c1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.1ZM13.9 5c.7-.9 1.2-2 1-3.2-1 .1-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.3-.6 3.1-1.5Z"/></svg>
+        <span>Download for macOS<small>VST3 + AU + Standalone &middot; Apple Silicon &amp; Intel</small></span>
+      </a>
+    </div>
+    <div class="meta"><span id="version">Latest release</span> &middot; Free and open source (MIT) &middot;
+      <a href="https://github.com/thankost/pedal-cues/releases">All releases</a></div>
+
+    <div class="shot"><img src="images/quad-cortex.png" alt="PedalCues Quad Cortex page"></div>
+  </div>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <h2>Everything a backing-track rig needs</h2>
+    <p class="sub">Works in any DAW that hosts VST3 or AU plugins; built with Reaper in mind.</p>
+    <div class="features">
+      <div class="card"><h3><span class="dot" style="background:var(--qc)"></span>Presets &amp; scenes</h3>
+        <p>Your QC presets, scene names and colours as tiles. Scenes laid out like the pedal: A&ndash;D on top, E&ndash;H below.</p></div>
+      <div class="card"><h3><span class="dot" style="background:var(--qc)"></span>Stomps, tuner, gig view</h3>
+        <p>Footswitch on/off, tuner for guitar changes, and Preset / Scene / Stomp mode, each one drag away.</p></div>
+      <div class="card"><h3><span class="dot" style="background:var(--wh)"></span>All 21 Whammy V modes</h3>
+        <p>Laid out like the pedal's panel, Classic or Chords, engaged or bypassed, with heel-first switching.</p></div>
+      <div class="card"><h3><span class="dot" style="background:var(--wh)"></span>Treadle moves</h3>
+        <p>Ramps, dives, trills and bends as tempo-synced CC#11 automation, or draw your own with the mouse.</p></div>
+      <div class="card"><h3><span class="dot" style="background:var(--amber)"></span>Named MIDI clips</h3>
+        <p>Every drop is a clip called "Chorus" or "Whammy Dive 1 bar", so you read your show at a glance.</p></div>
+      <div class="card"><h3><span class="dot" style="background:var(--amber)"></span>Guided setup</h3>
+        <p>A quick first-run tour and step-by-step Reaper setup for both ways of wiring the Whammy.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>A look inside</h2>
+    <p class="sub">Drag any tile onto the arrangement. Click its play button to test it on the pedal first.</p>
+    <div class="gallery">
+      <figure><img src="images/whammy.png" alt="Whammy V page" loading="lazy"><figcaption>Whammy V modes and treadle moves</figcaption></figure>
+      <figure><img src="images/whammy-draw.png" alt="Draw a treadle move" loading="lazy"><figcaption>Draw your own treadle move</figcaption></figure>
+      <figure><img src="images/timeline.png" alt="Cues in the Reaper timeline" loading="lazy"><figcaption>Named cues on the timeline</figcaption></figure>
+      <figure><img src="images/routing.png" alt="Routing options" loading="lazy"><figcaption>Two ways to connect the Whammy</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <h2>Install in two minutes</h2>
+    <p class="sub">No code or build tools needed. Full details in the <a href="https://github.com/thankost/pedal-cues/blob/main/docs/GUIDE.md">user guide</a>.</p>
+    <div class="install">
+      <div class="card">
+        <h3>Windows</h3>
+        <ol>
+          <li>Download and unzip <b>PedalCues-Windows.zip</b>.</li>
+          <li>Copy <code>PedalCues.vst3</code> to <code>C:\Program Files\Common Files\VST3\</code>.</li>
+          <li>In Reaper: <i>Options &gt; Preferences &gt; Plug-ins &gt; VST &gt; Re-scan</i>.</li>
+        </ol>
+        <p class="note">Want to try it without a DAW? Run <code>PedalCues.exe</code>. If Windows shows "Windows protected your PC", click <b>More info &gt; Run anyway</b>.</p>
+      </div>
+      <div class="card">
+        <h3>macOS</h3>
+        <ol>
+          <li>Download and unzip <b>PedalCues-macOS.zip</b>.</li>
+          <li>The app isn't notarised by Apple, so clear the download flag once in <b>Terminal</b>
+            (otherwise macOS says it "is damaged"):
+            <pre><code>xattr -cr ~/Downloads/PedalCues-macOS</code><button class="copy" type="button">Copy</button></pre></li>
+          <li>Drag <code>PedalCues.app</code> to <i>Applications</i>. Copy <code>PedalCues.vst3</code> to
+            <code>~/Library/Audio/Plug-Ins/VST3/</code> and <code>PedalCues.component</code> to
+            <code>~/Library/Audio/Plug-Ins/Components/</code>.</li>
+          <li>Re-scan plug-ins in Reaper.</li>
+        </ol>
+        <p class="note">In Finder, press <b>Cmd+Shift+G</b> and paste a folder path to open it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>&copy; 2026 Thanasis Kostopoulos &middot; MIT License &middot; Built with JUCE</span>
+    <span>Not affiliated with Neural DSP or DigiTech. Quad Cortex and Whammy are trademarks of their owners.</span>
+  </div>
+</footer>
+
+<script>
+  // Highlight the download for the visitor's system.
+  (function () {
+    var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+    var win = document.getElementById('dl-win'), macBtn = document.getElementById('dl-mac');
+    if (mac) { win.className = 'btn secondary'; macBtn.className = 'btn primary recommended'; win.parentNode.insertBefore(macBtn, win); }
+    else { win.className += ' recommended'; }
+  })();
+
+  // Show the latest version number.
+  fetch('https://api.github.com/repos/thankost/pedal-cues/releases/latest')
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { if (j && j.tag_name) document.getElementById('version').textContent = 'Version ' + j.tag_name.replace(/^v/, ''); })
+    .catch(function () {});
+
+  document.querySelectorAll('.copy').forEach(function (b) {
+    b.addEventListener('click', function () {
+      navigator.clipboard.writeText(b.previousElementSibling.textContent).then(function () {
+        b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy'; }, 1500);
+      });
+    });
+  });
+</script>
+</body>
+</html>
