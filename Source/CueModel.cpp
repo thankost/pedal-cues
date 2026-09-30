@@ -295,6 +295,100 @@ namespace whammy
 
         return c;
     }
+
+    Cue drawn (int channel, const std::vector<float>& points, double lengthBeats, bool resetToHeel)
+    {
+        const auto ch = juce::jlimit (1, 16, channel);
+        const auto len = juce::jmax (0.125, lengthBeats);
+        constexpr int stepsPerBeat = 32;
+        const auto steps = juce::jmax (1, juce::roundToInt (len * stepsPerBeat));
+        const auto n = (int) points.size();
+
+        auto sample = [&] (double t)
+        {
+            if (n == 0)
+                return 0.0;
+            const auto pos = t * (n - 1);
+            const auto i0 = juce::jlimit (0, n - 1, (int) std::floor (pos));
+            const auto i1 = juce::jmin (n - 1, i0 + 1);
+            const auto frac = pos - i0;
+            return juce::jlimit (0.0, 1.0, (double) points[(size_t) i0] * (1.0 - frac) + (double) points[(size_t) i1] * frac);
+        };
+
+        Cue c;
+        c.name = "Whammy Drawn " + formatBeats (len);
+
+        int last = -1;
+        for (int i = 0; i <= steps; ++i)
+        {
+            const auto v = juce::roundToInt (sample ((double) i / steps) * 127.0);
+            if (v != last)
+            {
+                c.add (len * i / steps, juce::MidiMessage::controllerEvent (ch, 11, v));
+                last = v;
+            }
+        }
+
+        c.lengthBeats = len + 1.0 / 32.0;
+
+        if (resetToHeel && last != 0)
+        {
+            c.add (len + 1.0 / 16.0, juce::MidiMessage::controllerEvent (ch, 11, 0));
+            c.lengthBeats = len + 1.0 / 8.0;
+        }
+
+        return c;
+    }
+
+    std::vector<float> defaultDrawing()
+    {
+        // Rise, hold at toe, shake, then fall back to heel.
+        std::vector<float> v ((size_t) drawPoints);
+        for (int i = 0; i < drawPoints; ++i)
+        {
+            const auto t = (double) i / (drawPoints - 1);
+            double y;
+            if (t < 0.2)       y = 0.5 - 0.5 * std::cos (juce::MathConstants<double>::pi * t / 0.2);
+            else if (t < 0.5)  y = 1.0;
+            else if (t < 0.85) y = 0.75 + 0.25 * std::cos ((t - 0.5) / 0.35 * juce::MathConstants<double>::twoPi * 2.0);
+            else               y = 1.0 - (t - 0.85) / 0.15;
+            v[(size_t) i] = (float) juce::jlimit (0.0, 1.0, y);
+        }
+        return v;
+    }
+
+    juce::String encodeDrawing (const std::vector<float>& points)
+    {
+        juce::StringArray parts;
+        for (auto p : points)
+            parts.add (juce::String (juce::roundToInt (juce::jlimit (0.0f, 1.0f, p) * 1000.0f)));
+        return parts.joinIntoString (",");
+    }
+
+    std::vector<float> decodeDrawing (const juce::String& text)
+    {
+        const auto parts = juce::StringArray::fromTokens (text, ",", "");
+        if (parts.size() < 2)
+            return defaultDrawing();
+
+        std::vector<float> raw;
+        for (const auto& p : parts)
+            raw.push_back (juce::jlimit (0.0f, 1.0f, p.trim().getFloatValue() / 1000.0f));
+
+        if ((int) raw.size() == drawPoints)
+            return raw;
+
+        std::vector<float> v ((size_t) drawPoints);
+        for (int i = 0; i < drawPoints; ++i)
+        {
+            const auto pos = (double) i / (drawPoints - 1) * (double) (raw.size() - 1);
+            const auto i0 = (size_t) std::floor (pos);
+            const auto i1 = juce::jmin (raw.size() - 1, i0 + 1);
+            const auto frac = (float) (pos - (double) i0);
+            v[(size_t) i] = raw[i0] * (1.0f - frac) + raw[i1] * frac;
+        }
+        return v;
+    }
 }
 
 } // namespace cues

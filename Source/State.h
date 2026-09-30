@@ -33,6 +33,8 @@ namespace IDs
     PEDALCUES_ID (sweepBeats)
     PEDALCUES_ID (sweepCurve)
     PEDALCUES_ID (sweepReset)
+    PEDALCUES_ID (sweepDraw)
+    PEDALCUES_ID (sweepDrawing)
 #undef PEDALCUES_ID
 }
 

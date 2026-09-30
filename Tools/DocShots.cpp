@@ -367,6 +367,11 @@ int main (int argc, char** argv)
         save (snapshot (editor), outDir.getChildFile ("quad-cortex.png"));
         editor.showPage (1);
         save (snapshot (editor), outDir.getChildFile ("whammy.png"));
+        proc.state.setProperty (IDs::sweepDraw, true, nullptr);
+        editor.refreshNow();
+        save (snapshot (editor), outDir.getChildFile ("whammy-draw.png"));
+        proc.state.setProperty (IDs::sweepDraw, false, nullptr);
+        editor.refreshNow();
         editor.showPage (2);
         save (snapshot (editor), outDir.getChildFile ("settings.png"));
 

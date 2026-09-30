@@ -26,6 +26,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - All 21 modes, Classic or Chords, engaged or bypassed (Program Change)
 - Optional "heel before mode change" (`CC#11 = 0`)
 - Treadle moves on `CC#11`: Ramp Up, Ramp Down, Rise & Fall, Dive, Trill (1/16), Bend to Bar, Toe, Heel
+- Draw your own treadle move with the mouse, then drag it onto the timeline like any other move
 - Moves are written in beats (1/16 to 4 bars), so they follow the project tempo; adjustable curve;
   optional return to heel afterwards
 

@@ -79,6 +79,15 @@ namespace whammy
 
     // CC11 treadle automation. 'curve' is an exponent (1 = linear).
     Cue sweep (int channel, Shape, double lengthBeats, double curve, bool resetToHeel);
+
+    // Freehand treadle move. 'points' are evenly spaced treadle positions (0 = heel, 1 = toe)
+    // spread across the length; values in between are interpolated.
+    constexpr int drawPoints = 64;
+    Cue drawn (int channel, const std::vector<float>& points, double lengthBeats, bool resetToHeel);
+
+    std::vector<float> defaultDrawing();
+    juce::String       encodeDrawing (const std::vector<float>&);
+    std::vector<float> decodeDrawing (const juce::String&);   // always drawPoints values
 }
 
 } // namespace cues

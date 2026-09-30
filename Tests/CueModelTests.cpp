@@ -65,6 +65,31 @@ int main()
     CHECK (bend.events.front().second.getControllerValue() == 0);
     CHECK (bend.events[1].first >= 3.0);
 
+    // Drawn moves
+    {
+        std::vector<float> pts { 0.0f, 1.0f, 0.0f };
+        auto d = whammy::drawn (3, pts, 2.0, false);
+        CHECK (d.name == "Whammy Drawn 2 beats");
+        CHECK (isCC (d.events.front().second, 3, 11, 0) && d.events.front().first == 0.0);
+        int peak = 0; double peakBeat = 0.0;
+        for (auto& [beat, m] : d.events)
+            if (m.getControllerValue() > peak) { peak = m.getControllerValue(); peakBeat = beat; }
+        CHECK (peak == 127 && std::abs (peakBeat - 1.0) < 0.05);
+        CHECK (d.events.back().second.getControllerValue() == 0);
+
+        auto held = whammy::drawn (3, { 1.0f, 1.0f }, 1.0, true);
+        CHECK (held.events.size() == 2);   // toe once, then back to heel
+        CHECK (isCC (held.events.back().second, 3, 11, 0) && held.events.back().first > 1.0);
+
+        auto enc = whammy::encodeDrawing (whammy::defaultDrawing());
+        auto dec = whammy::decodeDrawing (enc);
+        CHECK ((int) dec.size() == whammy::drawPoints);
+        CHECK (std::abs (dec[20] - whammy::defaultDrawing()[20]) < 0.002f);
+        CHECK ((int) whammy::decodeDrawing ("0,1000").size() == whammy::drawPoints);
+        CHECK (whammy::decodeDrawing ("0,1000").back() == 1.0f);
+        CHECK ((int) whammy::decodeDrawing ("garbage").size() == whammy::drawPoints);
+    }
+
     // MIDI file round trip
     auto file = writeMidiFile (up, 90.0);
     CHECK (file.existsAsFile() && file.getFileName() == "Whammy Ramp Up 1 bar.mid");

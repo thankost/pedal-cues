@@ -170,7 +170,7 @@ Colours match the pedal: **Whammy** (red), **Harmony** (green), **Detune** (blue
 
 ![Treadle moves highlighted by the tour](images/tour-treadle.png)
 
-Treadle moves are **CC#11** automation written in beats, so they follow your project tempo. Each tile shows its curve.
+Treadle moves are **CC#11** automation written in beats, so they follow your project tempo. Each tile shows its curve. You can also [draw your own](#draw-your-own-move).
 
 | Move | What it does |
 |---|---|
@@ -184,6 +184,19 @@ Treadle moves are **CC#11** automation written in beats, so they follow your pro
 - **Length:** from 1/16 note up to 4 bars.
 - **Curve:** `1.00` is linear, lower values start fast, higher values start slow.
 - **Return to heel after move:** adds a `CC#11 = 0` at the end.
+
+### Draw your own move
+
+![Draw mode](images/whammy-draw.png)
+
+When no ready-made shape fits, click **Draw** in the *Treadle moves* header.
+
+1. **Pick the length** first. The pad's grid shows beats, with brighter lines on each bar.
+2. **Drag across the pad** to draw the treadle: bottom is heel, top is toe. Draw over any part again to fix it. Hold **Shift** to snap to heel, quarter, half, three-quarter or toe.
+3. **Clear** resets the pad to heel. **Smooth** rounds off sharp edges; click it again for a softer curve.
+4. **Drag the *Drawn move* tile** onto the timeline where the move should start, or click its play button to try it on the pedal.
+
+The drawing is saved with your project and stretches to whatever *Length* you pick. *Return to heel after move* works here too; *Curve* only applies to the shapes. Click **Shapes** to go back to the ready-made moves.
 
 ---
 

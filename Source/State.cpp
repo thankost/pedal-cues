@@ -94,6 +94,8 @@ void sanitise (juce::ValueTree& root)
     setDefault (root, IDs::sweepBeats, 4.0);
     setDefault (root, IDs::sweepCurve, 1.0);
     setDefault (root, IDs::sweepReset, true);
+    setDefault (root, IDs::sweepDraw, false);
+    setDefault (root, IDs::sweepDrawing, cues::whammy::encodeDrawing (cues::whammy::defaultDrawing()));
 
     auto qc = root.getOrCreateChildWithName (IDs::QC, nullptr);
     for (int i = qc.getNumChildren(); --i >= 0;)
