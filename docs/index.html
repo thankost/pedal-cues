@@ -69,8 +69,17 @@
     .gallery figcaption { padding: 10px 14px; color: var(--dim); font-size: 14px; }
 
     .install { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
-    .install ol { margin: 0; padding-left: 20px; }
-    .install li { margin: 8px 0; }
+    .os-head { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; margin-bottom: 6px; border-bottom: 1px solid var(--outline); }
+    .os-head svg { width: 30px; height: 30px; flex: none; }
+    .os-head h3 { margin: 0; font-size: 20px; }
+    .os-head small { color: var(--dim); font-size: 13px; }
+    .card.os.recommended { border-color: var(--amber); box-shadow: 0 0 0 3px #f5a62333; }
+    .steps { list-style: none; counter-reset: step; margin: 0; padding: 0; }
+    .steps li { counter-increment: step; position: relative; padding: 10px 0 10px 40px; }
+    .steps li::before { content: counter(step); position: absolute; left: 0; top: 9px; width: 26px; height: 26px; border-radius: 50%;
+      background: var(--raised); border: 1px solid var(--outline); color: var(--amber); font-weight: 700; font-size: 13px;
+      display: flex; align-items: center; justify-content: center; }
+    a.mini { font-weight: 600; }
     code { background: var(--raised); border: 1px solid var(--outline); border-radius: 6px; padding: 1px 6px; font-size: 14px; }
     pre { background: #0a0c10; border: 1px solid var(--outline); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 8px 0; position: relative; }
     pre code { background: none; border: 0; padding: 0; }
@@ -162,28 +171,26 @@
     <h2>Install in two minutes</h2>
     <p class="sub">No code or build tools needed. Full details in the <a href="https://github.com/thankost/pedal-cues/blob/main/docs/GUIDE.md">user guide</a>.</p>
     <div class="install">
-      <div class="card">
-        <h3>Windows</h3>
-        <ol>
-          <li>Download and unzip <b>PedalCues-Windows.zip</b>.</li>
-          <li>Copy <code>PedalCues.vst3</code> to <code>C:\Program Files\Common Files\VST3\</code>.</li>
-          <li>In Reaper: <i>Options &gt; Preferences &gt; Plug-ins &gt; VST &gt; Re-scan</i>.</li>
+      <div class="card os" id="card-win">
+        <div class="os-head"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.4v7.1H3V5.5Zm0 13 7.5 1.1v-7H3v5.9Zm8.4 1.2L21 21v-8.4h-9.6v7.1Zm0-15.4v7.2H21V3l-9.6 1.3Z"/></svg><div><h3>Windows</h3><small>VST3 + Standalone &middot; Windows 10/11</small></div></div>
+        <ol class="steps">
+          <li><b>Download</b> <a class="mini" href="https://github.com/thankost/pedal-cues/releases/latest/download/PedalCues-Windows.zip">PedalCues-Windows.zip</a> and unzip it.</li>
+          <li><b>Plugin:</b> copy <code>PedalCues.vst3</code> to <code>C:\Program Files\Common Files\VST3\</code></li>
+          <li><b>Standalone:</b> run <code>PedalCues.exe</code> to test tiles without a DAW. If you see "Windows protected your PC", click <b>More info &gt; Run anyway</b>.</li>
+          <li><b>Reaper:</b> <i>Options &gt; Preferences &gt; Plug-ins &gt; VST &gt; Re-scan</i>.</li>
         </ol>
-        <p class="note">Want to try it without a DAW? Run <code>PedalCues.exe</code>. If Windows shows "Windows protected your PC", click <b>More info &gt; Run anyway</b>.</p>
       </div>
-      <div class="card">
-        <h3>macOS</h3>
-        <ol>
-          <li>Download and unzip <b>PedalCues-macOS.zip</b>.</li>
-          <li>The app isn't notarised by Apple, so clear the download flag once in <b>Terminal</b>
-            (otherwise macOS says it "is damaged"):
+      <div class="card os" id="card-mac">
+        <div class="os-head"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8c1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.1ZM13.9 5c.7-.9 1.2-2 1-3.2-1 .1-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.3-.6 3.1-1.5Z"/></svg><div><h3>macOS</h3><small>VST3 + AU + Standalone &middot; Apple Silicon &amp; Intel</small></div></div>
+        <ol class="steps">
+          <li><b>Download</b> <a class="mini" href="https://github.com/thankost/pedal-cues/releases/latest/download/PedalCues-macOS.zip">PedalCues-macOS.zip</a> and unzip it.
+            It isn't notarised by Apple, so clear the download flag once in <b>Terminal</b> (otherwise macOS says it "is damaged"):
             <pre><code>xattr -cr ~/Downloads/PedalCues-macOS</code><button class="copy" type="button">Copy</button></pre></li>
-          <li>Drag <code>PedalCues.app</code> to <i>Applications</i>. Copy <code>PedalCues.vst3</code> to
-            <code>~/Library/Audio/Plug-Ins/VST3/</code> and <code>PedalCues.component</code> to
-            <code>~/Library/Audio/Plug-Ins/Components/</code>.</li>
-          <li>Re-scan plug-ins in Reaper.</li>
+          <li><b>Plugins:</b> copy <code>PedalCues.vst3</code> to <code>~/Library/Audio/Plug-Ins/VST3/</code> and <code>PedalCues.component</code> to <code>~/Library/Audio/Plug-Ins/Components/</code>
+            <span class="note">(in Finder, <b>Cmd+Shift+G</b> opens a path)</span></li>
+          <li><b>Standalone:</b> drag <code>PedalCues.app</code> to <i>Applications</i> to test tiles without a DAW.</li>
+          <li><b>Reaper:</b> <i>Options &gt; Preferences &gt; Plug-ins &gt; VST &gt; Re-scan</i>.</li>
         </ol>
-        <p class="note">In Finder, press <b>Cmd+Shift+G</b> and paste a folder path to open it.</p>
       </div>
     </div>
   </div>
@@ -201,8 +208,11 @@
   (function () {
     var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
     var win = document.getElementById('dl-win'), macBtn = document.getElementById('dl-mac');
-    if (mac) { win.className = 'btn secondary'; macBtn.className = 'btn primary recommended'; win.parentNode.insertBefore(macBtn, win); }
-    else { win.className += ' recommended'; }
+    var winCard = document.getElementById('card-win'), macCard = document.getElementById('card-mac');
+    if (mac) {
+      win.className = 'btn secondary'; macBtn.className = 'btn primary recommended'; win.parentNode.insertBefore(macBtn, win);
+      macCard.className += ' recommended'; winCard.parentNode.insertBefore(macCard, winCard);
+    } else { win.className += ' recommended'; winCard.className += ' recommended'; }
   })();
 
   // Show the latest version number.
