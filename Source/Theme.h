@@ -19,6 +19,9 @@ inline const juce::Colour ledGreen   { 0xff3ddc84 };
 juce::FontOptions font (float height, bool bold = false);
 void drawCard (juce::Graphics&, juce::Rectangle<float>, juce::Colour fill, float radius = 12.0f);
 
+/** The PedalCues logo (same artwork as the app icon). withMargin = full 1024 icon canvas incl. shadow margin. */
+void drawAppIcon (juce::Graphics&, juce::Rectangle<float> bounds, bool withMargin);
+
 class LookAndFeel final : public juce::LookAndFeel_V4
 {
 public:

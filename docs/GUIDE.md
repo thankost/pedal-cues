@@ -43,26 +43,50 @@ In **Reaper**, go to *Options > Preferences > Plug-ins > VST* and click **Re-sca
 
 ## 2. Connect your pedals
 
-![MIDI routing](images/routing.png)
+There are two ways to connect the pedals. Choose the one that suits your rig. The plugin's **Settings** tab has a switch for both and shows the matching steps.
 
-- **Quad Cortex / QC Mini:** connect it to the computer with USB. It shows up as a MIDI device.
-- **Whammy V:** connect a MIDI cable from the QC's **MIDI Out** to the Whammy's **MIDI In**, then turn on **MIDI Thru** in the QC's MIDI settings.
-  - If your CorOS version doesn't forward USB MIDI to the MIDI Out, use any USB MIDI interface for the Whammy instead (dashed path above).
-- **Channels:** give each pedal its own MIDI channel. The defaults are QC = 1 and Whammy = 2.
-  - QC: *Settings > MIDI Settings > MIDI Channel*.
-  - Whammy V: hold the footswitch while powering up, then turn the knob to pick the channel.
+![MIDI routing, both options](images/routing.png)
+
+**Option A: Whammy via QC.** Use this if you only have the two pedals.
+- Connect the **Quad Cortex / QC Mini** to the computer with USB.
+- Run a MIDI cable from the QC's **MIDI Out** to the Whammy's **MIDI In**.
+- Turn on **MIDI Thru** in the QC's MIDI settings.
+
+**Option B: Whammy via audio interface.** Use this if your sound card or a USB MIDI interface has a 5-pin **MIDI Out**, or if your QC doesn't forward USB MIDI.
+- Connect the **Quad Cortex** to the computer with USB.
+- Run a MIDI cable from the interface's **MIDI Out** to the Whammy's **MIDI In**.
+
+**Both options: channels.** Give each pedal its own MIDI channel. The defaults are QC = 1 and Whammy = 2.
+- QC: *Settings > MIDI Settings > MIDI Channel*.
+- Whammy V: hold the footswitch while powering up, then turn the knob to pick the channel.
 
 ---
 
 ## 3. Set up Reaper (once)
 
-1. In *Preferences > Audio > MIDI Devices*, enable the **Quad Cortex** MIDI output. Also enable your USB MIDI interface if you use one.
-2. Create a track called **Pedal Cues** and insert **PedalCues** on it.
-3. Click the track's **I/O (routing)** button. Under *MIDI Hardware Output*, pick the Quad Cortex (or your interface).
-4. Turn **snap to grid** on so clips land exactly on bars.
-5. Optional: save the track as a **track template** so every new song starts with it.
+First, in *Preferences > Audio > MIDI Devices*, enable the **Quad Cortex** MIDI output. For option B, also enable your **interface's MIDI output**.
 
-The plugin's **Settings** tab shows these steps too.
+### Option A: one cue track
+
+1. Create a track called **Pedal Cues** and insert **PedalCues** on it.
+2. Click the track's **I/O (routing)** button. Under *MIDI Hardware Output*, choose the **Quad Cortex**.
+3. Drag QC and Whammy tiles onto this track.
+
+### Option B: one cue track per pedal
+
+1. Create a track **QC Cues** and insert **PedalCues** on it.
+   - Set *I/O > MIDI Hardware Output* to the **Quad Cortex**.
+   - Use the plugin's Quad Cortex tab here.
+2. Create a track **Whammy Cues** and insert **PedalCues** on it.
+   - Set *I/O > MIDI Hardware Output* to your **interface's MIDI Out**.
+   - Use the plugin's Whammy V tab here.
+3. Drag QC tiles onto the QC track and Whammy tiles onto the Whammy track. Each track's play button test also goes to the right pedal.
+
+![Settings, "Whammy via interface" steps](images/settings-interface.png)
+
+**For both options:**
+- Turn **snap to grid** on so clips land exactly on bars.
+- Optional: save the track(s) as a **track template** so every new song starts with them.
 
 ---
 
@@ -129,7 +153,12 @@ This example covers a song with a clean verse, a crunchy chorus and a Whammy sol
 
 ### Modes
 
-The 21 Whammy V modes are laid out like the pedal: the classic **Whammy** modes on the first row, **Detune** and **Harmony** on the second. Colours match the pedal: **Whammy** (red), **Detune** (blue), **Harmony** (green). Drag a mode tile to switch the Whammy with a Program Change.
+The 21 Whammy V modes are laid out like the pedal's panel:
+- **Top row:** the **Whammy** modes, from 2 Oct Up to Dive Bomb.
+- **Bottom row:** each **Harmony** mode sits right below the Whammy mode that shares its row on the pedal (Oct Up/Oct Down below 2 Oct Up, and so on).
+- **End of the bottom row:** **Detune** Shallow and Deep, as at the bottom of the pedal.
+
+Colours match the pedal: **Whammy** (red), **Harmony** (green), **Detune** (blue). Each tile shows its Program Change number from the DigiTech manual. Drag a mode tile to switch the Whammy.
 
 - **Chords:** uses the polyphonic *Chords* program range (43-84) instead of *Classic* (1-42).
 - **Load bypassed:** selects the mode without engaging the effect. The tile LEDs go dark to show this.
@@ -176,9 +205,14 @@ Treadle moves are **CC#11** automation written in beats, so they follow your pro
 |---|---|
 | Nothing happens on the pedal | Check the track's MIDI Hardware Output and that the QC's MIDI device is enabled in Reaper preferences. Try a tile's play button. |
 | Wrong preset loads | Check setlist, bank and slot in *Edit preset*. If presets are in other setlists, turn on *Send setlist*. |
-| Whammy doesn't react | Check the MIDI cable direction, turn on QC MIDI Thru, use different channels, or try a USB MIDI interface. |
+| Whammy doesn't react | Check the MIDI cable direction and the channels. Option A: turn on QC MIDI Thru. If that still fails, switch to option B (interface MIDI Out). |
+| Whammy clips do nothing (option B) | Whammy clips must be on the **Whammy Cues** track, whose output is the interface. |
 | Whammy mode is one off | *Settings > Whammy program numbering > Zero-based*. |
 | Clip lands between bars | Turn on snap to grid in Reaper before dropping. |
 | macOS says the plugin is damaged | Run the `xattr` command from [Install](#1-install). |
 
 Found a bug or have an idea? [Open an issue](https://github.com/thankost/pedal-cues/issues).
+
+---
+
+PedalCues is free software by **Thanasis Kostopoulos**, released under the [MIT License](../LICENSE). Source: [github.com/thankost/pedal-cues](https://github.com/thankost/pedal-cues). In the plugin, open **? > About PedalCues**. Not affiliated with Neural DSP or DigiTech.

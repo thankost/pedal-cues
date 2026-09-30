@@ -27,7 +27,7 @@ const std::vector<TourStep>& tourSteps()
           "Switch single footswitches on or off, open the tuner for a guitar change, or flip the QC between "
           "preset, scene and stomp mode. The switch in the Stomps header picks ON or OFF tiles." },
         { 1, { "wh.modes" }, "5. Whammy V modes",
-          "The Whammy tab works the same way. Classic Whammy modes sit on the first row, Detune and Harmony below. Colours: "
+          "The Whammy tab works the same way, laid out like the pedal: Whammy modes on top, Harmony below, Detune at the end. Colours: "
           "red Whammy, blue Detune, green Harmony. A dark LED means the mode loads bypassed." },
         { 1, { "wh.options" }, "Chords, bypass, heel first",
           "Chords uses the polyphonic program range. Load bypassed selects a mode without engaging it. Heel first "
@@ -36,11 +36,10 @@ const std::vector<TourStep>& tourSteps()
           "Pick a length and curve, then drag a move. It becomes CC#11 automation that follows your project tempo: "
           "ramps, dives, trills, or a bend that lands exactly on the next bar." },
         { 2, { "set.midi" }, "7. Match the MIDI channels",
-          "Set the channel of each pedal here. Give the QC and the Whammy different channels when the Whammy is "
-          "chained from the QC's MIDI Out." },
+          "Set the channel of each pedal here, and give the QC and the Whammy different channels." },
         { 2, { "set.setup" }, "8. Hook it up once",
-          "Route the PedalCues track to your Quad Cortex MIDI output in Reaper. After that, the arrangement plays "
-          "your whole show: presets, scenes and Whammy moves." },
+          "Pick how the Whammy is connected: through the QC's MIDI Out, or from your audio interface's MIDI Out "
+          "(one cue track per pedal). Follow the steps once, and the arrangement plays your whole show." },
         { 2, { "hdr.help" }, "You are ready",
           "Reopen this tour or the illustrated user guide at any time from the ? button. Have a great show!" },
     };

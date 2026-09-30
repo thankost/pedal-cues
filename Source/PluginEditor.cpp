@@ -151,6 +151,9 @@ void PedalCuesEditor::showHelpMenu()
     m.addSectionHeader ("PedalCues " JucePlugin_VersionString);
     m.addItem (1, "Show quick tour");
     m.addItem (2, "Open user guide (web)");
+    m.addSeparator();
+    m.addItem (3, "About PedalCues");
+    m.addItem (4, "Project on GitHub");
 
     juce::Component::SafePointer<PedalCuesEditor> safe (this);
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&helpButton), [safe] (int result)
@@ -161,6 +164,14 @@ void PedalCuesEditor::showHelpMenu()
             safe->startTour (0);
         else if (result == 2)
             juce::URL (ui::guideUrl).launchInDefaultBrowser();
+        else if (result == 3)
+            juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "PedalCues " JucePlugin_VersionString,
+                                                    "Drag-and-drop MIDI cues for the Quad Cortex and Whammy V.\n\n"
+                                                    "Created by " + ui::author + "\n" + ui::repoUrl + "\n\n"
+                                                    "Free software under the MIT License. Built with JUCE.\n"
+                                                    "Not affiliated with Neural DSP or DigiTech.");
+        else if (result == 4)
+            juce::URL (ui::repoUrl).launchInDefaultBrowser();
     });
 }
 
@@ -194,14 +205,9 @@ void PedalCuesEditor::paint (juce::Graphics& g)
     g.setColour (tabColours[currentPage]);
     g.fillRect (0, header.getBottom() - 2, getWidth(), 2);
 
-    // Logo: a footswitch with a MIDI clip.
+    // Logo: same artwork as the app icon.
     auto h = header.reduced (18, 0);
-    auto logo = h.removeFromLeft (36).withSizeKeepingCentre (36, 36).toFloat();
-    g.setGradientFill (juce::ColourGradient (accent, logo.getTopLeft(), accent.darker (0.35f), logo.getBottomRight(), false));
-    g.fillRoundedRectangle (logo, 9.0f);
-    g.setColour (juce::Colours::black.withAlpha (0.8f));
-    g.fillEllipse (logo.reduced (10.0f).translated (0.0f, 3.0f));
-    g.fillRoundedRectangle (logo.getX() + 8.0f, logo.getY() + 7.0f, 20.0f, 5.0f, 2.0f);
+    drawAppIcon (g, h.removeFromLeft (40).withSizeKeepingCentre (40, 40).toFloat(), false);
 
     h.removeFromLeft (12);
     auto titleArea = h.removeFromLeft (170);

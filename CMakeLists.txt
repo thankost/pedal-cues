@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(PedalCues VERSION 0.2.0 LANGUAGES C CXX)
+project(PedalCues VERSION 0.3.0 LANGUAGES C CXX)
 
 option(PEDALCUES_COPY_PLUGIN "Install plugins into the system plug-in folders after building" ON)
 
@@ -22,7 +22,9 @@ else()
 endif()
 
 juce_add_plugin(PedalCues
-    COMPANY_NAME "athkost"
+    COMPANY_NAME "Thanasis Kostopoulos"
+    COMPANY_WEBSITE "https://github.com/thankost/pedal-cues"
+    COMPANY_COPYRIGHT "Copyright (c) 2026 Thanasis Kostopoulos. MIT License."
     BUNDLE_ID "com.athkost.pedalcues"
     ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/Resources/icon.png"
     PLUGIN_MANUFACTURER_CODE Athk

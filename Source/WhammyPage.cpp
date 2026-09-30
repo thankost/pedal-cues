@@ -240,25 +240,34 @@ public:
         r.removeFromBottom (12);
         modesSection.setBounds (r);
 
-        // Modes, as on the pedal: row 1 = Whammy (10), row 2 = Detune (2) + Harmony (9).
-        auto m = modesSection.contentArea();
-        constexpr int gap = 14, captionH = 18, rowGap = 10;
+        // Modes, as on the pedal panel (manual p.10): each Whammy mode sits above the Harmony mode on the
+        // same panel row (2 Oct Up over Oct Down/Oct Up ... 2 Oct Down over 2nd Up/3rd Up), Dive Bomb has
+        // no partner, and Detune (Shallow, Deep) closes the second row.
+        auto m = modesSection.contentArea().expanded (3, 0);
+        constexpr int captionH = 18, rowGap = 8, cols = 11;
         const auto rowH = (m.getHeight() - 2 * captionH - rowGap) / 2;
+        const auto unit = m.getWidth() / cols;
+        const auto top1 = m.getY() + captionH, top2 = top1 + rowH + rowGap + captionH;
+
+        auto cell = [&] (int col, int top) { return juce::Rectangle<int> (m.getX() + col * unit, top - 3, unit, rowH + 6); };
+        auto place = [&] (int index, int col, int top)
+        {
+            if (juce::isPositiveAndBelow (index, modeTiles.size()))
+                modeTiles[index]->setBounds (cell (col, top));
+        };
+        auto caption = [&] (int col, int span, int top) { return juce::Rectangle<int> (m.getX() + col * unit + 3, top - captionH, span * unit, captionH); };
+
+        for (int i = 0; i < 10; ++i)
+            place (i, i, top1);                  // Whammy: 2 Oct Up .. Dive Bomb
+        for (int i = 0; i < 9; ++i)
+            place (20 - i, i, top2);             // Harmony: Oct Down/Oct Up .. 2nd Up/3rd Up
+        place (11, 9, top2);                     // Shallow Detune
+        place (10, 10, top2);                    // Deep Detune
 
         groups.clear();
-        auto row1 = m.removeFromTop (captionH + rowH);
-        groups.push_back ({ "WHAMMY", cues::whammy::colour (0), row1.removeFromTop (captionH) });
-        layoutGrid (modeTiles, row1.expanded (3, 3), 10, 0, 0, 10);
-
-        m.removeFromTop (rowGap);
-        auto row2 = m;
-        const auto unit = (row2.getWidth() - gap) / 11;
-        auto detune = row2.removeFromLeft (unit * 2);
-        row2.removeFromLeft (gap);
-        groups.push_back ({ "DETUNE", cues::whammy::colour (10), detune.removeFromTop (captionH) });
-        layoutGrid (modeTiles, detune.expanded (3, 3), 2, 0, 10, 2);
-        groups.push_back ({ "HARMONY", cues::whammy::colour (12), row2.removeFromTop (captionH) });
-        layoutGrid (modeTiles, row2.expanded (3, 3), 9, 0, 12, 9);
+        groups.push_back ({ "WHAMMY", cues::whammy::colour (0), caption (0, 10, top1) });
+        groups.push_back ({ "HARMONY", cues::whammy::colour (12), caption (0, 9, top2) });
+        groups.push_back ({ "DETUNE", cues::whammy::colour (10), caption (9, 2, top2) });
 
         auto controlsRow = sweepsSection.contentArea().removeFromTop (34);
         sweepControls.setBounds (controlsRow);

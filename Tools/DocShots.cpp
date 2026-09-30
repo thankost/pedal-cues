@@ -72,101 +72,7 @@ juce::Image drawIcon (int size)
 {
     juce::Image img (juce::Image::ARGB, size, size, true);
     juce::Graphics g (img);
-    g.addTransform (juce::AffineTransform::scale ((float) size / 1024.0f));
-
-    // macOS-style squircle: 824 px body on a 1024 canvas.
-    const juce::Rectangle<float> body (100.0f, 100.0f, 824.0f, 824.0f);
-    juce::Path shape;
-    shape.addRoundedRectangle (body, 185.0f);
-
-    g.setColour (juce::Colours::black.withAlpha (0.22f));
-    g.fillPath (shape, juce::AffineTransform::translation (0.0f, 8.0f));
-
-    g.setGradientFill (juce::ColourGradient (juce::Colour (0xff2b303b), body.getX(), body.getY(),
-                                             juce::Colour (0xff0c0d10), body.getX(), body.getBottom(), false));
-    g.fillPath (shape);
-    g.setColour (juce::Colours::white.withAlpha (0.10f));
-    g.strokePath (shape, juce::PathStrokeType (4.0f));
-
-    g.saveState();
-    g.reduceClipRegion (shape);
-
-    // Timeline lane
-    const juce::Rectangle<float> lane (100.0f, 640.0f, 824.0f, 170.0f);
-    g.setColour (juce::Colours::white.withAlpha (0.05f));
-    g.fillRect (lane);
-    g.setColour (juce::Colours::white.withAlpha (0.10f));
-    for (float x = 170.0f; x < 924.0f; x += 131.0f)
-        g.fillRect (x, lane.getY(), 3.0f, lane.getHeight());
-
-    auto clip = [&g] (juce::Rectangle<float> r, juce::Colour c)
-    {
-        g.setColour (c.withAlpha (0.35f));
-        g.fillRoundedRectangle (r, 18.0f);
-        g.setColour (c);
-        g.fillRoundedRectangle (r.withHeight (46.0f), 18.0f);
-        g.fillRect (r.withHeight (46.0f).withTrimmedTop (23.0f));
-        g.drawRoundedRectangle (r, 18.0f, 6.0f);
-    };
-    clip ({ 150.0f, 665.0f, 220.0f, 120.0f }, qcBlue);
-    clip ({ 654.0f, 665.0f, 220.0f, 120.0f }, whammyRed);
-
-    // Drop target
-    const juce::Rectangle<float> target (402.0f, 665.0f, 220.0f, 120.0f);
-    g.setColour (accent.withAlpha (0.18f));
-    g.fillRoundedRectangle (target, 18.0f);
-    juce::Path outline, dashed;
-    outline.addRoundedRectangle (target, 18.0f);
-    const float dashes[] = { 22.0f, 14.0f };
-    juce::PathStrokeType (6.0f).createDashedStroke (dashed, outline, dashes, 2);
-    g.setColour (accent);
-    g.fillPath (dashed);
-
-    // Playhead
-    g.setColour (accent);
-    g.fillRect (512.0f - 3.0f, 600.0f, 6.0f, 324.0f);
-    g.restoreState();
-
-    // The tile being dropped: an amber footswitch cue, slightly tilted.
-    const juce::Rectangle<float> tile (322.0f, 170.0f, 380.0f, 300.0f);
-    const auto tilt = juce::AffineTransform::rotation (-0.10f, tile.getCentreX(), tile.getCentreY());
-    juce::Path tilePath;
-    tilePath.addRoundedRectangle (tile, 44.0f);
-
-    g.setColour (juce::Colours::black.withAlpha (0.45f));
-    g.fillPath (tilePath, tilt.translated (10.0f, 22.0f));
-    g.setGradientFill (juce::ColourGradient (accent.brighter (0.25f), tile.getX(), tile.getY(),
-                                             accent.darker (0.35f), tile.getX(), tile.getBottom(), false));
-    g.fillPath (tilePath, tilt);
-
-    g.saveState();
-    g.addTransform (tilt);
-    const auto knob = juce::Rectangle<float> (0.0f, 0.0f, 170.0f, 170.0f).withCentre (tile.getCentre().translated (0.0f, 12.0f));
-    g.setColour (juce::Colour (0xff15171c));
-    g.fillEllipse (knob.expanded (18.0f));
-    g.setGradientFill (juce::ColourGradient (juce::Colour (0xffe8ebf0), knob.getX(), knob.getY(),
-                                             juce::Colour (0xff7d838f), knob.getRight(), knob.getBottom(), false));
-    g.fillEllipse (knob);
-    g.setColour (juce::Colour (0xff15171c).withAlpha (0.35f));
-    g.drawEllipse (knob.reduced (26.0f), 6.0f);
-    // LED
-    const auto led = juce::Rectangle<float> (0.0f, 0.0f, 34.0f, 34.0f).withCentre ({ tile.getCentreX(), tile.getY() + 42.0f });
-    g.setColour (ledGreen.withAlpha (0.35f));
-    g.fillEllipse (led.expanded (14.0f));
-    g.setColour (ledGreen.brighter (0.3f));
-    g.fillEllipse (led);
-    g.restoreState();
-
-    // Arrow into the gap
-    juce::Path arrow;
-    arrow.startNewSubPath (512.0f, 500.0f);
-    arrow.lineTo (512.0f, 585.0f);
-    g.setColour (juce::Colours::white);
-    g.strokePath (arrow, juce::PathStrokeType (22.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-    juce::Path head;
-    head.addTriangle (462.0f, 575.0f, 562.0f, 575.0f, 512.0f, 635.0f);
-    g.fillPath (head);
-
+    drawAppIcon (g, { 0.0f, 0.0f, (float) size, (float) size }, true);
     return img;
 }
 } // namespace
@@ -389,34 +295,51 @@ void arrow (juce::Graphics& g, juce::Point<float> a, juce::Point<float> b, juce:
 
 juce::Image drawRouting()
 {
-    constexpr int w = 1120, h = 430;
+    constexpr int w = 1120, h = 560;
     juce::Image img (juce::Image::ARGB, (int) (w * scale), (int) (h * scale), true);
     juce::Graphics g (img);
     g.addTransform (juce::AffineTransform::scale (scale));
     g.fillAll (background);
 
-    const juce::Rectangle<float> pc (40.0f, 60.0f, 280.0f, 110.0f);
-    const juce::Rectangle<float> qc (420.0f, 60.0f, 280.0f, 110.0f);
-    const juce::Rectangle<float> wh (800.0f, 60.0f, 280.0f, 110.0f);
-    const juce::Rectangle<float> iface (420.0f, 270.0f, 280.0f, 110.0f);
+    auto heading = [&g] (float y, const juce::String& title, const juce::String& sub)
+    {
+        g.setColour (text);
+        g.setFont (font (13.0f, true));
+        g.drawText (title, juce::Rectangle<float> (40.0f, y, 600.0f, 20.0f), juce::Justification::centredLeft);
+        g.setColour (dim);
+        g.setFont (font (12.0f));
+        g.drawText (sub, juce::Rectangle<float> (40.0f, y + 20.0f, 1040.0f, 18.0f), juce::Justification::centredLeft);
+    };
+    const auto grey = juce::Colour (0xff9aa0ac);
 
-    g.setColour (dim);
-    g.setFont (font (12.0f, true));
-    g.drawText ("RECOMMENDED", juce::Rectangle<float> (40.0f, 22.0f, 400.0f, 20.0f), juce::Justification::centredLeft);
-    g.drawText ("ALTERNATIVE", juce::Rectangle<float> (40.0f, 340.0f, 360.0f, 20.0f), juce::Justification::centredLeft);
-    g.setFont (font (12.0f));
-    g.drawText ("if your QC does not forward USB MIDI to its MIDI Out", juce::Rectangle<float> (40.0f, 360.0f, 360.0f, 20.0f),
-                juce::Justification::centredLeft);
-
-    box (g, pc, accent, "Reaper + PedalCues", "MIDI items on the timeline, track output = QC MIDI");
-    box (g, qc, qcBlue, "Quad Cortex / Mini", "MIDI channel 1 (Settings > MIDI). MIDI Thru on.");
-    box (g, wh, whammyRed, "Whammy V", "MIDI channel 2 (hold footswitch at power-up)");
-    box (g, iface, dim, "USB MIDI interface", "Any class-compliant interface with a 5-pin DIN out");
-
+    heading (20.0f, "OPTION A  -  WHAMMY VIA QC", "One cue track. The QC passes the Whammy's MIDI on from its MIDI Out (MIDI Thru on).");
+    const juce::Rectangle<float> pc (40.0f, 70.0f, 280.0f, 96.0f);
+    const juce::Rectangle<float> qc (420.0f, 70.0f, 280.0f, 96.0f);
+    const juce::Rectangle<float> wh (800.0f, 70.0f, 280.0f, 96.0f);
+    box (g, pc, accent, "Reaper: Pedal Cues", "MIDI Hardware Output = Quad Cortex");
+    box (g, qc, qcBlue, "Quad Cortex / Mini", "Channel 1. MIDI Thru on");
+    box (g, wh, whammyRed, "Whammy V", "Channel 2");
     arrow (g, { pc.getRight(), pc.getCentreY() }, { qc.getX(), qc.getCentreY() }, accent, "USB", false);
-    arrow (g, { qc.getRight(), qc.getCentreY() }, { wh.getX(), wh.getCentreY() }, qcBlue, "MIDI Out > MIDI In", false);
-    arrow (g, { pc.getCentreX(), pc.getBottom() }, { iface.getX(), iface.getCentreY() }, dim, "USB", true);
-    arrow (g, { iface.getRight(), iface.getCentreY() }, { wh.getCentreX(), wh.getBottom() }, dim, "5-pin MIDI", true);
+    arrow (g, { qc.getRight(), qc.getCentreY() }, { wh.getX(), wh.getCentreY() }, qcBlue, "MIDI", false);
+
+    g.setColour (outline);
+    g.fillRect (40.0f, 200.0f, 1040.0f, 1.0f);
+
+    heading (220.0f, "OPTION B  -  WHAMMY VIA AUDIO INTERFACE",
+             "Two cue tracks, one per pedal. For a sound card with a MIDI Out, or if your QC does not forward USB MIDI.");
+    const juce::Rectangle<float> qcTrack (40.0f, 270.0f, 280.0f, 96.0f);
+    const juce::Rectangle<float> qc2 (420.0f, 270.0f, 280.0f, 96.0f);
+    const juce::Rectangle<float> whTrack (40.0f, 420.0f, 280.0f, 96.0f);
+    const juce::Rectangle<float> iface (420.0f, 420.0f, 280.0f, 96.0f);
+    const juce::Rectangle<float> wh2 (800.0f, 420.0f, 280.0f, 96.0f);
+    box (g, qcTrack, accent, "Reaper: QC Cues", "MIDI Hardware Output = Quad Cortex");
+    box (g, qc2, qcBlue, "Quad Cortex / Mini", "Channel 1");
+    box (g, whTrack, accent, "Reaper: Whammy Cues", "MIDI Hardware Output = interface");
+    box (g, iface, grey, "Audio / MIDI interface", "Any interface with a 5-pin MIDI Out");
+    box (g, wh2, whammyRed, "Whammy V", "Channel 2");
+    arrow (g, { qcTrack.getRight(), qcTrack.getCentreY() }, { qc2.getX(), qc2.getCentreY() }, accent, "USB", false);
+    arrow (g, { whTrack.getRight(), whTrack.getCentreY() }, { iface.getX(), iface.getCentreY() }, accent, "USB", false);
+    arrow (g, { iface.getRight(), iface.getCentreY() }, { wh2.getX(), wh2.getCentreY() }, grey, "MIDI", false);
 
     return img;
 }
@@ -455,6 +378,20 @@ int main (int argc, char** argv)
             editor.startTour (step);
             save (snapshot (editor), outDir.getChildFile (name));
         }
+    }
+
+    {
+        // Settings page in "Whammy via interface" mode; the user's own choice is restored afterwards.
+        const auto previous = state::getFlag ("setupViaInterface");
+        state::setFlag ("setupViaInterface", true);
+        {
+            PedalCuesEditor editor (proc, false);
+            editor.setSize (1120, 760);
+            editor.refreshNow();
+            editor.showPage (2);
+            save (snapshot (editor), outDir.getChildFile ("settings-interface.png"));
+        }
+        state::setFlag ("setupViaInterface", previous);
     }
 
     save (drawTimeline (proc), outDir.getChildFile ("timeline.png"));

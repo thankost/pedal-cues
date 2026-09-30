@@ -80,9 +80,10 @@ cmake --build build --target PedalCuesTests
    - QC: *Settings > MIDI Settings > MIDI Channel*
    - Whammy: hold the Whammy footswitch while powering up, turn the knob to pick the channel, press the footswitch
    - Use **different channels** for the QC and the Whammy.
-4. Whammy through the QC: QC **MIDI Out → Whammy MIDI In**, then enable **MIDI Thru** on the QC.
-   Test that your CorOS version forwards USB MIDI to the 5-pin output (click a Whammy tile's ▶). If it doesn't,
-   connect the Whammy through a USB MIDI interface and add a second hardware output to the track.
+4. Connect the Whammy one of two ways (the plugin's **Settings** tab has a switch for both):
+   - **Option A: Whammy via QC.** QC **MIDI Out → Whammy MIDI In**, and enable **MIDI Thru** on the QC.
+   - **Option B: Whammy via audio interface.** Interface **MIDI Out → Whammy MIDI In**. Use two cue tracks: **QC Cues** (output = Quad Cortex) and **Whammy Cues** (output = interface MIDI Out).
+   - Details and pictures: [guide, section 3](docs/GUIDE.md#3-set-up-reaper-once).
 5. Turn snapping on and drag tiles onto the **Pedal Cues** track at the bars you want.
 
 ## Verify with your pedals
@@ -116,3 +117,8 @@ cmake --build build --target DocShots
 build/DocShots_artefacts/Release/DocShots docs/images
 ```
 
+## License
+
+Free and open source under the [MIT License](LICENSE). Copyright (c) 2026 **Thanasis Kostopoulos**. [github.com/thankost/pedal-cues](https://github.com/thankost/pedal-cues)
+
+Built with [JUCE](https://juce.com), which is licensed separately (AGPLv3 / JUCE licence). Quad Cortex is a trademark of Neural DSP Technologies and Whammy is a trademark of DigiTech. This project is not affiliated with either company.

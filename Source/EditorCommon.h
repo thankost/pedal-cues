@@ -21,6 +21,8 @@ std::unique_ptr<Page> makeQcPage       (PedalCuesProcessor&);
 std::unique_ptr<Page> makeWhammyPage   (PedalCuesProcessor&);
 std::unique_ptr<Page> makeSettingsPage (PedalCuesProcessor&, std::function<void()> startTour);
 
+inline const juce::String repoUrl { "https://github.com/thankost/pedal-cues" };
+inline const juce::String author { "Thanasis Kostopoulos" };
 inline const juce::String guideUrl { "https://github.com/thankost/pedal-cues/blob/main/docs/GUIDE.md" };
 
 //==============================================================================

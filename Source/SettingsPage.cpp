@@ -11,6 +11,7 @@ class StepsList final : public juce::Component
 {
 public:
     juce::StringArray steps;
+    bool viaInterface = false;   // true = QC over USB, Whammy from an audio interface's MIDI Out
 
     void paint (juce::Graphics& g) override
     {
@@ -35,40 +36,63 @@ public:
 
         r.removeFromTop (14);
         if (r.getHeight() >= 110)
-            paintFlow (g, r.removeFromTop (juce::jmin (r.getHeight(), 130)));
+            paintFlow (g, r.removeFromTop (juce::jmin (r.getHeight(), viaInterface ? 150 : 130)), viaInterface);
     }
 
 private:
-    static void paintFlow (juce::Graphics& g, juce::Rectangle<int> area)
+    struct Node { const char* title; const char* sub; juce::Colour colour; };
+
+    static void paintFlow (juce::Graphics& g, juce::Rectangle<int> area, bool viaInterface)
     {
         g.setColour (dim);
         g.setFont (font (11.0f, true));
         g.drawText ("SIGNAL FLOW", area.removeFromTop (20), juce::Justification::centredLeft);
 
-        struct Node { const char* title; const char* sub; juce::Colour colour; };
-        const Node nodes[] = { { "Reaper", "PedalCues track", accent },
-                               { "Quad Cortex", "USB MIDI, MIDI Thru", qcBlue },
-                               { "Whammy V", "5-pin MIDI In", whammyRed } };
+        if (! viaInterface)
+        {
+            const Node nodes[] = { { "Reaper", "PedalCues track", accent },
+                                   { "Quad Cortex", "USB MIDI, MIDI Thru", qcBlue },
+                                   { "Whammy V", "5-pin MIDI In", whammyRed } };
+            const char* links[] = { "USB", "MIDI" };
+            paintChain (g, area.withSizeKeepingCentre (area.getWidth(), 66), nodes, links, 3);
+            return;
+        }
 
+        const auto rowH = (area.getHeight() - 8) / 2;
+        const Node qc[] = { { "QC Cues track", "PedalCues, Quad Cortex tab", accent },
+                            { "Quad Cortex", "USB MIDI", qcBlue } };
+        const char* qcLinks[] = { "USB" };
+        const Node wh[] = { { "Whammy Cues track", "PedalCues, Whammy tab", accent },
+                            { "Audio interface", "MIDI Out", juce::Colour (0xff9aa0ac) },
+                            { "Whammy V", "5-pin MIDI In", whammyRed } };
+        const char* whLinks[] = { "USB", "MIDI" };
+        auto top = area.removeFromTop (rowH);
+        area.removeFromTop (8);
+        paintChain (g, top.removeFromLeft ((top.getWidth() * 2 - 56) / 3), qc, qcLinks, 2);   // same box width as the 3-box row
+        paintChain (g, area, wh, whLinks, 3);
+    }
+
+    static void paintChain (juce::Graphics& g, juce::Rectangle<int> row, const Node* nodes, const char* const* links, int count)
+    {
         constexpr int arrowW = 56;
-        const auto boxW = (area.getWidth() - 2 * arrowW) / 3;
-        auto row = area.withSizeKeepingCentre (area.getWidth(), 66);
+        const auto boxW = (row.getWidth() - (count - 1) * arrowW) / count;
 
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < count; ++i)
         {
             const auto b = row.removeFromLeft (boxW).toFloat();
             g.setColour (surfaceHi);
             g.fillRoundedRectangle (b, 10.0f);
             g.setColour (nodes[i].colour);
             g.drawRoundedRectangle (b.reduced (0.5f), 10.0f, 1.5f);
+            auto inner = b.reduced (12.0f, 6.0f);
             g.setColour (text);
-            g.setFont (font (14.0f, true));
-            g.drawText (nodes[i].title, b.reduced (12.0f, 10.0f).removeFromTop (22.0f), juce::Justification::centredLeft);
+            g.setFont (font (13.5f, true));
+            g.drawText (nodes[i].title, inner.removeFromTop (inner.getHeight() / 2 + 2), juce::Justification::centredLeft, true);
             g.setColour (dim);
             g.setFont (font (11.5f));
-            g.drawText (nodes[i].sub, b.reduced (12.0f, 10.0f).withTrimmedTop (24.0f), juce::Justification::centredLeft, true);
+            g.drawText (nodes[i].sub, inner, juce::Justification::centredLeft, true);
 
-            if (i < 2)
+            if (i < count - 1)
             {
                 const auto a = row.removeFromLeft (arrowW).toFloat();
                 juce::Path arrow;
@@ -76,7 +100,7 @@ private:
                 g.setColour (nodes[i].colour);
                 g.fillPath (arrow);
                 g.setFont (font (10.0f, true));
-                g.drawText (i == 0 ? "USB" : "MIDI", a.withTrimmedBottom (a.getHeight() / 2 + 6), juce::Justification::centredBottom);
+                g.drawText (links[i], a.withTrimmedBottom (a.getHeight() / 2 + 6), juce::Justification::centredBottom);
             }
         }
     }
@@ -171,13 +195,18 @@ public:
         libraryInfo.setColour (juce::Label::textColourId, dim);
         libraryInfo.setJustificationType (juce::Justification::topLeft);
 
-        steps.steps = {
-            "Insert PedalCues on a track in Reaper (e.g. 'Pedal Cues'). Arm and monitor are not needed.",
-            "Route: track I/O button > MIDI Hardware Output > your Quad Cortex (enable it in Preferences > MIDI Devices first).",
-            "Whammy V: QC MIDI Out > Whammy MIDI In, MIDI Thru on in the QC. Or use any USB MIDI interface.",
-            "Match the channels on the left with the pedals (QC: Settings > MIDI. Whammy: hold footswitch at power-up).",
-            "Drag tiles onto the arrangement. Snap to grid for exact bars. Click the round play button to test a tile live."
-        };
+        for (auto* b : { &viaQcButton, &viaInterfaceButton })
+        {
+            b->setClickingTogglesState (true);
+            b->setRadioGroupId (4201);
+            b->setColour (juce::TextButton::buttonOnColourId, qcBlue);
+            b->setColour (juce::TextButton::textColourOnId, juce::Colours::black);
+        }
+        viaQcButton.setTooltip ("Whammy is chained from the QC's MIDI Out (QC MIDI Thru on)");
+        viaInterfaceButton.setTooltip ("QC over USB, Whammy from your audio interface / USB MIDI interface MIDI Out");
+        viaQcButton.onClick = [this] { if (viaQcButton.getToggleState()) setSetupMode (false); };
+        viaInterfaceButton.onClick = [this] { if (viaInterfaceButton.getToggleState()) setSetupMode (true); };
+        setSetupMode (state::getFlag ("setupViaInterface"));
 
         tourButton.setColour (juce::TextButton::buttonColourId, accent);
         tourButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
@@ -187,7 +216,7 @@ public:
         for (auto* c : std::initializer_list<juce::Component*> { &qcChannelLabel, &whChannelLabel, &pcBaseLabel,
                                                                  &qcChannelBox, &whChannelBox, &pcBaseBox, &setlistToggle,
                                                                  &saveDefaultButton, &loadDefaultButton, &exportButton,
-                                                                 &importButton, &statusLabel, &libraryInfo, &steps,
+                                                                 &importButton, &statusLabel, &libraryInfo, &steps, &viaQcButton, &viaInterfaceButton,
                                                                  &tourButton, &guideButton })
             addAndMakeVisible (c);
 
@@ -247,6 +276,11 @@ public:
         }
 
         {
+            auto hdr = setupSection.headerArea().reduced (0, 2);
+            viaInterfaceButton.setBounds (hdr.removeFromRight (150));
+            hdr.removeFromRight (6);
+            viaQcButton.setBounds (hdr.removeFromRight (130));
+
             auto s = setupSection.contentArea().reduced (8, 6);
             auto buttons = s.removeFromBottom (36);
             tourButton.setBounds (buttons.removeFromLeft (180));
@@ -258,6 +292,31 @@ public:
     }
 
 private:
+    void setSetupMode (bool viaInterface)
+    {
+        state::setFlag ("setupViaInterface", viaInterface);
+        (viaInterface ? viaInterfaceButton : viaQcButton).setToggleState (true, juce::dontSendNotification);
+        steps.viaInterface = viaInterface;
+
+        if (viaInterface)
+            steps.steps = {
+                "Preferences > MIDI Devices: enable the Quad Cortex output and your audio interface's MIDI output.",
+                "Track 'QC Cues': insert PedalCues. I/O button > MIDI Hardware Output > Quad Cortex. Use the Quad Cortex tab.",
+                "Track 'Whammy Cues': insert PedalCues. I/O button > MIDI Hardware Output > your interface's MIDI Out. Use the Whammy V tab.",
+                "Cable: interface MIDI Out > Whammy MIDI In. Match the channels on the left (QC: Settings > MIDI. Whammy: hold footswitch at power-up).",
+                "Drag QC tiles onto the QC track and Whammy tiles onto the Whammy track. Click a tile's round play button to test it live."
+            };
+        else
+            steps.steps = {
+                "Insert PedalCues on a track in Reaper (e.g. 'Pedal Cues'). Arm and monitor are not needed.",
+                "Route: track I/O button > MIDI Hardware Output > your Quad Cortex (enable it in Preferences > MIDI Devices first).",
+                "Whammy V: QC MIDI Out > Whammy MIDI In, and turn MIDI Thru on in the QC.",
+                "Match the channels on the left with the pedals (QC: Settings > MIDI. Whammy: hold footswitch at power-up).",
+                "Drag tiles onto the arrangement. Snap to grid for exact bars. Click the round play button to test a tile live."
+            };
+        steps.repaint();
+    }
+
     void setStatus (const juce::String& t) { statusLabel.setText (t, juce::dontSendNotification); }
 
     juce::ValueTree state;
@@ -275,6 +334,8 @@ private:
     juce::TextButton exportButton { "Export..." };
     juce::TextButton importButton { "Import..." };
     StepsList steps;
+    juce::TextButton viaQcButton { "Whammy via QC" };
+    juce::TextButton viaInterfaceButton { "Whammy via interface" };
     juce::TextButton tourButton { "Show quick tour" };
     juce::TextButton guideButton { "Open user guide" };
     std::unique_ptr<juce::FileChooser> chooser;
