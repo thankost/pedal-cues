@@ -55,6 +55,12 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
         tabBar.addAndMakeVisible (b);
     }
 
+    updateBadge.setComponentID ("hdr.update");
+    updateBadge.onOpen = [this] { showUpdateDialog(); };
+    updateBadge.onRefresh = [this] { checkForUpdates (true); };
+    addAndMakeVisible (updateBadge);
+    checkForUpdates (false);
+
     helpButton.setComponentID ("hdr.help");
     helpButton.setTooltip ("Quick tour and user guide");
     helpButton.onClick = [this] { showHelpMenu(); };
@@ -273,6 +279,166 @@ void PedalCuesEditor::showSupportDialog()
     }), true);
 }
 
+void PedalCuesEditor::checkForUpdates (bool force)
+{
+    updateBadge.setInfo ({});   // "checking"
+
+    juce::Component::SafePointer<PedalCuesEditor> safe (this);
+    update::check ([safe] (const update::Info& info)
+    {
+        if (safe == nullptr)
+            return;
+
+        safe->updateBadge.setInfo (info);
+    }, force);
+}
+
+PedalCuesEditor::UpdateBadge::UpdateBadge()
+{
+    refresh.setTooltip ("Check for updates now");
+    refresh.onClick = [this] { if (onRefresh) onRefresh(); };
+    addChildComponent (refresh);
+}
+
+void PedalCuesEditor::UpdateBadge::setInfo (const update::Info& newInfo)
+{
+    using S = update::Info::Status;
+    info = newInfo;
+    setMouseCursor (info.status == S::available ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
+    setTooltip (info.status == S::available ? "A newer PedalCues is out. Click to see what's new and download it."
+              : info.status == S::upToDate  ? "You have the latest PedalCues."
+              : info.status == S::failed    ? "Couldn't reach GitHub to check for updates."
+              : info.status == S::disabled  ? "Update check is off (Settings)."
+                                            : juce::String());
+    layoutRefresh();
+    repaint();
+}
+
+juce::String PedalCuesEditor::UpdateBadge::label() const
+{
+    using S = update::Info::Status;
+    if (info.status == S::available)
+        return "Update available: v" + info.latest;
+
+    auto l = juce::String ("v") + JucePlugin_VersionString;
+    if (info.status == S::upToDate)       l << "  -  Up to date";
+    else if (info.status == S::checking)  l << "  -  checking for updates...";
+    else if (info.status == S::failed)    l << "  -  couldn't check for updates";
+    return l;
+}
+
+juce::Rectangle<float> PedalCuesEditor::UpdateBadge::textArea() const
+{
+    using S = update::Info::Status;
+    const auto available = info.status == S::available;
+    const juce::Font f (font (available ? 11.5f : 11.0f, available || info.status == S::upToDate));
+    auto w = juce::GlyphArrangement::getStringWidth (f, label()) + (available ? 22.0f : 0.0f);
+    if (info.status == S::upToDate)
+        w += 10.0f; // status dot
+    return getLocalBounds().toFloat().withWidth (juce::jmin ((float) getWidth() - 24.0f, w));
+}
+
+void PedalCuesEditor::UpdateBadge::layoutRefresh()
+{
+    using S = update::Info::Status;
+    const auto area = textArea();
+    refresh.setBounds (juce::roundToInt (area.getRight()) + 6, (getHeight() - 18) / 2, 18, 18);
+    refresh.setVisible (info.status != S::disabled);
+    refresh.setEnabled (info.status != S::checking);
+}
+
+void PedalCuesEditor::UpdateBadge::mouseUp (const juce::MouseEvent& e)
+{
+    if (info.status == update::Info::Status::available && textArea().contains (e.position) && onOpen)
+        onOpen();
+}
+
+void PedalCuesEditor::UpdateBadge::RefreshButton::paintButton (juce::Graphics& g, bool over, bool down)
+{
+    const auto b = getLocalBounds().toFloat();
+    if ((over || down) && isEnabled())
+    {
+        g.setColour (juce::Colours::white.withAlpha (down ? 0.18f : 0.1f));
+        g.fillEllipse (b);
+    }
+
+    // Circular arrow.
+    const auto c = b.getCentre();
+    const auto r = b.getWidth() * 0.3f;
+    juce::Path arc;
+    arc.addCentredArc (c.x, c.y, r, r, 0.0f, 0.5f, juce::MathConstants<float>::twoPi - 0.2f, true);
+    const auto colour = isEnabled() ? (over ? theme::text : dim) : dim.withAlpha (0.4f);
+    g.setColour (colour);
+    g.strokePath (arc, juce::PathStrokeType (1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+    const auto tip = arc.getCurrentPosition();
+    juce::Path head;
+    head.addTriangle (tip.x - 3.2f, tip.y - 2.6f, tip.x + 2.8f, tip.y - 0.2f, tip.x - 1.0f, tip.y + 3.4f);
+    g.fillPath (head);
+}
+
+void PedalCuesEditor::UpdateBadge::paint (juce::Graphics& g)
+{
+    using S = update::Info::Status;
+    auto b = textArea();
+
+    if (info.status == S::available)
+    {
+        const auto pill = b.reduced (0.0f, 1.0f);
+        g.setColour (isMouseOver() ? accent.brighter (0.15f) : accent);
+        g.fillRoundedRectangle (pill, pill.getHeight() * 0.5f);
+        g.setColour (juce::Colours::black);
+        g.setFont (font (11.5f, true));
+        g.drawText (label(), pill, juce::Justification::centred);
+        return;
+    }
+
+    if (info.status == S::upToDate)
+    {
+        g.setColour (ledGreen);
+        g.fillEllipse (juce::Rectangle<float> (6.0f, 6.0f).withCentre ({ 3.0f, b.getCentreY() }));
+        b.removeFromLeft (10.0f);
+    }
+    g.setColour (info.status == S::upToDate ? ledGreen : dim);
+    g.setFont (font (11.0f, info.status == S::upToDate));
+    g.drawText (label(), b, juce::Justification::centredLeft);
+}
+
+void PedalCuesEditor::showUpdateDialog()
+{
+    const auto info = updateBadge.info;
+    juce::StringArray lines;
+    lines.addLines (info.notes.replace ("\r", "").replace ("**", "").replace ("## ", ""));
+    for (int i = lines.size(); --i >= 0;)
+        if (lines[i].startsWith ("Full Changelog"))
+            lines.remove (i);
+    auto notes = lines.joinIntoString ("\n").trim();
+    if (notes.length() > 700)
+        notes = notes.substring (0, 700).upToLastOccurrenceOf ("\n", false, false) + "\n...";
+
+    auto* w = new juce::AlertWindow ("PedalCues v" + info.latest + " is available",
+                                     "You have v" JucePlugin_VersionString ".\n\n"
+                                     + (notes.isNotEmpty() ? "What's new:\n" + notes + "\n\n" : juce::String())
+                                     + "Download the zip, close your DAW, then replace the plugin files the same way you installed them.",
+                                     juce::MessageBoxIconType::NoIcon);
+    w->addButton ("Download", 1);
+    w->addButton ("Release page", 2);
+    w->addButton ("Later", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+    if (auto* b = w->getButton ("Download"))
+    {
+        b->setColour (juce::TextButton::buttonColourId, accent);
+        b->setColour (juce::TextButton::textColourOffId, juce::Colours::black);
+    }
+
+    w->enterModalState (true, juce::ModalCallbackFunction::create ([info] (int result)
+    {
+        if (result == 1)
+            juce::URL (info.downloadUrl).launchInDefaultBrowser();
+        else if (result == 2)
+            juce::URL (info.pageUrl).launchInDefaultBrowser();
+    }), true);
+}
+
 void PedalCuesEditor::handleAsyncUpdate()
 {
     for (auto& page : pages)
@@ -312,9 +478,6 @@ void PedalCuesEditor::paint (juce::Graphics& g)
     g.setColour (text);
     g.setFont (font (20.0f, true));
     g.drawText ("PedalCues", titleArea.removeFromTop (titleArea.getHeight() / 2 + 6), juce::Justification::bottomLeft);
-    g.setColour (dim);
-    g.setFont (font (11.0f));
-    g.drawText ("Quad Cortex + Whammy V", titleArea, juce::Justification::topLeft);
 
     // Tempo pill on the right, left of the help button.
     auto right = header.reduced (18, 0);
@@ -339,6 +502,7 @@ void PedalCuesEditor::resized()
     auto header = getLocalBounds().removeFromTop (64).reduced (18, 13);
 
     helpButton.setBounds (header.removeFromRight (38).withSizeKeepingCentre (34, 34));
+    updateBadge.setBounds (18 + 40 + 10, 36, 270, 20);
 
     const auto tabsWidth = 3 * 130 + 8;
     tabBar.setBounds (juce::Rectangle<int> (tabsWidth, 38).withCentre ({ getWidth() / 2, header.getCentreY() }));

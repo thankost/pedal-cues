@@ -1,4 +1,5 @@
 #include "../Source/CueModel.h"
+#include "../Source/Update.h"
 
 #include <cstdio>
 
@@ -11,8 +12,16 @@ static bool isCC (const juce::MidiMessage& m, int ch, int cc, int v)
     return m.isController() && m.getChannel() == ch && m.getControllerNumber() == cc && m.getControllerValue() == v;
 }
 
-int main()
+int main (int argc, char** argv)
 {
+    // Optional online check: PedalCuesTests --online asks GitHub for the latest release.
+    if (argc > 1 && juce::String (argv[1]) == "--online")
+    {
+        const auto info = update::fetchLatest();
+        std::printf ("status=%d latest=%s download=%s\n", (int) info.status, info.latest.toRawUTF8(), info.downloadUrl.toRawUTF8());
+        return info.status == update::Info::Status::failed ? 1 : 0;
+    }
+
     using namespace cues;
 
     // Quad Cortex scene C on channel 1 -> CC43 = 2
@@ -39,6 +48,14 @@ int main()
     CHECK (whammy::programNumber (8, true, false)  == 51);  // 2 Oct Down, Chords
     CHECK (whammy::programNumber (8, true, true)   == 72);
     CHECK (whammy::programNumber (20, true, true)  == 84);
+
+    // Update check: version comparison
+    CHECK (update::isNewer ("0.4.12", "0.4.11"));
+    CHECK (update::isNewer ("v0.5.0", "0.4.12"));
+    CHECK (update::isNewer ("0.4.10", "0.4.9"));
+    CHECK (! update::isNewer ("0.4.11", "0.4.11"));
+    CHECK (! update::isNewer ("0.4.9", "0.4.10"));
+    CHECK (update::isNewer ("1.0", "0.9.9"));
 
     auto e = whammy::effect (2, 1, "Oct Up", false, false, 1, true);
     CHECK (e.events.size() == 2 && isCC (e.events[0].second, 2, 11, 0));

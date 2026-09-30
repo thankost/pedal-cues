@@ -1,4 +1,5 @@
 #include "EditorCommon.h"
+#include "Update.h"
 
 using namespace theme;
 
@@ -135,6 +136,9 @@ public:
         pcBaseBox.onChange    = [this] { state.setProperty (IDs::whPcBase, pcBaseBox.getSelectedId() == 1 ? 1 : 0, nullptr); };
         setlistToggle.onClick = [this] { state.setProperty (IDs::sendSetlist, setlistToggle.getToggleState(), nullptr); };
         setlistToggle.setTooltip ("Also send CC#32 (setlist) before each preset change. Leave off if all presets are in the active setlist.");
+        updateToggle.setTooltip ("Ask GitHub for the latest PedalCues release when PedalCues opens (nothing else is sent). "
+                                 "Takes effect the next time PedalCues opens.");
+        updateToggle.onClick = [this] { state::setFlag (update::disabledFlag, ! updateToggle.getToggleState()); };
 
         saveDefaultButton.onClick = [this]
         {
@@ -217,7 +221,7 @@ public:
         guideButton.onClick = [] { juce::URL (guideUrl).launchInDefaultBrowser(); };
 
         for (auto* c : std::initializer_list<juce::Component*> { &qcChannelLabel, &whChannelLabel, &pcBaseLabel,
-                                                                 &qcChannelBox, &whChannelBox, &pcBaseBox, &setlistToggle,
+                                                                 &qcChannelBox, &whChannelBox, &pcBaseBox, &setlistToggle, &updateToggle,
                                                                  &saveDefaultButton, &loadDefaultButton, &exportButton,
                                                                  &importButton, &statusLabel, &libraryInfo, &steps, &viaQcButton, &viaInterfaceButton,
                                                                  &tourButton, &guideButton })
@@ -232,6 +236,7 @@ public:
         whChannelBox.setSelectedId ((int) state[IDs::whChannel], juce::dontSendNotification);
         pcBaseBox.setSelectedId ((int) state[IDs::whPcBase] == 1 ? 1 : 2, juce::dontSendNotification);
         setlistToggle.setToggleState ((bool) state[IDs::sendSetlist], juce::dontSendNotification);
+        updateToggle.setToggleState (! state::getFlag (update::disabledFlag), juce::dontSendNotification);
     }
 
     void resized() override
@@ -241,7 +246,7 @@ public:
         auto left = r.removeFromLeft (juce::jmax (380, r.getWidth() * 2 / 5));
         r.removeFromLeft (12);
 
-        midiSection.setBounds (left.removeFromTop (Section::headerHeight + 4 * 62 + 8));
+        midiSection.setBounds (left.removeFromTop (Section::headerHeight + 4 * 62 + 44));
         left.removeFromTop (12);
         librarySection.setBounds (left);
         setupSection.setBounds (r);
@@ -258,6 +263,7 @@ public:
             field (whChannelLabel, whChannelBox);
             field (pcBaseLabel, pcBaseBox);
             setlistToggle.setBounds (m.removeFromTop (40));
+            updateToggle.setBounds (m.removeFromTop (36));
         }
 
         {
@@ -332,6 +338,7 @@ private:
     juce::Label qcChannelLabel, whChannelLabel, pcBaseLabel, statusLabel, libraryInfo;
     juce::ComboBox qcChannelBox, whChannelBox, pcBaseBox;
     juce::ToggleButton setlistToggle { "Send setlist (CC#32) with preset changes" };
+    juce::ToggleButton updateToggle { "Check for updates when PedalCues opens" };
     juce::TextButton saveDefaultButton { "Save as default" };
     juce::TextButton loadDefaultButton { "Load default" };
     juce::TextButton exportButton { "Export..." };

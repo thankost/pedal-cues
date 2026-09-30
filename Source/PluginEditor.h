@@ -6,6 +6,7 @@
 #include "PluginProcessor.h"
 #include "Theme.h"
 #include "Tour.h"
+#include "Update.h"
 
 class PedalCuesEditor final : public juce::AudioProcessorEditor,
                               public ui::TourHost,
@@ -27,6 +28,7 @@ public:
 
     void startTour (int step = 0);
     void showSupportDialog();
+    void showUpdateDialog();
     bool isTourVisible() const { return tour != nullptr; }
     void refreshNow() { cancelPendingUpdate(); handleAsyncUpdate(); }
 
@@ -58,6 +60,34 @@ private:
 
     juce::OwnedArray<juce::TextButton> tabButtons;
     juce::TextButton helpButton { "?" };
+
+    // Version and update status, under the title in the header.
+    // The "Update available" pill opens the update window; the small refresh button checks again.
+    struct UpdateBadge final : public juce::Component, public juce::SettableTooltipClient
+    {
+        UpdateBadge();
+
+        update::Info info;
+        std::function<void()> onOpen, onRefresh;
+
+        void setInfo (const update::Info&);
+        void paint (juce::Graphics&) override;
+        void resized() override { layoutRefresh(); }
+        void mouseUp (const juce::MouseEvent&) override;
+
+    private:
+        juce::String label() const;
+        juce::Rectangle<float> textArea() const;
+        void layoutRefresh();
+
+        struct RefreshButton final : public juce::Button
+        {
+            RefreshButton() : juce::Button ("Check for updates") {}
+            void paintButton (juce::Graphics&, bool over, bool down) override;
+        } refresh;
+    } updateBadge;
+
+    void checkForUpdates (bool force);
     std::vector<std::unique_ptr<ui::Page>> pages;
     std::unique_ptr<ui::TourOverlay> tour;
     int currentPage = 0;

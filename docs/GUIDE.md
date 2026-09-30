@@ -223,6 +223,7 @@ The drawing is saved with your project and stretches to whatever *Length* you pi
 - **MIDI channels:** match these to the pedals (see [step 2](#2-connect-your-rig)).
 - **Whammy program numbering:** if the Whammy lands one mode off, switch to *Zero-based*.
 - **Send setlist (CC#32):** turn this on if your presets live in different setlists.
+- **Check for updates when PedalCues opens:** on by default. PedalCues asks GitHub for the latest release (nothing else is sent) and shows the result under the title: **Up to date**, **Update available** (click it to see what's new and download), or **couldn't check for updates** when you're offline. The round arrow next to it checks again.
 - **Setup in Reaper:** pick **Separate outputs** or **Daisy chain via QC** to see the matching steps and signal flow (see [step 2](#2-connect-your-rig)).
 - **Library:** all your preset, scene, footswitch and Whammy names.
   - It is stored inside each Reaper project automatically.
@@ -242,6 +243,7 @@ The drawing is saved with your project and stretches to whatever *Length* you pi
 | Wrong preset loads | Check setlist, bank and slot in *Edit preset*. If presets are in other setlists, turn on *Send setlist*. |
 | Whammy doesn't react | If the QC is on USB and the Whammy hangs off the QC's Thru, that can't work: the QC doesn't forward USB MIDI (a known QC limitation). Use one of the [three working setups](#2-connect-your-rig). Otherwise check the cable direction (MIDI Out to MIDI In) and the channels, set the QC to a fixed channel (not *Omni*), and for the daisy chain turn on QC MIDI Thru. |
 | Whammy clips do nothing | Whammy clips must be on the **Whammy Cues** track, whose output leads to the Whammy. |
+| How do I update? | When the header says **Update available**, click it and choose **Download**. Close your DAW, then replace the plugin files the same way you [installed](#1-install) them. Your library and projects are kept. |
 | Whammy mode is one off | *Settings > Whammy program numbering > Zero-based*. |
 | Clip lands between bars | Turn on snap to grid in Reaper before dropping. |
 | macOS says PedalCues "is damaged and can't be opened" | It isn't damaged; macOS blocks apps downloaded from the internet that Apple hasn't notarised. Run the `xattr -cr` command from [Install](#1-install), or use *Privacy & Security > Open Anyway*. Use v0.4.1 or newer. |

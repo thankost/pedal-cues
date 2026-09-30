@@ -34,6 +34,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
   optional return to heel afterwards
 
 **Workflow**
+- Update notice: the header shows your version and whether a newer release is out (one GitHub request when it opens, can be turned off in Settings)
 - Everything is stored in the Reaper project, and you can save a **default library** that new instances load
 - Export/import library as XML (back it up, share it with the band)
 - MIDI passes through, so the dropped items and the live preview share one track and one route

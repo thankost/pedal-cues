@@ -445,6 +445,12 @@ int main (int argc, char** argv)
                                  : juce::File::getCurrentWorkingDirectory().getChildFile ("docs/images");
     outDir.createDirectory();
 
+    // Screenshots show the "up to date" badge without going online.
+    update::Info upToDate;
+    upToDate.status = update::Info::Status::upToDate;
+    upToDate.latest = JucePlugin_VersionString;
+    update::setOfflineResult (upToDate);
+
     PedalCuesProcessor proc;
     proc.state = state::createDefault();
     fillDemoState (proc.state);
