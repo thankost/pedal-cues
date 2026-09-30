@@ -179,9 +179,65 @@ void PedalCuesEditor::showHelpMenu()
     });
 }
 
+namespace
+{
+// The support message, closed with an X in the top-right corner (or Esc) instead of a Close button.
+class SupportWindow final : public juce::AlertWindow
+{
+public:
+    using juce::AlertWindow::AlertWindow;
+
+    void initialise()
+    {
+        closeButton.setTooltip ("Close");
+        closeButton.onClick = [this] { exitModalState (0); };
+        addAndMakeVisible (closeButton);
+        resized();
+    }
+
+    void resized() override
+    {
+        juce::AlertWindow::resized();
+        closeButton.setBounds (getWidth() - 40, 10, 28, 28);
+    }
+
+    bool keyPressed (const juce::KeyPress& key) override
+    {
+        if (key == juce::KeyPress::escapeKey)
+        {
+            exitModalState (0);
+            return true;
+        }
+        return juce::AlertWindow::keyPressed (key);
+    }
+
+private:
+    struct CloseButton final : public juce::Button
+    {
+        CloseButton() : juce::Button ("Close") {}
+
+        void paintButton (juce::Graphics& g, bool over, bool down) override
+        {
+            const auto b = getLocalBounds().toFloat();
+            if (over || down)
+            {
+                g.setColour (juce::Colours::white.withAlpha (down ? 0.18f : 0.1f));
+                g.fillEllipse (b);
+            }
+            const auto c = b.reduced (b.getWidth() * 0.32f);
+            g.setColour (juce::Colours::white.withAlpha (over ? 1.0f : 0.7f));
+            g.drawLine ({ c.getTopLeft(), c.getBottomRight() }, 2.0f);
+            g.drawLine ({ c.getTopRight(), c.getBottomLeft() }, 2.0f);
+        }
+    };
+
+    CloseButton closeButton;
+};
+} // namespace
+
 void PedalCuesEditor::showSupportDialog()
 {
-    auto* w = new juce::AlertWindow ("Support PedalCues",
+    auto* w = new SupportWindow ("Support PedalCues",
                                      "Hi, I'm Thanasis. My bandmate Leo and I play in ORIA, a progressive groove metal band from "
                                      "Thessaloniki, Greece. We were tired of programming MIDI by hand for every song, so I built PedalCues.\n\n"
                                      "PedalCues is free and open source, and it will stay that way. If it saves you time at rehearsal "
@@ -191,7 +247,7 @@ void PedalCuesEditor::showSupportDialog()
     w->addButton ("Buy Me a Coffee", 3);
     w->addButton ("PayPal", 1);
     w->addButton ("Revolut", 2);
-    w->addButton ("Close", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+    w->initialise();
 
     // Each service in its own brand colour.
     const std::pair<const char*, std::pair<juce::uint32, juce::uint32>> brandColours[] = {
