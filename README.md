@@ -3,6 +3,8 @@
 Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex / QC Mini** and the **DigiTech Whammy V**.
 A VST3 / AU / Standalone plugin (JUCE). Built for Reaper, works in any DAW that accepts dragged MIDI files.
 
+**[Download for Windows and macOS](https://thankost.github.io/pedal-cues/)**
+
 Drag a tile onto the arrangement → a **named MIDI item** lands at the drop position (e.g. `QC Scene B - Chorus`,
 `Whammy Oct Up [Chords]`, `Whammy Ramp Up 1 bar`). Click a tile's ▶ corner to send it to the pedal right away.
 
@@ -40,7 +42,7 @@ CueDrop-style USB sync would rely on Neural DSP's undocumented protocol, so it i
 
 ## Install (no code needed)
 
-Download the zip for your system from the repo's **Releases** page (or from the latest *Build* run's artifacts).
+Download the zip for your system from the [website](https://thankost.github.io/pedal-cues/) or the [Releases page](https://github.com/thankost/pedal-cues/releases/latest).
 
 **Windows**
 1. Unzip, copy `PedalCues.vst3` to `C:\Program Files\Common Files\VST3\`.

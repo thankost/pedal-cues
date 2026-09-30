@@ -22,7 +22,7 @@ PedalCues turns pedal changes into **drag and drop**. Each tile in the plugin is
 
 ## 1. Install
 
-You don't need the source code. Download the latest zip from the [Releases page](https://github.com/thankost/pedal-cues/releases/latest).
+You don't need the source code. Download the latest zip from the [PedalCues website](https://thankost.github.io/pedal-cues/) or the [Releases page](https://github.com/thankost/pedal-cues/releases/latest).
 
 | System | Download | Put it here |
 |---|---|---|
