@@ -192,6 +192,20 @@ void PedalCuesEditor::showSupportDialog()
     w->addButton ("PayPal", 1);
     w->addButton ("Revolut", 2);
     w->addButton ("Close", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+
+    // Each service in its own brand colour.
+    const std::pair<const char*, std::pair<juce::uint32, juce::uint32>> brandColours[] = {
+        { "Buy Me a Coffee", { 0xffffdd00, 0xff000000 } },
+        { "PayPal",          { 0xff0070ba, 0xffffffff } },
+        { "Revolut",         { 0xffffffff, 0xff191c1f } },
+    };
+    for (const auto& [name, colours] : brandColours)
+        if (auto* b = w->getButton (name))
+        {
+            b->setColour (juce::TextButton::buttonColourId, juce::Colour (colours.first));
+            b->setColour (juce::TextButton::textColourOffId, juce::Colour (colours.second));
+        }
+
     w->enterModalState (true, juce::ModalCallbackFunction::create ([] (int result)
     {
         if (result == 1)
