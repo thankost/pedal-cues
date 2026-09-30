@@ -26,9 +26,29 @@ public:
         presetView.setScrollBarThickness (8);
         addAndMakeVisible (presetView);
 
-        comboToggle.setTooltip ("Scene and stomp tiles also load their preset first (the scene or footswitch follows 1/4 beat later)");
-        comboToggle.onClick = [this] { state.setProperty (IDs::comboPresetScene, comboToggle.getToggleState(), nullptr); };
-        addAndMakeVisible (comboToggle);
+        // What scene and stomp tiles act on: their own preset (loaded first) or whatever the QC has loaded.
+        targetChoice.setComponentID ("qc.target");
+        targetChoice.setInterceptsMouseClicks (false, true);
+        addAndMakeVisible (targetChoice);
+        for (auto* b : { &loadFirstButton, &currentButton })
+        {
+            b->setClickingTogglesState (true);
+            b->setRadioGroupId (4302);
+            b->setColour (juce::TextButton::buttonColourId, surface);
+            b->setColour (juce::TextButton::buttonOnColourId, qcBlue);
+            b->setColour (juce::TextButton::textColourOffId, dim);
+            b->setColour (juce::TextButton::textColourOnId, juce::Colours::black);
+            targetChoice.addAndMakeVisible (b);
+        }
+        loadFirstButton.setConnectedEdges (juce::Button::ConnectedOnRight);
+        currentButton.setConnectedEdges (juce::Button::ConnectedOnLeft);
+        currentButton.setButtonText ("Current QC preset");
+        loadFirstButton.setTooltip ("Scene and stomp tiles load this preset first, then switch the scene or footswitch 1/16 later. "
+                                    "Works whatever preset the QC is on.");
+        currentButton.setTooltip ("Scene and stomp tiles only switch the scene or footswitch, on whatever preset the QC has loaded. "
+                                  "No preset reload, so no audio gap.");
+        loadFirstButton.onClick = [this] { if (loadFirstButton.getToggleState()) state.setProperty (IDs::comboPresetScene, true, nullptr); };
+        currentButton.onClick   = [this] { if (currentButton.getToggleState())   state.setProperty (IDs::comboPresetScene, false, nullptr); };
 
         stompOnToggle.setColour (juce::ToggleButton::tickColourId, ledGreen);
         stompOnToggle.setTooltip ("Whether stomp tiles engage (ON) or bypass (OFF) the footswitch");
@@ -46,7 +66,10 @@ public:
         const auto combo = (bool) state[IDs::comboPresetScene];
         const auto stompOn = (bool) state[IDs::stompOn];
 
-        comboToggle.setToggleState (combo, juce::dontSendNotification);
+        loadFirstButton.setButtonText (preset.isValid() ? "Load " + shortLocation (preset) + " first" : "Load preset first");
+        stompsSection.hint = "CC#35-42  -  " + (combo ? "after loading " + shortLocation (preset) : juce::String ("on the current QC preset"));
+        stompsSection.repaint();
+        (combo ? loadFirstButton : currentButton).setToggleState (true, juce::dontSendNotification);
         stompOnToggle.setToggleState (stompOn, juce::dontSendNotification);
         stompOnToggle.setButtonText (stompOn ? "Tiles switch ON" : "Tiles switch OFF");
 
@@ -78,7 +101,8 @@ public:
             auto* t = sceneTiles.add (new Tile (proc, Tile::Look::footswitch));
             t->title = scene[IDs::name].toString();
             t->badge = cues::qc::letter (s);
-            t->subtitle = combo ? "loads " + presetLocation (preset) + " first" : "Scene " + cues::qc::letter (s);
+            t->subtitle = combo ? shortLocation (preset) + " > Scene " + cues::qc::letter (s)
+                                : "Scene " + cues::qc::letter (s) + " - current preset";
             t->colour = state::colourOf (scene);
             t->setTooltip ("Drag onto the timeline to switch to this scene. Double-click to rename, right-click for colour.");
             t->makeCue = [this, sel, s] { return sceneCue (sel, s); };
@@ -152,7 +176,13 @@ public:
         r.removeFromBottom (12);
         scenesSection.setBounds (r);
 
-        comboToggle.setBounds (scenesSection.headerArea().removeFromRight (240));
+        {
+            auto hdr = scenesSection.headerArea().withSizeKeepingCentre (scenesSection.headerArea().getWidth(), 28);
+            targetChoice.setBounds (hdr.removeFromRight (300));
+            auto c = targetChoice.getLocalBounds();
+            loadFirstButton.setBounds (c.removeFromLeft (c.getWidth() / 2));
+            currentButton.setBounds (c);
+        }
         stompOnToggle.setBounds (stompsSection.headerArea().removeFromRight (160));
 
         // QC display layout: scenes A-D on the top row, E-H on the bottom row.
@@ -181,6 +211,12 @@ private:
     int selectedIndex() const
     {
         return juce::jlimit (0, juce::jmax (0, qcTree().getNumChildren() - 1), (int) state[IDs::selectedPreset]);
+    }
+
+    // Bank and slot as on the QC's preset grid, e.g. "1A".
+    static juce::String shortLocation (const juce::ValueTree& p)
+    {
+        return juce::String ((int) p[IDs::bank]) + cues::qc::letter ((int) p[IDs::slot]);
     }
 
     static juce::String presetLocation (const juce::ValueTree& p)
@@ -339,14 +375,15 @@ private:
     juce::ValueTree state;
 
     Section presetsSection { "qc.presetList", "Presets", "click to open" };
-    Section scenesSection  { "qc.scenes", "Scenes", "CC#43", qcBlue };
+    Section scenesSection  { "qc.scenes", "Scenes", "CC#43  -  scenes & stomps act on:", qcBlue };
     Section stompsSection  { "qc.stomps", "Stomps", "CC#35-42", ledGreen };
     Section utilsSection   { "qc.utils", "Utilities", "tuner & gig view" };
 
     juce::TextButton addButton { "+ Preset" };
     juce::Viewport presetView;
     juce::Component presetList;
-    juce::ToggleButton comboToggle { "Also load the preset" };
+    juce::Component targetChoice;
+    juce::TextButton loadFirstButton, currentButton;
     juce::ToggleButton stompOnToggle { "Tiles switch ON" };
 
     juce::OwnedArray<Tile> presetTiles, sceneTiles, stompTiles, utilTiles;

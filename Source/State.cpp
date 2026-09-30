@@ -86,7 +86,7 @@ void sanitise (juce::ValueTree& root)
     setDefault (root, IDs::whPcBase, 1);
     setDefault (root, IDs::sendSetlist, false);
     setDefault (root, IDs::selectedPreset, 0);
-    setDefault (root, IDs::comboPresetScene, false);
+    setDefault (root, IDs::comboPresetScene, true);
     setDefault (root, IDs::stompOn, true);
     setDefault (root, IDs::whChords, false);
     setDefault (root, IDs::whBypass, false);

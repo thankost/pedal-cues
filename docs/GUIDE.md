@@ -107,6 +107,10 @@ The first time you open PedalCues, a quick tour walks you through every area. It
 
 ![Quick tour highlighting the scenes](images/tour-scenes.png)
 
+One step explains the **Load 1A first / Current QC preset** choice:
+
+![Quick tour: which preset scenes act on](images/tour-target.png)
+
 ---
 
 ## 5. Quad Cortex page
@@ -120,7 +124,7 @@ The first time you open PedalCues, a quick tour walks you through every area. It
 | **Presets** (left) | Your QC presets. Click one to open it; drag it to load that preset. | `CC#0` bank page, optional `CC#32` setlist, then Program Change |
 | **Loaded preset** screen | The opened preset, with its location and scene colours. Drag it like a preset. | Same as above |
 | **Scenes** | 8 scenes laid out like the QC display: **A-D top, E-H bottom**. | `CC#43` = 0-7 |
-| **Also load the preset** switch | Scene and stomp tiles load their preset first, then the scene or footswitch a 1/16 later, so they work whatever preset the QC is on. | Preset + `CC#43` / `CC#35-42` |
+| **Load 1A first / Current QC preset** | Picks which preset scene and stomp tiles act on. See [below](#which-preset-do-scenes-and-stomps-act-on). | Preset + `CC#43` / `CC#35-42`, or the CC alone |
 | **Stomps** | Switch one footswitch A-H. The header switch picks whether tiles send **ON** or **OFF**. | `CC#35-42` |
 | **Utilities** | Tuner on/off and gig view mode (Preset / Scene / Stomp). | `CC#45`, `CC#47` |
 
@@ -129,6 +133,19 @@ The first time you open PedalCues, a quick tour walks you through every area. It
 - **Drag** it onto the timeline to create a named MIDI clip, for example `QC Scene D - Chorus`.
 - **Click the round play button** to send it to the pedal immediately.
 - **Double-click** to rename it. **Right-click** for colour, reorder, duplicate, delete, or *Send to pedal now*.
+
+### Which preset do scenes and stomps act on?
+
+The choice at the top right of the **Scenes** header decides this for both scene and stomp tiles:
+
+- **Load 1A first** (the default; the button names the preset you have open). A scene or stomp tile first loads its own preset, then switches the scene or footswitch 1/16 later. It works whatever preset the QC is on. Scene tiles read `1A > Scene B` and the Stomps header says *after loading 1A*.
+- **Current QC preset.** A tile sends only the scene or footswitch change, and the QC applies it to the preset it already has loaded. There's no preset reload, so no audio gap. Use this for scene changes inside a song, after a preset clip. Scene tiles read `Scene B - current preset`.
+
+![What a scene tile does in each mode](images/preset-target.png)
+
+The clip names show the difference on the timeline too: `QC Clean Rig > B - Verse` loads the preset first, while `QC Scene B - Verse` switches only the scene.
+
+> Projects saved with PedalCues 0.4.2 or older keep their old choice. If yours was set to *Current QC preset* and you want the new behaviour, click **Load … first** once.
 
 ### Adding a preset
 
@@ -144,7 +161,7 @@ The first time you open PedalCues, a quick tour walks you through every area. It
 This example covers a song with a clean verse, a crunchy chorus and a Whammy solo.
 
 1. **Load the preset at bar 1.** Click *Clean Rig* in the list, then drag the **Loaded preset** screen to bar 1.
-2. **Set the intro scene.** Drag the **Intro** scene tile to bar 1 as well, just after the preset clip. You can also turn on *Also load the preset* and use one clip.
+2. **Set the intro scene.** With **Load 1A first** selected (the default), dragging the **Intro** scene tile to bar 1 loads the preset and the scene in one clip. With *Current QC preset*, drag the preset first, then the scene just after it.
 3. **Mark every section.** Drag **Verse** to bar 3, **Chorus** to bar 9, **Solo** to bar 13, and so on. Each clip is named after the scene, so the arrangement reads like a setlist.
 4. **Whammy mode for the solo.** On the Whammy tab, drag **Oct Up** to one beat before the solo.
 5. **Treadle move.** Set *Length* to `2 bars`, then drag **Rise & Fall** to the bar where the bend starts.
@@ -226,7 +243,7 @@ The drawing is saved with your project and stretches to whatever *Length* you pi
 |---|---|
 | Nothing happens on the pedal | Check the track's MIDI Hardware Output and that the QC's MIDI device is enabled in Reaper preferences. Try a tile's play button. |
 | Standalone app: tiles do nothing | In *Options > Audio/MIDI Settings*, choose a real audio **Output** device (not *None*) and set **MIDI Output** to the Quad Cortex. On Windows, close Reaper first; only one program can use a MIDI port. |
-| Scene or stomp changes the wrong preset | Scene and stomp tiles act on whatever preset the QC has loaded. Turn on **Also load the preset** so they load their own preset first. |
+| Scene or stomp changes the wrong preset | You're on **Current QC preset**, so tiles act on whatever preset the QC has loaded. Pick **Load 1A first** in the Scenes header so they load their own preset first. |
 | A stomp tile changes scenes | The QC is in Scene mode, where footswitch A-H select scenes. Put the QC in Stomp mode (or drop the **Stomp Mode** tile before your stomp cues). Before v0.4.2 the Scene Mode and Stomp Mode tiles were swapped; drag those clips in again. |
 | Wrong preset loads | Check setlist, bank and slot in *Edit preset*. If presets are in other setlists, turn on *Send setlist*. |
 | Whammy doesn't react | Check the MIDI cable direction and the channels. Set the QC to a fixed channel, not *Omni*. Option A: turn on QC MIDI Thru. If that still fails, switch to option B (interface MIDI Out). |

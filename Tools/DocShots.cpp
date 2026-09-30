@@ -343,6 +343,52 @@ juce::Image drawRouting()
 
     return img;
 }
+
+// What a scene tile does in each "scenes & stomps act on" mode, when the QC is on another preset.
+juce::Image drawPresetTarget()
+{
+    constexpr int w = 1120, h = 400;
+    juce::Image img (juce::Image::ARGB, (int) (w * scale), (int) (h * scale), true);
+    juce::Graphics g (img);
+    g.addTransform (juce::AffineTransform::scale (scale));
+    g.fillAll (background);
+
+    auto heading = [&g] (float y, const juce::String& title, const juce::String& sub)
+    {
+        g.setColour (text);
+        g.setFont (font (13.0f, true));
+        g.drawText (title, juce::Rectangle<float> (40.0f, y, 1040.0f, 20.0f), juce::Justification::centredLeft);
+        g.setColour (dim);
+        g.setFont (font (12.0f));
+        g.drawText (sub, juce::Rectangle<float> (40.0f, y + 20.0f, 1040.0f, 18.0f), juce::Justification::centredLeft);
+    };
+    const auto grey = juce::Colour (0xff9aa0ac);
+
+    auto row = [&] (float y, const juce::String& title, const juce::String& sub, const juce::String& sends,
+                    const juce::String& resultTitle, const juce::String& resultSub, juce::Colour resultColour)
+    {
+        heading (y, title, sub);
+        const juce::Rectangle<float> before (40.0f, y + 50.0f, 250.0f, 96.0f);
+        const juce::Rectangle<float> tile (415.0f, y + 50.0f, 250.0f, 96.0f);
+        const juce::Rectangle<float> after (830.0f, y + 50.0f, 250.0f, 96.0f);
+        box (g, before, grey, "QC is on 2H", "Drop C Heavy, scene A");
+        box (g, tile, accent, "Click / play Scene B", "Tile from preset 1A Clean Rig");
+        box (g, after, resultColour, resultTitle, resultSub);
+        arrow (g, { before.getRight(), before.getCentreY() }, { tile.getX(), tile.getCentreY() }, grey, "then", true);
+        arrow (g, { tile.getRight(), tile.getCentreY() }, { after.getX(), after.getCentreY() }, accent, sends, false);
+    };
+
+    row (20.0f, "LOAD 1A FIRST  (default)", "Scene and stomp tiles load their own preset, then switch. Works whatever preset the QC is on.",
+         "PC 1A + CC#43", "QC on 1A, scene B", "Clean Rig > Verse", ledGreen);
+
+    g.setColour (outline);
+    g.fillRect (40.0f, 200.0f, 1040.0f, 1.0f);
+
+    row (220.0f, "CURRENT QC PRESET", "Tiles only switch the scene or footswitch on the preset already loaded. No reload, no audio gap.",
+         "CC#43 only", "QC stays on 2H, scene B", "Drop C Heavy > Verse", qcBlue);
+
+    return img;
+}
 } // namespace
 
 //==============================================================================
@@ -376,7 +422,7 @@ int main (int argc, char** argv)
         save (snapshot (editor), outDir.getChildFile ("settings.png"));
 
         const std::pair<int, const char*> tourShots[] = {
-            { 0, "tour-welcome.png" }, { 3, "tour-scenes.png" }, { 6, "tour-whammy.png" }, { 8, "tour-treadle.png" }
+            { 0, "tour-welcome.png" }, { 3, "tour-scenes.png" }, { 4, "tour-target.png" }, { 7, "tour-whammy.png" }, { 9, "tour-treadle.png" }
         };
         for (const auto& [step, name] : tourShots)
         {
@@ -401,6 +447,7 @@ int main (int argc, char** argv)
 
     save (drawTimeline (proc), outDir.getChildFile ("timeline.png"));
     save (drawRouting(), outDir.getChildFile ("routing.png"));
+    save (drawPresetTarget(), outDir.getChildFile ("preset-target.png"));
     save (drawIcon (1024), outDir.getChildFile ("icon.png"));
     if (argc > 2)
         save (drawIcon (1024), juce::File::getCurrentWorkingDirectory().getChildFile (argv[2]));

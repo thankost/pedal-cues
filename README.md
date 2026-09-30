@@ -21,7 +21,8 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 **Quad Cortex**
 - Preset tiles (name, colour, setlist / bank / slot) → `CC#0` page [+ `CC#32` setlist] + Program Change
 - 8 scene tiles per preset in gig-view colours → `CC#43`
-- Optional *preset + scene* combo cue (scene sent 1/4 beat after the load)
+- Scene and stomp tiles either **load their own preset first** (default; the scene/footswitch follows 1/16 later)
+  or act on the **current QC preset** only
 - Footswitch stomps A–H on/off → `CC#35–42`; tuner on/off → `CC#45`; gig mode → `CC#47`
 
 **Whammy V**
