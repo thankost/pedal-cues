@@ -18,7 +18,7 @@ const std::vector<TourStep>& tourSteps()
           "This screen shows the preset you opened. Drag it onto the timeline where the song starts: the clip "
           "loads that preset at that bar. The chips on the right preview its scene colours." },
         { 0, { "qc.scenes" }, "3. Drop scenes on song sections",
-          "The eight scenes are laid out like the QC footswitches (E-H on top, A-D below). Drag a scene to where "
+          "The eight scenes are laid out like the QC display (A-D on top, E-H below). Drag a scene to where "
           "the verse, chorus or solo starts. Double-click to rename, right-click for a colour." },
         { 0, { "qc.scenes" }, "Test any tile live",
           "Every tile has a round play button in its corner. Click it and the MIDI goes to the pedal immediately, "
@@ -27,7 +27,7 @@ const std::vector<TourStep>& tourSteps()
           "Switch single footswitches on or off, open the tuner for a guitar change, or flip the QC between "
           "preset, scene and stomp mode. The switch in the Stomps header picks ON or OFF tiles." },
         { 1, { "wh.modes" }, "5. Whammy V modes",
-          "The Whammy tab works the same way. Drag a mode to switch the Whammy there. Colours follow the pedal: "
+          "The Whammy tab works the same way. Classic Whammy modes sit on the first row, Detune and Harmony below. Colours: "
           "red Whammy, blue Detune, green Harmony. A dark LED means the mode loads bypassed." },
         { 1, { "wh.options" }, "Chords, bypass, heel first",
           "Chords uses the polyphonic program range. Load bypassed selects a mode without engaging it. Heel first "

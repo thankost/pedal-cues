@@ -154,13 +154,13 @@ public:
         comboToggle.setBounds (scenesSection.headerArea().removeFromRight (240));
         stompOnToggle.setBounds (stompsSection.headerArea().removeFromRight (160));
 
-        // QC layout: footswitches E-H on the top row, A-D on the bottom row.
+        // QC display layout: scenes A-D on the top row, E-H on the bottom row.
         auto grid = scenesSection.contentArea().expanded (3);
         const auto rowH = grid.getHeight() / 2;
         const auto cellW = grid.getWidth() / 4;
         for (int s = 0; s < sceneTiles.size(); ++s)
         {
-            const auto row = s < 4 ? 1 : 0;
+            const auto row = s < 4 ? 0 : 1;
             sceneTiles[s]->setBounds (grid.getX() + (s % 4) * cellW, grid.getY() + row * rowH, cellW, rowH);
         }
 

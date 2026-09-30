@@ -240,23 +240,25 @@ public:
         r.removeFromBottom (12);
         modesSection.setBounds (r);
 
-        // Modes: Whammy (10) | Detune (2) | Harmony (9)
+        // Modes, as on the pedal: row 1 = Whammy (10), row 2 = Detune (2) + Harmony (9).
         auto m = modesSection.contentArea();
-        constexpr int gap = 14;
-        const auto unit = (m.getWidth() - 2 * gap) / 11;
-        const std::array<std::tuple<int, int, int, juce::String, juce::Colour>, 3> spec { {
-            { 0, 10, 5, "WHAMMY", cues::whammy::colour (0) },
-            { 10, 2, 1, "DETUNE", cues::whammy::colour (10) },
-            { 12, 9, 5, "HARMONY", cues::whammy::colour (12) } } };
+        constexpr int gap = 14, captionH = 18, rowGap = 10;
+        const auto rowH = (m.getHeight() - 2 * captionH - rowGap) / 2;
 
         groups.clear();
-        for (const auto& [first, count, cols, name, colour] : spec)
-        {
-            auto col = m.removeFromLeft (unit * cols);
-            m.removeFromLeft (gap);
-            groups.push_back ({ name, colour, col.removeFromTop (18) });
-            layoutGrid (modeTiles, col.expanded (3, 3), cols, 0, first, count);
-        }
+        auto row1 = m.removeFromTop (captionH + rowH);
+        groups.push_back ({ "WHAMMY", cues::whammy::colour (0), row1.removeFromTop (captionH) });
+        layoutGrid (modeTiles, row1.expanded (3, 3), 10, 0, 0, 10);
+
+        m.removeFromTop (rowGap);
+        auto row2 = m;
+        const auto unit = (row2.getWidth() - gap) / 11;
+        auto detune = row2.removeFromLeft (unit * 2);
+        row2.removeFromLeft (gap);
+        groups.push_back ({ "DETUNE", cues::whammy::colour (10), detune.removeFromTop (captionH) });
+        layoutGrid (modeTiles, detune.expanded (3, 3), 2, 0, 10, 2);
+        groups.push_back ({ "HARMONY", cues::whammy::colour (12), row2.removeFromTop (captionH) });
+        layoutGrid (modeTiles, row2.expanded (3, 3), 9, 0, 12, 9);
 
         auto controlsRow = sweepsSection.contentArea().removeFromTop (34);
         sweepControls.setBounds (controlsRow);

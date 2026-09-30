@@ -87,7 +87,7 @@ The first time you open PedalCues, a quick tour walks you through every area. It
 |---|---|---|
 | **Presets** (left) | Your QC presets. Click one to open it; drag it to load that preset. | `CC#0` bank page, optional `CC#32` setlist, then Program Change |
 | **Loaded preset** screen | The opened preset, with its location and scene colours. Drag it like a preset. | Same as above |
-| **Scenes** | 8 scenes laid out like the QC footswitches: **E-H top, A-D bottom**. | `CC#43` = 0-7 |
+| **Scenes** | 8 scenes laid out like the QC display: **A-D top, E-H bottom**. | `CC#43` = 0-7 |
 | **Also load the preset** switch | Scene tiles load their preset first, then the scene a 1/16 later. Handy after a preset change. | Preset + `CC#43` |
 | **Stomps** | Switch one footswitch A-H. The header switch picks whether tiles send **ON** or **OFF**. | `CC#35-42` |
 | **Utilities** | Tuner on/off and gig view mode (Preset / Scene / Stomp). | `CC#45`, `CC#47` |
@@ -129,7 +129,7 @@ This example covers a song with a clean verse, a crunchy chorus and a Whammy sol
 
 ### Modes
 
-The 21 Whammy V modes are grouped like the pedal's knob. Colours match the pedal: **Whammy** (red), **Detune** (blue), **Harmony** (green). Drag a mode tile to switch the Whammy with a Program Change.
+The 21 Whammy V modes are laid out like the pedal: the classic **Whammy** modes on the first row, **Detune** and **Harmony** on the second. Colours match the pedal: **Whammy** (red), **Detune** (blue), **Harmony** (green). Drag a mode tile to switch the Whammy with a Program Change.
 
 - **Chords:** uses the polyphonic *Chords* program range (43-84) instead of *Classic* (1-42).
 - **Load bypassed:** selects the mode without engaging the effect. The tile LEDs go dark to show this.
