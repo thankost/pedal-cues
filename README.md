@@ -126,7 +126,7 @@ build/DocShots_artefacts/Release/DocShots docs/images
 ## Support
 
 PedalCues is free. If it helps your show and you'd like to say thanks, you can donate (completely optional):
-[PayPal](https://paypal.me/athkost) · [Revolut](https://revolut.me/athkost). In the plugin: **? > Support PedalCues**.
+[Buy Me a Coffee](https://buymeacoffee.com/athkost) · [PayPal](https://paypal.me/athkost) · [Revolut](https://revolut.me/athkost). In the plugin: **? > Support PedalCues**.
 
 ## License
 

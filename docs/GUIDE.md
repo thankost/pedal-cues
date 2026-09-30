@@ -258,7 +258,7 @@ The drawing is saved with your project and stretches to whatever *Length* you pi
 
 Found a bug or have an idea? [Open an issue](https://github.com/thankost/pedal-cues/issues).
 
-Enjoying PedalCues? It's free; if you'd like to support it, you can donate via [PayPal](https://paypal.me/athkost) or [Revolut](https://revolut.me/athkost), or from **? > Support PedalCues** in the plugin. Completely optional.
+Enjoying PedalCues? It's free; if you'd like to support it, you can donate via [Buy Me a Coffee](https://buymeacoffee.com/athkost), [PayPal](https://paypal.me/athkost) or [Revolut](https://revolut.me/athkost), or from **? > Support PedalCues** in the plugin. Completely optional.
 
 ---
 

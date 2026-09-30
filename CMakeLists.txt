@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version")
 set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Universal binary")
 
-project(PedalCues VERSION 0.4.6 LANGUAGES C CXX)
+project(PedalCues VERSION 0.4.7 LANGUAGES C CXX)
 
 option(PEDALCUES_COPY_PLUGIN "Install plugins into the system plug-in folders after building" ON)
 

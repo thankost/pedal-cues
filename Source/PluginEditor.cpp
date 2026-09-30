@@ -188,6 +188,7 @@ void PedalCuesEditor::showSupportDialog()
                                      "or on stage, a coffee helps me keep improving it: new features, fixes, and support for more pedals.\n\n"
                                      "Completely optional. Thanks for playing loud!",
                                      juce::MessageBoxIconType::NoIcon);
+    w->addButton ("Buy Me a Coffee", 3);
     w->addButton ("PayPal", 1);
     w->addButton ("Revolut", 2);
     w->addButton ("Close", 0, juce::KeyPress (juce::KeyPress::escapeKey));
@@ -197,6 +198,8 @@ void PedalCuesEditor::showSupportDialog()
             juce::URL (ui::paypalUrl).launchInDefaultBrowser();
         else if (result == 2)
             juce::URL (ui::revolutUrl).launchInDefaultBrowser();
+        else if (result == 3)
+            juce::URL (ui::coffeeUrl).launchInDefaultBrowser();
     }), true);
 }
 
