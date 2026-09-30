@@ -24,6 +24,8 @@ std::unique_ptr<Page> makeSettingsPage (PedalCuesProcessor&, std::function<void(
 inline const juce::String repoUrl { "https://github.com/thankost/pedal-cues" };
 inline const juce::String author { "Thanasis Kostopoulos" };
 inline const juce::String guideUrl { "https://github.com/thankost/pedal-cues/blob/main/docs/GUIDE.md" };
+inline const juce::String paypalUrl { "https://paypal.me/athkost" };
+inline const juce::String revolutUrl { "https://revolut.me/athkost" };
 
 //==============================================================================
 // A rounded card with a small caps title and an optional hint, drawn behind the

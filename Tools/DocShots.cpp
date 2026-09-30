@@ -153,7 +153,7 @@ juce::Image drawTimeline (PedalCuesProcessor& proc)
         g.drawText (tracks[t], juce::Rectangle<float> (18.0f, y + 8.0f, headerW - 30.0f, 18.0f), juce::Justification::centredLeft);
         g.setColour (dim);
         g.setFont (font (11.0f));
-        g.drawText (t == 0 ? "audio" : (t == 1 ? "MIDI > Quad Cortex" : "MIDI > QC > Whammy"), juce::Rectangle<float> (18.0f, y + 26.0f, headerW - 30.0f, 16.0f),
+        g.drawText (t == 0 ? "audio" : (t == 1 ? "MIDI > Quad Cortex" : "MIDI > interface > Whammy"), juce::Rectangle<float> (18.0f, y + 26.0f, headerW - 30.0f, 16.0f),
                     juce::Justification::centredLeft);
     }
 
@@ -312,34 +312,43 @@ juce::Image drawRouting()
     };
     const auto grey = juce::Colour (0xff9aa0ac);
 
-    heading (20.0f, "OPTION A  -  WHAMMY VIA QC", "One cue track. The QC passes the Whammy's MIDI on from its MIDI Out (MIDI Thru on).");
-    const juce::Rectangle<float> pc (40.0f, 70.0f, 280.0f, 96.0f);
+    heading (20.0f, "OPTION A  -  WHAMMY VIA AUDIO INTERFACE  (recommended)",
+             "Two cue tracks, one per pedal. The QC over USB, the Whammy from any interface with a 5-pin MIDI Out.");
+    const juce::Rectangle<float> qcTrack (40.0f, 70.0f, 280.0f, 96.0f);
     const juce::Rectangle<float> qc (420.0f, 70.0f, 280.0f, 96.0f);
-    const juce::Rectangle<float> wh (800.0f, 70.0f, 280.0f, 96.0f);
-    box (g, pc, accent, "Reaper: Pedal Cues", "MIDI Hardware Output = Quad Cortex");
-    box (g, qc, qcBlue, "Quad Cortex / Mini", "Channel 1. MIDI Thru on");
-    box (g, wh, whammyRed, "Whammy V", "Channel 2");
-    arrow (g, { pc.getRight(), pc.getCentreY() }, { qc.getX(), qc.getCentreY() }, accent, "USB", false);
-    arrow (g, { qc.getRight(), qc.getCentreY() }, { wh.getX(), wh.getCentreY() }, qcBlue, "MIDI", false);
-
-    g.setColour (outline);
-    g.fillRect (40.0f, 200.0f, 1040.0f, 1.0f);
-
-    heading (220.0f, "OPTION B  -  WHAMMY VIA AUDIO INTERFACE",
-             "Two cue tracks, one per pedal. For a sound card with a MIDI Out, or if your QC does not forward USB MIDI.");
-    const juce::Rectangle<float> qcTrack (40.0f, 270.0f, 280.0f, 96.0f);
-    const juce::Rectangle<float> qc2 (420.0f, 270.0f, 280.0f, 96.0f);
-    const juce::Rectangle<float> whTrack (40.0f, 420.0f, 280.0f, 96.0f);
-    const juce::Rectangle<float> iface (420.0f, 420.0f, 280.0f, 96.0f);
-    const juce::Rectangle<float> wh2 (800.0f, 420.0f, 280.0f, 96.0f);
+    const juce::Rectangle<float> whTrack (40.0f, 190.0f, 280.0f, 96.0f);
+    const juce::Rectangle<float> iface (420.0f, 190.0f, 280.0f, 96.0f);
+    const juce::Rectangle<float> wh (800.0f, 190.0f, 280.0f, 96.0f);
     box (g, qcTrack, accent, "Reaper: QC Cues", "MIDI Hardware Output = Quad Cortex");
-    box (g, qc2, qcBlue, "Quad Cortex / Mini", "Channel 1");
+    box (g, qc, qcBlue, "Quad Cortex / Mini", "Channel 1");
     box (g, whTrack, accent, "Reaper: Whammy Cues", "MIDI Hardware Output = interface");
     box (g, iface, grey, "Audio / MIDI interface", "Any interface with a 5-pin MIDI Out");
-    box (g, wh2, whammyRed, "Whammy V", "Channel 2");
-    arrow (g, { qcTrack.getRight(), qcTrack.getCentreY() }, { qc2.getX(), qc2.getCentreY() }, accent, "USB", false);
+    box (g, wh, whammyRed, "Whammy V", "Channel 2");
+    arrow (g, { qcTrack.getRight(), qcTrack.getCentreY() }, { qc.getX(), qc.getCentreY() }, accent, "USB", false);
     arrow (g, { whTrack.getRight(), whTrack.getCentreY() }, { iface.getX(), iface.getCentreY() }, accent, "USB", false);
-    arrow (g, { iface.getRight(), iface.getCentreY() }, { wh2.getX(), wh2.getCentreY() }, grey, "MIDI", false);
+    arrow (g, { iface.getRight(), iface.getCentreY() }, { wh.getX(), wh.getCentreY() }, grey, "MIDI", false);
+
+    g.setColour (outline);
+    g.fillRect (40.0f, 318.0f, 1040.0f, 1.0f);
+
+    heading (338.0f, "OPTION B  -  CHAIN THROUGH THE QC'S MIDI IN",
+             "One cue track. The QC's MIDI Thru only passes on 5-pin MIDI, not USB, so the chain starts at an interface's MIDI Out.");
+    const juce::Rectangle<float> track (40.0f, 390.0f, 220.0f, 96.0f);
+    const juce::Rectangle<float> iface2 (310.0f, 390.0f, 220.0f, 96.0f);
+    const juce::Rectangle<float> qc2 (580.0f, 390.0f, 220.0f, 96.0f);
+    const juce::Rectangle<float> wh2 (860.0f, 390.0f, 220.0f, 96.0f);
+    box (g, track, accent, "Reaper: Pedal Cues", "Output = interface MIDI Out");
+    box (g, iface2, grey, "Audio / MIDI interface", "5-pin MIDI Out");
+    box (g, qc2, qcBlue, "Quad Cortex", "Ch 1. MIDI In, MIDI Thru on");
+    box (g, wh2, whammyRed, "Whammy V", "Channel 2");
+    arrow (g, { track.getRight(), track.getCentreY() }, { iface2.getX(), iface2.getCentreY() }, accent, "USB", false);
+    arrow (g, { iface2.getRight(), iface2.getCentreY() }, { qc2.getX(), qc2.getCentreY() }, grey, "MIDI", false);
+    arrow (g, { qc2.getRight(), qc2.getCentreY() }, { wh2.getX(), wh2.getCentreY() }, qcBlue, "Thru", false);
+
+    g.setColour (whammyRed);
+    g.setFont (font (12.0f, true));
+    g.drawText ("Not supported: QC on USB only, with QC MIDI Out > Whammy. The QC does not forward USB MIDI to its MIDI Out.",
+                juce::Rectangle<float> (40.0f, 510.0f, 1040.0f, 20.0f), juce::Justification::centredLeft);
 
     return img;
 }
@@ -418,8 +427,6 @@ int main (int argc, char** argv)
         save (snapshot (editor), outDir.getChildFile ("whammy-draw.png"));
         proc.state.setProperty (IDs::sweepDraw, false, nullptr);
         editor.refreshNow();
-        editor.showPage (2);
-        save (snapshot (editor), outDir.getChildFile ("settings.png"));
 
         const std::pair<int, const char*> tourShots[] = {
             { 0, "tour-welcome.png" }, { 3, "tour-scenes.png" }, { 4, "tour-target.png" }, { 7, "tour-whammy.png" }, { 9, "tour-treadle.png" }
@@ -432,17 +439,18 @@ int main (int argc, char** argv)
     }
 
     {
-        // Settings page in "Whammy via interface" mode; the user's own choice is restored afterwards.
-        const auto previous = state::getFlag ("setupViaInterface");
-        state::setFlag ("setupViaInterface", true);
+        // Settings page in both setup modes; the user's own choice is restored afterwards.
+        const auto previous = state::getFlag ("setupViaQcChain");
+        for (const auto& [viaQc, name] : { std::pair<bool, const char*> { false, "settings.png" }, { true, "settings-qc-chain.png" } })
         {
+            state::setFlag ("setupViaQcChain", viaQc);
             PedalCuesEditor editor (proc, false);
             editor.setSize (1120, 760);
             editor.refreshNow();
             editor.showPage (2);
-            save (snapshot (editor), outDir.getChildFile ("settings-interface.png"));
+            save (snapshot (editor), outDir.getChildFile (name));
         }
-        state::setFlag ("setupViaInterface", previous);
+        state::setFlag ("setupViaQcChain", previous);
     }
 
     save (drawTimeline (proc), outDir.getChildFile ("timeline.png"));

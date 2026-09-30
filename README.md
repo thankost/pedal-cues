@@ -86,8 +86,9 @@ cmake --build build --target PedalCuesTests
    - Whammy: hold the Whammy footswitch while powering up, turn the knob to pick the channel, press the footswitch
    - Use **different channels** for the QC and the Whammy.
 4. Connect the Whammy one of two ways (the plugin's **Settings** tab has a switch for both):
-   - **Option A: Whammy via QC.** QC **MIDI Out → Whammy MIDI In**, and enable **MIDI Thru** on the QC.
-   - **Option B: Whammy via audio interface.** Interface **MIDI Out → Whammy MIDI In**. Use two cue tracks: **QC Cues** (output = Quad Cortex) and **Whammy Cues** (output = interface MIDI Out).
+   - **Option A: Whammy via audio interface (recommended).** Interface **MIDI Out → Whammy MIDI In**. Use two cue tracks: **QC Cues** (output = Quad Cortex) and **Whammy Cues** (output = interface MIDI Out).
+   - **Option B: chain through the QC.** Interface **MIDI Out → QC MIDI In**, QC **MIDI Out/Thru → Whammy MIDI In**, **MIDI Thru** on. One cue track, output = interface MIDI Out.
+   - ⚠️ **Known QC limitation:** MIDI Thru doesn't forward MIDI the QC receives over **USB**. With the QC on USB only, a Whammy on the QC's MIDI Out won't respond.
    - Details and pictures: [guide, section 3](docs/GUIDE.md#3-set-up-reaper-once).
 5. Turn snapping on and drag tiles onto the **Pedal Cues** track at the bars you want.
 
@@ -121,6 +122,11 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPEDALCUES_BUILD_DOCS=O
 cmake --build build --target DocShots
 build/DocShots_artefacts/Release/DocShots docs/images
 ```
+
+## Support
+
+PedalCues is free. If it helps your show and you'd like to say thanks, you can donate (completely optional):
+[PayPal](https://paypal.me/athkost) · [Revolut](https://revolut.me/athkost). In the plugin: **? > Support PedalCues**.
 
 ## License
 

@@ -50,11 +50,13 @@ private:
 
         if (! viaInterface)
         {
-            const Node nodes[] = { { "Reaper", "PedalCues track", accent },
-                                   { "Quad Cortex", "USB MIDI, MIDI Thru", qcBlue },
+            // The QC only passes on MIDI from its 5-pin MIDI In, not from USB, so the chain starts at an interface.
+            const Node nodes[] = { { "Cue track", "both tabs", accent },
+                                   { "Interface", "MIDI Out", juce::Colour (0xff9aa0ac) },
+                                   { "Quad Cortex", "In + Thru", qcBlue },
                                    { "Whammy V", "5-pin MIDI In", whammyRed } };
-            const char* links[] = { "USB", "MIDI" };
-            paintChain (g, area.withSizeKeepingCentre (area.getWidth(), 66), nodes, links, 3);
+            const char* links[] = { "USB", "MIDI", "MIDI" };
+            paintChain (g, area.withSizeKeepingCentre (area.getWidth(), 66), nodes, links, 4);
             return;
         }
 
@@ -202,11 +204,12 @@ public:
             b->setColour (juce::TextButton::buttonOnColourId, qcBlue);
             b->setColour (juce::TextButton::textColourOnId, juce::Colours::black);
         }
-        viaQcButton.setTooltip ("Whammy is chained from the QC's MIDI Out (QC MIDI Thru on)");
-        viaInterfaceButton.setTooltip ("QC over USB, Whammy from your audio interface / USB MIDI interface MIDI Out");
+        viaQcButton.setTooltip ("Interface MIDI Out > QC 5-pin MIDI In > QC MIDI Thru > Whammy. "
+                                "MIDI Thru does not forward USB MIDI, so this needs a 5-pin MIDI Out.");
+        viaInterfaceButton.setTooltip ("QC over USB, Whammy from your audio interface / USB MIDI interface MIDI Out (recommended)");
         viaQcButton.onClick = [this] { if (viaQcButton.getToggleState()) setSetupMode (false); };
         viaInterfaceButton.onClick = [this] { if (viaInterfaceButton.getToggleState()) setSetupMode (true); };
-        setSetupMode (state::getFlag ("setupViaInterface"));
+        setSetupMode (! state::getFlag ("setupViaQcChain"));
 
         tourButton.setColour (juce::TextButton::buttonColourId, accent);
         tourButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
@@ -277,9 +280,9 @@ public:
 
         {
             auto hdr = setupSection.headerArea().reduced (0, 2);
-            viaInterfaceButton.setBounds (hdr.removeFromRight (150));
+            viaQcButton.setBounds (hdr.removeFromRight (150));
             hdr.removeFromRight (6);
-            viaQcButton.setBounds (hdr.removeFromRight (130));
+            viaInterfaceButton.setBounds (hdr.removeFromRight (150));
 
             auto s = setupSection.contentArea().reduced (8, 6);
             auto buttons = s.removeFromBottom (36);
@@ -294,7 +297,7 @@ public:
 private:
     void setSetupMode (bool viaInterface)
     {
-        state::setFlag ("setupViaInterface", viaInterface);
+        state::setFlag ("setupViaQcChain", ! viaInterface);
         (viaInterface ? viaInterfaceButton : viaQcButton).setToggleState (true, juce::dontSendNotification);
         steps.viaInterface = viaInterface;
 
@@ -308,11 +311,11 @@ private:
             };
         else
             steps.steps = {
-                "Insert PedalCues on a track in Reaper (e.g. 'Pedal Cues'). Arm and monitor are not needed.",
-                "Route: track I/O button > MIDI Hardware Output > your Quad Cortex (enable it in Preferences > MIDI Devices first).",
-                "Whammy V: QC MIDI Out > Whammy MIDI In, and turn MIDI Thru on in the QC.",
+                "Preferences > MIDI Devices: enable your audio interface's MIDI output. The QC's MIDI Thru does not forward USB MIDI.",
+                "Track 'Pedal Cues': insert PedalCues. I/O button > MIDI Hardware Output > your interface's MIDI Out.",
+                "Cables: interface MIDI Out > QC MIDI In, QC MIDI Out/Thru > Whammy MIDI In. Turn MIDI Thru on in the QC.",
                 "Match the channels on the left with the pedals (QC: Settings > MIDI. Whammy: hold footswitch at power-up).",
-                "Drag tiles onto the arrangement. Snap to grid for exact bars. Click the round play button to test a tile live."
+                "Drag QC and Whammy tiles onto the same track. Snap to grid for exact bars. Click a tile's play button to test it."
             };
         steps.repaint();
     }
@@ -334,7 +337,7 @@ private:
     juce::TextButton exportButton { "Export..." };
     juce::TextButton importButton { "Import..." };
     StepsList steps;
-    juce::TextButton viaQcButton { "Whammy via QC" };
+    juce::TextButton viaQcButton { "Chain via QC MIDI In" };
     juce::TextButton viaInterfaceButton { "Whammy via interface" };
     juce::TextButton tourButton { "Show quick tour" };
     juce::TextButton guideButton { "Open user guide" };

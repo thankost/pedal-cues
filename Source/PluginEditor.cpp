@@ -154,6 +154,11 @@ void PedalCuesEditor::showHelpMenu()
     m.addSeparator();
     m.addItem (3, "About PedalCues");
     m.addItem (4, "Project on GitHub");
+    m.addSeparator();
+    juce::PopupMenu support;
+    support.addItem (5, "Donate with PayPal");
+    support.addItem (6, "Donate with Revolut");
+    m.addSubMenu ("Support PedalCues (optional)", support);
 
     juce::Component::SafePointer<PedalCuesEditor> safe (this);
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&helpButton), [safe] (int result)
@@ -172,6 +177,10 @@ void PedalCuesEditor::showHelpMenu()
                                                     "Not affiliated with Neural DSP or DigiTech.");
         else if (result == 4)
             juce::URL (ui::repoUrl).launchInDefaultBrowser();
+        else if (result == 5)
+            juce::URL (ui::paypalUrl).launchInDefaultBrowser();
+        else if (result == 6)
+            juce::URL (ui::revolutUrl).launchInDefaultBrowser();
     });
 }
 

@@ -53,14 +53,16 @@ There are two ways to connect the pedals. Choose the one that suits your rig. Th
 
 ![MIDI routing, both options](images/routing.png)
 
-**Option A: Whammy via QC.** Use this if you only have the two pedals.
-- Connect the **Quad Cortex / QC Mini** to the computer with USB.
-- Run a MIDI cable from the QC's **MIDI Out** to the Whammy's **MIDI In**.
-- Turn on **MIDI Thru** in the QC's MIDI settings.
-
-**Option B: Whammy via audio interface.** Use this if your sound card or a USB MIDI interface has a 5-pin **MIDI Out**, or if your QC doesn't forward USB MIDI.
+**Option A: Whammy via audio interface (recommended).** Use this if your sound card or a USB MIDI interface has a 5-pin **MIDI Out**.
 - Connect the **Quad Cortex** to the computer with USB.
 - Run a MIDI cable from the interface's **MIDI Out** to the Whammy's **MIDI In**.
+
+**Option B: chain through the QC's MIDI In.** Use this if you want one cue track for both pedals.
+- Run a MIDI cable from the interface's **MIDI Out** to the QC's **MIDI In**.
+- Run a MIDI cable from the QC's **MIDI Out/Thru** to the Whammy's **MIDI In**.
+- Turn on **MIDI Thru** in the QC's MIDI settings.
+
+> **Known Quad Cortex limitation:** the QC's MIDI Thru only passes on MIDI that arrives at its 5-pin **MIDI In**. MIDI sent to the QC over **USB** is not forwarded to its MIDI Out. So "QC on USB, QC MIDI Out to the Whammy" does not work: the QC reacts but the Whammy never changes. Use option A or B.
 
 **Both options: channels.** Give each pedal its own MIDI channel. The defaults are QC = 1 and Whammy = 2.
 - QC: *Settings > MIDI Settings > MIDI Channel*.
@@ -70,15 +72,9 @@ There are two ways to connect the pedals. Choose the one that suits your rig. Th
 
 ## 3. Set up Reaper (once)
 
-First, in *Preferences > Audio > MIDI Devices*, enable the **Quad Cortex** MIDI output. For option B, also enable your **interface's MIDI output**.
+First, in *Preferences > Audio > MIDI Devices*, enable your **interface's MIDI output**. For option A, also enable the **Quad Cortex** MIDI output.
 
-### Option A: one cue track
-
-1. Create a track called **Pedal Cues** and insert **PedalCues** on it.
-2. Click the track's **I/O (routing)** button. Under *MIDI Hardware Output*, choose the **Quad Cortex**.
-3. Drag QC and Whammy tiles onto this track.
-
-### Option B: one cue track per pedal
+### Option A: one cue track per pedal
 
 1. Create a track **QC Cues** and insert **PedalCues** on it.
    - Set *I/O > MIDI Hardware Output* to the **Quad Cortex**.
@@ -88,7 +84,15 @@ First, in *Preferences > Audio > MIDI Devices*, enable the **Quad Cortex** MIDI 
    - Use the plugin's Whammy V tab here.
 3. Drag QC tiles onto the QC track and Whammy tiles onto the Whammy track. Each track's play button test also goes to the right pedal.
 
-![Settings, "Whammy via interface" steps](images/settings-interface.png)
+![Settings, "Whammy via interface" steps](images/settings.png)
+
+### Option B: one cue track, chained through the QC
+
+1. Create a track called **Pedal Cues** and insert **PedalCues** on it.
+2. Click the track's **I/O (routing)** button. Under *MIDI Hardware Output*, choose your **interface's MIDI Out** (not the Quad Cortex).
+3. Drag QC and Whammy tiles onto this track.
+
+![Settings, "Chain via QC MIDI In" steps](images/settings-qc-chain.png)
 
 **For both options:**
 - Turn **snap to grid** on so clips land exactly on bars.
@@ -246,13 +250,15 @@ The drawing is saved with your project and stretches to whatever *Length* you pi
 | Scene or stomp changes the wrong preset | You're on **Current QC preset**, so tiles act on whatever preset the QC has loaded. Pick **Load 1A first** in the Scenes header so they load their own preset first. |
 | A stomp tile changes scenes | The QC is in Scene mode, where footswitch A-H select scenes. Put the QC in Stomp mode (or drop the **Stomp Mode** tile before your stomp cues). Before v0.4.2 the Scene Mode and Stomp Mode tiles were swapped; drag those clips in again. |
 | Wrong preset loads | Check setlist, bank and slot in *Edit preset*. If presets are in other setlists, turn on *Send setlist*. |
-| Whammy doesn't react | Check the MIDI cable direction and the channels. Set the QC to a fixed channel, not *Omni*. Option A: turn on QC MIDI Thru. If that still fails, switch to option B (interface MIDI Out). |
-| Whammy clips do nothing (option B) | Whammy clips must be on the **Whammy Cues** track, whose output is the interface. |
+| Whammy doesn't react | If the QC is connected over USB and the Whammy hangs off the QC's MIDI Out, that can't work: the QC doesn't forward USB MIDI (a known QC limitation). Use option A or B. Otherwise check the cable direction and the channels, set the QC to a fixed channel (not *Omni*), and for option B turn on QC MIDI Thru. |
+| Whammy clips do nothing (option A) | Whammy clips must be on the **Whammy Cues** track, whose output is the interface. |
 | Whammy mode is one off | *Settings > Whammy program numbering > Zero-based*. |
 | Clip lands between bars | Turn on snap to grid in Reaper before dropping. |
 | macOS says PedalCues "is damaged and can't be opened" | It isn't damaged; macOS blocks apps downloaded from the internet that Apple hasn't notarised. Run the `xattr -cr` command from [Install](#1-install), or use *Privacy & Security > Open Anyway*. Use v0.4.1 or newer. |
 
 Found a bug or have an idea? [Open an issue](https://github.com/thankost/pedal-cues/issues).
+
+Enjoying PedalCues? It's free; if you'd like to support it, you can donate via [PayPal](https://paypal.me/athkost) or [Revolut](https://revolut.me/athkost), or from **? > Support PedalCues** in the plugin. Completely optional.
 
 ---
 
