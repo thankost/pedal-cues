@@ -144,8 +144,8 @@ public:
         addUtil ("Tuner On",    "TUN", "CC#45 = 127", qcBlue,         [this] { return cues::qc::tuner (qcChannel(), true); });
         addUtil ("Tuner Off",   "TUN", "CC#45 = 0",   raised.brighter (0.2f), [this] { return cues::qc::tuner (qcChannel(), false); });
         addUtil ("Preset Mode", "PRE", "CC#47 = 0",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 0); });
-        addUtil ("Scene Mode",  "SCN", "CC#47 = 2",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 1); });
         addUtil ("Stomp Mode",  "STO", "CC#47 = 1",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 2); });
+        addUtil ("Scene Mode",  "SCN", "CC#47 = 2",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 1); });
 
         resized();
     }

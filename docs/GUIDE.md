@@ -126,7 +126,7 @@ One step explains the **Load 1A first / Current QC preset** choice:
 | **Scenes** | 8 scenes laid out like the QC display: **A-D top, E-H bottom**. | `CC#43` = 0-7 |
 | **Load 1A first / Current QC preset** | Picks which preset scene and stomp tiles act on. See [below](#which-preset-do-scenes-and-stomps-act-on). | Preset + `CC#43` / `CC#35-42`, or the CC alone |
 | **Stomps** | Switch one footswitch A-H. The header switch picks whether tiles send **ON** or **OFF**. | `CC#35-42` |
-| **Utilities** | Tuner on/off and gig view mode (Preset / Scene / Stomp). | `CC#45`, `CC#47` |
+| **Utilities** | Tuner on/off and gig view mode (Preset / Stomp / Scene). | `CC#45`, `CC#47` |
 
 **Every tile:**
 
