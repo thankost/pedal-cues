@@ -155,10 +155,7 @@ void PedalCuesEditor::showHelpMenu()
     m.addItem (3, "About PedalCues");
     m.addItem (4, "Project on GitHub");
     m.addSeparator();
-    juce::PopupMenu support;
-    support.addItem (5, "Donate with PayPal");
-    support.addItem (6, "Donate with Revolut");
-    m.addSubMenu ("Support PedalCues (optional)", support);
+    m.addItem (5, "Support PedalCues (optional)...");
 
     juce::Component::SafePointer<PedalCuesEditor> safe (this);
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&helpButton), [safe] (int result)
@@ -178,10 +175,29 @@ void PedalCuesEditor::showHelpMenu()
         else if (result == 4)
             juce::URL (ui::repoUrl).launchInDefaultBrowser();
         else if (result == 5)
-            juce::URL (ui::paypalUrl).launchInDefaultBrowser();
-        else if (result == 6)
-            juce::URL (ui::revolutUrl).launchInDefaultBrowser();
+            safe->showSupportDialog();
     });
+}
+
+void PedalCuesEditor::showSupportDialog()
+{
+    auto* w = new juce::AlertWindow ("Support PedalCues",
+                                     "Hi, I'm Thanasis. My bandmate Leo and I play in ORIA, a progressive groove metal band from "
+                                     "Thessaloniki, Greece. We were tired of programming MIDI by hand for every song, so I built PedalCues.\n\n"
+                                     "PedalCues is free and open source, and it will stay that way. If it saves you time at rehearsal "
+                                     "or on stage, a coffee helps me keep improving it: new features, fixes, and support for more pedals.\n\n"
+                                     "Completely optional. Thanks for playing loud!",
+                                     juce::MessageBoxIconType::NoIcon);
+    w->addButton ("PayPal", 1);
+    w->addButton ("Revolut", 2);
+    w->addButton ("Close", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+    w->enterModalState (true, juce::ModalCallbackFunction::create ([] (int result)
+    {
+        if (result == 1)
+            juce::URL (ui::paypalUrl).launchInDefaultBrowser();
+        else if (result == 2)
+            juce::URL (ui::revolutUrl).launchInDefaultBrowser();
+    }), true);
 }
 
 void PedalCuesEditor::handleAsyncUpdate()

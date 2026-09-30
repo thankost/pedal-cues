@@ -26,6 +26,7 @@ public:
     void closeTour (bool finished) override;
 
     void startTour (int step = 0);
+    void showSupportDialog();
     bool isTourVisible() const { return tour != nullptr; }
     void refreshNow() { cancelPendingUpdate(); handleAsyncUpdate(); }
 
