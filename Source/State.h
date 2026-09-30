@@ -52,6 +52,10 @@ namespace state
     juce::Colour colourOf (const juce::ValueTree& node, juce::Colour fallback = juce::Colours::grey);
 
     juce::File defaultLibraryFile();
+
+    // Per-user flags stored next to the library (e.g. whether the quick tour was shown).
+    bool getFlag (const juce::String& name);
+    void setFlag (const juce::String& name, bool value);
     bool saveLibrary (const juce::ValueTree& root, const juce::File&);
     bool loadLibrary (juce::ValueTree& root, const juce::File&);
 }

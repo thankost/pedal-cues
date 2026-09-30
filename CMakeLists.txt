@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(PedalCues VERSION 0.1.0 LANGUAGES C CXX)
+project(PedalCues VERSION 0.2.0 LANGUAGES C CXX)
 
 option(PEDALCUES_COPY_PLUGIN "Install plugins into the system plug-in folders after building" ON)
 
@@ -38,7 +38,13 @@ juce_add_plugin(PedalCues
 target_sources(PedalCues PRIVATE
     Source/CueModel.cpp
     Source/State.cpp
+    Source/Theme.cpp
     Source/Tile.cpp
+    Source/EditorCommon.cpp
+    Source/QcPage.cpp
+    Source/WhammyPage.cpp
+    Source/SettingsPage.cpp
+    Source/Tour.cpp
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp)
 
@@ -61,5 +67,30 @@ if(PEDALCUES_BUILD_TESTS)
     target_sources(PedalCuesTests PRIVATE Tests/CueModelTests.cpp Source/CueModel.cpp)
     target_compile_definitions(PedalCuesTests PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0)
     target_link_libraries(PedalCuesTests PRIVATE juce::juce_audio_basics juce::juce_graphics
+                          PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+endif()
+
+# Renders the screenshots used in docs/ (cmake -DPEDALCUES_BUILD_DOCS=ON, then run DocShots <outputDir>).
+option(PEDALCUES_BUILD_DOCS "Build the documentation screenshot tool" OFF)
+if(PEDALCUES_BUILD_DOCS)
+    juce_add_console_app(DocShots PRODUCT_NAME "DocShots")
+    target_sources(DocShots PRIVATE
+        Tools/DocShots.cpp
+        Source/CueModel.cpp
+        Source/State.cpp
+        Source/Theme.cpp
+        Source/Tile.cpp
+        Source/EditorCommon.cpp
+        Source/QcPage.cpp
+        Source/WhammyPage.cpp
+        Source/SettingsPage.cpp
+        Source/Tour.cpp
+        Source/PluginProcessor.cpp
+        Source/PluginEditor.cpp)
+    target_compile_definitions(DocShots PRIVATE
+        JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0
+        JucePlugin_Name="PedalCues"
+        JucePlugin_VersionString="${PROJECT_VERSION}")
+    target_link_libraries(DocShots PRIVATE juce::juce_audio_utils
                           PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 endif()

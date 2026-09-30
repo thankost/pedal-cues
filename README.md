@@ -6,6 +6,14 @@ A VST3 / AU / Standalone plugin (JUCE). Built for Reaper, works in any DAW that 
 Drag a tile onto the arrangement → a **named MIDI item** lands at the drop position (e.g. `QC Scene B - Chorus`,
 `Whammy Oct Up [Chords]`, `Whammy Ramp Up 1 bar`). Click a tile's ▶ corner to send it to the pedal right away.
 
+![PedalCues - Quad Cortex page](docs/images/quad-cortex.png)
+
+📖 **[User guide with pictures and step-by-step instructions](docs/GUIDE.md)**. A quick tour also starts the first time you open the plugin (open it again later from the **?** button).
+
+| Whammy V | Settings |
+|---|---|
+| ![Whammy page](docs/images/whammy.png) | ![Settings page](docs/images/settings.png) |
+
 ## Features
 
 **Quad Cortex**
@@ -91,5 +99,20 @@ Source/CueModel.*        MIDI definitions for both pedals + .mid file writer
 Source/State.*           ValueTree schema, defaults, library save/load
 Source/Tile.*            draggable tile (external file drag + click-to-send)
 Source/PluginProcessor.* MIDI passthrough, preview scheduling, host tempo, state
-Source/PluginEditor.*    Quad Cortex / Whammy V / Settings pages
+Source/Theme.*           colour palette + custom LookAndFeel
+Source/PluginEditor.*    window, header tabs, first-run tour host
+Source/QcPage.cpp        Quad Cortex page    Source/WhammyPage.cpp  Whammy V page
+Source/SettingsPage.cpp  settings / library / Reaper setup
+Source/Tour.*            quick-tour overlay (steps + spotlight)
+Tools/DocShots.cpp       renders docs/images/*.png
+docs/GUIDE.md            user guide
 ```
+
+## Regenerating the documentation images
+
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPEDALCUES_BUILD_DOCS=ON
+cmake --build build --target DocShots
+build/DocShots_artefacts/Release/DocShots docs/images
+```
+

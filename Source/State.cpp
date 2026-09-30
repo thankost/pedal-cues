@@ -132,6 +132,29 @@ juce::File defaultLibraryFile()
     return base.getChildFile ("PedalCues").getChildFile ("library.xml");
 }
 
+static juce::File settingsFile()
+{
+    return defaultLibraryFile().getSiblingFile ("settings.xml");
+}
+
+bool getFlag (const juce::String& name)
+{
+    if (auto xml = juce::XmlDocument::parse (settingsFile()))
+        return xml->getBoolAttribute (name);
+    return false;
+}
+
+void setFlag (const juce::String& name, bool value)
+{
+    auto xml = juce::XmlDocument::parse (settingsFile());
+    if (xml == nullptr)
+        xml = std::make_unique<juce::XmlElement> ("PedalCuesSettings");
+
+    xml->setAttribute (name, value);
+    settingsFile().getParentDirectory().createDirectory();
+    xml->writeTo (settingsFile());
+}
+
 bool saveLibrary (const juce::ValueTree& root, const juce::File& file)
 {
     juce::ValueTree lib (IDs::PedalCues);
