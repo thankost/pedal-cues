@@ -155,8 +155,8 @@ This example covers a song with a clean verse, a crunchy chorus and a Whammy sol
 
 The 21 Whammy V modes are laid out like the pedal's panel:
 - **Top row:** the **Whammy** modes, from 2 Oct Up to Dive Bomb.
-- **Bottom row:** each **Harmony** mode sits right below the Whammy mode that shares its row on the pedal (Oct Up/Oct Down below 2 Oct Up, and so on).
-- **End of the bottom row:** **Detune** Shallow and Deep, as at the bottom of the pedal.
+- **Middle row:** each **Harmony** mode sits right below the Whammy mode that shares its row on the pedal (Oct Up/Oct Down below 2 Oct Up, and so on).
+- **Bottom row:** **Detune** Shallow and Deep, on their own row as at the bottom of the pedal.
 
 Colours match the pedal: **Whammy** (red), **Harmony** (green), **Detune** (blue). Each tile shows its Program Change number from the DigiTech manual. Drag a mode tile to switch the Whammy.
 

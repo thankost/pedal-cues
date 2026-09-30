@@ -27,7 +27,7 @@ const std::vector<TourStep>& tourSteps()
           "Switch single footswitches on or off, open the tuner for a guitar change, or flip the QC between "
           "preset, scene and stomp mode. The switch in the Stomps header picks ON or OFF tiles." },
         { 1, { "wh.modes" }, "5. Whammy V modes",
-          "The Whammy tab works the same way, laid out like the pedal: Whammy modes on top, Harmony below, Detune at the end. Colours: "
+          "The Whammy tab works the same way, laid out like the pedal: Whammy modes on top, Harmony below, Detune on its own row. Colours: "
           "red Whammy, blue Detune, green Harmony. A dark LED means the mode loads bypassed." },
         { 1, { "wh.options" }, "Chords, bypass, heel first",
           "Chords uses the polyphonic program range. Load bypassed selects a mode without engaging it. Heel first "

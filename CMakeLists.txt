@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(PedalCues VERSION 0.3.0 LANGUAGES C CXX)
+project(PedalCues VERSION 0.3.1 LANGUAGES C CXX)
 
 option(PEDALCUES_COPY_PLUGIN "Install plugins into the system plug-in folders after building" ON)
 

@@ -242,12 +242,14 @@ public:
 
         // Modes, as on the pedal panel (manual p.10): each Whammy mode sits above the Harmony mode on the
         // same panel row (2 Oct Up over Oct Down/Oct Up ... 2 Oct Down over 2nd Up/3rd Up), Dive Bomb has
-        // no partner, and Detune (Shallow, Deep) closes the second row.
+        // no partner, and Detune (Shallow, Deep) gets its own row below.
         auto m = modesSection.contentArea().expanded (3, 0);
-        constexpr int captionH = 18, rowGap = 8, cols = 11;
-        const auto rowH = (m.getHeight() - 2 * captionH - rowGap) / 2;
+        constexpr int captionH = 18, rowGap = 6, cols = 10;
+        const auto rowH = (m.getHeight() - 3 * captionH - 2 * rowGap) / 3;
         const auto unit = m.getWidth() / cols;
-        const auto top1 = m.getY() + captionH, top2 = top1 + rowH + rowGap + captionH;
+        const auto top1 = m.getY() + captionH;
+        const auto top2 = top1 + rowH + rowGap + captionH;
+        const auto top3 = top2 + rowH + rowGap + captionH;
 
         auto cell = [&] (int col, int top) { return juce::Rectangle<int> (m.getX() + col * unit, top - 3, unit, rowH + 6); };
         auto place = [&] (int index, int col, int top)
@@ -261,13 +263,13 @@ public:
             place (i, i, top1);                  // Whammy: 2 Oct Up .. Dive Bomb
         for (int i = 0; i < 9; ++i)
             place (20 - i, i, top2);             // Harmony: Oct Down/Oct Up .. 2nd Up/3rd Up
-        place (11, 9, top2);                     // Shallow Detune
-        place (10, 10, top2);                    // Deep Detune
+        place (11, 0, top3);                     // Shallow Detune
+        place (10, 1, top3);                     // Deep Detune
 
         groups.clear();
         groups.push_back ({ "WHAMMY", cues::whammy::colour (0), caption (0, 10, top1) });
         groups.push_back ({ "HARMONY", cues::whammy::colour (12), caption (0, 9, top2) });
-        groups.push_back ({ "DETUNE", cues::whammy::colour (10), caption (9, 2, top2) });
+        groups.push_back ({ "DETUNE", cues::whammy::colour (10), caption (0, 2, top3) });
 
         auto controlsRow = sweepsSection.contentArea().removeFromTop (34);
         sweepControls.setBounds (controlsRow);
