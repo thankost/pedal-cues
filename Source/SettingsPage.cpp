@@ -51,7 +51,7 @@ private:
         if (! viaInterface)
         {
             // The QC only passes on MIDI from its 5-pin MIDI In, not from USB, so the chain starts at an interface.
-            const Node nodes[] = { { "Cue track", "both tabs", accent },
+            const Node nodes[] = { { "Cue tracks", "QC + Whammy", accent },
                                    { "Interface", "MIDI Out", juce::Colour (0xff9aa0ac) },
                                    { "Quad Cortex", "In + Thru", qcBlue },
                                    { "Whammy V", "5-pin MIDI In", whammyRed } };
@@ -204,9 +204,9 @@ public:
             b->setColour (juce::TextButton::buttonOnColourId, qcBlue);
             b->setColour (juce::TextButton::textColourOnId, juce::Colours::black);
         }
-        viaQcButton.setTooltip ("Interface MIDI Out > QC 5-pin MIDI In > QC MIDI Thru > Whammy. "
+        viaQcButton.setTooltip ("Interface MIDI Out > QC 5-pin MIDI In > QC MIDI Thru > Whammy. Both cue tracks use that one MIDI Out. "
                                 "MIDI Thru does not forward USB MIDI, so this needs a 5-pin MIDI Out.");
-        viaInterfaceButton.setTooltip ("One cue track per pedal: the QC over USB (or its own MIDI Out), the Whammy from an interface MIDI Out");
+        viaInterfaceButton.setTooltip ("Each pedal on its own output: the QC over USB (or MIDI Out 1), the Whammy on MIDI Out 2");
         viaQcButton.onClick = [this] { if (viaQcButton.getToggleState()) setSetupMode (false); };
         viaInterfaceButton.onClick = [this] { if (viaInterfaceButton.getToggleState()) setSetupMode (true); };
         setSetupMode (! state::getFlag ("setupViaQcChain"));
@@ -311,11 +311,11 @@ private:
             };
         else
             steps.steps = {
-                "Preferences > MIDI Devices: enable your audio interface's MIDI output. The QC's MIDI Thru does not forward USB MIDI.",
-                "Track 'Pedal Cues': insert PedalCues. I/O > MIDI Hardware Output > interface MIDI Out, 'Send to original channels'. (Two tracks to that same Out also work.)",
-                "Cables: interface MIDI Out > QC MIDI In, QC MIDI Out/Thru > Whammy MIDI In. Turn MIDI Thru on in the QC.",
-                "Match the channels on the left with the pedals (QC: Settings > MIDI Settings, not Omni. Whammy: see its manual).",
-                "Drag QC and Whammy tiles onto the same track. Snap to grid for exact bars. Click a tile's play button to test it."
+                "Cables: interface MIDI Out > QC MIDI In, QC MIDI Thru > Whammy MIDI In. Turn MIDI Thru on in the QC (it doesn't forward USB MIDI).",
+                "Preferences > MIDI Devices: enable your audio interface's MIDI output.",
+                "Tracks 'QC Cues' and 'Whammy Cues': insert PedalCues on each. I/O > MIDI Hardware Output > the interface MIDI Out on both.",
+                "Leave both outputs on 'Send to original channels'. Match the channels on the left with the pedals (QC: not Omni).",
+                "Drag QC tiles onto the QC track and Whammy tiles onto the Whammy track. Click a tile's play button to test it."
             };
         steps.repaint();
     }
@@ -337,8 +337,8 @@ private:
     juce::TextButton exportButton { "Export..." };
     juce::TextButton importButton { "Import..." };
     StepsList steps;
-    juce::TextButton viaQcButton { "One track: daisy chain" };
-    juce::TextButton viaInterfaceButton { "Two cue tracks" };
+    juce::TextButton viaQcButton { "Daisy chain via QC" };
+    juce::TextButton viaInterfaceButton { "Separate outputs" };
     juce::TextButton tourButton { "Show quick tour" };
     juce::TextButton guideButton { "Open user guide" };
     std::unique_ptr<juce::FileChooser> chooser;

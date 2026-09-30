@@ -323,11 +323,11 @@ juce::Image drawRouting()
     };
 
     // 1. Daisy chain.
-    heading (20.0f, "DAISY CHAIN  (what we use)", "One cue track is enough: both pedals share one cable, their channels keep the cues apart. Two tracks to the same MIDI Out also work.");
+    heading (20.0f, "DAISY CHAIN  (what we use)", "Both cue tracks send to the same interface MIDI Out. The pedals share one cable; their channels keep the cues apart.");
     {
         const auto y = 66.0f;
         const auto t = rect (0, y), i = rect (1, y), q = rect (2, y), wh = rect (3, y);
-        box (g, t, accent, "Pedal Cues track", "Output = interface MIDI Out");
+        box (g, t, accent, "QC + Whammy Cues", "Both output = interface MIDI Out");
         box (g, i, grey, "Audio interface", "MIDI Out");
         box (g, q, qcBlue, "Quad Cortex", "Ch 1. MIDI In, Thru on");
         box (g, wh, whammyRed, "Whammy V", "Channel 2");
@@ -338,7 +338,7 @@ juce::Image drawRouting()
     divider (166.0f);
 
     // 2. Separate MIDI cables.
-    heading (182.0f, "SEPARATE MIDI CABLES", "Two cue tracks, one per MIDI Out (an interface with two MIDI Outs, or two USB MIDI interfaces).");
+    heading (182.0f, "SEPARATE MIDI CABLES", "Each cue track sends to its own MIDI Out (an interface with two MIDI Outs, or two USB MIDI interfaces).");
     {
         const auto y1 = 228.0f, y2 = y1 + bh + 16.0f;
         const auto t1 = rect (0, y1), o1 = rect (1, y1), q = rect (2, y1);
@@ -357,7 +357,7 @@ juce::Image drawRouting()
     divider (430.0f);
 
     // 3. QC over USB + interface.
-    heading (446.0f, "QC OVER USB + INTERFACE", "Two cue tracks. The QC gets its MIDI over USB, the Whammy from the interface's MIDI Out.");
+    heading (446.0f, "QC OVER USB + INTERFACE", "The QC Cues track sends over USB, the Whammy Cues track to the interface's MIDI Out.");
     {
         const auto y1 = 492.0f, y2 = y1 + bh + 16.0f;
         const auto t1 = rect (0, y1), q = rect (1, y1);
@@ -379,7 +379,7 @@ juce::Image drawRouting()
     {
         const auto y = 756.0f;
         const auto t = rect (0, y), q = rect (1, y), wh = rect (2, y);
-        box (g, t, grey, "Pedal Cues track", "Output = Quad Cortex");
+        box (g, t, grey, "QC + Whammy Cues", "Output = Quad Cortex (USB)");
         box (g, q, grey, "Quad Cortex", "USB, MIDI Thru on");
         box (g, wh, grey, "Whammy V", "Never changes");
         link (t, q, grey, "USB");

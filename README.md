@@ -79,14 +79,14 @@ cmake --build build --target PedalCuesTests
 ## Reaper setup
 
 1. Connect the pedals one of three ways (the plugin's **Settings** tab shows the steps):
-   - **Daisy chain:** interface **MIDI Out → QC MIDI In**, QC **MIDI Thru → Whammy MIDI In** (MIDI Thru on). One cue track, output = interface MIDI Out.
-   - **Separate MIDI cables:** interface **MIDI Out 1 → QC**, **MIDI Out 2 → Whammy**. Two cue tracks, one per MIDI Out.
-   - **QC over USB + interface:** QC on USB, interface **MIDI Out → Whammy MIDI In**. Two cue tracks: **QC Cues** (output = Quad Cortex) and **Whammy Cues** (output = interface MIDI Out).
+   - **Daisy chain:** interface **MIDI Out → QC MIDI In**, QC **MIDI Thru → Whammy MIDI In** (MIDI Thru on). Both cue tracks output to that interface MIDI Out.
+   - **Separate MIDI cables:** interface **MIDI Out 1 → QC**, **MIDI Out 2 → Whammy**. QC Cues → MIDI Out 1, Whammy Cues → MIDI Out 2.
+   - **QC over USB + interface:** QC on USB, interface **MIDI Out → Whammy MIDI In**. QC Cues → Quad Cortex, Whammy Cues → interface MIDI Out.
    - ⚠️ **Known QC limitation:** MIDI Thru doesn't forward MIDI the QC receives over **USB**, so "QC on USB, Whammy on the QC's Thru" doesn't work.
 2. Give the pedals **different MIDI channels** (defaults: QC 1 via *Settings > MIDI Settings*, not Omni; Whammy 2, see its manual) and set the same numbers in the plugin's **Settings** tab.
 3. In *Preferences > MIDI Devices*, enable the MIDI outputs you use.
-4. Insert *PedalCues* on each cue track and set the track's *I/O > MIDI Hardware Output* to that track's output.
-5. Turn snapping on and drag tiles onto the cue track(s) at the bars you want.
+4. Create two tracks, **QC Cues** and **Whammy Cues**, insert *PedalCues* on each, and set each track's *I/O > MIDI Hardware Output* as above (leave *Send to original channels*).
+5. Turn snapping on and drag QC tiles onto QC Cues and Whammy tiles onto Whammy Cues at the bars you want.
 
 Details and pictures: [guide, section 2](docs/GUIDE.md#2-connect-your-rig).
 
