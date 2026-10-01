@@ -2,3 +2,5 @@ build/
 external/
 .DS_Store
 .idea/
+cmake-build-*/
+.idea-pycharm-backup/

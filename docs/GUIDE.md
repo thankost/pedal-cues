@@ -62,6 +62,8 @@ PedalCues sends MIDI from Reaper tracks to your pedals. Use **two cue tracks**, 
 
 > **Known Quad Cortex limitation:** MIDI Thru only passes on MIDI that arrives at the QC's 5-pin **MIDI In**. MIDI sent to the QC over **USB** is not forwarded, so a Whammy on the QC's Thru never changes. Use one of the three setups above.
 
+**QC Mini:** it runs the same CorOS and responds to the same MIDI messages, so presets, scenes, the tuner and gig view should work the same way. It hasn't been tested on a Mini yet, and the stomp tiles for footswitches E-H may behave differently there, since the Mini has four physical footswitches. If you try it, please tell us how it goes in a [GitHub issue](https://github.com/thankost/pedal-cues/issues).
+
 **Pedal settings**
 - **Quad Cortex:** *Settings > MIDI Settings*. Set a fixed **MIDI Channel** (default 1, not *Omni*). For the daisy chain, turn **MIDI Thru** on.
 - **Whammy V:** set its MIDI channel (default 2) as described in the Whammy V manual.
