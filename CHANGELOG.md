@@ -8,6 +8,7 @@ Download the latest version from the [PedalCues website](https://thankost.github
 - **Standalone app: real menus.** On macOS, the **PedalCues** menu has About and Check for Updates, **Options** has MIDI Output, and **Help** has the quick tour, user guide and support. On Windows the same menus sit at the top of the window.
 - **Standalone app: set the tempo.** Click the BPM pill to type, drag or tap your song's tempo, so treadle moves last as long as they will in the song.
 - **Settings is now "MIDI Setup"**, with only the MIDI and setup options.
+- The Whammy page logo reads **WHAMMY V** in one font.
 - **Update check** works on busy office or venue networks too (it used to say "Couldn't check"). New look: a green tick for *Up to date*, and round arrows to check again. Turn automatic checks on or off in the **?** menu.
 
 ## 0.4.12 (2026-10-01)

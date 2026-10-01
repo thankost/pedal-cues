@@ -41,10 +41,10 @@ public:
         auto area = getLocalBounds().reduced (28, 10);
         auto logo = area.removeFromLeft (360).toFloat();
 
-        // Italic, heavy "WHAMMY" logotype drawn as a skewed glyph run.
+        // Italic, heavy "WHAMMY V" logotype drawn as a skewed glyph run.
         juce::GlyphArrangement ga;
         ga.addLineOfText (juce::Font (font (logo.getHeight() * 0.58f, true)).withHorizontalScale (1.1f),
-                          "WHAMMY", logo.getX(), logo.getCentreY() + logo.getHeight() * 0.17f);
+                          "WHAMMY V", logo.getX(), logo.getCentreY() + logo.getHeight() * 0.17f);
         juce::Path text;
         ga.createPath (text);
         text.applyTransform (juce::AffineTransform::shear (-0.22f, 0.0f)
@@ -56,12 +56,6 @@ public:
         g.fillPath (text);
 
         const auto tb = text.getBounds();
-        const juce::Rectangle<float> five (tb.getRight() + 12.0f, tb.getY() + 2.0f, tb.getHeight() - 4.0f, tb.getHeight() - 4.0f);
-        g.setColour (juce::Colours::black.withAlpha (0.8f));
-        g.fillRoundedRectangle (five, 6.0f);
-        g.setColour (juce::Colours::white);
-        g.setFont (font (five.getHeight() * 0.7f, true));
-        g.drawText ("V", five, juce::Justification::centred);
 
         g.setColour (juce::Colours::white.withAlpha (0.8f));
         g.setFont (font (11.0f, true));
