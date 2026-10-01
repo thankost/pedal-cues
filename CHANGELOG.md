@@ -4,7 +4,7 @@ Download the latest version from the [PedalCues website](https://thankost.github
 
 ## 0.4.16 (2026-10-01)
 
-- **Sync from QC (USB):** read your setlists and preset names (with bank and slot) straight from the Quad Cortex, instead of typing them. Pick which setlists to import. It only reads; nothing on the pedal changes. Needs the QC's USB port connected and Cortex Control closed; your cues can still use any MIDI cable.
+- **Sync from QC (USB):** read your setlists and preset names (with bank and slot) straight from the Quad Cortex, instead of typing them. Pick which setlists to import. It only reads; nothing on the pedal changes. Needs the QC's USB port connected and Cortex Control closed (the sync window reminds you in bold); your cues can still use any MIDI cable.
 
 ## 0.4.15 (2026-10-01)
 

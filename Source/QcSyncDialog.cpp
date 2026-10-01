@@ -21,10 +21,16 @@ public:
         addAndMakeVisible (title);
 
         note.setText ("Reads your setlists and preset names over the QC's USB port. It only reads: nothing on the pedal "
-                      "changes. Quit Cortex Control first. Your MIDI cues can still use any cable.",
+                      "changes. Your MIDI cues can still use any cable.",
                       juce::dontSendNotification);
         styleNote (note);
         addAndMakeVisible (note);
+
+        // The most common reason a sync fails, so it gets its own, prominent line.
+        warning.setText ("Quit Cortex Control first: it keeps the USB connection to itself.", juce::dontSendNotification);
+        warning.setFont (font (14.0f, true));
+        warning.setColour (juce::Label::textColourId, accent);
+        addAndMakeVisible (warning);
 
         status.setFont (font (13.0f, true));
         status.setColour (juce::Label::textColourId, theme::text);
@@ -57,7 +63,8 @@ public:
     {
         auto r = getLocalBounds().reduced (20, 16);
         title.setBounds (r.removeFromTop (26));
-        note.setBounds (r.removeFromTop (40));
+        note.setBounds (r.removeFromTop (34));
+        warning.setBounds (r.removeFromTop (24));
         r.removeFromTop (8);
 
         auto buttons = r.removeFromBottom (34);
@@ -236,7 +243,7 @@ private:
     std::shared_ptr<std::atomic<bool>> cancel = std::make_shared<std::atomic<bool>> (false);
     bool picking = false;
 
-    juce::Label title, note, status;
+    juce::Label title, note, warning, status;
     juce::ToggleButton replaceToggle;
     juce::Viewport rowsView;
     juce::Component rows;
