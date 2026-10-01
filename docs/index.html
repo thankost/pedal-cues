@@ -310,24 +310,48 @@
   // Stats band and "Version X": from shields.io (cached, no per-visitor limit; GitHub's own API allows only
   // 60 requests an hour per network). GitHub's API is only used for the release date, and the band works without it.
   (function () {
-    var json = function (url) { return fetch(url).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); };
+    // Each request gives up after 5 s, so a blocked or stalled service never hangs the band.
+    var json = function (url) {
+      var ctrl = ('AbortController' in window) ? new AbortController() : null;
+      var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 5000);
+      return fetch(url, ctrl ? { signal: ctrl.signal } : {})
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; })
+        .then(function (v) { clearTimeout(timer); return v; });
+    };
+    // Resolves with the first non-null result of the given promises (or null if all fail).
+    var firstOf = function (promises) {
+      return new Promise(function (resolve) {
+        var left = promises.length;
+        promises.forEach(function (p) {
+          p.then(function (v) { if (v != null) resolve(v); else if (--left === 0) resolve(null); });
+        });
+      });
+    };
     var section = document.getElementById('downloads-section');
     var num = document.getElementById('downloads-count');
 
-    json('https://img.shields.io/github/v/release/thankost/pedal-cues.json').then(function (j) {
-      if (!j || !j.value || !/^v?\d/.test(j.value)) return;
-      var v = j.value.replace(/^v/, '');
+    var setVersion = function (tag) {
+      if (!tag || !/^v?\d/.test(tag)) return;
+      var v = tag.replace(/^v/, '');
       document.getElementById('version').textContent = 'Version ' + v;
       document.getElementById('stat-version').textContent = v;
-    });
+    };
 
-    json('https://api.github.com/repos/thankost/pedal-cues/releases/latest').then(function (r) {
+    var latest = json('https://api.github.com/repos/thankost/pedal-cues/releases/latest');
+    latest.then(function (r) {
       if (r && r.published_at)
         document.getElementById('stat-date').textContent = 'released ' + new Date(r.published_at)
           .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     });
 
-    // Downloads: shields.io first, GitHub's API as a fallback. The band stays visible either way ("–" until a number arrives).
+    // Version: shields.io or GitHub, whichever answers first.
+    firstOf ([
+      json('https://img.shields.io/github/v/release/thankost/pedal-cues.json').then(function (j) { return j && j.value ? j.value : null; }),
+      latest.then(function (r) { return r && r.tag_name ? r.tag_name : null; })
+    ]).then(setVersion);
+
+    // Downloads: shields.io or the sum over GitHub's releases, whichever answers first.
     var showTotal = function (total, text) {
       document.getElementById('downloads-label').textContent = total === 1 ? 'download' : 'downloads';
       var show = function () { num.textContent = isNaN(total) ? text : total.toLocaleString('en-US'); };
@@ -345,17 +369,19 @@
       io.observe(section);
     };
 
-    json('https://img.shields.io/github/downloads/thankost/pedal-cues/total.json').then(function (j) {
-      if (j && j.value) {
-        var text = String(j.value);
-        return showTotal (/^\d+$/.test(text) ? parseInt(text, 10) : NaN, text);   // shields shortens big numbers ("1.2k")
-      }
-      return json('https://api.github.com/repos/thankost/pedal-cues/releases?per_page=100').then(function (releases) {
-        if (!Array.isArray(releases)) return;
+    firstOf ([
+      json('https://img.shields.io/github/downloads/thankost/pedal-cues/total.json').then(function (j) {
+        return j && j.value ? String(j.value) : null;
+      }),
+      json('https://api.github.com/repos/thankost/pedal-cues/releases?per_page=100').then(function (releases) {
+        if (!Array.isArray(releases)) return null;
         var total = 0;
         releases.forEach(function (rel) { (rel.assets || []).forEach(function (a) { total += a.download_count || 0; }); });
-        showTotal (total, String(total));
-      });
+        return String(total);
+      })
+    ]).then(function (text) {
+      if (text == null) return;
+      showTotal (/^\d+$/.test(text) ? parseInt(text, 10) : NaN, text);   // shields shortens big numbers ("1.2k")
     });
   })();
 

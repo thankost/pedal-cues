@@ -11,6 +11,8 @@ juce::String assetName()
 {
    #if JUCE_MAC
     return "PedalCues-macOS.zip";
+   #elif JUCE_LINUX
+    return "PedalCues-Linux.zip";
    #else
     return "PedalCues-Windows.zip";
    #endif

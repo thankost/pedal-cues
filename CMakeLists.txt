@@ -36,6 +36,15 @@ set(CMAKE_POLICY_VERSION_MINIMUM 3.5)   # hidapi 0.14 declares an older minimum 
 FetchContent_MakeAvailable(hidapi)
 unset(CMAKE_POLICY_VERSION_MINIMUM)
 
+# Plugin formats per platform: AU on macOS, LV2 on Linux; VST3 and the standalone app everywhere.
+if(APPLE)
+    set(PEDALCUES_FORMATS VST3 AU Standalone)
+elseif(UNIX)
+    set(PEDALCUES_FORMATS VST3 LV2 Standalone)
+else()
+    set(PEDALCUES_FORMATS VST3 Standalone)
+endif()
+
 juce_add_plugin(PedalCues
     COMPANY_NAME "Thanasis Kostopoulos"
     COMPANY_WEBSITE "https://github.com/thankost/pedal-cues"
@@ -44,7 +53,8 @@ juce_add_plugin(PedalCues
     ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/Resources/icon.png"
     PLUGIN_MANUFACTURER_CODE Athk
     PLUGIN_CODE Pdcu
-    FORMATS VST3 AU Standalone
+    FORMATS ${PEDALCUES_FORMATS}
+    LV2URI "https://github.com/thankost/pedal-cues"
     PRODUCT_NAME "PedalCues"
     IS_SYNTH FALSE
     NEEDS_MIDI_INPUT TRUE

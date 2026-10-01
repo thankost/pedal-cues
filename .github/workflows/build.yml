@@ -20,12 +20,22 @@ jobs:
             name: Windows
           - os: macos-latest
             name: macOS
+          - os: ubuntu-22.04        # older glibc, so the Linux build runs on more distros
+            name: Linux
     runs-on: ${{ matrix.os }}
     defaults:
       run:
         shell: bash
     steps:
       - uses: actions/checkout@v4
+
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libfreetype6-dev libfontconfig1-dev libx11-dev libxcomposite-dev \
+            libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev libglu1-mesa-dev mesa-common-dev \
+            libudev-dev ninja-build
 
       - name: Get JUCE
         run: git clone --depth 1 --branch 8.0.8 https://github.com/juce-framework/JUCE.git external/JUCE
@@ -62,6 +72,11 @@ jobs:
             done
             lipo -archs "$out/PedalCues.app/Contents/MacOS/PedalCues"
             ditto -c -k --keepParent "$out" "$out.zip"
+          elif [ "${{ runner.os }}" = "Linux" ]; then
+            cp -R "$art/LV2/PedalCues.lv2" "$out/"
+            cp "$art/Standalone/PedalCues" "$out/"
+            chmod +x "$out/PedalCues"
+            zip -r -q "$out.zip" "$out"
           else
             cp "$art/Standalone/PedalCues.exe" "$out/"
             7z a "$out.zip" "$out" > /dev/null
