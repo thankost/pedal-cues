@@ -499,6 +499,20 @@ int main (int argc, char** argv)
         auto guide = ui::makeWiringGuide();
         save (guide->createComponentSnapshot (guide->getLocalBounds(), true, scale), outDir.getChildFile ("wiring-guide.png"));
     }
+    {
+        // The standalone app's MIDI Setup tab, with the "Test your pedals" card (demo port, after a Test QC click).
+        PedalCuesProcessor::standaloneLayoutForScreenshots = true;
+        {
+            PedalCuesEditor editor (proc, false);
+            editor.setSize (1120, 760);
+            editor.refreshNow();
+            editor.setHelpInMenuBar (true);   // like the real app: the ☰ items are in the menu bar
+            editor.showPage (2);
+            save (snapshot (editor), outDir.getChildFile ("settings-standalone.png"));
+        }
+        PedalCuesProcessor::standaloneLayoutForScreenshots = false;
+    }
+
     save (drawTimeline (proc), outDir.getChildFile ("timeline.png"));
     save (drawRouting(), outDir.getChildFile ("routing.png"));
     save (drawPresetTarget(), outDir.getChildFile ("preset-target.png"));

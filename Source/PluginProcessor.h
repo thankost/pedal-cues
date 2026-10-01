@@ -46,7 +46,10 @@ public:
 
     // Standalone app only: tiles are sent straight to this MIDI output on their own clock,
     // so no audio device is needed. Empty = none (falls back to the audio/MIDI settings).
-    static bool isStandalone() { return juce::JUCEApplicationBase::isStandaloneApp(); }
+    static bool isStandalone() { return standaloneLayoutForScreenshots || juce::JUCEApplicationBase::isStandaloneApp(); }
+
+    // Screenshot tool only: render the standalone app's layout, with a demo MIDI port instead of the real ones.
+    static inline bool standaloneLayoutForScreenshots = false;
     void setDirectMidiOutput (const juce::String& deviceIdentifier);
     juce::String getDirectMidiOutput() const { return directOutId; }
 

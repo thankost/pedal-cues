@@ -407,14 +407,16 @@ private:
         if (! PedalCuesProcessor::isStandalone())
             return;
 
-        testDevices = juce::MidiOutput::getAvailableDevices();
+        testDevices = PedalCuesProcessor::standaloneLayoutForScreenshots
+                          ? juce::Array<juce::MidiDeviceInfo> { juce::MidiDeviceInfo ("USB MIDI Interface", "demo") }
+                          : juce::MidiOutput::getAvailableDevices();
         testOutBox.clear (juce::dontSendNotification);
         testOutBox.addItem ("None", 1);
         int selected = 0;
         for (int i = 0; i < testDevices.size(); ++i)
         {
             testOutBox.addItem (testDevices[i].name, i + 2);
-            if (testDevices[i].identifier == proc.getDirectMidiOutput())
+            if (testDevices[i].identifier == proc.getDirectMidiOutput() || PedalCuesProcessor::standaloneLayoutForScreenshots)
                 selected = i + 1;
         }
         if (testDevices.isEmpty())
@@ -428,6 +430,8 @@ private:
 
     juce::String currentPortName() const
     {
+        if (PedalCuesProcessor::standaloneLayoutForScreenshots && ! testDevices.isEmpty())
+            return testDevices[0].name;
         for (const auto& d : testDevices)
             if (d.identifier == proc.getDirectMidiOutput())
                 return d.name;
@@ -437,7 +441,7 @@ private:
     // The test buttons only make sense once a port is picked.
     void updateTestState()
     {
-        const auto hasPort = proc.getDirectMidiOutput().isNotEmpty();
+        const auto hasPort = proc.getDirectMidiOutput().isNotEmpty() || PedalCuesProcessor::standaloneLayoutForScreenshots;
         testQcButton.setEnabled (hasPort);
         testWhButton.setEnabled (hasPort);
         if (! hasPort)

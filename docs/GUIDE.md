@@ -232,9 +232,11 @@ The drawing is saved with your project and stretches to whatever *Length* you pi
 
 ## 8. MIDI Setup and your setup
 
-![MIDI Setup tab](images/settings.png)
+| Plugin (in your DAW) | Standalone app |
+|---|---|
+| ![MIDI Setup tab in the plugin](images/settings.png) | ![MIDI Setup tab in the standalone app, with Test your pedals](images/settings-standalone.png) |
 
-The **MIDI Setup** tab has two cards (three in the standalone app):
+The **MIDI Setup** tab has two cards in the plugin, and a third, **Test your pedals**, in the standalone app:
 
 - **Your pedals** (set once, required): the MIDI channel of the Quad Cortex and of the Whammy. They must match the pedals themselves and be different from each other. Every cue is sent on these channels, whatever your wiring. **Advanced** (folded away) has *Whammy program numbering*, only for when every mode lands one position off, and *Send setlist (CC#32)*, for presets in several setlists.
 - **DAW tracks:** pick **My wiring** at the top (**Daisy chain via QC** or **Separate outputs**), and the card shows the two cue tracks and their MIDI outputs for it. Not sure how to cable the pedals? **How should I wire my pedals?** opens the **Wiring guide** (also in the ☰ / **Help** menu), with the cables and signal flow for both setups and the one that doesn't work.
