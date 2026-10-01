@@ -62,6 +62,12 @@
 
     .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
     .card { background: var(--surface); border: 1px solid var(--outline); border-radius: 12px; padding: 20px; }
+
+    /* Download counter, just above Support */
+    .stats { display: flex; justify-content: center; }
+    .stat { text-align: center; padding: 28px 48px; min-width: 260px; }
+    .stat .num { font-size: 48px; font-weight: 800; color: var(--amber); line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .stat .label { color: var(--dim); font-size: 15px; margin-top: 6px; }
     .card h3 { margin: 0 0 6px; font-size: 17px; display: flex; align-items: center; gap: 8px; }
     .card p { margin: 0; color: var(--dim); font-size: 15px; }
     .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
@@ -225,6 +231,15 @@
   </div>
 </section>
 
+<section id="downloads-section" hidden>
+  <div class="wrap stats">
+    <div class="card stat">
+      <div class="num" id="downloads-count"></div>
+      <div class="label" id="downloads-label">downloads so far</div>
+    </div>
+  </div>
+</section>
+
 <section id="support">
   <div class="wrap">
     <h2>Support PedalCues</h2>
@@ -244,7 +259,6 @@
   <div class="wrap">
     <span>&copy; 2026 Thanasis Kostopoulos &middot; MIT License &middot; Built with JUCE &middot; <a href="https://github.com/thankost/pedal-cues/blob/main/CHANGELOG.md">Changelog</a></span>
     <span>Not affiliated with Neural DSP or DigiTech. Quad Cortex and Whammy are trademarks of their owners.</span>
-    <span id="downloads" hidden></span>
   </div>
 </footer>
 
@@ -260,7 +274,7 @@
     } else { win.className += ' recommended'; winCard.className += ' recommended'; }
   })();
 
-  // "Downloaded X times": the sum of every release zip's download count on GitHub (hidden if GitHub can't be reached).
+  // Download counter: the sum of every release zip's download count on GitHub (hidden if GitHub can't be reached).
   fetch('https://api.github.com/repos/thankost/pedal-cues/releases?per_page=100')
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (releases) {
@@ -268,9 +282,9 @@
       var total = 0;
       releases.forEach(function (rel) { (rel.assets || []).forEach(function (a) { total += a.download_count || 0; }); });
       if (total > 0) {
-        var el = document.getElementById('downloads');
-        el.textContent = 'Downloaded ' + total.toLocaleString('en-US') + (total === 1 ? ' time' : ' times');
-        el.hidden = false;
+        document.getElementById('downloads-count').textContent = total.toLocaleString('en-US');
+        document.getElementById('downloads-label').textContent = total === 1 ? 'download so far' : 'downloads so far';
+        document.getElementById('downloads-section').hidden = false;
       }
     })
     .catch(function () {});
