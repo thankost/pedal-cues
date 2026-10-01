@@ -11,18 +11,20 @@ Follow these steps in order. Stop and report if any step fails.
 
 2. **Wait for the previous release.** Run `gh run list -R thankost/pedal-cues --workflow Build --limit 4`. If a tag build is still running, wait for it to finish. Releasing two versions at once can mark the wrong one as Latest.
 
-3. **Update `CHANGELOG.md`.** Add a `## X.Y.Z (YYYY-MM-DD)` section at the top with the changes in plain words for musicians. It's linked from the README, the guide and the website.
+3. **Update the website's fallback numbers.** In `docs/index.html`, on `<section id="downloads-section" ...>`, set `data-version` to the new version, `data-released` to today (YYYY-MM-DD) and `data-downloads` to the current total (`gh api 'repos/thankost/pedal-cues/releases?per_page=100' --jq '[.[].assets[].download_count] | add'`). They show until live numbers load.
 
-4. **Bump the version.** Change `project(PedalCues VERSION x.y.z)` in `CMakeLists.txt`. Use the patch number for fixes and small features, and the minor number for bigger features.
+4. **Update `CHANGELOG.md`.** Add a `## X.Y.Z (YYYY-MM-DD)` section at the top with the changes in plain words for musicians. It's linked from the README, the guide and the website.
 
-5. **Build and test.**
+5. **Bump the version.** Change `project(PedalCues VERSION x.y.z)` in `CMakeLists.txt`. Use the patch number for fixes and small features, and the minor number for bigger features.
+
+6. **Build and test.**
    ```sh
    cmake --build build
    build/PedalCuesTests_artefacts/Release/PedalCuesTests
    ```
    The tests must print `All tests passed`. If screenshots changed, run DocShots into `docs/images` and look at them.
 
-6. **Commit.** The message becomes the GitHub release notes and the plugin's "What's new":
+7. **Commit.** The message becomes the GitHub release notes and the plugin's "What's new":
    ```
    vX.Y.Z: one-line summary a musician understands
 
@@ -31,7 +33,7 @@ Follow these steps in order. Stop and report if any step fails.
    ```
    The commit must be signed with `~/.ssh/thankost` and authored by thankost, with **no Co-Authored-By line**. Check with `git log -1 --format='%an <%ae> %G?'`, which must print `G`.
 
-7. **Push and tag** as thankost:
+8. **Push and tag** as thankost:
    ```sh
    gh auth switch -u thankost
    git -c credential.helper= -c credential.helper='!gh auth git-credential' push origin main
@@ -40,14 +42,14 @@ Follow these steps in order. Stop and report if any step fails.
    gh auth switch -u <previously active account>
    ```
 
-8. **Wait for CI.** Takes about 7-15 minutes. Run it in the background:
+9. **Wait for CI.** Takes about 7-15 minutes. Run it in the background:
    ```sh
    RID=$(gh run list -R thankost/pedal-cues --branch vX.Y.Z --limit 1 --json databaseId -q '.[0].databaseId')
    gh run watch $RID -R thankost/pedal-cues --exit-status
    ```
 
-9. **Verify, then tell the user.**
+10. **Verify, then tell the user.**
    - `gh release list -R thankost/pedal-cues --limit 3`: the new version is **Latest**.
-   - `gh release view vX.Y.Z -R thankost/pedal-cues --json assets -q '.assets[].name'`: both `PedalCues-macOS.zip` and `PedalCues-Windows.zip` are attached.
+   - `gh release view vX.Y.Z -R thankost/pedal-cues --json assets -q '.assets[].name'`: `PedalCues-macOS.zip`, `PedalCues-Windows.zip` and `PedalCues-Linux.zip` are all attached.
    - `gh api 'repos/thankost/pedal-cues/commits?per_page=1' --jq '.[0].commit.verification.verified'` prints `true`.
    - If an older version is marked Latest, run `gh release edit vX.Y.Z -R thankost/pedal-cues --latest` as thankost.

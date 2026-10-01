@@ -1,6 +1,6 @@
 # PedalCues: notes for Claude
 
-JUCE plugin (VST3 / AU / Standalone; tested in Reaper, DAW-neutral wording elsewhere) that turns Quad Cortex and Whammy V MIDI changes into drag-and-drop tiles. The author is Thanasis Kostopoulos (GitHub `thankost`). The repo is public: https://github.com/thankost/pedal-cues. The download site is https://thankost.github.io/pedal-cues/, served from `docs/` on `main`.
+JUCE plugin (VST3 / AU on macOS / LV2 on Linux / Standalone; Windows, macOS and Linux; tested in Reaper, DAW-neutral wording elsewhere) that turns Quad Cortex and Whammy V MIDI changes into drag-and-drop tiles. The author is Thanasis Kostopoulos (GitHub `thankost`). The repo is public: https://github.com/thankost/pedal-cues. The download site is https://thankost.github.io/pedal-cues/, served from `docs/` on `main`.
 
 ## Build and test
 
@@ -45,7 +45,8 @@ Use the `release` skill (`.claude/skills/release/SKILL.md`). In short:
 4. Commit with a message that works as release notes: the first line is `vX.Y.Z: summary`, then `- bullet` lines. CI copies the tagged commit's message into the GitHub release, and the plugin's update window shows it under "What's new".
 5. Push `main`, then tag `vX.Y.Z` and push the tag. CI (`.github/workflows/build.yml`) builds the macOS and Windows zips and publishes the release.
 6. Wait for one release to finish before tagging the next. CI marks only the highest version as Latest.
-7. Confirm the release has `PedalCues-macOS.zip` and `PedalCues-Windows.zip`, is Latest, and the commit shows as verified.
+7. Confirm the release has `PedalCues-macOS.zip`, `PedalCues-Windows.zip` and `PedalCues-Linux.zip`, is Latest, and the commit shows as verified.
+8. Linux: CI builds on Ubuntu 22.04 (needs libudev-dev for hidapi). Nobody has tested it on real Linux hardware yet; USB sync there needs the udev rule from the guide.
 
 ## Domain facts (verified on real gear or by the user)
 

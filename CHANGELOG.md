@@ -2,6 +2,11 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.4.18 (2026-10-01)
+
+- **Linux (new):** VST3, LV2 and the standalone app, for Ubuntu 22.04+, Debian 12, Fedora and similar (x86-64). Sync from QC works too, after a one-time USB permission rule (see the guide). Not tested on every distro yet, so feedback is very welcome.
+- Website: the download counter and version now load on any network.
+
 ## 0.4.17 (2026-10-01)
 
 - **Sync from QC now brings scenes too:** scene names, scene colours and stomp (footswitch) names. Always for the preset that's loaded on the QC, and optionally for every preset you import ("Also read scenes, colours and stomps for every ticked preset"). That option loads each preset in turn (the audio cuts), then goes back to where you were, and won't start if the loaded preset has unsaved changes.

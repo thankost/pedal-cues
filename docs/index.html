@@ -171,6 +171,10 @@
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8c1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.1ZM13.9 5c.7-.9 1.2-2 1-3.2-1 .1-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.3-.6 3.1-1.5Z"/></svg>
         <span>Download for macOS<small>VST3 + AU + Standalone &middot; Apple Silicon &amp; Intel</small></span>
       </a>
+      <a id="dl-linux" class="btn secondary" href="https://github.com/thankost/pedal-cues/releases/latest/download/PedalCues-Linux.zip">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-2.2 0-3.6 1.9-3.6 4.6 0 1.4.3 2.4-.6 3.9-1 1.6-2.6 3.4-2.6 6 0 .9.2 1.6.6 2.2-.9.4-1.6 1-1.6 1.8 0 1.2 1.6 1.5 3.4 1.5 1.2 0 2.2-.4 2.9-.9.6.2 1.4.3 2.1.3s1.5-.1 2.1-.3c.7.5 1.7.9 2.9.9 1.8 0 3.4-.3 3.4-1.5 0-.8-.7-1.4-1.6-1.8.4-.6.6-1.3.6-2.2 0-2.6-1.6-4.4-2.6-6-.9-1.5-.6-2.5-.6-3.9C15.6 3.9 14.2 2 12 2Zm-1.6 4.2c.5 0 .8.6.8 1.2s-.3 1.1-.8 1.1-.8-.5-.8-1.1.3-1.2.8-1.2Zm3.2 0c.5 0 .8.6.8 1.2s-.3 1.1-.8 1.1-.8-.5-.8-1.1.3-1.2.8-1.2ZM12 9.4c.9 0 2 .5 2 1s-1.1 1.2-2 1.2-2-.7-2-1.2 1.1-1 2-1Z"/></svg>
+        <span>Download for Linux<small>VST3 + LV2 + Standalone &middot; x86-64 &middot; new</small></span>
+      </a>
     </div>
     <div class="meta"><span id="version">Latest release</span> &middot; Free and open source (MIT) &middot;
       <a href="https://github.com/thankost/pedal-cues/blob/main/CHANGELOG.md">What's new</a> &middot;
@@ -247,17 +251,28 @@
           <li><b>Reaper:</b> <i>Options &gt; Preferences &gt; Plug-ins &gt; VST &gt; Re-scan</i>.</li>
         </ol>
       </div>
+      <div class="card os" id="card-linux">
+        <div class="os-head"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-2.2 0-3.6 1.9-3.6 4.6 0 1.4.3 2.4-.6 3.9-1 1.6-2.6 3.4-2.6 6 0 .9.2 1.6.6 2.2-.9.4-1.6 1-1.6 1.8 0 1.2 1.6 1.5 3.4 1.5 1.2 0 2.2-.4 2.9-.9.6.2 1.4.3 2.1.3s1.5-.1 2.1-.3c.7.5 1.7.9 2.9.9 1.8 0 3.4-.3 3.4-1.5 0-.8-.7-1.4-1.6-1.8.4-.6.6-1.3.6-2.2 0-2.6-1.6-4.4-2.6-6-.9-1.5-.6-2.5-.6-3.9C15.6 3.9 14.2 2 12 2Zm-1.6 4.2c.5 0 .8.6.8 1.2s-.3 1.1-.8 1.1-.8-.5-.8-1.1.3-1.2.8-1.2Zm3.2 0c.5 0 .8.6.8 1.2s-.3 1.1-.8 1.1-.8-.5-.8-1.1.3-1.2.8-1.2ZM12 9.4c.9 0 2 .5 2 1s-1.1 1.2-2 1.2-2-.7-2-1.2 1.1-1 2-1Z"/></svg><div><h3>Linux <small>(new)</small></h3><small>VST3 + LV2 + Standalone &middot; x86-64 &middot; Ubuntu 22.04+, Debian 12, Fedora</small></div></div>
+        <ol class="steps">
+          <li><b>Download</b> <a class="mini" href="https://github.com/thankost/pedal-cues/releases/latest/download/PedalCues-Linux.zip">PedalCues-Linux.zip</a> and unzip it.</li>
+          <li><b>Plugins:</b> copy <code>PedalCues.vst3</code> to <code>~/.vst3/</code> and <code>PedalCues.lv2</code> to <code>~/.lv2/</code>.</li>
+          <li><b>Standalone:</b> run <code>./PedalCues</code>.</li>
+          <li><b>Sync from QC over USB</b> needs a one-time permission rule, then replug the QC:
+            <pre><code>echo 'KERNEL==&quot;hidraw*&quot;, ATTRS{idVendor}==&quot;152a&quot;, TAG+=&quot;uaccess&quot;' | sudo tee /etc/udev/rules.d/70-quad-cortex.rules &amp;&amp; sudo udevadm control --reload-rules &amp;&amp; sudo udevadm trigger</code><button class="copy" type="button">Copy</button></pre></li>
+        </ol>
+      </div>
     </div>
   </div>
 </section>
 
-<section id="downloads-section">
+<!-- Fallback numbers, shown until fresh ones arrive (updated at each release; see the release skill). -->
+<section id="downloads-section" data-downloads="50" data-version="0.4.18" data-released="2026-10-01">
   <div class="wrap">
     <div class="stats-band">
       <div class="stat">
         <div class="num" id="downloads-count">&ndash;</div>
         <div class="label" id="downloads-label">downloads</div>
-        <div class="sub">Windows &amp; macOS</div>
+        <div class="sub">Windows, macOS &amp; Linux</div>
       </div>
       <div class="stat">
         <div class="num version" id="stat-version">&ndash;</div>
@@ -298,13 +313,17 @@
 <script>
   // Highlight the download for the visitor's system.
   (function () {
-    var mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-    var win = document.getElementById('dl-win'), macBtn = document.getElementById('dl-mac');
-    var winCard = document.getElementById('card-win'), macCard = document.getElementById('card-mac');
-    if (mac) {
-      win.className = 'btn secondary'; macBtn.className = 'btn primary recommended'; win.parentNode.insertBefore(macBtn, win);
-      macCard.className += ' recommended'; winCard.parentNode.insertBefore(macCard, winCard);
-    } else { win.className += ' recommended'; winCard.className += ' recommended'; }
+    var ua = navigator.platform || navigator.userAgent;
+    var mac = /Mac|iPhone|iPad/.test(ua), linux = !mac && /Linux|X11/.test(ua) && !/Android/.test(navigator.userAgent);
+    var win = document.getElementById('dl-win'), macBtn = document.getElementById('dl-mac'), linBtn = document.getElementById('dl-linux');
+    var winCard = document.getElementById('card-win'), macCard = document.getElementById('card-mac'), linCard = document.getElementById('card-linux');
+    var promote = function (btn, card) {
+      win.className = 'btn secondary'; btn.className = 'btn primary recommended'; win.parentNode.insertBefore(btn, win);
+      card.className += ' recommended'; winCard.parentNode.insertBefore(card, winCard);
+    };
+    if (mac) promote(macBtn, macCard);
+    else if (linux) promote(linBtn, linCard);
+    else { win.className += ' recommended'; winCard.className += ' recommended'; }
   })();
 
   // Stats band and "Version X": from shields.io (cached, no per-visitor limit; GitHub's own API allows only
@@ -331,18 +350,38 @@
     var section = document.getElementById('downloads-section');
     var num = document.getElementById('downloads-count');
 
+    // Show something right away: the last numbers this browser saw, or the ones baked into the page.
+    var store = { get: function (k) { try { return localStorage.getItem('pc.' + k); } catch (e) { return null; } },
+                  set: function (k, v) { try { localStorage.setItem('pc.' + k, v); } catch (e) {} } };
+    var fmtDate = function (iso) {
+      return 'released ' + new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+    var initial = {
+      downloads: store.get('downloads') || section.dataset.downloads,
+      version: store.get('version') || section.dataset.version,
+      released: store.get('released') || section.dataset.released
+    };
+    if (initial.version) {
+      document.getElementById('stat-version').textContent = initial.version;
+      document.getElementById('version').textContent = 'Version ' + initial.version;
+    }
+    if (initial.released) document.getElementById('stat-date').textContent = fmtDate(initial.released);
+    if (initial.downloads) num.textContent = Number(initial.downloads).toLocaleString('en-US');
+
     var setVersion = function (tag) {
       if (!tag || !/^v?\d/.test(tag)) return;
       var v = tag.replace(/^v/, '');
       document.getElementById('version').textContent = 'Version ' + v;
       document.getElementById('stat-version').textContent = v;
+      store.set('version', v);
     };
 
     var latest = json('https://api.github.com/repos/thankost/pedal-cues/releases/latest');
     latest.then(function (r) {
-      if (r && r.published_at)
-        document.getElementById('stat-date').textContent = 'released ' + new Date(r.published_at)
-          .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      if (r && r.published_at) {
+        document.getElementById('stat-date').textContent = fmtDate(r.published_at);
+        store.set('released', r.published_at);
+      }
     });
 
     // Version: shields.io or GitHub, whichever answers first.
@@ -381,7 +420,12 @@
       })
     ]).then(function (text) {
       if (text == null) return;
-      showTotal (/^\d+$/.test(text) ? parseInt(text, 10) : NaN, text);   // shields shortens big numbers ("1.2k")
+      var total = /^\d+$/.test(text) ? parseInt(text, 10) : NaN;   // shields shortens big numbers ("1.2k")
+      if (!isNaN(total)) {
+        if (String(total) === initial.downloads) return;          // already showing it: no count-up needed
+        store.set('downloads', String(total));
+      }
+      showTotal (total, text);
     });
   })();
 

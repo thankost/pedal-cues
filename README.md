@@ -1,7 +1,7 @@
 # PedalCues
 
 Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex / QC Mini** and the **DigiTech Whammy V**.
-A VST3 / AU / Standalone plugin (JUCE). Tested in Reaper; it should work in any DAW that accepts dragged MIDI files and can send a MIDI track to a hardware output (Ableton Live, Cubase, Bitwig, Studio One; in Logic the clips work on an External MIDI track).
+A VST3 / AU / LV2 / Standalone plugin (JUCE) for Windows, macOS and Linux. Tested in Reaper; it should work in any DAW that accepts dragged MIDI files and can send a MIDI track to a hardware output (Ableton Live, Cubase, Bitwig, Studio One; in Logic the clips work on an External MIDI track).
 
 **[Download for Windows and macOS](https://thankost.github.io/pedal-cues/)**
 
@@ -58,6 +58,12 @@ Download the zip for your system from the [website](https://thankost.github.io/p
 2. Drag `PedalCues.app` (standalone) to *Applications*. Copy `PedalCues.vst3` to `~/Library/Audio/Plug-Ins/VST3/` and
    `PedalCues.component` to `~/Library/Audio/Plug-Ins/Components/`.
 3. Re-scan plug-ins in Reaper.
+
+**Linux** (new; x86-64, Ubuntu 22.04+ / Debian 12 / Fedora and similar)
+1. Unzip `PedalCues-Linux.zip`. Copy `PedalCues.vst3` to `~/.vst3/` and `PedalCues.lv2` to `~/.lv2/`; run `./PedalCues` for the standalone app.
+2. For *Sync from QC* over USB, add the one-time permission rule:
+   `echo 'KERNEL=="hidraw*", ATTRS{idVendor}=="152a", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/70-quad-cortex.rules && sudo udevadm control --reload-rules && sudo udevadm trigger`
+   then replug the QC. Details: [guide, Install](docs/GUIDE.md#1-install).
 
 To publish a new release: `git tag v0.1.1 && git push origin v0.1.1`.
 
