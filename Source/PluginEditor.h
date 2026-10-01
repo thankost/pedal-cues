@@ -32,7 +32,13 @@ public:
     void showSupportDialog();
     void showUpdateDialog (const update::Info&);
 
-    // Opens the ? menu under target. extraItemName/extra add an app-only item (standalone: audio/MIDI settings).
+    // Setup = your names plus the MIDI settings. Saved in every project automatically; these are the explicit actions.
+    void saveDefaultSetup();
+    void loadDefaultSetup();
+    void exportSetup();
+    void importSetup();
+
+    // Opens the ☰ menu under target. extraItemName/extra add an app-only item (standalone: audio/MIDI settings).
     void showHelpMenu (juce::Component* target, const juce::String& extraItemName = {}, std::function<void()> extra = {});
 
     // Standalone: the app's menu bar has Options/Help, so the header's ? button is hidden.
@@ -95,7 +101,13 @@ private:
     } tabBar;
 
     juce::OwnedArray<juce::TextButton> tabButtons;
-    juce::TextButton helpButton { "?" };
+    // The ☰ menu: tour, guide, setup (save/load/export/import), updates, about, support.
+    struct MenuButton final : public juce::Button
+    {
+        MenuButton() : juce::Button ("Menu") {}
+        void paintButton (juce::Graphics&, bool over, bool down) override;
+    } helpButton;
+    std::unique_ptr<juce::FileChooser> chooser;
 
     UpdateBadge updateBadge;
     std::vector<std::unique_ptr<ui::Page>> pages;

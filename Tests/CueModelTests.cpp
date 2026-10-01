@@ -1,5 +1,6 @@
 #include "../Source/CueModel.h"
 #include "../Source/Update.h"
+#include "../Source/State.h"
 
 #include <cstdio>
 
@@ -48,6 +49,21 @@ int main (int argc, char** argv)
     CHECK (whammy::programNumber (8, true, false)  == 51);  // 2 Oct Down, Chords
     CHECK (whammy::programNumber (8, true, true)   == 72);
     CHECK (whammy::programNumber (20, true, true)  == 84);
+
+    // A saved setup carries the MIDI settings along with the names.
+    {
+        auto root = state::createDefault();
+        root.setProperty (IDs::qcChannel, 5, nullptr);
+        root.setProperty (IDs::whChannel, 7, nullptr);
+        root.setProperty (IDs::sendSetlist, true, nullptr);
+        const auto file = juce::File::createTempFile (".xml");
+        CHECK (state::saveLibrary (root, file));
+
+        auto fresh = state::createDefault();
+        CHECK (state::loadLibrary (fresh, file));
+        CHECK ((int) fresh[IDs::qcChannel] == 5 && (int) fresh[IDs::whChannel] == 7 && (bool) fresh[IDs::sendSetlist]);
+        file.deleteFile();
+    }
 
     // Update check: version comparison
     CHECK (update::isNewer ("0.4.12", "0.4.11"));

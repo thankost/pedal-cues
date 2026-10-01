@@ -20,6 +20,8 @@ struct Page : public juce::Component
 std::unique_ptr<Page> makeQcPage       (PedalCuesProcessor&);
 std::unique_ptr<Page> makeWhammyPage   (PedalCuesProcessor&);
 std::unique_ptr<Page> makeSettingsPage (PedalCuesProcessor&, std::function<void()> startTour);
+void showWiringGuide();   // Help > Wiring guide
+std::unique_ptr<juce::Component> makeWiringGuide();
 
 inline const juce::String repoUrl { "https://github.com/thankost/pedal-cues" };
 inline const juce::String author { "Thanasis Kostopoulos" };

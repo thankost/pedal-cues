@@ -59,8 +59,9 @@ Use the `release` skill (`.claude/skills/release/SKILL.md`). In short:
   - Not working: QC on USB only, with the Whammy on the QC's Thru.
 - Default channels: QC 1 (never Omni), Whammy 2. Don't state the Whammy V channel-setting procedure from memory; point to its manual.
 - Scene and stomp tiles "Load 1A first" by default (preset PC, then the scene or footswitch 1/4 beat later), or act on the "Current QC preset".
-- Standalone app (`Source/StandaloneApp.cpp`, custom JUCE standalone): no audio inputs, no Audio/MIDI settings window. Tiles go straight to the MIDI port picked in MIDI Setup > Test output or Options > MIDI Output (`PedalCuesProcessor::setDirectMidiOutput`, saved as `standaloneMidiOutput` in settings.xml). Menus: macOS app menu (About, Check for Updates, auto-check toggle), Options (MIDI Output), Help. The tempo is set by the user (`setManualBpm`, `standaloneBpm`).
-- The third tab is called **MIDI Setup** (it used to be "Settings").
+- Standalone app (`Source/StandaloneApp.cpp`, custom JUCE standalone): no audio inputs, no Audio/MIDI settings window. Tiles go straight to the MIDI port picked in MIDI Setup > Test your pedals or Options > MIDI Output (`PedalCuesProcessor::setDirectMidiOutput`, saved as `standaloneMidiOutput` in settings.xml). Menus: macOS app menu (About, Check for Updates, auto-check toggle), File (setup), Options (MIDI Output), Help (incl. Wiring Guide). The tempo is set by the user (`setManualBpm`, `standaloneBpm`).
+- The third tab is called **MIDI Setup** (it used to be "Settings"): cards Your pedals (+ Advanced), Reaper tracks (wiring switch in its header), and Test (standalone only: port + Test QC / Test Whammy). Cable instructions live in the Wiring guide dialog (`ui::showWiringGuide`, Help / ☰ menu).
+- "Your setup" = names + MIDI settings (`state::saveLibrary/loadLibrary`, incl. qcChannel, whChannel, whPcBase, sendSetlist, comboPresetScene). Save/Load default and Export/Import live in the ☰ menu (plugin) and the File menu (standalone).
 
 ## Links used in the app and docs
 

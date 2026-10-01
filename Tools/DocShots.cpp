@@ -495,6 +495,10 @@ int main (int argc, char** argv)
         state::setFlag ("setupViaQcChain", previous);
     }
 
+    {
+        auto guide = ui::makeWiringGuide();
+        save (guide->createComponentSnapshot (guide->getLocalBounds(), true, scale), outDir.getChildFile ("wiring-guide.png"));
+    }
     save (drawTimeline (proc), outDir.getChildFile ("timeline.png"));
     save (drawRouting(), outDir.getChildFile ("routing.png"));
     save (drawPresetTarget(), outDir.getChildFile ("preset-target.png"));

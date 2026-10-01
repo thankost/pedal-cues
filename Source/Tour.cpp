@@ -39,14 +39,15 @@ const std::vector<TourStep>& tourSteps()
         { 1, { "wh.sweepControls", "wh.sweeps" }, "6. Automate the treadle",
           "Pick a length and curve, then drag a move. It becomes CC#11 automation that follows your project tempo: "
           "ramps, dives, trills, or a bend that lands exactly on the next bar. Or click Draw and sketch your own move." },
-        { 2, { "set.midi" }, "7. MIDI Setup: match the channels",
-          "Set the channel of each pedal here, and give the QC and the Whammy different channels." },
-        { 2, { "set.setup" }, "8. Hook it up once",
-          "Use two cue tracks, QC Cues and Whammy Cues. Pick how your pedals are connected: separate outputs (QC on USB "
-          "or its own MIDI cable, Whammy on an interface MIDI Out), or a daisy chain through the QC's MIDI In and Thru. "
-          "The QC does not pass USB MIDI on to the Whammy. Follow the steps once, and the arrangement plays your whole show." },
+        { 2, { "set.pedals" }, "7. MIDI Setup: your pedals",
+          "Set each pedal's MIDI channel to match the pedal itself, and give the QC and the Whammy different channels. "
+          "Every cue is sent on these channels. You set them once." },
+        { 2, { "set.tracks" }, "8. Reaper tracks",
+          "Pick your wiring at the top (a daisy chain through the QC, or separate outputs), then make the two cue tracks, "
+          "QC Cues and Whammy Cues, as shown. Not sure how to cable the pedals? Click 'How should I wire my pedals?'." },
         { 2, { "hdr.help" }, "You are ready",
-          "Reopen this tour or the illustrated user guide at any time from the ? button (the Help menu in the standalone app). Have a great show!" },
+          "The menu button (top right) reopens this tour and the user guide, and saves your setup as the default for new "
+          "projects. In the standalone app these are in the File and Help menus. Have a great show!" },
     };
     return steps;
 }

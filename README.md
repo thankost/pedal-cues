@@ -10,7 +10,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 
 ![PedalCues - Quad Cortex page](docs/images/quad-cortex.png)
 
-📖 **[User guide with pictures and step-by-step instructions](docs/GUIDE.md)** · 📝 **[What's new (changelog)](CHANGELOG.md)**. A quick tour also starts the first time you open the plugin (open it again later from the **?** button).
+📖 **[User guide with pictures and step-by-step instructions](docs/GUIDE.md)** · 📝 **[What's new (changelog)](CHANGELOG.md)**. A quick tour also starts the first time you open the plugin (open it again later from the **☰** menu).
 
 | Whammy V | MIDI Setup |
 |---|---|
@@ -34,9 +34,9 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
   optional return to heel afterwards
 
 **Workflow**
-- Update notice: the header shows your version and whether a newer release is out (one GitHub request when it opens; turn it off in the ? menu)
-- Everything is stored in the Reaper project, and you can save a **default library** that new instances load
-- Export/import library as XML (back it up, share it with the band)
+- Update notice: the header shows your version and whether a newer release is out (one GitHub request when it opens; turn it off in the ☰ menu)
+- Everything is stored in the Reaper project. **☰ > Save as default setup** makes new instances start with your names, colours and MIDI settings
+- **☰ > Export / Import setup** as a file (back it up, share it with the band)
 - MIDI passes through, so the dropped items and the live preview share one track and one route
 
 Preset/scene names are entered in the plugin (double-click to rename, right-click for colour/reorder).
@@ -102,13 +102,13 @@ Details and pictures: [guide, section 2](docs/GUIDE.md#2-connect-your-rig).
 
 ```
 Source/CueModel.*        MIDI definitions for both pedals + .mid file writer
-Source/State.*           ValueTree schema, defaults, library save/load
+Source/State.*           ValueTree schema, defaults, setup (names + MIDI settings) save/load
 Source/Tile.*            draggable tile (external file drag + click-to-send)
 Source/PluginProcessor.* MIDI passthrough, preview scheduling, host tempo, state
 Source/Theme.*           colour palette + custom LookAndFeel
 Source/PluginEditor.*    window, header tabs, first-run tour host
 Source/QcPage.cpp        Quad Cortex page    Source/WhammyPage.cpp  Whammy V page
-Source/SettingsPage.cpp  settings / library / Reaper setup
+Source/SettingsPage.cpp  MIDI Setup tab (your pedals, Reaper tracks, test) and the wiring guide
 Source/Tour.*            quick-tour overlay (steps + spotlight)
 Tools/DocShots.cpp       renders docs/images/*.png
 docs/GUIDE.md            user guide
@@ -125,7 +125,7 @@ build/DocShots_artefacts/Release/DocShots docs/images
 ## Support
 
 PedalCues is free. If it helps your show and you'd like to say thanks, you can donate (completely optional):
-[Buy Me a Coffee](https://buymeacoffee.com/athkost) · [PayPal](https://paypal.me/athkost) · [Revolut](https://revolut.me/athkost). In the plugin: **? > Support PedalCues**.
+[Buy Me a Coffee](https://buymeacoffee.com/athkost) · [PayPal](https://paypal.me/athkost) · [Revolut](https://revolut.me/athkost). In the plugin: **☰ > Support PedalCues**.
 
 ## License
 

@@ -62,7 +62,7 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     checkForUpdates (false);
 
     helpButton.setComponentID ("hdr.help");
-    helpButton.setTooltip ("Quick tour and user guide");
+    helpButton.setTooltip ("Menu: quick tour, guide, save or share your setup, updates");
     helpButton.onClick = [this] { showHelpMenu (&helpButton); };
     addAndMakeVisible (helpButton);
 
@@ -165,19 +165,88 @@ void PedalCuesEditor::showAboutDialog()
                                             "Not affiliated with Neural DSP or DigiTech.");
 }
 
+void PedalCuesEditor::MenuButton::paintButton (juce::Graphics& g, bool over, bool down)
+{
+    const auto b = getLocalBounds().toFloat().reduced (1.0f);
+    g.setColour (down ? surfaceHi.brighter (0.1f) : (over ? surfaceHi : raised));
+    g.fillRoundedRectangle (b, 9.0f);
+    g.setColour (outline);
+    g.drawRoundedRectangle (b.reduced (0.5f), 9.0f, 1.0f);
+
+    // ☰ drawn as three bars, so it looks the same with every font.
+    g.setColour (over ? theme::text : theme::text.withAlpha (0.85f));
+    const auto w = b.getWidth() * 0.42f;
+    for (int i = -1; i <= 1; ++i)
+        g.fillRoundedRectangle (juce::Rectangle<float> (w, 2.2f).withCentre (b.getCentre().translated (0.0f, (float) i * 5.5f)), 1.1f);
+}
+
+void PedalCuesEditor::saveDefaultSetup()
+{
+    const auto ok = state::saveLibrary (state, state::defaultLibraryFile());
+    juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, ok ? "Default setup saved" : "Couldn't save",
+                                            ok ? "New PedalCues instances will start with your names, colours and MIDI settings."
+                                               : "PedalCues couldn't write the default setup file.");
+}
+
+void PedalCuesEditor::loadDefaultSetup()
+{
+    if (! state::loadLibrary (state, state::defaultLibraryFile()))
+        juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "No default setup yet",
+                                                "Use Save as Default Setup first.");
+}
+
+void PedalCuesEditor::exportSetup()
+{
+    chooser = std::make_unique<juce::FileChooser> ("Export PedalCues setup",
+                                                   juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+                                                       .getChildFile ("PedalCues Setup.xml"),
+                                                   "*.xml");
+    juce::Component::SafePointer<PedalCuesEditor> safe (this);
+    chooser->launchAsync (juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
+                              | juce::FileBrowserComponent::warnAboutOverwriting,
+                          [safe] (const juce::FileChooser& fc)
+                          {
+                              const auto file = fc.getResult();
+                              if (safe != nullptr && file != juce::File() && ! state::saveLibrary (safe->state, file.withFileExtension ("xml")))
+                                  juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "Export failed",
+                                                                          "PedalCues couldn't write " + file.getFileName() + ".");
+                          });
+}
+
+void PedalCuesEditor::importSetup()
+{
+    chooser = std::make_unique<juce::FileChooser> ("Import PedalCues setup",
+                                                   juce::File::getSpecialLocation (juce::File::userDocumentsDirectory), "*.xml");
+    juce::Component::SafePointer<PedalCuesEditor> safe (this);
+    chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                          [safe] (const juce::FileChooser& fc)
+                          {
+                              const auto file = fc.getResult();
+                              if (safe != nullptr && file.existsAsFile() && ! state::loadLibrary (safe->state, file))
+                                  juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "Not a PedalCues setup",
+                                                                          file.getFileName() + " isn't a PedalCues setup file.");
+                          });
+}
+
 void PedalCuesEditor::showHelpMenu (juce::Component* target, const juce::String& extraItemName, std::function<void()> extra)
 {
     juce::PopupMenu m;
     m.addSectionHeader ("PedalCues " JucePlugin_VersionString);
-    m.addItem (1, "Show quick tour");
-    m.addItem (2, "Open user guide (web)");
+    m.addItem (1, "Quick tour");
+    m.addItem (2, "User guide");
+    m.addItem (14, "Wiring guide");
     m.addSeparator();
-    m.addItem (3, "About PedalCues");
-    m.addItem (4, "Project on GitHub");
-    m.addSeparator();
-    m.addItem (5, "Support PedalCues (optional)...");
+    m.addSectionHeader ("Your setup (names + MIDI settings)");
+    m.addItem (10, "Save as default setup");
+    m.addItem (11, "Load default setup");
+    m.addItem (12, "Export setup");
+    m.addItem (13, "Import setup");
     m.addSeparator();
     m.addItem (7, "Check for updates automatically", true, ! state::getFlag (update::disabledFlag));
+    m.addSeparator();
+    m.addItem (3, "About PedalCues");
+    m.addItem (4, "PedalCues on GitHub");
+    m.addItem (5, "Support PedalCues");
     if (extra)
     {
         m.addSeparator();
@@ -189,20 +258,22 @@ void PedalCuesEditor::showHelpMenu (juce::Component* target, const juce::String&
     {
         if (safe == nullptr)
             return;
-        if (result == 1)
-            safe->startTour (0);
-        else if (result == 2)
-            juce::URL (ui::guideUrl).launchInDefaultBrowser();
-        else if (result == 3)
-            safe->showAboutDialog();
-        else if (result == 4)
-            juce::URL (ui::repoUrl).launchInDefaultBrowser();
-        else if (result == 5)
-            safe->showSupportDialog();
-        else if (result == 6 && extra)
-            extra();
-        else if (result == 7)
-            state::setFlag (update::disabledFlag, ! state::getFlag (update::disabledFlag));
+        switch (result)
+        {
+            case 1:  safe->startTour (0); break;
+            case 2:  juce::URL (ui::guideUrl).launchInDefaultBrowser(); break;
+            case 3:  safe->showAboutDialog(); break;
+            case 4:  juce::URL (ui::repoUrl).launchInDefaultBrowser(); break;
+            case 5:  safe->showSupportDialog(); break;
+            case 6:  if (extra) extra(); break;
+            case 7:  state::setFlag (update::disabledFlag, ! state::getFlag (update::disabledFlag)); break;
+            case 10: safe->saveDefaultSetup(); break;
+            case 11: safe->loadDefaultSetup(); break;
+            case 12: safe->exportSetup(); break;
+            case 13: safe->importSetup(); break;
+            case 14: ui::showWiringGuide(); break;
+            default: break;
+        }
     });
 }
 
@@ -329,7 +400,7 @@ void PedalCuesEditor::UpdateBadge::setInfo (const update::Info& newInfo)
     setTooltip (info.status == S::available ? "A newer PedalCues is out. Click to see what's new and download it."
               : info.status == S::upToDate  ? "You have the latest PedalCues."
               : info.status == S::failed    ? "Couldn't reach GitHub to check for updates."
-              : info.status == S::disabled  ? "Automatic update check is off (? menu)."
+              : info.status == S::disabled  ? "Automatic update check is off (turn it on in the menu)."
                                             : juce::String());
     layoutRefresh();
     repaint();

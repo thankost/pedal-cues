@@ -59,19 +59,29 @@ public:
     }
 
 private:
-    enum ItemIds { checkUpdates = 1, autoCheck, tour, guide, github, support, about, midiNone = 100, midiFirst = 101 };
+    enum ItemIds { checkUpdates = 1, autoCheck, tour, guide, github, support, about,
+                   saveDefault, loadDefault, exportSetup, importSetup, wiringGuide, midiNone = 100, midiFirst = 101 };
 
     PedalCuesProcessor* processor() const
     {
         return pluginHolder != nullptr ? dynamic_cast<PedalCuesProcessor*> (pluginHolder->processor.get()) : nullptr;
     }
 
-    juce::StringArray getMenuBarNames() override { return { "Options", "Help" }; }
+    juce::StringArray getMenuBarNames() override { return { "File", "Options", "Help" }; }
 
     juce::PopupMenu getMenuForIndex (int index, const juce::String&) override
     {
         juce::PopupMenu m;
         if (index == 0)
+        {
+            // Your setup = names, colours and MIDI settings.
+            m.addItem (saveDefault, "Save as Default Setup");
+            m.addItem (loadDefault, "Load Default Setup");
+            m.addSeparator();
+            m.addItem (exportSetup, "Export Setup");
+            m.addItem (importSetup, "Import Setup");
+        }
+        else if (index == 1)
         {
             // Tiles go straight to this port; the app needs no audio device.
             juce::PopupMenu ports;
@@ -80,12 +90,15 @@ private:
             ports.addItem (midiNone, "None", true, current.isEmpty());
             for (int i = 0; i < midiDevices.size(); ++i)
                 ports.addItem (midiFirst + i, midiDevices[i].name, true, midiDevices[i].identifier == current);
+            if (midiDevices.isEmpty())
+                ports.addItem (midiFirst - 2, "No MIDI devices found", false);
             m.addSubMenu ("MIDI Output", ports);
         }
         else
         {
             m.addItem (tour, "Quick Tour");
             m.addItem (guide, "User Guide");
+            m.addItem (wiringGuide, "Wiring Guide");
             m.addItem (github, "PedalCues on GitHub");
             m.addSeparator();
             m.addItem (support, "Support PedalCues");
@@ -121,6 +134,11 @@ private:
             case github:        juce::URL (ui::repoUrl).launchInDefaultBrowser(); break;
             case support:       if (e != nullptr) e->showSupportDialog(); break;
             case about:         if (e != nullptr) e->showAboutDialog(); break;
+            case saveDefault:   if (e != nullptr) e->saveDefaultSetup(); break;
+            case loadDefault:   if (e != nullptr) e->loadDefaultSetup(); break;
+            case exportSetup:   if (e != nullptr) e->exportSetup(); break;
+            case importSetup:   if (e != nullptr) e->importSetup(); break;
+            case wiringGuide:   ui::showWiringGuide(); break;
             default: break;
         }
     }

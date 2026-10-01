@@ -1,6 +1,7 @@
 #include "State.h"
 #include "CueModel.h"
 
+#include <array>
 #include <iterator>
 
 namespace state
@@ -169,11 +170,23 @@ void setFlag (const juce::String& name, bool value)
     setSetting (name, value ? "1" : "0");
 }
 
+static const std::array<const juce::Identifier*, 5>& setupProperties()
+{
+    static const std::array<const juce::Identifier*, 5> ids { &IDs::qcChannel, &IDs::whChannel, &IDs::whPcBase,
+                                                              &IDs::sendSetlist, &IDs::comboPresetScene };
+    return ids;
+}
+
 bool saveLibrary (const juce::ValueTree& root, const juce::File& file)
 {
     juce::ValueTree lib (IDs::PedalCues);
     lib.appendChild (root.getChildWithName (IDs::QC).createCopy(), nullptr);
     lib.appendChild (root.getChildWithName (IDs::Whammy).createCopy(), nullptr);
+
+    // The MIDI setup travels with the names, so a default/exported setup is ready to use.
+    for (const auto* id : setupProperties())
+        if (root.hasProperty (*id))
+            lib.setProperty (*id, root[*id], nullptr);
 
     if (auto xml = lib.createXml())
         return file.getParentDirectory().createDirectory() && xml->writeTo (file);
@@ -200,6 +213,10 @@ bool loadLibrary (juce::ValueTree& root, const juce::File& file)
         root.removeChild (root.getChildWithName (*id), nullptr);
         root.appendChild (src.createCopy(), nullptr);
     }
+
+    for (const auto* id : setupProperties())
+        if (lib.hasProperty (*id))
+            root.setProperty (*id, lib[*id], nullptr);
 
     root.setProperty (IDs::selectedPreset, 0, nullptr);
     sanitise (root);

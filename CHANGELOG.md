@@ -2,6 +2,13 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.4.14 (2026-10-01)
+
+- **MIDI Setup is simpler:** **Your pedals** (channels, with Advanced folded away) and **Reaper tracks**, with your wiring chosen right in its header. The cable instructions moved to a new **Wiring guide** (Help menu, or "How should I wire my pedals?").
+- **Standalone app:** a **Test your pedals** card with **Test QC** and **Test Whammy** buttons that tell you what they sent. They're greyed out until you pick a MIDI port, and "No MIDI devices found" shows when nothing is connected.
+- **Your setup in one place:** the ☰ menu (the **File** menu in the standalone app) saves your setup as the default for new projects, loads it, and exports or imports it. It now includes your MIDI channels and options, not just the names.
+- The **?** button is now a **☰** menu button.
+
 ## 0.4.13 (2026-10-01)
 
 - **Standalone app: MIDI only.** No audio setup any more and no microphone request. Pick the port your pedals are on in **MIDI Setup > Test output** or **Options > MIDI Output**, then click any tile's play button.

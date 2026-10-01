@@ -15,7 +15,7 @@ PedalCues turns pedal changes into **drag and drop**. Each tile in the plugin is
 5. [Quad Cortex page](#5-quad-cortex-page)
 6. [Build a song, step by step](#6-build-a-song-step-by-step)
 7. [Whammy V page](#7-whammy-v-page)
-8. [MIDI Setup and your library](#8-midi-setup-and-your-library)
+8. [MIDI Setup and your setup](#8-midi-setup-and-your-setup)
 9. [Troubleshooting](#9-troubleshooting)
 
 ---
@@ -43,7 +43,7 @@ xattr -cr ~/Downloads/PedalCues-macOS
 
 In **Reaper**, go to *Options > Preferences > Plug-ins > VST* and click **Re-scan**. PedalCues appears under *Instruments*.
 
-> There's also a Standalone app (`PedalCues.exe` / `PedalCues.app`) for testing tiles against the pedal without a DAW. It only needs a MIDI port: pick it in the **Test output** card on the **MIDI Setup** tab (or in the app's **Options > MIDI Output** menu). No audio device is needed. Then click a tile's round play button, and the pedal changes. For treadle moves, set your song's tempo by clicking the BPM pill ("set tempo"), and play your guitar while you test so you hear the bend.
+> There's also a Standalone app (`PedalCues.exe` / `PedalCues.app`) for testing tiles against the pedal without a DAW. It only needs a MIDI port: pick it in the **Test your pedals** card on the **MIDI Setup** tab (or in the app's **Options > MIDI Output** menu), then press **Test QC** / **Test Whammy** to check each pedal. No audio device is needed. After that, click any tile's round play button and the pedal changes. For treadle moves, set your song's tempo by clicking the BPM pill ("set tempo"), and play your guitar while you test so you hear the bend.
 
 ---
 
@@ -83,7 +83,7 @@ PedalCues sends MIDI from Reaper tracks to your pedals. Use **two cue tracks**, 
 
 The plugin's **MIDI Setup** tab shows the same steps for each setup:
 
-| Separate outputs (separate cables, or QC over USB) | Daisy chain via QC |
+| My wiring: Separate outputs | My wiring: Daisy chain via QC |
 |---|---|
 | ![Settings, two cue tracks](images/settings.png) | ![Settings, daisy chain](images/settings-qc-chain.png) |
 
@@ -96,7 +96,7 @@ The first time you open PedalCues, a quick tour walks you through every area. It
 ![Quick tour, welcome](images/tour-welcome.png)
 
 - Move through it with **Next / Back** or the **arrow keys**. **Esc** or *Skip tour* closes it.
-- Open it again any time from the **?** button in the top-right corner (the **Help** menu in the standalone app) or with **MIDI Setup > Show quick tour**.
+- Open it again any time from the **☰** menu in the top-right corner (the **Help** menu in the standalone app) or with **MIDI Setup > Show quick tour**.
 
 ![Quick tour highlighting the scenes](images/tour-scenes.png)
 
@@ -216,29 +216,34 @@ The drawing is saved with your project and stretches to whatever *Length* you pi
 
 ---
 
-## 8. MIDI Setup and your library
+## 8. MIDI Setup and your setup
 
 ![MIDI Setup tab](images/settings.png)
 
-- **MIDI channels:** match these to the pedals (see [step 2](#2-connect-your-rig)).
-- **Whammy program numbering:** if the Whammy lands one mode off, switch to *Zero-based*.
-- **Send setlist (CC#32):** turn this on if your presets live in different setlists.
-- **Test output (standalone app only):** the MIDI port the play buttons send to. The plugin in your DAW uses the track's MIDI output instead.
-- **Setup in Reaper:** pick **Separate outputs** or **Daisy chain via QC** to see the matching steps and signal flow (see [step 2](#2-connect-your-rig)).
-- **Library:** all your preset, scene, footswitch and Whammy names.
-  - It is stored inside each Reaper project automatically.
-  - **Save as default** makes every new PedalCues instance start with it.
-  - **Export / Import** moves it to another computer or shares it with your band.
+The **MIDI Setup** tab has two cards (three in the standalone app):
+
+- **Your pedals** (set once, required): the MIDI channel of the Quad Cortex and of the Whammy. They must match the pedals themselves and be different from each other. Every cue is sent on these channels, whatever your wiring. **Advanced** (folded away) has *Whammy program numbering*, only for when every mode lands one position off, and *Send setlist (CC#32)*, for presets in several setlists.
+- **Reaper tracks:** pick **My wiring** at the top (**Daisy chain via QC** or **Separate outputs**), and the card shows the two cue tracks and their MIDI outputs for it. Not sure how to cable the pedals? **How should I wire my pedals?** opens the **Wiring guide** (also in the ☰ / **Help** menu), with the cables and signal flow for both setups and the one that doesn't work.
+- **Test your pedals** (standalone app only): the MIDI port the app sends to, with **Test QC** and **Test Whammy**. They send on the channels from *Your pedals*: Test QC turns the QC tuner on and, 1.5 s later, off again (CC#45); Test Whammy selects **2 Oct Up** (a Program Change). After each click the card tells you what it sent; check that the pedal reacted.
+
+![Wiring guide](images/wiring-guide.png)
+
+### Your setup: save, share, start new projects with it
+
+Your setup is your preset, scene, footswitch and Whammy names and colours, plus the MIDI settings above. It's stored inside each Reaper project automatically. From the **☰** menu (the **File** menu in the standalone app):
+- **Save as default setup:** new PedalCues instances start with it.
+- **Load default setup:** brings it back into this project.
+- **Export setup / Import setup:** a file to back up, move to another computer, or share with your band.
 
 ### Updates
 
 Under the title, PedalCues shows your version and whether it's **Up to date**. When a newer release is out, it says **Update to vX.Y.Z**: click it to see what's new and download it. It says **Couldn't check** when you're offline. The round arrows next to it check again.
 
-PedalCues asks GitHub for the latest release when it opens; nothing else is sent. To turn that off, untick **Check for updates automatically** in the **?** menu (in the standalone app: the **PedalCues** menu on macOS, **Help** on Windows). See what changed in each version in the [changelog](../CHANGELOG.md).
+PedalCues asks GitHub for the latest release when it opens; nothing else is sent. To turn that off, untick **Check for updates automatically** in the **☰** menu (in the standalone app: the **PedalCues** menu on macOS, **Help** on Windows). See what changed in each version in the [changelog](../CHANGELOG.md).
 
 ### The standalone app
 
-- **Menus:** **Options > MIDI Output** picks the port; **Help** has the quick tour, the user guide and support. On macOS, **About** and **Check for Updates** are in the **PedalCues** menu.
+- **Menus:** **File** saves, loads, exports and imports your setup; **Options > MIDI Output** picks the port; **Help** has the quick tour, the user guide and support. On macOS, **About** and **Check for Updates** are in the **PedalCues** menu.
 - **Tempo:** there's no DAW, so click the BPM pill (**set tempo**) to type, drag or **Tap** your song's tempo. It only affects how long treadle moves last when you test them.
 
 ---
@@ -248,21 +253,21 @@ PedalCues asks GitHub for the latest release when it opens; nothing else is sent
 | Problem | Fix |
 |---|---|
 | Nothing happens on the pedal | Check the track's MIDI Hardware Output and that the QC's MIDI device is enabled in Reaper preferences. Try a tile's play button. |
-| Standalone app: tiles do nothing | Pick the port your pedals are on in **MIDI Setup > Test output** (or **Options > MIDI Output**). On Windows, close Reaper first; only one program can use a MIDI port at a time. |
+| Standalone app: tiles do nothing | Pick the port your pedals are on in **MIDI Setup > Test your pedals** (or **Options > MIDI Output**), then try **Test QC** / **Test Whammy**. On Windows, close Reaper first; only one program can use a MIDI port at a time. |
 | Scene or stomp changes the wrong preset | You're on **Current QC preset**, so tiles act on whatever preset the QC has loaded. Pick **Load 1A first** in the Scenes header so they load their own preset first. |
 | A stomp tile changes scenes | The QC is in Scene mode, where footswitch A-H select scenes. Put the QC in Stomp mode (or drop the **Stomp Mode** tile before your stomp cues). Before v0.4.2 the Scene Mode and Stomp Mode tiles were swapped; drag those clips in again. |
 | Wrong preset loads | Check setlist, bank and slot in *Edit preset*. If presets are in other setlists, turn on *Send setlist*. |
 | Whammy doesn't react | If the QC is on USB and the Whammy hangs off the QC's Thru, that can't work: the QC doesn't forward USB MIDI (a known QC limitation). Use one of the [three working setups](#2-connect-your-rig). Otherwise check the cable direction (MIDI Out to MIDI In) and the channels, set the QC to a fixed channel (not *Omni*), and for the daisy chain turn on QC MIDI Thru. |
 | Whammy clips do nothing | Whammy clips must be on the **Whammy Cues** track, whose output leads to the Whammy. |
-| How do I update? | When the header says **Update available**, click it and choose **Download**. Close your DAW, then replace the plugin files the same way you [installed](#1-install) them. Your library and projects are kept. |
+| How do I update? | When the header says **Update available**, click it and choose **Download**. Close your DAW, then replace the plugin files the same way you [installed](#1-install) them. Your setup and projects are kept. |
 | Whammy mode is one off | *MIDI Setup > Whammy program numbering > Zero-based*. |
 | Clip lands between bars | Turn on snap to grid in Reaper before dropping. |
 | macOS says PedalCues "is damaged and can't be opened" | It isn't damaged; macOS blocks apps downloaded from the internet that Apple hasn't notarised. Run the `xattr -cr` command from [Install](#1-install), or use *Privacy & Security > Open Anyway*. Use v0.4.1 or newer. |
 
 Found a bug or have an idea? [Open an issue](https://github.com/thankost/pedal-cues/issues).
 
-Enjoying PedalCues? It's free; if you'd like to support it, you can donate via [Buy Me a Coffee](https://buymeacoffee.com/athkost), [PayPal](https://paypal.me/athkost) or [Revolut](https://revolut.me/athkost), or from **? > Support PedalCues** in the plugin. Completely optional.
+Enjoying PedalCues? It's free; if you'd like to support it, you can donate via [Buy Me a Coffee](https://buymeacoffee.com/athkost), [PayPal](https://paypal.me/athkost) or [Revolut](https://revolut.me/athkost), or from **☰ > Support PedalCues** in the plugin. Completely optional.
 
 ---
 
-PedalCues is free software by **Thanasis Kostopoulos**, released under the [MIT License](../LICENSE). Source: [github.com/thankost/pedal-cues](https://github.com/thankost/pedal-cues). In the plugin, open **? > About PedalCues**. Not affiliated with Neural DSP or DigiTech.
+PedalCues is free software by **Thanasis Kostopoulos**, released under the [MIT License](../LICENSE). Source: [github.com/thankost/pedal-cues](https://github.com/thankost/pedal-cues). In the plugin, open **☰ > About PedalCues**. Not affiliated with Neural DSP or DigiTech.
