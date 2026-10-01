@@ -63,11 +63,31 @@
     .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
     .card { background: var(--surface); border: 1px solid var(--outline); border-radius: 12px; padding: 20px; }
 
-    /* Download counter, just above Support */
-    .stats { display: flex; justify-content: center; }
-    .stat { text-align: center; padding: 28px 48px; min-width: 260px; }
-    .stat .num { font-size: 48px; font-weight: 800; color: var(--amber); line-height: 1.1; font-variant-numeric: tabular-nums; }
-    .stat .label { color: var(--dim); font-size: 15px; margin-top: 6px; }
+    /* Support: centred, readable line length */
+    .support { text-align: center; }
+    .support .sub { max-width: 720px; margin-left: auto; margin-right: auto; }
+
+    /* Stats band, just above Support */
+    .stats-band { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); border-radius: 18px; overflow: hidden;
+                  max-width: 880px; margin: 0 auto;
+                  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+                  border: 1px solid var(--outline); box-shadow: 0 0 0 1px rgba(255,255,255,.02) inset, 0 30px 80px -40px rgba(245,166,35,.35); }
+    .stats-band::before { content: ""; position: absolute; inset: -40% 20% auto 20%; height: 120%; pointer-events: none;
+                          background: radial-gradient(closest-side, rgba(245,166,35,.16), transparent 70%); }
+    .stat { position: relative; text-align: center; padding: 30px 20px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .stat + .stat { border-left: 1px solid var(--outline); }
+    .stat .num { font-size: clamp(34px, 6vw, 56px); font-weight: 800; letter-spacing: -0.02em; line-height: 1;
+                 font-variant-numeric: tabular-nums;
+                 background: linear-gradient(135deg, #ffd27a 0%, var(--amber) 45%, #ff7a3d 100%);
+                 -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .stat .num.version { font-variant-numeric: proportional-nums; letter-spacing: -0.035em; }
+    .stat .label { color: var(--text); font-weight: 600; font-size: 15px; margin-top: 10px; }
+    .stat .sub { color: var(--dim); font-size: 13px; margin: 4px 0 0; }   /* override the section-subtitle .sub bottom margin so cards are vertically symmetric */
+    @media (max-width: 640px) {
+      .stats-band { grid-template-columns: 1fr; }
+      .stat + .stat { border-left: 0; border-top: 1px solid var(--outline); }
+    }
     .card h3 { margin: 0 0 6px; font-size: 17px; display: flex; align-items: center; gap: 8px; }
     .card p { margin: 0; color: var(--dim); font-size: 15px; }
     .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
@@ -231,17 +251,30 @@
   </div>
 </section>
 
-<section id="downloads-section" hidden>
-  <div class="wrap stats">
-    <div class="card stat">
-      <div class="num" id="downloads-count"></div>
-      <div class="label" id="downloads-label">downloads so far</div>
+<section id="downloads-section">
+  <div class="wrap">
+    <div class="stats-band">
+      <div class="stat">
+        <div class="num" id="downloads-count">&ndash;</div>
+        <div class="label" id="downloads-label">downloads</div>
+        <div class="sub">Windows &amp; macOS</div>
+      </div>
+      <div class="stat">
+        <div class="num version" id="stat-version">&ndash;</div>
+        <div class="label">latest version</div>
+        <div class="sub" id="stat-date">&nbsp;</div>
+      </div>
+      <div class="stat">
+        <div class="num">100%</div>
+        <div class="label">free &amp; open source</div>
+        <div class="sub">MIT licence</div>
+      </div>
     </div>
   </div>
 </section>
 
 <section id="support">
-  <div class="wrap">
+  <div class="wrap support">
     <h2>Support PedalCues</h2>
     <p class="sub">Hi, I'm Thanasis. My bandmate Leo and I play in <b>ORIA</b>, a progressive groove metal band from Thessaloniki, Greece.
       We were tired of programming MIDI by hand for every song, so I built PedalCues.</p>
@@ -274,26 +307,57 @@
     } else { win.className += ' recommended'; winCard.className += ' recommended'; }
   })();
 
-  // Download counter: the sum of every release zip's download count on GitHub (hidden if GitHub can't be reached).
-  fetch('https://api.github.com/repos/thankost/pedal-cues/releases?per_page=100')
-    .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (releases) {
-      if (!Array.isArray(releases)) return;
-      var total = 0;
-      releases.forEach(function (rel) { (rel.assets || []).forEach(function (a) { total += a.download_count || 0; }); });
-      if (total > 0) {
-        document.getElementById('downloads-count').textContent = total.toLocaleString('en-US');
-        document.getElementById('downloads-label').textContent = total === 1 ? 'download so far' : 'downloads so far';
-        document.getElementById('downloads-section').hidden = false;
-      }
-    })
-    .catch(function () {});
+  // Stats band and "Version X": from shields.io (cached, no per-visitor limit; GitHub's own API allows only
+  // 60 requests an hour per network). GitHub's API is only used for the release date, and the band works without it.
+  (function () {
+    var json = function (url) { return fetch(url).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); };
+    var section = document.getElementById('downloads-section');
+    var num = document.getElementById('downloads-count');
 
-  // Show the latest version number.
-  fetch('https://api.github.com/repos/thankost/pedal-cues/releases/latest')
-    .then(function (r) { return r.ok ? r.json() : null; })
-    .then(function (j) { if (j && j.tag_name) document.getElementById('version').textContent = 'Version ' + j.tag_name.replace(/^v/, ''); })
-    .catch(function () {});
+    json('https://img.shields.io/github/v/release/thankost/pedal-cues.json').then(function (j) {
+      if (!j || !j.value || !/^v?\d/.test(j.value)) return;
+      var v = j.value.replace(/^v/, '');
+      document.getElementById('version').textContent = 'Version ' + v;
+      document.getElementById('stat-version').textContent = v;
+    });
+
+    json('https://api.github.com/repos/thankost/pedal-cues/releases/latest').then(function (r) {
+      if (r && r.published_at)
+        document.getElementById('stat-date').textContent = 'released ' + new Date(r.published_at)
+          .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    });
+
+    // Downloads: shields.io first, GitHub's API as a fallback. The band stays visible either way ("–" until a number arrives).
+    var showTotal = function (total, text) {
+      document.getElementById('downloads-label').textContent = total === 1 ? 'download' : 'downloads';
+      var show = function () { num.textContent = isNaN(total) ? text : total.toLocaleString('en-US'); };
+      if (isNaN(total) || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return show();
+      var io = new IntersectionObserver(function (entries) {   // count up when the band scrolls into view
+        if (!entries[0].isIntersecting) return;
+        io.disconnect();
+        var start = performance.now(), dur = 1200;
+        (function tick (now) {
+          var t = Math.min(1, (now - start) / dur), eased = 1 - Math.pow(1 - t, 3);
+          num.textContent = Math.round(total * eased).toLocaleString('en-US');
+          if (t < 1) requestAnimationFrame(tick);
+        })(start);
+      }, { threshold: 0.4 });
+      io.observe(section);
+    };
+
+    json('https://img.shields.io/github/downloads/thankost/pedal-cues/total.json').then(function (j) {
+      if (j && j.value) {
+        var text = String(j.value);
+        return showTotal (/^\d+$/.test(text) ? parseInt(text, 10) : NaN, text);   // shields shortens big numbers ("1.2k")
+      }
+      return json('https://api.github.com/repos/thankost/pedal-cues/releases?per_page=100').then(function (releases) {
+        if (!Array.isArray(releases)) return;
+        var total = 0;
+        releases.forEach(function (rel) { (rel.assets || []).forEach(function (a) { total += a.download_count || 0; }); });
+        showTotal (total, String(total));
+      });
+    });
+  })();
 
   document.querySelectorAll('.copy').forEach(function (b) {
     b.addEventListener('click', function () {
