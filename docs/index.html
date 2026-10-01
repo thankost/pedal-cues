@@ -244,6 +244,7 @@
   <div class="wrap">
     <span>&copy; 2026 Thanasis Kostopoulos &middot; MIT License &middot; Built with JUCE &middot; <a href="https://github.com/thankost/pedal-cues/blob/main/CHANGELOG.md">Changelog</a></span>
     <span>Not affiliated with Neural DSP or DigiTech. Quad Cortex and Whammy are trademarks of their owners.</span>
+    <span id="downloads" hidden></span>
   </div>
 </footer>
 
@@ -258,6 +259,21 @@
       macCard.className += ' recommended'; winCard.parentNode.insertBefore(macCard, winCard);
     } else { win.className += ' recommended'; winCard.className += ' recommended'; }
   })();
+
+  // "Downloaded X times": the sum of every release zip's download count on GitHub (hidden if GitHub can't be reached).
+  fetch('https://api.github.com/repos/thankost/pedal-cues/releases?per_page=100')
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (releases) {
+      if (!Array.isArray(releases)) return;
+      var total = 0;
+      releases.forEach(function (rel) { (rel.assets || []).forEach(function (a) { total += a.download_count || 0; }); });
+      if (total > 0) {
+        var el = document.getElementById('downloads');
+        el.textContent = 'Downloaded ' + total.toLocaleString('en-US') + (total === 1 ? ' time' : ' times');
+        el.hidden = false;
+      }
+    })
+    .catch(function () {});
 
   // Show the latest version number.
   fetch('https://api.github.com/repos/thankost/pedal-cues/releases/latest')
