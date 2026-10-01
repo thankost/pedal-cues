@@ -10,7 +10,7 @@ PedalCues turns pedal changes into **drag and drop**. Each tile in the plugin is
 
 1. [Install](#1-install)
 2. [Connect your rig](#2-connect-your-rig)
-3. [Set up Reaper (once)](#3-set-up-reaper-once)
+3. [Set up your DAW (once)](#3-set-up-your-daw-once)
 4. [First launch: the quick tour](#4-first-launch-the-quick-tour)
 5. [Quad Cortex page](#5-quad-cortex-page)
 6. [Build a song, step by step](#6-build-a-song-step-by-step)
@@ -69,7 +69,21 @@ PedalCues sends MIDI from Reaper tracks to your pedals. Use **two cue tracks**, 
 
 ---
 
-## 3. Set up Reaper (once)
+## 3. Set up your DAW (once)
+
+The clips PedalCues makes are plain MIDI files, so it works in any DAW that can drag in a MIDI file and send a MIDI track to a hardware MIDI output. The steps below use **Reaper** (tested); the same idea works elsewhere:
+
+| DAW | Where the track's MIDI output is | Status |
+|---|---|---|
+| **Reaper** | *I/O > MIDI Hardware Output* (enable the port in *Preferences > MIDI Devices*) | Tested |
+| **Ableton Live** | the track's *MIDI To* | Should work, not tested yet |
+| **Cubase / Nuendo** | the track's MIDI output | Should work, not tested yet |
+| **Bitwig, Studio One** | the track's MIDI / hardware output | Should work, not tested yet |
+| **Logic Pro** | put the clips on an *External MIDI* track | Clips work; Logic doesn't pass a plugin's MIDI out to hardware, so test with the standalone app |
+| **Pro Tools** | – | Not supported (needs AAX) |
+
+In Reaper:
+
 
 1. *Options > Preferences > Audio > MIDI Devices*: enable every MIDI output you use (your interface's MIDI Out, and the Quad Cortex if it's on USB).
 2. Create two tracks, **QC Cues** and **Whammy Cues**, and insert **PedalCues** on each.
@@ -223,8 +237,8 @@ The drawing is saved with your project and stretches to whatever *Length* you pi
 The **MIDI Setup** tab has two cards (three in the standalone app):
 
 - **Your pedals** (set once, required): the MIDI channel of the Quad Cortex and of the Whammy. They must match the pedals themselves and be different from each other. Every cue is sent on these channels, whatever your wiring. **Advanced** (folded away) has *Whammy program numbering*, only for when every mode lands one position off, and *Send setlist (CC#32)*, for presets in several setlists.
-- **Reaper tracks:** pick **My wiring** at the top (**Daisy chain via QC** or **Separate outputs**), and the card shows the two cue tracks and their MIDI outputs for it. Not sure how to cable the pedals? **How should I wire my pedals?** opens the **Wiring guide** (also in the ☰ / **Help** menu), with the cables and signal flow for both setups and the one that doesn't work.
-- **Test your pedals** (standalone app only): the MIDI port the app sends to, with **Test QC** and **Test Whammy**. They send on the channels from *Your pedals*: Test QC turns the QC tuner on and, 1.5 s later, off again (CC#45); Test Whammy selects **2 Oct Up** (a Program Change). After each click the card tells you what it sent; check that the pedal reacted.
+- **DAW tracks:** pick **My wiring** at the top (**Daisy chain via QC** or **Separate outputs**), and the card shows the two cue tracks and their MIDI outputs for it. Not sure how to cable the pedals? **How should I wire my pedals?** opens the **Wiring guide** (also in the ☰ / **Help** menu), with the cables and signal flow for both setups and the one that doesn't work.
+- **Test your pedals** (standalone app only): the MIDI port the app sends to, with **Test QC** and **Test Whammy**. They send on the channels from *Your pedals*: Test QC turns the QC tuner on and, 1.5 s later, off again (CC#45), so it opens and closes (or just closes if it was open); Test Whammy steps through **Oct Up, 5th Up and 2 Oct Up** half a second apart (Program Changes), so you see the LED move whatever mode it was on. After each click the card tells you what it sent; check that the pedal reacted.
 
 ![Wiring guide](images/wiring-guide.png)
 

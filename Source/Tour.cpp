@@ -26,7 +26,7 @@ const std::vector<TourStep>& tourSteps()
           "(no reload, no audio gap). Tile subtitles show which one is active." },
         { 0, { "qc.scenes" }, "Test any tile live",
           "Every tile has a round play button in its corner. Click it and the MIDI goes to the pedal immediately, "
-          "so you can check a cue without pressing play in Reaper." },
+          "so you can check a cue without pressing play in your DAW." },
         { 0, { "qc.stomps", "qc.utils" }, "4. Stomps, tuner and gig view",
           "Switch single footswitches on or off, open the tuner for a guitar change, or flip the QC between "
           "preset, scene and stomp mode. The switch in the Stomps header picks ON or OFF tiles." },
@@ -42,7 +42,7 @@ const std::vector<TourStep>& tourSteps()
         { 2, { "set.pedals" }, "7. MIDI Setup: your pedals",
           "Set each pedal's MIDI channel to match the pedal itself, and give the QC and the Whammy different channels. "
           "Every cue is sent on these channels. You set them once." },
-        { 2, { "set.tracks" }, "8. Reaper tracks",
+        { 2, { "set.tracks" }, "8. DAW tracks",
           "Pick your wiring at the top (a daisy chain through the QC, or separate outputs), then make the two cue tracks, "
           "QC Cues and Whammy Cues, as shown. Not sure how to cable the pedals? Click 'How should I wire my pedals?'." },
         { 2, { "hdr.help" }, "You are ready",

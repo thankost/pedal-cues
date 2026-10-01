@@ -143,8 +143,8 @@ public:
             g.setFont (font (12.0f));
             g.drawText (sub, r, juce::Justification::topLeft);
         };
-        heading (daisyTitle, "DAISY CHAIN VIA QC", "Both Reaper tracks send to the same interface MIDI Out. The pedals share one cable.");
-        heading (separateTitle, "SEPARATE OUTPUTS", "Each Reaper track sends to the output its pedal is on.");
+        heading (daisyTitle, "DAISY CHAIN VIA QC", "Both DAW tracks send to the same interface MIDI Out. The pedals share one cable.");
+        heading (separateTitle, "SEPARATE OUTPUTS", "Each DAW track sends to the output its pedal is on.");
 
         g.setColour (whammyRed);
         g.setFont (font (12.5f, true));
@@ -211,7 +211,7 @@ public:
         advancedButton.setColour (juce::TextButton::textColourOffId, dim);
         advancedButton.onClick = [this] { showAdvanced = ! showAdvanced; updateAdvanced(); resized(); };
 
-        // My wiring (in the Reaper tracks header): the steps below depend on it. The cable details are in Help > Wiring guide.
+        // My wiring (in the DAW tracks header): the steps below depend on it. The cable details are in Help > Wiring guide.
         for (auto* b : { &viaQcButton, &viaInterfaceButton })
         {
             b->setClickingTogglesState (true);
@@ -225,12 +225,15 @@ public:
         viaQcButton.onClick = [this] { if (viaQcButton.getToggleState()) setSetupMode (false); };
         viaInterfaceButton.onClick = [this] { if (viaInterfaceButton.getToggleState()) setSetupMode (true); };
 
-        // Reaper tracks: the two cue tracks and their outputs. Standalone only: Test (send to a port, test each pedal).
+        // DAW tracks: the two cue tracks and their outputs. Standalone only: Test (send to a port, test each pedal).
         tracksSteps.showFlow = false;
         wiringLink.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
         wiringLink.setColour (juce::TextButton::textColourOffId, qcBlue);
         wiringLink.onClick = [] { showWiringGuide(); };
         styleCaption (wiringLabel, "My wiring:");
+        styleHint (dawHint, "Where the track's MIDI output is: Reaper: I/O > MIDI Hardware Output, and enable the port in "
+                            "Preferences > MIDI Devices ('Send to original channels'). Ableton Live: MIDI To. Cubase: the track's MIDI output. "
+                            "Logic: use an External MIDI track (Logic can't send the play-button tests to hardware; use the standalone app).");
 
         testOutBox.onChange = [this]
         {
@@ -239,7 +242,7 @@ public:
             updateTestState();
         };
         testQcButton.setTooltip ("Opens the QC tuner for 1.5 seconds: a quick check that the QC gets MIDI on its channel.");
-        testWhButton.setTooltip ("Selects 2 Oct Up on the Whammy: a quick check that it gets MIDI on its channel.");
+        testWhButton.setTooltip ("Steps the Whammy through Oct Up, 5th Up and 2 Oct Up: a quick check that it gets MIDI on its channel.");
         testQcButton.onClick = [this]
         {
             cues::Cue c;
@@ -248,20 +251,30 @@ public:
             c.add (proc.getHostBpm() / 40.0, cues::qc::tuner (ch, false).events.front().second);   // ~1.5 s later
             proc.preview (c);
             setTestStatus ("Sent tuner on/off to " + currentPortName() + " on channel " + juce::String (ch)
-                           + ". Did the QC's tuner open? If not, check the cable direction, the QC's channel, and MIDI Thru for the daisy chain.");
+                           + ". Did the QC's tuner open and close (or close, if it was open)? If not, check the cable direction, the QC's channel, and MIDI Thru for the daisy chain.");
         };
         testWhButton.onClick = [this]
         {
-            const auto wh = state.getChildWithName (IDs::Whammy);
-            proc.preview (cues::whammy::effect ((int) state[IDs::whChannel], 0, wh.getChild (0)[IDs::name].toString(),
-                                                (bool) state[IDs::whChords], (bool) state[IDs::whBypass],
-                                                (int) state[IDs::whPcBase], false));
+            // Three modes half a second apart, so the LED visibly moves whatever mode the Whammy was on.
+            cues::Cue c;
+            const auto halfSecond = proc.getHostBpm() / 120.0;   // in beats
+            int step = 0;
+            for (const auto mode : { 1, 2, 0 })   // Oct Up, 5th Up, 2 Oct Up
+            {
+                const auto cue = cues::whammy::effect ((int) state[IDs::whChannel], mode, {}, (bool) state[IDs::whChords],
+                                                       (bool) state[IDs::whBypass], (int) state[IDs::whPcBase], false);
+                for (const auto& [beat, message] : cue.events)
+                    if (message.isProgramChange())
+                        c.add ((double) step * halfSecond, message);
+                ++step;
+            }
+            proc.preview (c);
             if (currentPortName().containsIgnoreCase ("Quad Cortex") || currentPortName().containsIgnoreCase ("QC"))
-                setTestStatus ("Sent 2 Oct Up to " + currentPortName() + ", but that's the Quad Cortex's USB port: the QC's MIDI Thru "
+                setTestStatus ("Sent Oct Up, 5th Up, 2 Oct Up to " + currentPortName() + ", but that's the Quad Cortex's USB port: the QC's MIDI Thru "
                                "doesn't pass USB MIDI on, so a Whammy on its Thru won't react. Send to your interface's MIDI Out instead.");
             else
-                setTestStatus ("Sent 2 Oct Up to " + currentPortName() + " on channel " + juce::String ((int) state[IDs::whChannel])
-                               + ". Did the Whammy's mode LED move? If not, check the cable direction, the Whammy's channel, and MIDI Thru for the daisy chain.");
+                setTestStatus ("Sent Oct Up, 5th Up, 2 Oct Up to " + currentPortName() + " on channel " + juce::String ((int) state[IDs::whChannel])
+                               + ". Did the Whammy's mode LED step along? If not, check the cable direction, the Whammy's channel, and MIDI Thru for the daisy chain.");
         };
         for (auto* b : { &testQcButton, &testWhButton })
             b->setColour (juce::TextButton::buttonColourId, raised);
@@ -273,7 +286,7 @@ public:
 
         for (auto* c : std::initializer_list<juce::Component*> { &qcChannelLabel, &whChannelLabel, &qcChannelBox, &whChannelBox,
                                                                  &qcHint, &whHint, &advancedButton, &tracksSteps, &viaQcButton,
-                                                                 &viaInterfaceButton, &wiringLabel, &wiringLink, &tourButton, &guideButton })
+                                                                 &viaInterfaceButton, &wiringLabel, &wiringLink, &dawHint, &tourButton, &guideButton })
             addAndMakeVisible (c);
         for (auto* c : std::initializer_list<juce::Component*> { &pcBaseLabel, &pcBaseBox, &setlistToggle,
                                                                  &testOutBox, &testQcButton, &testWhButton, &testHint })
@@ -354,7 +367,7 @@ public:
             testHint.setBounds (t);
         }
 
-        // Right: Reaper tracks, with the wiring choice in its header and a link to the wiring guide.
+        // Right: DAW tracks, with the wiring choice in its header and a link to the wiring guide.
         tracksSection.setBounds (r);
         {
             // The whole title row (headerArea() is only its right half, too narrow for label + two buttons).
@@ -367,7 +380,9 @@ public:
 
             auto t = tracksSection.contentArea().reduced (8, 6);
             wiringLink.setBounds (t.removeFromBottom (30).removeFromRight (260));
-            tracksSteps.setBounds (t);
+            tracksSteps.setBounds (t.removeFromTop (juce::jmin (t.getHeight() - 70, tracksSteps.steps.size() * tracksSteps.rowHeight)));
+            t.removeFromTop (6);
+            dawHint.setBounds (t.removeFromTop (64));
         }
     }
 
@@ -446,18 +461,18 @@ private:
         if (viaInterface)
         {
             tracksSteps.steps = {
-                "Reaper > Preferences > MIDI Devices: enable the outputs your pedals are on.",
-                "Track 'QC Cues': insert PedalCues. I/O > MIDI Hardware Output > Quad Cortex (USB) or MIDI Out 1.",
-                "Track 'Whammy Cues': insert PedalCues. I/O > MIDI Hardware Output > MIDI Out 2.",
-                "Leave both on 'Send to original channels'. Drag QC tiles onto QC Cues and Whammy tiles onto Whammy Cues."
+                "In your DAW, enable the MIDI outputs your pedals are on.",
+                "Track 'QC Cues': insert PedalCues and set its MIDI output to the Quad Cortex (USB) or MIDI Out 1.",
+                "Track 'Whammy Cues': insert PedalCues and set its MIDI output to MIDI Out 2.",
+                "Keep the original MIDI channels. Drag QC tiles onto QC Cues and Whammy tiles onto Whammy Cues."
             };
         }
         else
         {
             tracksSteps.steps = {
-                "Reaper > Preferences > MIDI Devices: enable your interface's MIDI output.",
+                "In your DAW, enable your interface's MIDI output.",
                 "Tracks 'QC Cues' and 'Whammy Cues': insert PedalCues on each.",
-                "On both tracks: I/O > MIDI Hardware Output > the interface MIDI Out, 'Send to original channels'.",
+                "Set both tracks' MIDI output to the interface MIDI Out, keeping the original MIDI channels.",
                 "Drag QC tiles onto QC Cues and Whammy tiles onto Whammy Cues."
             };
         }
@@ -471,7 +486,7 @@ private:
 
     Section pedalsSection { "set.pedals", "Your pedals", "set once, must match the pedals" };
     Section testSection   { "set.test", "Test your pedals", "sends on the channels above", ledGreen };
-    Section tracksSection { "set.tracks", "Reaper tracks", "two cue tracks, once", qcBlue };
+    Section tracksSection { "set.tracks", "DAW tracks", "two cue tracks, once", qcBlue };
 
     juce::Label qcChannelLabel, whChannelLabel, pcBaseLabel, qcHint, whHint, testHint;
     juce::ComboBox qcChannelBox, whChannelBox, pcBaseBox, testOutBox;
@@ -479,7 +494,7 @@ private:
     juce::TextButton advancedButton;
 
     StepsList tracksSteps;
-    juce::Label wiringLabel;
+    juce::Label wiringLabel, dawHint;
     juce::TextButton wiringLink { "How should I wire my pedals? >" };
     juce::TextButton viaQcButton { "Daisy chain via QC" };
     juce::TextButton viaInterfaceButton { "Separate outputs" };

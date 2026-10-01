@@ -1,7 +1,7 @@
 # PedalCues
 
 Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex / QC Mini** and the **DigiTech Whammy V**.
-A VST3 / AU / Standalone plugin (JUCE). Built for Reaper, works in any DAW that accepts dragged MIDI files.
+A VST3 / AU / Standalone plugin (JUCE). Tested in Reaper; it should work in any DAW that accepts dragged MIDI files and can send a MIDI track to a hardware output (Ableton Live, Cubase, Bitwig, Studio One; in Logic the clips work on an External MIDI track).
 
 **[Download for Windows and macOS](https://thankost.github.io/pedal-cues/)**
 
@@ -77,7 +77,7 @@ cmake --build build --target PedalCuesTests
 ./build/PedalCuesTests_artefacts/Release/PedalCuesTests
 ```
 
-## Reaper setup
+## DAW setup (Reaper as the example)
 
 1. Connect the pedals one of three ways (the plugin's **MIDI Setup** tab shows the steps):
    - **Daisy chain:** interface **MIDI Out → QC MIDI In**, QC **MIDI Thru → Whammy MIDI In** (MIDI Thru on). Both cue tracks output to that interface MIDI Out.
@@ -85,8 +85,8 @@ cmake --build build --target PedalCuesTests
    - **QC over USB + interface:** QC on USB, interface **MIDI Out → Whammy MIDI In**. QC Cues → Quad Cortex, Whammy Cues → interface MIDI Out.
    - ⚠️ **Known QC limitation:** MIDI Thru doesn't forward MIDI the QC receives over **USB**, so "QC on USB, Whammy on the QC's Thru" doesn't work.
 2. Give the pedals **different MIDI channels** (defaults: QC 1 via *Settings > MIDI Settings*, not Omni; Whammy 2, see its manual) and set the same numbers in the plugin's **MIDI Setup** tab.
-3. In *Preferences > MIDI Devices*, enable the MIDI outputs you use.
-4. Create two tracks, **QC Cues** and **Whammy Cues**, insert *PedalCues* on each, and set each track's *I/O > MIDI Hardware Output* as above (leave *Send to original channels*).
+3. In your DAW, enable the MIDI outputs you use (Reaper: *Preferences > MIDI Devices*).
+4. Create two tracks, **QC Cues** and **Whammy Cues**, insert *PedalCues* on each, and set each track's MIDI output as above (Reaper: *I/O > MIDI Hardware Output*, leave *Send to original channels*).
 5. Turn snapping on and drag QC tiles onto QC Cues and Whammy tiles onto Whammy Cues at the bars you want.
 
 Details and pictures: [guide, section 2](docs/GUIDE.md#2-connect-your-rig).

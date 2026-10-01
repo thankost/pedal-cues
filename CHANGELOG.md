@@ -2,6 +2,11 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.4.15 (2026-10-01)
+
+- **Not just Reaper:** MIDI Setup now says **DAW tracks**, with a hint for where the MIDI output is in Reaper, Ableton Live, Cubase and Logic. The guide lists which DAWs are tested.
+- **Test Whammy** steps through Oct Up, 5th Up and 2 Oct Up, so you always see the LED move, even if the Whammy was already on 2 Oct Up.
+
 ## 0.4.14 (2026-10-01)
 
 - **MIDI Setup is simpler:** **Your pedals** (channels, with Advanced folded away) and **Reaper tracks**, with your wiring chosen right in its header. The cable instructions moved to a new **Wiring guide** (Help menu, or "How should I wire my pedals?").
