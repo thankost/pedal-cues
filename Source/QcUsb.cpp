@@ -224,6 +224,72 @@ bool isSetlist (const Folder& f)
 }
 
 //==============================================================================
+std::optional<PresetDetails> parsePresetDetails (const juce::uint8* data, size_t size)
+{
+    PresetDetails d;
+    int scene = 0, colour = 0;
+    std::array<juce::String, 8> stompLabels, singleStompLabels;
+
+    auto readMapEntry = [] (const PbField& f, std::array<juce::String, 8>& into)   // map<uint32,string> entry {1:key, 2:value}
+    {
+        juce::uint64 key = 0;
+        juce::String value;
+        forEachField (f.data, f.size, [&] (const PbField& e)
+        {
+            if (e.number == 1 && e.wireType == 0) key = e.value;
+            else if (e.number == 2 && e.wireType == 2) value = e.text();
+        });
+        if (key < 8)
+            into[(size_t) key] = value.trim();
+    };
+
+    const auto ok = forEachField (data, size, [&] (const PbField& f)
+    {
+        if (f.number == 2 && f.wireType == 2)
+            d.name = f.text().trim();
+        else if (f.number == 15 && f.wireType == 2)                       // scene_labels: " " = unlabelled
+        {
+            if (scene < 8)
+                d.sceneNames[(size_t) scene] = f.text().trim();
+            ++scene;
+        }
+        else if (f.number == 31 && f.wireType == 2)                       // scene_colors, packed varints (ARGB)
+        {
+            const auto* q = f.data;
+            const auto* end = f.data + f.size;
+            juce::uint64 v = 0;
+            while (q < end && readVarint (q, end, v))
+                if (colour < 8)
+                    d.sceneColours[(size_t) colour++] = (juce::uint32) v;
+        }
+        else if (f.number == 31 && f.wireType == 0 && colour < 8)         // ... or unpacked
+            d.sceneColours[(size_t) colour++] = (juce::uint32) f.value;
+        else if (f.number == 32 && f.wireType == 2) readMapEntry (f, stompLabels);
+        else if (f.number == 34 && f.wireType == 2) readMapEntry (f, singleStompLabels);
+    });
+    if (! ok)
+        return {};
+
+    d.sceneCount = juce::jmin (scene, 8);
+    for (size_t i = 0; i < 8; ++i)                                         // the unit prefers the single-block label
+        d.stompNames[i] = singleStompLabels[i].isNotEmpty() ? singleStompLabels[i] : stompLabels[i];
+    return d;
+}
+
+std::optional<PresetDetails> parseRecallPreset (const Message& m)
+{
+    if (m.type != typeRecallPreset || m.encrypted)
+        return {};
+    std::optional<PresetDetails> details;
+    forEachField (static_cast<const juce::uint8*> (m.payload.getData()), m.payload.getSize(), [&] (const PbField& f)
+    {
+        if (f.number == 3 && f.wireType == 2)   // preset: an embedded BinaryPreset
+            details = parsePresetDetails (f.data, f.size);
+    });
+    return details;
+}
+
+//==============================================================================
 namespace
 {
 // One USB session: a reader thread reassembling messages, a keep-alive thread, serialized writes.
@@ -313,7 +379,8 @@ private:
             if (auto m = reassembler.feed (buffer.data(), n))
             {
                 // Keep only what this client reads; drop the rest (e.g. the ~47 KB ModelRepo reply).
-                if (m->type == typeFile || m->type == typeVersion || m->type == typeResetCommsBuffers)
+                if (m->type == typeFile || m->type == typeVersion || m->type == typeResetCommsBuffers || m->type == typeRecallPreset
+                    || m->type == typeSetlistPosition || m->type == typePresetDirty || m->type == typeScene)
                 {
                     const std::lock_guard<std::mutex> lock (queueLock);
                     queue.push_back (std::move (*m));
@@ -353,6 +420,14 @@ std::vector<juce::uint8> readRequest()   // { action: READ }
     return w.bytes;
 }
 
+std::vector<juce::uint8> readRequest (juce::uint64 rid)   // { action: READ, request_id }
+{
+    PbWriter w;
+    w.fieldVarint (1, 3);
+    w.fieldVarint (2, rid);
+    return w.bytes;
+}
+
 juce::String randomHex32()
 {
     juce::Random r;
@@ -361,6 +436,155 @@ juce::String randomHex32()
         s << juce::String::charToString ("0123456789abcdef"[r.nextInt (16)]);
     return s;
 }
+
+std::optional<juce::uint64> requestIdOf (const Message& m)   // f2 in every message used here
+{
+    std::optional<juce::uint64> rid;
+    forEachField (static_cast<const juce::uint8*> (m.payload.getData()), m.payload.getSize(), [&] (const PbField& f)
+    {
+        if (f.number == 2 && f.wireType == 0) rid = f.value;
+    });
+    return rid;
+}
+
+// Waits for the reply of the given type that echoes rid.
+std::optional<Message> waitReply (Session& session, juce::uint32 type, juce::uint64 rid, int timeoutMs)
+{
+    return session.waitFor ([type, rid] (const Message& m) { return m.type == type && requestIdOf (m) == rid; }, timeoutMs);
+}
+
+struct Position
+{
+    juce::String folderKey;
+    juce::uint32 position = 0;
+    bool isFactory = false, valid = false, special = false;   // special = Downloads / plugin banks (not restorable here)
+};
+
+Position parsePosition (const Message& m)
+{
+    Position p;
+    p.valid = true;
+    forEachField (static_cast<const juce::uint8*> (m.payload.getData()), m.payload.getSize(), [&] (const PbField& f)
+    {
+        if (f.number == 3 && f.wireType == 2) p.folderKey = f.text();
+        else if (f.number == 4 && f.wireType == 0) p.position = (juce::uint32) f.value;
+        else if (f.number == 5 && f.wireType == 0) p.isFactory = f.value != 0;
+        else if ((f.number == 6 || f.number == 8) && f.wireType == 0 && f.value != 0) p.special = true;
+    });
+    return p;
+}
+
+struct Connected
+{
+    std::unique_ptr<Session> session;
+    juce::String error, corosVersion;
+    bool isMini = false;
+};
+
+// Opens the QC and runs the handshake Cortex Control uses. All requests are READs (plus Connection/KeepAlive).
+Connected connect (const std::function<void (const juce::String&)>& progress, std::atomic<bool>& cancel)
+{
+    Connected c;
+    if (hid_init() != 0)
+    {
+        c.error = "USB access isn't available on this computer.";
+        return c;
+    }
+
+    juce::String path;
+    if (auto* list = hid_enumerate ((unsigned short) vendorId, 0))
+    {
+        for (auto* d = list; d != nullptr; d = d->next)
+            if ((d->product_id == productIdQc || d->product_id == productIdMini) && (d->interface_number == 5 || d->usage_page == 0x0001))
+            {
+                path = d->path;
+                c.isMini = d->product_id == productIdMini;
+                break;
+            }
+        hid_free_enumeration (list);
+    }
+    if (path.isEmpty())
+    {
+        c.error = "No Quad Cortex found on USB. Connect the QC's USB port to this computer, switch it on and try again.";
+        return c;
+    }
+
+   #if JUCE_MAC
+    hid_darwin_set_open_exclusive (0);   // don't lock the pedal away from other apps
+   #endif
+    auto* dev = hid_open_path (path.toRawUTF8());
+    if (dev == nullptr)
+    {
+        c.error = "Couldn't open the Quad Cortex over USB. Quit Cortex Control (it keeps the USB connection to itself) and try again.";
+        return c;
+    }
+
+    progress ("Connecting to the Quad Cortex...");
+    auto session = std::make_unique<Session> (dev);
+    const auto start = juce::Time::getMillisecondCounter();
+    auto elapsed = [start] { return (int) (juce::Time::getMillisecondCounter() - start); };
+    auto stop = [&] { return cancel.load() || session->isLost(); };
+
+    // Identity: ask for the version until the full reply (device type + CorOS version) arrives.
+    while (c.corosVersion.isEmpty() && elapsed() < 30000 && ! stop())
+    {
+        session->send (typeVersion, readRequest());
+        if (auto v = session->waitFor ([] (const Message& m) { return m.type == typeVersion; }, 5000))
+            forEachField (static_cast<const juce::uint8*> (v->payload.getData()), v->payload.getSize(), [&] (const PbField& f)
+            {
+                if (f.number == 4 && f.wireType == 2) c.corosVersion = f.text();
+                if (f.number == 12 && f.wireType == 0) c.isMini = c.isMini || f.value == 1;
+            });
+    }
+    if (cancel) { c.error = "Cancelled."; return c; }
+    if (c.corosVersion.isEmpty())
+    {
+        c.error = "The Quad Cortex didn't answer over USB. Quit Cortex Control, wait until the QC has fully started, and try again.";
+        return c;
+    }
+
+    // Session start: reset the comms buffers, announce ourselves the way Cortex Control does, subscribe.
+    PbWriter reset;
+    reset.fieldVarint (1, 0);
+    reset.fieldString (2, randomHex32());
+    bool acked = false;
+    while (! acked && elapsed() < 60000 && ! stop())
+    {
+        session->send (typeResetCommsBuffers, reset.bytes);
+        acked = session->waitFor ([] (const Message& m) { return m.type == typeResetCommsBuffers; }, 5000).has_value();
+    }
+    if (cancel) { c.error = "Cancelled."; return c; }
+    if (! acked)
+    {
+        c.error = "The Quad Cortex didn't start a USB session. Unplug the USB cable, plug it back in and try again.";
+        return c;
+    }
+
+    PbWriter announce;
+    announce.fieldVarint (1, 1);                       // UPDATE
+    announce.fieldString (11, c.corosVersion);         // cortex_control_version: mirror the unit's version
+    session->send (typeVersion, announce.bytes);
+
+    PbWriter connectMsg;
+    connectMsg.fieldVarint (2, 1);                     // connected: true
+    session->send (typeConnection, connectMsg.bytes);
+
+    for (const auto type : { typeModelRepo, typeModuleStats, typeUndoRedo, typeIOSettings, typeGeneralSettings, typeMode,
+                             typeGlobalEQ, typeMasterVolume, typeGlobalTempo, typeScene, typePresetDirty, typeSetlistPosition,
+                             typeRecallPreset })
+        session->send (type, readRequest());           // all READs: nothing here changes the pedal
+
+    std::this_thread::sleep_for (std::chrono::seconds (2));
+    c.session = std::move (session);
+    return c;
+}
+
+void disconnect (Session& session)
+{
+    PbWriter goodbye;
+    goodbye.fieldVarint (2, 0);                        // connected: false
+    session.send (typeConnection, goodbye.bytes);
+}
 } // namespace
 
 Result readSetlists (const std::function<void (const juce::String&)>& progress, std::atomic<bool>& cancel)
@@ -368,88 +592,37 @@ Result readSetlists (const std::function<void (const juce::String&)>& progress, 
     Result result;
     auto fail = [&result] (const juce::String& why) { result.ok = false; result.error = why; return result; };
 
-    if (hid_init() != 0)
-        return fail ("USB access isn't available on this computer.");
-
-    // Find the QC's HID interface (the only one, interface 5).
-    juce::String path;
-    bool mini = false;
-    if (auto* list = hid_enumerate ((unsigned short) vendorId, 0))
-    {
-        for (auto* d = list; d != nullptr; d = d->next)
-            if ((d->product_id == productIdQc || d->product_id == productIdMini) && (d->interface_number == 5 || d->usage_page == 0x0001))
-            {
-                path = d->path;
-                mini = d->product_id == productIdMini;
-                break;
-            }
-        hid_free_enumeration (list);
-    }
-    if (path.isEmpty())
-        return fail ("No Quad Cortex found on USB. Connect the QC's USB port to this computer, switch it on and try again.");
-
-   #if JUCE_MAC
-    hid_darwin_set_open_exclusive (0);   // don't lock the pedal away from other apps
-   #endif
-    auto* dev = hid_open_path (path.toRawUTF8());
-    if (dev == nullptr)
-        return fail ("Couldn't open the Quad Cortex over USB. Quit Cortex Control (it keeps the USB connection to itself) and try again.");
-
-    result.isMini = mini;
-    progress ("Connecting to the Quad Cortex...");
-    Session session (dev);
-
-    const auto start = juce::Time::getMillisecondCounter();
-    auto elapsed = [start] { return (int) (juce::Time::getMillisecondCounter() - start); };
+    auto c = connect (progress, cancel);
+    if (c.session == nullptr)
+        return fail (c.error);
+    auto& session = *c.session;
+    result.corosVersion = c.corosVersion;
+    result.isMini = c.isMini;
     auto lostOrCancelled = [&] { return cancel.load() || session.isLost(); };
+    juce::uint64 rid = 100;
 
-    // 1. Identity: ask for the version until the full reply (device type + CorOS version) arrives.
-    while (result.corosVersion.isEmpty() && elapsed() < 30000 && ! lostOrCancelled())
+    // The loaded preset: where it is and its scenes/stomps. Pure reads, no side effects.
     {
-        session.send (typeVersion, readRequest());
-        if (auto v = session.waitFor ([] (const Message& m) { return m.type == typeVersion; }, 5000))
-            forEachField (static_cast<const juce::uint8*> (v->payload.getData()), v->payload.getSize(), [&] (const PbField& f)
+        const auto posRid = ++rid;
+        session.send (typeSetlistPosition, readRequest (posRid));
+        if (auto m = waitReply (session, typeSetlistPosition, posRid, 5000))
+        {
+            const auto pos = parsePosition (*m);
+            if (! pos.special)
             {
-                if (f.number == 4 && f.wireType == 2) result.corosVersion = f.text();
-                if (f.number == 12 && f.wireType == 0) result.isMini = result.isMini || f.value == 1;
-            });
+                result.currentFolderKey = pos.folderKey.trimCharactersAtEnd ("/");
+                result.currentPosition = (int) pos.position;
+            }
+        }
+        const auto presetRid = ++rid;
+        session.send (typeRecallPreset, readRequest (presetRid));
+        if (auto m = waitReply (session, typeRecallPreset, presetRid, 15000))
+            result.current = parseRecallPreset (*m);
     }
-    if (cancel) return fail ("Cancelled.");
-    if (result.corosVersion.isEmpty())
-        return fail ("The Quad Cortex didn't answer over USB. Quit Cortex Control, wait until the QC has fully started, and try again.");
 
-    // 2. Session start: reset the comms buffers, announce ourselves the way Cortex Control does, subscribe.
-    PbWriter reset;
-    reset.fieldVarint (1, 0);
-    reset.fieldString (2, randomHex32());
-    bool resetAcked = false;
-    while (! resetAcked && elapsed() < 60000 && ! lostOrCancelled())
-    {
-        session.send (typeResetCommsBuffers, reset.bytes);
-        resetAcked = session.waitFor ([] (const Message& m) { return m.type == typeResetCommsBuffers; }, 5000).has_value();
-    }
-    if (cancel) return fail ("Cancelled.");
-    if (! resetAcked)
-        return fail ("The Quad Cortex didn't start a USB session. Unplug the USB cable, plug it back in and try again.");
-
-    PbWriter announce;
-    announce.fieldVarint (1, 1);                       // UPDATE
-    announce.fieldString (11, result.corosVersion);    // cortex_control_version: mirror the unit's version
-    session.send (typeVersion, announce.bytes);
-
-    PbWriter connect;
-    connect.fieldVarint (2, 1);                        // connected: true
-    session.send (typeConnection, connect.bytes);
-
-    for (const auto type : { typeModelRepo, typeModuleStats, typeUndoRedo, typeIOSettings, typeGeneralSettings, typeMode,
-                             typeGlobalEQ, typeMasterVolume, typeGlobalTempo, typeScene, typePresetDirty, typeSetlistPosition })
-        session.send (type, readRequest());            // all READs: nothing here changes the pedal
-
-    std::this_thread::sleep_for (std::chrono::seconds (2));
-    session.take (typeFile);                           // drop anything pushed before our listing request
-
-    // 3. Listing: the QC pushes one File message per folder; it's lazy, so re-ask if nothing comes.
+    // Listing: the QC pushes one File message per folder; it's lazy, so re-ask if nothing comes.
     progress ("Reading your setlists and presets...");
+    session.take (typeFile);                           // drop anything pushed before our listing request
     std::map<juce::String, Folder> folders;
     juce::uint32 lastSetlistAt = 0;
 
@@ -457,7 +630,7 @@ Result readSetlists (const std::function<void (const juce::String&)>& progress, 
     {
         PbWriter list;
         list.fieldVarint (1, 3);                       // READ
-        list.fieldVarint (2, (juce::uint64) (100 + attempt));
+        list.fieldVarint (2, ++rid);
         list.fieldVarint (3, 0);                       // presets only
         session.send (typeFile, list.bytes);
 
@@ -485,9 +658,7 @@ Result readSetlists (const std::function<void (const juce::String&)>& progress, 
         }
     }
 
-    PbWriter goodbye;
-    goodbye.fieldVarint (2, 0);                        // connected: false
-    session.send (typeConnection, goodbye.bytes);
+    disconnect (session);
 
     if (cancel) return fail ("Cancelled.");
     if (session.isLost()) return fail ("The USB connection to the Quad Cortex was lost.");
@@ -506,6 +677,102 @@ Result readSetlists (const std::function<void (const juce::String&)>& progress, 
     for (auto& f : result.setlists)
         std::sort (f.presets.begin(), f.presets.end(), [] (const Preset& a, const Preset& b) { return a.position < b.position; });
 
+    result.ok = true;
+    return result;
+}
+
+ScanResult scanPresets (const std::vector<ScanTarget>& targets, const std::function<void (const juce::String&, double)>& progress,
+                        std::atomic<bool>& cancel)
+{
+    ScanResult result;
+    auto fail = [&result] (const juce::String& why) { result.ok = false; result.error = why; return result; };
+
+    auto c = connect ([&progress] (const juce::String& t) { progress (t, 0.0); }, cancel);
+    if (c.session == nullptr)
+        return fail (c.error);
+    auto& session = *c.session;
+    juce::uint64 rid = 500;
+
+    // Remember what's loaded (preset + scene), and refuse if it has unsaved changes: a load would discard them.
+    const auto dirtyRid = ++rid;
+    session.send (typePresetDirty, readRequest (dirtyRid));
+    if (auto m = waitReply (session, typePresetDirty, dirtyRid, 5000))
+    {
+        bool dirty = false;
+        forEachField (static_cast<const juce::uint8*> (m->payload.getData()), m->payload.getSize(), [&] (const PbField& f)
+        {
+            if (f.number == 3 && f.wireType == 0) dirty = f.value != 0;
+        });
+        if (dirty)
+        {
+            disconnect (session);
+            return fail ("The preset loaded on the QC has unsaved changes. Save or discard them on the QC first: "
+                         "reading every preset loads each one, which would throw those changes away.");
+        }
+    }
+
+    const auto posRid = ++rid;
+    session.send (typeSetlistPosition, readRequest (posRid));
+    const auto original = [&]
+    {
+        if (auto m = waitReply (session, typeSetlistPosition, posRid, 5000))
+            return parsePosition (*m);
+        return Position {};
+    }();
+
+    int originalScene = -1;
+    const auto sceneRid = ++rid;
+    session.send (typeScene, readRequest (sceneRid));
+    if (auto m = waitReply (session, typeScene, sceneRid, 5000))
+        forEachField (static_cast<const juce::uint8*> (m->payload.getData()), m->payload.getSize(), [&] (const PbField& f)
+        {
+            if (f.number == 3 && f.wireType == 0) originalScene = (int) f.value;
+        });
+
+    // Load each preset (the same as choosing it on the QC) and read it back.
+    auto recall = [&] (const juce::String& folderKey, bool isFactory, juce::uint32 position) -> std::optional<PresetDetails>
+    {
+        const auto r = ++rid;
+        PbWriter w;
+        w.fieldVarint (1, 1);                                          // UPDATE = recall
+        w.fieldVarint (2, r);
+        const auto key = folderKey.trimCharactersAtEnd ("/") + (isFactory ? "/" : "");   // factory key keeps its trailing slash
+        w.fieldString (3, key);
+        w.fieldVarint (4, position);
+        w.fieldVarint (5, isFactory ? 1 : 0);
+        session.send (typeSetlistPosition, w.bytes);
+        if (auto m = waitReply (session, typeRecallPreset, r, 40000))
+            return parseRecallPreset (*m);
+        return {};
+    };
+
+    for (size_t i = 0; i < targets.size() && ! cancel && ! session.isLost(); ++i)
+    {
+        const auto& t = targets[i];
+        progress ("Reading " + t.name + " (" + juce::String ((int) i + 1) + " of " + juce::String ((int) targets.size()) + ")...",
+                  (double) i / (double) juce::jmax ((size_t) 1, targets.size()));
+        if (auto details = recall (t.folderKey, t.isFactory, (juce::uint32) t.position))
+            result.presets[{ t.folderKey.trimCharactersAtEnd ("/"), t.position }] = *details;
+    }
+
+    // Back to where the player was.
+    if (original.valid && ! original.special && original.folderKey.isNotEmpty() && ! session.isLost())
+    {
+        progress ("Going back to the preset you were on...", 1.0);
+        recall (original.folderKey, original.isFactory, original.position);
+        if (originalScene >= 0)
+        {
+            PbWriter w;
+            w.fieldVarint (1, 1);                                      // UPDATE: select the scene
+            w.fieldVarint (2, ++rid);
+            w.fieldVarint (3, (juce::uint64) originalScene);
+            session.send (typeScene, w.bytes);
+            std::this_thread::sleep_for (std::chrono::milliseconds (300));
+        }
+    }
+
+    disconnect (session);
+    if (session.isLost()) return fail ("The USB connection to the Quad Cortex was lost.");
     result.ok = true;
     return result;
 }

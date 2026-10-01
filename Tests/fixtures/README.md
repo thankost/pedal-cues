@@ -13,3 +13,4 @@ USB framing and decoding (`Source/QcUsb.*`).
 | `qc_file_reply_plain.hex` | QC to host: an empty folder push ("cloud-0-1", Downloads) |
 | `qc_file_reply_gzip.hex` | QC to host: a gzipped folder push over 33 reports (the impulse-response folder, 588 files) |
 | `qc_license_encrypted.hex` | QC to host: an encrypted License reply (must be skipped) |
+| `qc_scene_preset.bin` | a real preset read from a QC (BinaryPreset bytes, names replaced): 8 scene labels and colours |

@@ -5,13 +5,16 @@
 #include <array>
 #include <atomic>
 #include <functional>
+#include <map>
 #include <optional>
 #include <vector>
 
-// Read-only access to a Quad Cortex over USB, to fill the library with its setlists and preset names.
+// Access to a Quad Cortex over USB, to fill the library with its setlists, preset names, scenes and stomps.
 // The QC speaks a private USB-HID protocol (the one Cortex Control uses); it isn't documented by Neural DSP.
-// This follows the community reverse-engineering in pyquadcortex (MIT) and qc-mcp, and only ever READS:
-// it never recalls, saves or changes anything on the pedal. MIDI cues don't use any of this.
+// This follows the community reverse-engineering in pyquadcortex (MIT) and qc-mcp.
+// readSetlists() only READS. scanPresets() (opt-in, "read every preset") additionally recalls presets and
+// selects a scene, exactly as pressing a footswitch would; it never saves, creates, deletes or edits anything.
+// MIDI cues don't use any of this.
 namespace qcusb
 {
 constexpr int vendorId = 0x152A;
@@ -22,6 +25,7 @@ using Report = std::array<juce::uint8, reportSize>;
 // Message types (CortexMessageType) used here.
 enum MessageType : juce::uint32
 {
+    typeRecallPreset = 15,
     typeFile = 4, typeVersion = 10, typeScene = 13, typeMode = 14, typeMasterVolume = 17, typeUndoRedo = 21,
     typeSetlistPosition = 2, typeIOSettings = 3, typeGeneralSettings = 9, typeKeepAlive = 32, typeGlobalTempo = 33,
     typePresetDirty = 34, typeModuleStats = 35, typeGlobalEQ = 38, typeConnection = 49, typeModelRepo = 51,
@@ -89,6 +93,19 @@ std::optional<Folder> parseFolder (const Message&);
 // True for real setlists: "My Presets", the player's own setlists and the Factory Library.
 bool isSetlist (const Folder&);
 
+// Scene names / colours and footswitch names of one preset (from a BinaryPreset).
+struct PresetDetails
+{
+    juce::String name;
+    int sceneCount = 0;                               // 8 on the QC
+    std::array<juce::String, 8> sceneNames;           // empty = unlabelled on the QC
+    std::array<juce::uint32, 8> sceneColours {};      // ARGB, 0 = none
+    std::array<juce::String, 8> stompNames;           // footswitch A..H, empty = unlabelled
+};
+
+std::optional<PresetDetails> parsePresetDetails (const juce::uint8* data, size_t size);   // BinaryPreset bytes
+std::optional<PresetDetails> parseRecallPreset (const Message&);                          // RecallPreset message
+
 inline int bankOf (int position)              { return position / 8 + 1; }
 inline int slotOf (int position)              { return position % 8; }
 
@@ -100,9 +117,28 @@ struct Result
     juce::String corosVersion;
     bool isMini = false;
     std::vector<Folder> setlists;
+
+    // The preset loaded on the QC when it was read (no side effects): where it is, and its scenes/stomps.
+    juce::String currentFolderKey;
+    int currentPosition = -1;
+    std::optional<PresetDetails> current;
+};
+
+struct ScanTarget { juce::String folderKey; bool isFactory = false; int position = 0; juce::String name; };
+
+struct ScanResult
+{
+    bool ok = false;
+    juce::String error;
+    std::map<std::pair<juce::String, int>, PresetDetails> presets;   // (folder key, position) -> details
 };
 
 // Connects over USB, lists every setlist and preset name, disconnects. Blocking (run it off the message thread).
 // progress() is called from that thread with short status texts. Set cancel to stop early.
 Result readSetlists (const std::function<void (const juce::String&)>& progress, std::atomic<bool>& cancel);
+
+// Opt-in: loads each target preset on the QC in turn to read its scenes and stomps, then goes back to the
+// preset and scene that were loaded. Refuses if the loaded preset has unsaved changes. Audio cuts on each load.
+ScanResult scanPresets (const std::vector<ScanTarget>&, const std::function<void (const juce::String&, double)>& progress,
+                        std::atomic<bool>& cancel);
 } // namespace qcusb

@@ -65,7 +65,8 @@ Use the `release` skill (`.claude/skills/release/SKILL.md`). In short:
 
 ## Quad Cortex USB sync (`Source/QcUsb.*`, `Source/QcSyncDialog.cpp`)
 
-- Read-only client for the QC's private USB-HID protocol (VID 0x152A, PID 0x880A QC / 0x892F Mini, interface 5, 129-byte reports), via hidapi (FetchContent). Follows pyquadcortex's `docs/protocol.md` (MIT). **Only ever send READs, the handshake, Connection and KeepAlive. Never send UPDATE/CREATE/DELETE, RecallPreset or saves**: writes can hang the device.
+- Client for the QC's private USB-HID protocol (VID 0x152A, PID 0x880A QC / 0x892F Mini, interface 5, 129-byte reports), via hidapi (FetchContent). Follows pyquadcortex's `docs/protocol.md` (MIT).
+- `readSetlists` sends only READs, the handshake, Connection and KeepAlive (incl. `RecallPreset{READ}` + `SetlistPosition{READ}` for the loaded preset's scenes/stomps). The opt-in `scanPresets` additionally sends `SetlistPosition{UPDATE}` (recall) and `Scene{UPDATE}` (restore the scene), refuses when `PresetDirty` is true, and restores the original preset. **Never send anything else that writes: no `RecallPreset` UPDATE/SAVE (can hang the unit), no `File` without an explicit READ action (an action-less File is a save), no Grid/SceneLabel/SceneColor/Tuner/power writes.**
 - Flow: Version READ → ResetCommsBuffers → Version UPDATE (cortex_control_version = the unit's CorOS) → Connection true → 12 READs (ModelRepo first) → File READ type 0 → collect one File push per folder → Connection false. KeepAlive `08 01 18 01` every 1 s. Write return values are always errors: ignore them.
 - Setlists = keys under `/media/p4/Presets/` plus `/opt/neuraldsp/Factory Library`. Slot = ProductData.index (or array position), bank = pos/8+1, slot letter = pos%8.
 - Unit tests decode real captures in `Tests/fixtures/*.hex` (from pyquadcortex, MIT). Hardware testing needs the user's QC (quit Cortex Control first).

@@ -15,13 +15,13 @@ class QcSyncDialog final : public juce::Component
 public:
     explicit QcSyncDialog (juce::ValueTree s) : state (std::move (s))
     {
-        title.setText ("Sync presets from the Quad Cortex", juce::dontSendNotification);
+        title.setText ("Sync from the Quad Cortex", juce::dontSendNotification);
         title.setFont (font (16.0f, true));
         title.setColour (juce::Label::textColourId, theme::text);
         addAndMakeVisible (title);
 
-        note.setText ("Reads your setlists and preset names over the QC's USB port. It only reads: nothing on the pedal "
-                      "changes. Your MIDI cues can still use any cable.",
+        note.setText ("Reads your setlists, preset names, and scene names, colours and stomps over the QC's USB port. "
+                      "Nothing on the pedal changes. Only USB is needed for this; your MIDI cues can still use any cable.",
                       juce::dontSendNotification);
         styleNote (note);
         addAndMakeVisible (note);
@@ -39,6 +39,14 @@ public:
 
         replaceToggle.setButtonText ("Replace my current preset list (otherwise add new presets and rename matching ones)");
         addChildComponent (replaceToggle);
+
+        scanToggle.setButtonText ("Also read scenes, colours and stomps for every ticked preset");
+        addChildComponent (scanToggle);
+        scanWarning.setText ("The QC loads each preset in turn to read it (the audio cuts each time), then goes back to the one "
+                             "you were on. Do it at home, not on stage. It won't start if the loaded preset has unsaved changes. "
+                             "The QC's Recents list may change.", juce::dontSendNotification);
+        styleNote (scanWarning);
+        addChildComponent (scanWarning);
 
         rowsView.setViewedComponent (&rows, false);
         rowsView.setScrollBarsShown (true, false);
@@ -79,8 +87,10 @@ public:
             return;
         }
 
-        status.setBounds (r.removeFromTop (40));
-        replaceToggle.setBounds (r.removeFromBottom (30));
+        status.setBounds (r.removeFromTop (52));
+        replaceToggle.setBounds (r.removeFromBottom (28));
+        scanWarning.setBounds (r.removeFromBottom (44).withTrimmedLeft (26));
+        scanToggle.setBounds (r.removeFromBottom (28));
         r.removeFromBottom (6);
         rowsView.setBounds (r);
 
@@ -113,8 +123,7 @@ private:
     void startReading()
     {
         picking = false;
-        rowsView.setVisible (false);
-        replaceToggle.setVisible (false);
+        showPickers (false);
         status.setText ("Looking for the Quad Cortex on USB...", juce::dontSendNotification);
         primary.setButtonText ("Retry");
         primary.setEnabled (false);
@@ -153,10 +162,13 @@ private:
         }
 
         picking = true;
+        lastResult = result;
         primary.setButtonText ("Import");
         status.setText ("Found " + juce::String ((int) result.setlists.size()) + " setlists on your "
                         + juce::String (result.isMini ? "QC Mini" : "Quad Cortex") + " (CorOS " + result.corosVersion + "). "
-                        "Tick the ones to import, and check each one's setlist number (used when \"Send setlist\" is on).",
+                        "Tick the ones to import, and check each one's setlist number (used when \"Send setlist\" is on)."
+                        + (result.current ? " The loaded preset (" + result.current->name + ") comes with its scenes, colours and stomps."
+                                          : juce::String()),
                         juce::dontSendNotification);
 
         setlistRows.clear();
@@ -176,9 +188,14 @@ private:
             setlistRows.push_back (std::move (row));
         }
 
-        rowsView.setVisible (true);
-        replaceToggle.setVisible (true);
+        showPickers (true);
         resized();
+    }
+
+    void showPickers (bool show)
+    {
+        for (auto* c : std::initializer_list<juce::Component*> { &rowsView, &replaceToggle, &scanToggle, &scanWarning })
+            c->setVisible (show);
     }
 
     void onPrimary()
@@ -188,12 +205,65 @@ private:
             startReading();
             return;
         }
+        if (! scanToggle.getToggleState())
+        {
+            importPresets ({});
+            return;
+        }
+
+        // Read every ticked preset's scenes and stomps (loads each one on the QC), then import.
+        std::vector<qcusb::ScanTarget> targets;
+        for (const auto& row : setlistRows)
+            if (row->tick.getToggleState())
+                for (const auto& p : row->folder.presets)
+                    targets.push_back ({ row->folder.key, row->folder.isFactory, p.position, p.name });
+
+        picking = false;
+        showPickers (false);
+        primary.setEnabled (false);
+        secondary.setButtonText ("Stop");
+        status.setText ("Connecting to the Quad Cortex...", juce::dontSendNotification);
+        resized();
+
+        cancel = std::make_shared<std::atomic<bool>> (false);
+        juce::Component::SafePointer<QcSyncDialog> safe (this);
+        auto flag = cancel;
+        std::thread ([safe, flag, targets]
+        {
+            auto scan = qcusb::scanPresets (targets, [safe] (const juce::String& text, double)
+            {
+                juce::MessageManager::callAsync ([safe, text] { if (safe != nullptr) safe->status.setText (text, juce::dontSendNotification); });
+            }, *flag);
+
+            juce::MessageManager::callAsync ([safe, scan]
+            {
+                if (safe == nullptr)
+                    return;
+                if (! scan.ok)
+                {
+                    safe->status.setText (scan.error + " Nothing was imported.", juce::dontSendNotification);
+                    safe->secondary.setButtonText ("Close");
+                    safe->primary.setButtonText ("Back");
+                    safe->primary.setEnabled (true);
+                    safe->primary.onClick = [safe] { if (safe != nullptr) { safe->primary.onClick = [safe] { safe->onPrimary(); }; safe->showResult (safe->lastResult); } };
+                    return;
+                }
+                safe->importPresets (scan.presets);
+            });
+        }).detach();
+    }
+
+    // Adds/renames presets for the ticked setlists, with scenes/stomps from `details` (and the loaded preset).
+    void importPresets (std::map<std::pair<juce::String, int>, qcusb::PresetDetails> details)
+    {
+        if (lastResult.current && lastResult.currentPosition >= 0)
+            details.emplace (std::make_pair (lastResult.currentFolderKey, lastResult.currentPosition), *lastResult.current);
 
         auto qc = state.getChildWithName (IDs::QC);
         if (replaceToggle.getToggleState())
             qc.removeAllChildren (nullptr);
 
-        int added = 0, renamed = 0;
+        int added = 0, renamed = 0, withScenes = 0;
         for (const auto& row : setlistRows)
         {
             if (! row->tick.getToggleState())
@@ -209,27 +279,57 @@ private:
 
                 if (match.isValid())
                 {
-                    match.setProperty (IDs::name, p.name, nullptr);   // keeps its scene and stomp names
+                    match.setProperty (IDs::name, p.name, nullptr);
                     ++renamed;
                 }
                 else
                 {
-                    qc.appendChild (state::createPreset (p.name, setlist, bank, slot, paletteColour (qc.getNumChildren())), nullptr);
+                    match = state::createPreset (p.name, setlist, bank, slot, paletteColour (qc.getNumChildren()));
+                    qc.appendChild (match, nullptr);
                     ++added;
+                }
+
+                const auto it = details.find ({ row->folder.key.trimCharactersAtEnd ("/"), p.position });
+                if (it != details.end())
+                {
+                    applyDetails (match, it->second);
+                    ++withScenes;
                 }
             }
         }
 
         state.setProperty (IDs::selectedPreset, 0, nullptr);
         picking = false;
-        rowsView.setVisible (false);
-        replaceToggle.setVisible (false);
-        status.setText ("Done: " + juce::String (added) + " presets added, " + juce::String (renamed) + " renamed. "
-                        "Scene and stomp names stay as they are; rename them on each preset (double-click). "
+        showPickers (false);
+        primary.setEnabled (true);
+        secondary.setButtonText ("Close");
+        status.setText ("Done: " + juce::String (added) + " presets added, " + juce::String (renamed) + " renamed, "
+                        + juce::String (withScenes) + " with their scene names, colours and stomps from the QC. "
                         "Use the menu's Save as default setup to keep them for new projects.",
                         juce::dontSendNotification);
         primary.setButtonText ("Sync again");
         resized();
+    }
+
+    // Scene names and colours, footswitch names. Unlabelled ones on the QC keep the name they had here.
+    static void applyDetails (juce::ValueTree preset, const qcusb::PresetDetails& d)
+    {
+        for (int i = 0; i < juce::jmin (d.sceneCount, 8); ++i)
+        {
+            auto scene = nthOfType (preset, IDs::Scene, i);
+            if (! scene.isValid())
+                continue;
+            if (d.sceneNames[(size_t) i].isNotEmpty())
+                scene.setProperty (IDs::name, d.sceneNames[(size_t) i], nullptr);
+            if (d.sceneColours[(size_t) i] != 0)
+                scene.setProperty (IDs::colour, juce::Colour (d.sceneColours[(size_t) i] | 0xff000000u).toString(), nullptr);
+        }
+        for (int i = 0; i < 8; ++i)
+        {
+            auto stomp = nthOfType (preset, IDs::Stomp, i);
+            if (stomp.isValid() && d.stompNames[(size_t) i].isNotEmpty())
+                stomp.setProperty (IDs::name, d.stompNames[(size_t) i], nullptr);
+        }
     }
 
     void close()
@@ -244,7 +344,9 @@ private:
     bool picking = false;
 
     juce::Label title, note, warning, status;
-    juce::ToggleButton replaceToggle;
+    juce::ToggleButton replaceToggle, scanToggle;
+    juce::Label scanWarning;
+    qcusb::Result lastResult;
     juce::Viewport rowsView;
     juce::Component rows;
     std::vector<std::unique_ptr<Row>> setlistRows;

@@ -164,9 +164,14 @@ Instead of typing every preset, let PedalCues read them from the pedal:
 2. **Quit Cortex Control**: it keeps the USB connection to itself.
 3. Click **Sync from QC (USB)** under the preset list.
 4. PedalCues lists your setlists with their preset counts. Tick the ones to import and check each one's **setlist number** (the number PedalCues sends as CC#32 when *Send setlist* is on; the QC doesn't report it). The Factory Library is unticked by default.
-5. Click **Import**. New presets are added at their bank and slot; presets you already have at the same setlist, bank and slot are renamed, keeping their scene and stomp names. Tick *Replace my current preset list* to start fresh instead.
+5. Optional: tick **Also read scenes, colours and stomps for every ticked preset** (see below).
+6. Click **Import**. New presets are added at their bank and slot; presets you already have at the same setlist, bank and slot are renamed. Tick *Replace my current preset list* to start fresh instead.
 
-What it reads, for now: setlist names and every preset's **name, bank and slot**. Scene names, colours and stomp names still come from you (double-click to rename). It **only reads**: nothing on the QC changes, and it never loads or saves a preset.
+What it reads:
+- **Always:** setlist names, every preset's **name, bank and slot**, and the **scene names, scene colours and stomp (footswitch) names of the preset that's loaded on the QC**. This only reads: nothing on the QC changes.
+- **With "every ticked preset" on:** the scene names, colours and stomp names of **every** preset you import. To read a preset the QC has to load it, so PedalCues loads each one in turn (the audio cuts each time, a few seconds per preset), then goes back to the preset and scene you were on. Do this at home, not on stage. It won't start if the loaded preset has **unsaved changes** (loading another preset would throw them away), and the QC's *Recents* list may change. It never saves, creates, deletes or edits anything.
+
+Scenes the QC leaves unlabelled keep the name they had in PedalCues. Scene colours come straight from the QC, so the tiles match the pedal.
 
 > This uses the QC's private USB connection (the one Cortex Control uses), which Neural DSP doesn't document. It follows the community's reverse-engineering in [pyquadcortex](https://github.com/stokes-audio/pyquadcortex). Tested on a Quad Cortex; a CorOS update could break syncing until PedalCues is updated, but your MIDI cues keep working regardless. On the QC Mini it should work but isn't tested yet.
 
@@ -285,6 +290,7 @@ PedalCues asks GitHub for the latest release when it opens; nothing else is sent
 | Problem | Fix |
 |---|---|
 | Nothing happens on the pedal | Check the track's MIDI Hardware Output and that the QC's MIDI device is enabled in Reaper preferences. Try a tile's play button. |
+| Sync from QC: "the loaded preset has unsaved changes" | Reading every preset loads each one, which would lose those edits. Save (or discard) them on the QC, then sync again. Or untick "every ticked preset" to import names and the loaded preset only. |
 | Sync from QC: "No Quad Cortex found" or "Couldn't open" | Connect the QC's **USB** port (not just MIDI) and switch it on. Quit **Cortex Control**, which keeps the USB connection to itself. Wait until the QC has fully started, then try again. |
 | Standalone app: tiles do nothing | Pick the port your pedals are on in **MIDI Setup > Test your pedals** (or **Options > MIDI Output**), then try **Test QC** / **Test Whammy**. On Windows, close Reaper first; only one program can use a MIDI port at a time. |
 | Scene or stomp changes the wrong preset | You're on **Current QC preset**, so tiles act on whatever preset the QC has loaded. Pick **Load 1A first** in the Scenes header so they load their own preset first. |

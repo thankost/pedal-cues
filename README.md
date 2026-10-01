@@ -20,7 +20,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 
 **Quad Cortex**
 - Preset tiles (name, colour, setlist / bank / slot) → `CC#0` page [+ `CC#32` setlist] + Program Change
-- **Sync from QC (USB):** reads your setlists and preset names (bank/slot) straight from the pedal, read-only (quit Cortex Control first)
+- **Sync from QC (USB):** reads your setlists, preset names (bank/slot), and scene names, scene colours and stomp names straight from the pedal (quit Cortex Control first). Optional "every preset" mode loads each preset in turn to read it
 - 8 scene tiles per preset in gig-view colours → `CC#43`
 - Scene and stomp tiles either **load their own preset first** (default; the scene/footswitch follows 1/16 later)
   or act on the **current QC preset** only

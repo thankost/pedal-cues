@@ -160,6 +160,29 @@ int main (int argc, char** argv)
         CHECK (setlist && setlist->presets.size() == 2 && setlist->presets[0].position == 218 && setlist->presets[0].name == "Lead");
         CHECK (qcusb::bankOf (218) == 28 && qcusb::slotOf (218) == 2);   // "28C"
         CHECK (qcusb::isSetlist (qcusb::Folder { "/opt/neuraldsp/Factory Library/", "Factory Library", true, {}, 1 }));
+
+        // A real preset from a QC: name, 8 scene labels and their ARGB colours.
+        juce::MemoryBlock presetBytes;
+        juce::File (PEDALCUES_TEST_FIXTURES).getChildFile ("qc_scene_preset.bin").loadFileAsData (presetBytes);
+        const auto real = qcusb::parsePresetDetails (static_cast<const juce::uint8*> (presetBytes.getData()), presetBytes.getSize());
+        CHECK (real.has_value() && real->name == "Scene Fixture" && real->sceneCount == 8);
+        CHECK (real && real->sceneNames[0] == "Scene A" && real->sceneNames[7] == "Scene H");
+        CHECK (real && real->sceneColours[0] == 0xFFFF2727u && real->sceneColours[3] == 0xFFFF02C2u && real->sceneColours[7] == 0xFF00FFDDu);
+
+        // A loaded-preset reply (synthetic, from the spec): unlabelled scene, stomp labels, single-block label wins.
+        const char* hex = "08011007" "1a39" "12044c656164" "3801" "7a05436c65616e" "7a0120" "da010410031804"
+                          "fa010aa7cefcff0fe0e9a9f80f" "8202070804120344 6c79" "92020608001202 4f44" "2000";
+        std::vector<juce::uint8> bytes;
+        const auto clean = juce::String (hex).removeCharacters (" ");
+        for (int i = 0; i + 1 < clean.length(); i += 2)
+            bytes.push_back ((juce::uint8) clean.substring (i, i + 2).getHexValue32());
+        qcusb::Message recall;
+        recall.type = qcusb::typeRecallPreset;
+        recall.payload.append (bytes.data(), bytes.size());
+        const auto lead = qcusb::parseRecallPreset (recall);
+        CHECK (lead.has_value() && lead->name == "Lead" && lead->sceneCount == 2);
+        CHECK (lead && lead->sceneNames[0] == "Clean" && lead->sceneNames[1].isEmpty());
+        CHECK (lead && lead->sceneColours[1] == 0xFF0A74E0u && lead->stompNames[4] == "Dly" && lead->stompNames[0] == "OD");
     }
 
     // Update check: version comparison
