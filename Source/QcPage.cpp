@@ -21,6 +21,13 @@ public:
         addButton.onClick = [this] { addPreset(); };
         addAndMakeVisible (addButton);
 
+        syncButton.setComponentID ("qc.sync");
+        syncButton.setTooltip ("Read your setlists and preset names from the Quad Cortex over USB (quit Cortex Control first). "
+                               "Only reads: nothing on the pedal changes.");
+        syncButton.setColour (juce::TextButton::buttonColourId, raised);
+        syncButton.onClick = [this] { showQcSyncDialog (state); };
+        addAndMakeVisible (syncButton);
+
         presetView.setViewedComponent (&presetList, false);
         presetView.setScrollBarsShown (true, false);
         presetView.setScrollBarThickness (8);
@@ -158,7 +165,12 @@ public:
         r.removeFromLeft (12);
 
         addButton.setBounds (presetsSection.headerArea().removeFromRight (86));
-        presetView.setBounds (presetsSection.contentArea());
+        {
+            auto content = presetsSection.contentArea();
+            syncButton.setBounds (content.removeFromBottom (34).reduced (2, 0));
+            content.removeFromBottom (8);
+            presetView.setBounds (content);
+        }
 
         const auto listWidth = presetView.getWidth() - presetView.getScrollBarThickness() - 2;
         constexpr int rowHeight = 50;
@@ -380,6 +392,7 @@ private:
     Section utilsSection   { "qc.utils", "Utilities", "tuner & gig view" };
 
     juce::TextButton addButton { "+ Preset" };
+    juce::TextButton syncButton { "Sync from QC (USB)" };
     juce::Viewport presetView;
     juce::Component presetList;
     juce::Component targetChoice;

@@ -63,6 +63,13 @@ Use the `release` skill (`.claude/skills/release/SKILL.md`). In short:
 - The third tab is called **MIDI Setup** (it used to be "Settings"): cards Your pedals (+ Advanced), DAW tracks (wiring switch in its header; DAW-neutral wording, Reaper as the tested example), and Test (standalone only: port + Test QC / Test Whammy). Cable instructions live in the Wiring guide dialog (`ui::showWiringGuide`, Help / ☰ menu).
 - "Your setup" = names + MIDI settings (`state::saveLibrary/loadLibrary`, incl. qcChannel, whChannel, whPcBase, sendSetlist, comboPresetScene). Save/Load default and Export/Import live in the ☰ menu (plugin) and the File menu (standalone).
 
+## Quad Cortex USB sync (`Source/QcUsb.*`, `Source/QcSyncDialog.cpp`)
+
+- Read-only client for the QC's private USB-HID protocol (VID 0x152A, PID 0x880A QC / 0x892F Mini, interface 5, 129-byte reports), via hidapi (FetchContent). Follows pyquadcortex's `docs/protocol.md` (MIT). **Only ever send READs, the handshake, Connection and KeepAlive. Never send UPDATE/CREATE/DELETE, RecallPreset or saves**: writes can hang the device.
+- Flow: Version READ → ResetCommsBuffers → Version UPDATE (cortex_control_version = the unit's CorOS) → Connection true → 12 READs (ModelRepo first) → File READ type 0 → collect one File push per folder → Connection false. KeepAlive `08 01 18 01` every 1 s. Write return values are always errors: ignore them.
+- Setlists = keys under `/media/p4/Presets/` plus `/opt/neuraldsp/Factory Library`. Slot = ProductData.index (or array position), bank = pos/8+1, slot letter = pos%8.
+- Unit tests decode real captures in `Tests/fixtures/*.hex` (from pyquadcortex, MIT). Hardware testing needs the user's QC (quit Cortex Control first).
+
 ## Links used in the app and docs
 
 - Donations (optional, never pop up by themselves): Buy Me a Coffee `https://buymeacoffee.com/athkost`, PayPal `https://paypal.me/athkost`, Revolut `https://revolut.me/athkost`. They're shown in brand colours (#FFDD00, #0070BA, white). `.github/FUNDING.yml` drives the repo's Sponsor button. Add `github: thankost` once GitHub Sponsors is approved.

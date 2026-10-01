@@ -21,6 +21,7 @@ std::unique_ptr<Page> makeQcPage       (PedalCuesProcessor&);
 std::unique_ptr<Page> makeWhammyPage   (PedalCuesProcessor&);
 std::unique_ptr<Page> makeSettingsPage (PedalCuesProcessor&, std::function<void()> startTour);
 void showWiringGuide();   // Help > Wiring guide
+void showQcSyncDialog (juce::ValueTree state);   // Quad Cortex page > Sync from QC (USB)
 std::unique_ptr<juce::Component> makeWiringGuide();
 
 inline const juce::String repoUrl { "https://github.com/thankost/pedal-cues" };

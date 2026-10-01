@@ -2,6 +2,10 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.4.16 (2026-10-01)
+
+- **Sync from QC (USB):** read your setlists and preset names (with bank and slot) straight from the Quad Cortex, instead of typing them. Pick which setlists to import. It only reads; nothing on the pedal changes. Needs the QC's USB port connected and Cortex Control closed; your cues can still use any MIDI cable.
+
 ## 0.4.15 (2026-10-01)
 
 - **Not just Reaper:** MIDI Setup now says **DAW tracks**, with a hint for where the MIDI output is in Reaper, Ableton Live, Cubase and Logic. The guide lists which DAWs are tested.

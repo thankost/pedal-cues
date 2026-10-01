@@ -1,6 +1,7 @@
 #include "../Source/CueModel.h"
 #include "../Source/Update.h"
 #include "../Source/State.h"
+#include "../Source/QcUsb.h"
 
 #include <cstdio>
 
@@ -11,6 +12,35 @@ static int failures = 0;
 static bool isCC (const juce::MidiMessage& m, int ch, int cc, int v)
 {
     return m.isController() && m.getChannel() == ch && m.getControllerNumber() == cc && m.getControllerValue() == v;
+}
+
+
+// Reads a fixture of hex reports (one per line) captured from a real Quad Cortex.
+static std::vector<std::vector<juce::uint8>> readHexReports (const char* name)
+{
+    std::vector<std::vector<juce::uint8>> reports;
+    juce::StringArray lines;
+    juce::File (PEDALCUES_TEST_FIXTURES).getChildFile (name).readLines (lines);
+    for (const auto& line : lines)
+    {
+        if (line.trim().isEmpty())
+            continue;
+        std::vector<juce::uint8> r;
+        for (int i = 0; i + 1 < line.length(); i += 2)
+            r.push_back ((juce::uint8) line.substring (i, i + 2).getHexValue32());
+        reports.push_back (r);
+    }
+    return reports;
+}
+
+static std::optional<qcusb::Message> reassemble (const std::vector<std::vector<juce::uint8>>& reports)
+{
+    qcusb::Reassembler r;
+    std::optional<qcusb::Message> out;
+    for (const auto& rep : reports)
+        if (auto m = r.feed (rep.data(), (int) rep.size()))
+            out = m;
+    return out;
 }
 
 int main (int argc, char** argv)
@@ -63,6 +93,73 @@ int main (int argc, char** argv)
         CHECK (state::loadLibrary (fresh, file));
         CHECK ((int) fresh[IDs::qcChannel] == 5 && (int) fresh[IDs::whChannel] == 7 && (bool) fresh[IDs::sendSetlist]);
         file.deleteFile();
+    }
+
+    // Quad Cortex USB (read-only sync): framing and decoding, checked against real captures.
+    {
+        // Encoding matches Cortex Control's Version READ byte for byte.
+        qcusb::PbWriter w;
+        w.fieldVarint (1, 3);
+        const auto reports = qcusb::encodeMessage (qcusb::typeVersion, w.bytes);
+        const auto captured = readHexReports ("qc_version_read.hex");
+        CHECK (reports.size() == 1 && captured.size() == 1 && captured[0].size() == 129);
+        CHECK (std::equal (reports[0].begin(), reports[0].end(), captured[0].begin()));
+
+        // A multi-report reply reassembles; the CorOS version is field 4.
+        const auto version = reassemble (readHexReports ("qc_version_reply.hex"));
+        CHECK (version.has_value() && version->type == qcusb::typeVersion);
+        juce::String coros;
+        if (version)
+            qcusb::forEachField (static_cast<const juce::uint8*> (version->payload.getData()), version->payload.getSize(),
+                                 [&] (const qcusb::PbField& f) { if (f.number == 4 && f.wireType == 2) coros = f.text(); });
+        CHECK (coros == "4.0.1");
+
+        // An empty Downloads folder push: parsed, but not a setlist.
+        const auto plain = reassemble (readHexReports ("qc_file_reply_plain.hex"));
+        CHECK (plain.has_value());
+        const auto downloads = plain ? qcusb::parseFolder (*plain) : std::nullopt;
+        CHECK (downloads.has_value() && downloads->key == "cloud-0-1" && downloads->fileCount == 0 && ! qcusb::isSetlist (*downloads));
+
+        // A gzipped folder push over 33 reports (the IR folder): gunzipped and decoded, not a setlist.
+        const auto gz = reassemble (readHexReports ("qc_file_reply_gzip.hex"));
+        const auto irs = gz ? qcusb::parseFolder (*gz) : std::nullopt;
+        CHECK (irs.has_value() && irs->key == "/opt/neuraldsp/impulse_responses" && irs->fileCount == 588 && ! qcusb::isSetlist (*irs));
+
+        // Encrypted messages are flagged so they can be skipped.
+        const auto licence = reassemble (readHexReports ("qc_license_encrypted.hex"));
+        CHECK (licence.has_value() && licence->encrypted && ! qcusb::parseFolder (*licence).has_value());
+
+        // A setlist push (synthetic): slots by index, empty slots dropped, round-tripped through the framing.
+        qcusb::PbWriter preset1, emptySlot, preset2, folder, file;
+        preset1.fieldVarint (2, 218); preset1.fieldString (3, "Lead");
+        emptySlot.fieldVarint (2, 5);
+        preset2.fieldVarint (2, 0); preset2.fieldString (3, "Clean Rig");
+        folder.fieldString (1, "/media/p4/Presets/My Presets");
+        folder.fieldString (3, "My Presets");
+        for (auto* p : { &preset1, &emptySlot, &preset2 })
+        {
+            folder.varint ((7 << 3) | 2);
+            folder.varint (p->bytes.size());
+            folder.bytes.insert (folder.bytes.end(), p->bytes.begin(), p->bytes.end());
+        }
+        file.fieldVarint (1, 1);
+        file.varint ((4 << 3) | 2);
+        file.varint (folder.bytes.size());
+        file.bytes.insert (file.bytes.end(), folder.bytes.begin(), folder.bytes.end());
+
+        qcusb::Reassembler r;
+        std::optional<qcusb::Message> m;
+        for (auto rep : qcusb::encodeMessage (qcusb::typeFile, file.bytes))
+        {
+            rep[0] = 0x01;   // as if it came from the QC
+            if (auto got = r.feed (rep.data(), (int) rep.size()))
+                m = got;
+        }
+        const auto setlist = m ? qcusb::parseFolder (*m) : std::nullopt;
+        CHECK (setlist.has_value() && qcusb::isSetlist (*setlist) && setlist->name == "My Presets" && setlist->fileCount == 3);
+        CHECK (setlist && setlist->presets.size() == 2 && setlist->presets[0].position == 218 && setlist->presets[0].name == "Lead");
+        CHECK (qcusb::bankOf (218) == 28 && qcusb::slotOf (218) == 2);   // "28C"
+        CHECK (qcusb::isSetlist (qcusb::Folder { "/opt/neuraldsp/Factory Library/", "Factory Library", true, {}, 1 }));
     }
 
     // Update check: version comparison

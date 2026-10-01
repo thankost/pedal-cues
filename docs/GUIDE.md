@@ -156,7 +156,21 @@ The clip names show the difference on the timeline too: `QC Clean Rig > B - Vers
 
 > Projects saved with PedalCues 0.4.2 or older keep their old choice. If yours was set to *Current QC preset* and you want the new behaviour, click **Load … first** once.
 
-### Adding a preset
+### Sync your presets from the Quad Cortex (USB)
+
+Instead of typing every preset, let PedalCues read them from the pedal:
+
+1. Connect the **QC's USB port** to the computer and switch the QC on. Name sync only works over **USB**, but your cues can still go over any cable (5-pin MIDI, the daisy chain, or USB).
+2. **Quit Cortex Control**: it keeps the USB connection to itself.
+3. Click **Sync from QC (USB)** under the preset list.
+4. PedalCues lists your setlists with their preset counts. Tick the ones to import and check each one's **setlist number** (the number PedalCues sends as CC#32 when *Send setlist* is on; the QC doesn't report it). The Factory Library is unticked by default.
+5. Click **Import**. New presets are added at their bank and slot; presets you already have at the same setlist, bank and slot are renamed, keeping their scene and stomp names. Tick *Replace my current preset list* to start fresh instead.
+
+What it reads, for now: setlist names and every preset's **name, bank and slot**. Scene names, colours and stomp names still come from you (double-click to rename). It **only reads**: nothing on the QC changes, and it never loads or saves a preset.
+
+> This uses the QC's private USB connection (the one Cortex Control uses), which Neural DSP doesn't document. It follows the community's reverse-engineering in [pyquadcortex](https://github.com/stokes-audio/pyquadcortex). Tested on a Quad Cortex; a CorOS update could break syncing until PedalCues is updated, but your MIDI cues keep working regardless. On the QC Mini it should work but isn't tested yet.
+
+### Adding a preset by hand
 
 1. Click **+ Preset**.
 2. Type its name, setlist number, bank (1-32) and slot (A-H), exactly as the QC shows them. For example, *Setlist 1, bank 3, slot B* is shown as `SL1 | 3B`.
@@ -271,6 +285,7 @@ PedalCues asks GitHub for the latest release when it opens; nothing else is sent
 | Problem | Fix |
 |---|---|
 | Nothing happens on the pedal | Check the track's MIDI Hardware Output and that the QC's MIDI device is enabled in Reaper preferences. Try a tile's play button. |
+| Sync from QC: "No Quad Cortex found" or "Couldn't open" | Connect the QC's **USB** port (not just MIDI) and switch it on. Quit **Cortex Control**, which keeps the USB connection to itself. Wait until the QC has fully started, then try again. |
 | Standalone app: tiles do nothing | Pick the port your pedals are on in **MIDI Setup > Test your pedals** (or **Options > MIDI Output**), then try **Test QC** / **Test Whammy**. On Windows, close Reaper first; only one program can use a MIDI port at a time. |
 | Scene or stomp changes the wrong preset | You're on **Current QC preset**, so tiles act on whatever preset the QC has loaded. Pick **Load 1A first** in the Scenes header so they load their own preset first. |
 | A stomp tile changes scenes | The QC is in Scene mode, where footswitch A-H select scenes. Put the QC in Stomp mode (or drop the **Stomp Mode** tile before your stomp cues). Before v0.4.2 the Scene Mode and Stomp Mode tiles were swapped; drag those clips in again. |

@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version")
 set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Universal binary")
 
-project(PedalCues VERSION 0.4.15 LANGUAGES C CXX)
+project(PedalCues VERSION 0.4.16 LANGUAGES C CXX)
 
 option(PEDALCUES_COPY_PLUGIN "Install plugins into the system plug-in folders after building" ON)
 
@@ -22,6 +22,19 @@ else()
         GIT_SHALLOW TRUE)
     FetchContent_MakeAvailable(JUCE)
 endif()
+
+# hidapi (BSD licence option): read-only USB access to the Quad Cortex for "Sync from QC".
+include(FetchContent)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(HIDAPI_WITH_LIBUSB OFF CACHE BOOL "" FORCE)
+set(HIDAPI_BUILD_HIDTEST OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(hidapi
+    GIT_REPOSITORY https://github.com/libusb/hidapi.git
+    GIT_TAG hidapi-0.14.0
+    GIT_SHALLOW TRUE)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)   # hidapi 0.14 declares an older minimum than current CMake accepts
+FetchContent_MakeAvailable(hidapi)
+unset(CMAKE_POLICY_VERSION_MINIMUM)
 
 juce_add_plugin(PedalCues
     COMPANY_NAME "Thanasis Kostopoulos"
@@ -53,6 +66,8 @@ target_sources(PedalCues PRIVATE
     Source/PluginProcessor.cpp
     Source/PluginEditor.cpp
     Source/Update.cpp
+    Source/QcUsb.cpp
+    Source/QcSyncDialog.cpp
     Source/StandaloneApp.cpp)
 
 target_compile_definitions(PedalCues PUBLIC
@@ -64,6 +79,7 @@ target_compile_definitions(PedalCues PUBLIC
 target_link_libraries(PedalCues
     PRIVATE
         juce::juce_audio_utils
+        hidapi::hidapi
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
@@ -72,10 +88,11 @@ target_link_libraries(PedalCues
 option(PEDALCUES_BUILD_TESTS "Build the CueModel tests" ON)
 if(PEDALCUES_BUILD_TESTS)
     juce_add_console_app(PedalCuesTests PRODUCT_NAME "PedalCuesTests")
-    target_sources(PedalCuesTests PRIVATE Tests/CueModelTests.cpp Source/CueModel.cpp Source/State.cpp Source/Update.cpp)
+    target_sources(PedalCuesTests PRIVATE Tests/CueModelTests.cpp Source/CueModel.cpp Source/State.cpp Source/Update.cpp Source/QcUsb.cpp)
     target_compile_definitions(PedalCuesTests PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0
-        JucePlugin_VersionString="${PROJECT_VERSION}")
-    target_link_libraries(PedalCuesTests PRIVATE juce::juce_audio_basics juce::juce_graphics juce::juce_data_structures
+        JucePlugin_VersionString="${PROJECT_VERSION}"
+        PEDALCUES_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/Tests/fixtures")
+    target_link_libraries(PedalCuesTests PRIVATE juce::juce_audio_basics juce::juce_graphics juce::juce_data_structures hidapi::hidapi
                           PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 endif()
 
@@ -96,11 +113,13 @@ if(PEDALCUES_BUILD_DOCS)
         Source/Tour.cpp
         Source/PluginProcessor.cpp
         Source/PluginEditor.cpp
-        Source/Update.cpp)
+        Source/Update.cpp
+        Source/QcUsb.cpp
+        Source/QcSyncDialog.cpp)
     target_compile_definitions(DocShots PRIVATE
         JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0
         JucePlugin_Name="PedalCues"
         JucePlugin_VersionString="${PROJECT_VERSION}")
-    target_link_libraries(DocShots PRIVATE juce::juce_audio_utils
+    target_link_libraries(DocShots PRIVATE juce::juce_audio_utils hidapi::hidapi
                           PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 endif()

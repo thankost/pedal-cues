@@ -20,6 +20,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 
 **Quad Cortex**
 - Preset tiles (name, colour, setlist / bank / slot) → `CC#0` page [+ `CC#32` setlist] + Program Change
+- **Sync from QC (USB):** reads your setlists and preset names (bank/slot) straight from the pedal, read-only (quit Cortex Control first)
 - 8 scene tiles per preset in gig-view colours → `CC#43`
 - Scene and stomp tiles either **load their own preset first** (default; the scene/footswitch follows 1/16 later)
   or act on the **current QC preset** only
@@ -131,4 +132,4 @@ PedalCues is free. If it helps your show and you'd like to say thanks, you can d
 
 Free and open source under the [MIT License](LICENSE). Copyright (c) 2026 **Thanasis Kostopoulos**. [github.com/thankost/pedal-cues](https://github.com/thankost/pedal-cues)
 
-Built with [JUCE](https://juce.com), which is licensed separately (AGPLv3 / JUCE licence). Quad Cortex is a trademark of Neural DSP Technologies and Whammy is a trademark of DigiTech. This project is not affiliated with either company.
+Built with [JUCE](https://juce.com), which is licensed separately (AGPLv3 / JUCE licence), and [hidapi](https://github.com/libusb/hidapi) (BSD licence option). The USB sync follows the protocol documented by [pyquadcortex](https://github.com/stokes-audio/pyquadcortex) (MIT). Quad Cortex is a trademark of Neural DSP Technologies and Whammy is a trademark of DigiTech. This project is not affiliated with either company.
