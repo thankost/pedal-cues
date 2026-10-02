@@ -2,6 +2,10 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.4.19 (2026-10-02)
+
+- Clearer wiring pictures (website, guide and the app's Wiring guide): links are labelled "to interface", "MIDI cable" and "QC USB", so it's obvious which connection is the QC's own USB port.
+
 ## 0.4.18 (2026-10-01)
 
 - **Linux (new):** VST3, LV2 and the standalone app, for Ubuntu 22.04+, Debian 12, Fedora and similar (x86-64). Sync from QC works too, after a one-time USB permission rule (see the guide). Not tested on every distro yet, so feedback is very welcome.

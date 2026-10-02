@@ -331,8 +331,8 @@ juce::Image drawRouting()
         box (g, i, grey, "Audio interface", "MIDI Out");
         box (g, q, qcBlue, "Quad Cortex", "Ch 1. MIDI In, Thru on");
         box (g, wh, whammyRed, "Whammy V", "Channel 2");
-        link (t, i, accent, "USB");
-        link (i, q, grey, "MIDI");
+        link (t, i, accent, "to interface");
+        link (i, q, grey, "MIDI cable");
         link (q, wh, qcBlue, "Thru");
     }
     divider (166.0f);
@@ -349,10 +349,10 @@ juce::Image drawRouting()
         box (g, t2, accent, "Whammy Cues track", "Output = MIDI Out 2");
         box (g, o2, grey, "Interface", "MIDI Out 2");
         box (g, wh, whammyRed, "Whammy V", "Channel 2");
-        link (t1, o1, accent, "USB");
-        link (o1, q, grey, "MIDI");
-        link (t2, o2, accent, "USB");
-        link (o2, wh, grey, "MIDI");
+        link (t1, o1, accent, "to interface");
+        link (o1, q, grey, "MIDI cable");
+        link (t2, o2, accent, "to interface");
+        link (o2, wh, grey, "MIDI cable");
     }
     divider (430.0f);
 
@@ -367,9 +367,9 @@ juce::Image drawRouting()
         box (g, t2, accent, "Whammy Cues track", "Output = interface");
         box (g, o, grey, "Audio interface", "MIDI Out");
         box (g, wh, whammyRed, "Whammy V", "Channel 2");
-        link (t1, q, accent, "USB");
-        link (t2, o, accent, "USB");
-        link (o, wh, grey, "MIDI");
+        link (t1, q, accent, "QC USB");
+        link (t2, o, accent, "to interface");
+        link (o, wh, grey, "MIDI cable");
     }
     divider (694.0f);
 
@@ -382,7 +382,7 @@ juce::Image drawRouting()
         box (g, t, grey, "QC + Whammy Cues", "Output = Quad Cortex (USB)");
         box (g, q, grey, "Quad Cortex", "USB, MIDI Thru on");
         box (g, wh, grey, "Whammy V", "Never changes");
-        link (t, q, grey, "USB");
+        link (t, q, grey, "QC USB");
         arrow (g, { q.getRight(), q.getCentreY() }, { wh.getX(), wh.getCentreY() }, whammyRed, "no USB Thru", true);
     }
 

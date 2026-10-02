@@ -58,7 +58,7 @@ private:
                                    { "Interface", "MIDI Out", juce::Colour (0xff9aa0ac) },
                                    { "Quad Cortex", "In + Thru", qcBlue },
                                    { "Whammy V", "5-pin MIDI In", whammyRed } };
-            const char* links[] = { "USB", "MIDI", "MIDI" };
+            const char* links[] = { "", "MIDI", "Thru" };   // the computer->interface hop needs no label
             paintChain (g, area.withSizeKeepingCentre (area.getWidth(), 66), nodes, links, 4);
             return;
         }
@@ -66,11 +66,11 @@ private:
         const auto rowH = (area.getHeight() - 8) / 2;
         const Node qc[] = { { "QC Cues track", "PedalCues, Quad Cortex tab", accent },
                             { "Quad Cortex", "USB, or MIDI Out 1", qcBlue } };
-        const char* qcLinks[] = { "USB/MIDI" };
+        const char* qcLinks[] = { "QC USB" };
         const Node wh[] = { { "Whammy Cues track", "PedalCues, Whammy tab", accent },
                             { "Audio interface", "MIDI Out 2", juce::Colour (0xff9aa0ac) },
                             { "Whammy V", "5-pin MIDI In", whammyRed } };
-        const char* whLinks[] = { "USB", "MIDI" };
+        const char* whLinks[] = { "", "MIDI" };
         auto top = area.removeFromTop (rowH);
         area.removeFromTop (8);
         paintChain (g, top.removeFromLeft ((top.getWidth() * 2 - 56) / 3), qc, qcLinks, 2);   // same box width as the 3-box row
