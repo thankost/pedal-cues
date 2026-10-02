@@ -2,6 +2,10 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.4.23 (2026-10-02)
+
+- Scenes header: the **Load 1A first / Current QC preset** buttons are now one **Load 1A first** switch, the same as in Expression. Off means scenes and stomps act on the preset the QC has loaded; the header says which way it's set.
+
 ## 0.4.22 (2026-10-02)
 
 - **Expression: Load 1A first (optional).** Tick it and every expression clip first loads the preset you have open, then makes its move a 1/16 later, so it lands on the right preset even if one was changed by accident on stage. Off by default, because the QC may cut the sound for a moment when it reloads a preset. The guide has tips for staying on the right preset and scene.

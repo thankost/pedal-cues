@@ -34,28 +34,13 @@ public:
         addAndMakeVisible (presetView);
 
         // What scene and stomp tiles act on: their own preset (loaded first) or whatever the QC has loaded.
-        targetChoice.setComponentID ("qc.target");
-        targetChoice.setInterceptsMouseClicks (false, true);
-        addAndMakeVisible (targetChoice);
-        for (auto* b : { &loadFirstButton, &currentButton })
-        {
-            b->setClickingTogglesState (true);
-            b->setRadioGroupId (4302);
-            b->setColour (juce::TextButton::buttonColourId, surface);
-            b->setColour (juce::TextButton::buttonOnColourId, qcBlue);
-            b->setColour (juce::TextButton::textColourOffId, dim);
-            b->setColour (juce::TextButton::textColourOnId, juce::Colours::black);
-            targetChoice.addAndMakeVisible (b);
-        }
-        loadFirstButton.setConnectedEdges (juce::Button::ConnectedOnRight);
-        currentButton.setConnectedEdges (juce::Button::ConnectedOnLeft);
-        currentButton.setButtonText ("Current QC preset");
-        loadFirstButton.setTooltip ("Scene and stomp tiles load this preset first, then switch the scene or footswitch 1/16 later. "
-                                    "Works whatever preset the QC is on.");
-        currentButton.setTooltip ("Scene and stomp tiles only switch the scene or footswitch, on whatever preset the QC has loaded. "
-                                  "No preset reload, so no audio gap.");
-        loadFirstButton.onClick = [this] { if (loadFirstButton.getToggleState()) state.setProperty (IDs::comboPresetScene, true, nullptr); };
-        currentButton.onClick   = [this] { if (currentButton.getToggleState())   state.setProperty (IDs::comboPresetScene, false, nullptr); };
+        loadFirstToggle.setComponentID ("qc.target");
+        loadFirstToggle.setColour (juce::ToggleButton::tickColourId, qcBlue);
+        loadFirstToggle.setTooltip ("On: scene and stomp tiles load this preset first, then switch the scene or footswitch 1/16 later, "
+                                    "so they work whatever preset the QC is on. Off: they only switch the scene or footswitch on "
+                                    "the preset the QC has loaded (no preset reload, so no audio gap).");
+        loadFirstToggle.onClick = [this] { state.setProperty (IDs::comboPresetScene, loadFirstToggle.getToggleState(), nullptr); };
+        addAndMakeVisible (loadFirstToggle);
 
         stompOnToggle.setColour (juce::ToggleButton::tickColourId, ledGreen);
         stompOnToggle.setTooltip ("Whether stomp tiles engage (ON) or bypass (OFF) the footswitch");
@@ -97,10 +82,13 @@ public:
         const auto combo = (bool) state[IDs::comboPresetScene];
         const auto stompOn = (bool) state[IDs::stompOn];
 
-        loadFirstButton.setButtonText (preset.isValid() ? "Load " + shortLocation (preset) + " first" : "Load preset first");
+        loadFirstToggle.setButtonText (preset.isValid() ? "Load " + shortLocation (preset) + " first" : "Load preset first");
+        loadFirstToggle.setToggleState (combo, juce::dontSendNotification);
+        scenesSection.hint = "CC#43  -  " + (combo ? "scenes & stomps load " + shortLocation (preset) + " first"
+                                                   : juce::String ("scenes & stomps act on the current QC preset"));
+        scenesSection.repaint();
         stompsSection.hint = "CC#35-42  -  " + (combo ? "after loading " + shortLocation (preset) : juce::String ("on the current QC preset"));
         stompsSection.repaint();
-        (combo ? loadFirstButton : currentButton).setToggleState (true, juce::dontSendNotification);
         stompOnToggle.setToggleState (stompOn, juce::dontSendNotification);
         stompOnToggle.setButtonText (stompOn ? "Tiles switch ON" : "Tiles switch OFF");
 
@@ -180,7 +168,7 @@ public:
 
         const auto showExpression = (bool) state[IDs::qcExpressionView];
         (showExpression ? expressionViewButton : scenesViewButton).setToggleState (true, juce::dontSendNotification);
-        for (auto* c : std::initializer_list<juce::Component*> { &scenesSection, &stompsSection, &targetChoice, &stompOnToggle })
+        for (auto* c : std::initializer_list<juce::Component*> { &scenesSection, &stompsSection, &loadFirstToggle, &stompOnToggle })
             c->setVisible (! showExpression);
         for (auto* t : sceneTiles) t->setVisible (! showExpression);
         for (auto* t : stompTiles) t->setVisible (! showExpression);
@@ -232,10 +220,7 @@ public:
 
         {
             auto hdr = scenesSection.headerArea().withSizeKeepingCentre (scenesSection.headerArea().getWidth(), 28);
-            targetChoice.setBounds (hdr.removeFromRight (300));
-            auto c = targetChoice.getLocalBounds();
-            loadFirstButton.setBounds (c.removeFromLeft (c.getWidth() / 2));
-            currentButton.setBounds (c);
+            loadFirstToggle.setBounds (hdr.removeFromRight (170));
         }
         stompOnToggle.setBounds (stompsSection.headerArea().removeFromRight (160));
 
@@ -429,7 +414,7 @@ private:
     juce::ValueTree state;
 
     Section presetsSection { "qc.presetList", "Presets", "click to open" };
-    Section scenesSection  { "qc.scenes", "Scenes", "CC#43  -  scenes & stomps act on:", qcBlue };
+    Section scenesSection  { "qc.scenes", "Scenes", "CC#43", qcBlue };
     Section stompsSection  { "qc.stomps", "Stomps", "CC#35-42", ledGreen };
     Section utilsSection   { "qc.utils", "Utilities", "tuner & gig view" };
 
@@ -437,8 +422,7 @@ private:
     juce::TextButton syncButton { "Sync from QC (USB)" };
     juce::Viewport presetView;
     juce::Component presetList;
-    juce::Component targetChoice;
-    juce::TextButton loadFirstButton, currentButton;
+    juce::ToggleButton loadFirstToggle;
     juce::ToggleButton stompOnToggle { "Tiles switch ON" };
     juce::Component viewChoice;
     juce::TextButton scenesViewButton { "Scenes & Stomps" }, expressionViewButton { "Expression" };

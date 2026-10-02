@@ -429,7 +429,7 @@ juce::Image drawPresetTarget()
     g.setColour (outline);
     g.fillRect (40.0f, 200.0f, 1040.0f, 1.0f);
 
-    row (220.0f, "CURRENT QC PRESET", "Tiles only switch the scene or footswitch on the preset already loaded. No reload, no audio gap.",
+    row (220.0f, "LOAD 1A FIRST OFF", "Tiles only switch the scene or footswitch on the preset already loaded. No reload, no audio gap.",
          "CC#43 only", "QC stays on 2H, scene B", "Drop C Heavy > Verse", qcBlue);
 
     return img;

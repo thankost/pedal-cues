@@ -21,9 +21,9 @@ const std::vector<TourStep>& tourSteps()
           "The eight scenes are laid out like the QC display (A-D on top, E-H below). Drag a scene to where "
           "the verse, chorus or solo starts. Double-click to rename, right-click for a colour." },
         { 0, { "qc.target" }, "Which preset do scenes act on?",
-          "Load 1A first (the default): scene and stomp tiles load their own preset, then switch, so they work whatever "
-          "preset the QC is on. Current QC preset: they only switch the scene or footswitch on the preset already loaded "
-          "(no reload, no audio gap). Tile subtitles show which one is active." },
+          "Load 1A first on (the default): scene and stomp tiles load their own preset, then switch, so they work whatever "
+          "preset the QC is on. Off: they only switch the scene or footswitch on the preset the QC has loaded "
+          "(no reload, no audio gap). The header and tile subtitles show which one is active." },
         { 0, { "qc.scenes" }, "Test any tile live",
           "Every tile has a round play button in its corner. Click it and the MIDI goes to the pedal immediately, "
           "so you can check a cue without pressing play in your DAW." },
