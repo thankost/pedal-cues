@@ -13,7 +13,7 @@ Follow these steps in order. Stop and report if any step fails.
 
 3. **Update the website's fallback numbers.** In `docs/index.html`, on `<section id="downloads-section" ...>`, set `data-version` to the new version, `data-released` to today (YYYY-MM-DD) and `data-downloads` to the current total (`gh api 'repos/thankost/pedal-cues/releases?per_page=100' --jq '[.[].assets[].download_count] | add'`). They show until live numbers load.
 
-4. **Update `CHANGELOG.md`.** Add a `## X.Y.Z (YYYY-MM-DD)` section at the top with the changes in plain words for musicians. It's linked from the README, the guide and the website.
+4. **Update `CHANGELOG.md`.** Add a `## X.Y.Z (YYYY-MM-DD)` section at the top with the changes in plain words for musicians. Then run `python3 Tools/make_site_pages.py` to rebuild the website's generated pages: `docs/changelog.html` (What's new, opened by **☰ > What's new** in the app) and `docs/guide.html` (User guide). Commit them together.
 
 5. **Bump the version.** Change `project(PedalCues VERSION x.y.z)` in `CMakeLists.txt`. Use the patch number for fixes and small features, and the minor number for bigger features.
 

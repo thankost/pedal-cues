@@ -1,0 +1,75 @@
+name: Report a problem
+description: Something doesn't work as expected. Tell us what happened and we'll help.
+title: "[Problem] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time! Many problems are answered in the [Troubleshooting](https://thankost.github.io/pedal-cues/guide.html#9-troubleshooting) section of the guide, so have a quick look there first.
+        Opening this form from the app (**☰ > Report a problem**, or **Help > Report a Problem**) fills in your version and system for you.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: "I dragged the Scene B tile onto the QC Cues track and pressed play, but the QC stayed on scene A."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to make it happen again
+      description: Optional, but it helps a lot.
+      placeholder: |
+        1. Open PedalCues in my DAW
+        2. ...
+  - type: input
+    id: version
+    attributes:
+      label: PedalCues version
+      description: Shown under the title in the app (for example 0.4.19).
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Computer
+      description: Operating system and version.
+      placeholder: "macOS 15.5 / Windows 11 / Ubuntu 24.04"
+    validations:
+      required: true
+  - type: dropdown
+    id: format
+    attributes:
+      label: How do you run PedalCues?
+      options:
+        - VST3 plugin
+        - AU plugin (macOS)
+        - LV2 plugin (Linux)
+        - Standalone app
+    validations:
+      required: true
+  - type: input
+    id: daw
+    attributes:
+      label: DAW
+      description: Name and version, if you use a DAW.
+      placeholder: "Reaper 7.2 / Ableton Live 12 / none"
+  - type: dropdown
+    id: setup
+    attributes:
+      label: Wiring
+      description: How your pedals are connected (see the Wiring guide in the app).
+      options:
+        - Daisy chain (interface MIDI Out > QC > Thru > Whammy)
+        - Separate outputs (one MIDI Out per pedal)
+        - QC over USB plus an interface for the Whammy
+        - Only the Quad Cortex
+        - Only the Whammy
+        - Something else (describe above)
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, a short video or your exported setup (☰ > Export setup) are very welcome. Drag files here.

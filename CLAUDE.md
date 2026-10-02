@@ -20,8 +20,10 @@ build/DocShots_artefacts/Release/DocShots docs/images                     # rege
 
 Update everything that describes it in the same commit:
 - `README.md`
-- `docs/GUIDE.md` (sections, troubleshooting table, anchors used by README and the site)
+- `docs/GUIDE.md` (sections, troubleshooting table, anchors used by README and the site). The website's guide page `docs/guide.html` is generated from it: after editing GUIDE.md run `python3 Tools/make_site_pages.py`
 - `docs/index.html` (the website: features, gallery captions, support section)
+- `docs/help.html` (Help page: troubleshooting quick answers, report/idea forms) and `docs/pages.css` (styles shared by help.html and the generated guide.html / changelog.html)
+- `.github/ISSUE_TEMPLATE/` (problem.yml / idea.yml forms; the app's Report a problem prefills `version`, `os`, `daw` by field id, so keep those ids)
 - the quick tour (`Source/Tour.cpp`). Inserting a step shifts the indices in DocShots' `tourShots`.
 - screenshots: run DocShots into `docs/images`, then look at the changed images before committing.
 
@@ -40,7 +42,7 @@ Show the user screenshots before pushing a visual change.
 
 Use the `release` skill (`.claude/skills/release/SKILL.md`). In short:
 1. Bump `project(PedalCues VERSION x.y.z)` in `CMakeLists.txt`.
-2. Add the version at the top of `CHANGELOG.md`, in plain words for musicians.
+2. Add the version at the top of `CHANGELOG.md`, in plain words for musicians, then run `python3 Tools/make_site_pages.py` to rebuild `docs/changelog.html` and `docs/guide.html` (never edit those pages by hand).
 3. Build and run the tests.
 4. Commit with a message that works as release notes: the first line is `vX.Y.Z: summary`, then `- bullet` lines. CI copies the tagged commit's message into the GitHub release, and the plugin's update window shows it under "What's new".
 5. Push `main`, then tag `vX.Y.Z` and push the tag. CI (`.github/workflows/build.yml`) builds the macOS and Windows zips and publishes the release.

@@ -13,4 +13,4 @@ cmake --build build --config Release
 echo
 echo "Built. Plugins copied to ~/Library/Audio/Plug-Ins (VST3/Components)."
 echo "Standalone app: build/PedalCues_artefacts/Release/Standalone/PedalCues.app"
-echo "In Reaper: Options > Preferences > Plug-ins > VST > Re-scan."
+echo "Then re-scan plug-ins in your DAW (Reaper: Options > Preferences > Plug-ins > VST > Re-scan)."

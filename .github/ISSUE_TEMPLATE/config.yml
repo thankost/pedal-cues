@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: User guide and troubleshooting
+    url: https://thankost.github.io/pedal-cues/guide.html#9-troubleshooting
+    about: Answers to the most common questions (nothing happens on the pedal, Sync from QC, macOS "is damaged"...).
+  - name: Help page
+    url: https://thankost.github.io/pedal-cues/help.html
+    about: All the ways to get help with PedalCues.

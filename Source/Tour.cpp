@@ -46,8 +46,8 @@ const std::vector<TourStep>& tourSteps()
           "Pick your wiring at the top (a daisy chain through the QC, or separate outputs), then make the two cue tracks, "
           "QC Cues and Whammy Cues, as shown. Not sure how to cable the pedals? Click 'How should I wire my pedals?'." },
         { 2, { "hdr.help" }, "You are ready",
-          "The menu button (top right) reopens this tour and the user guide, and saves your setup as the default for new "
-          "projects. In the standalone app these are in the File and Help menus. Have a great show!" },
+          "The menu button (top right) reopens this tour and the user guide, shows what's new, lets you report a problem, "
+          "and saves your setup as the default for new projects. In the standalone app these are in the File and Help menus. Have a great show!" },
     };
     return steps;
 }

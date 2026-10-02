@@ -2,6 +2,13 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.4.20 (2026-10-02)
+
+- **The user guide, What's new and Help now have their own pages on the website**, instead of opening files on GitHub. The guide has a contents sidebar and Copy buttons for the Terminal commands.
+- **☰ > What's new** (Help > What's New in the standalone app) opens the list of changes in every version.
+- **☰ > Report a problem** (Help > Report a Problem) opens a short form with your PedalCues version and computer already filled in. There's also a form to suggest an idea.
+- Wording: the guide and site no longer read as if PedalCues only works in Reaper.
+
 ## 0.4.19 (2026-10-02)
 
 - Clearer wiring pictures (website, guide and the app's Wiring guide): links are labelled "to interface", "MIDI cable" and "QC USB", so it's obvious which connection is the QC's own USB port.

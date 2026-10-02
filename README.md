@@ -10,7 +10,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 
 ![PedalCues - Quad Cortex page](docs/images/quad-cortex.png)
 
-📖 **[User guide with pictures and step-by-step instructions](docs/GUIDE.md)** · 📝 **[What's new (changelog)](CHANGELOG.md)**. A quick tour also starts the first time you open the plugin (open it again later from the **☰** menu).
+📖 **[User guide with pictures and step-by-step instructions](https://thankost.github.io/pedal-cues/guide.html)** · 📝 **[What's new](https://thankost.github.io/pedal-cues/changelog.html)** · 🛟 **[Help and problem reports](https://thankost.github.io/pedal-cues/help.html)**. A quick tour also starts the first time you open the plugin (open it again later from the **☰** menu).
 
 | Whammy V | MIDI Setup |
 |---|---|
@@ -36,7 +36,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 
 **Workflow**
 - Update notice: the header shows your version and whether a newer release is out (one GitHub request when it opens; turn it off in the ☰ menu)
-- Everything is stored in the Reaper project. **☰ > Save as default setup** makes new instances start with your names, colours and MIDI settings
+- Everything is stored in your DAW project. **☰ > Save as default setup** makes new instances start with your names, colours and MIDI settings
 - **☰ > Export / Import setup** as a file (back it up, share it with the band)
 - MIDI passes through, so the dropped items and the live preview share one track and one route
 
@@ -49,7 +49,7 @@ Download the zip for your system from the [website](https://thankost.github.io/p
 
 **Windows**
 1. Unzip, copy `PedalCues.vst3` to `C:\Program Files\Common Files\VST3\`.
-2. Reaper: *Options > Preferences > Plug-ins > VST > Re-scan*. `PedalCues.exe` is the standalone version.
+2. Re-scan plug-ins in your DAW (Reaper: *Options > Preferences > Plug-ins > VST > Re-scan*). `PedalCues.exe` is the standalone version.
 
 **macOS** (Apple Silicon and Intel, macOS 11 or later)
 1. Unzip. The build is not notarised by Apple, so clear the download quarantine once in Terminal:
@@ -57,13 +57,13 @@ Download the zip for your system from the [website](https://thankost.github.io/p
    (without this, macOS says *"PedalCues is damaged and can't be opened"*).
 2. Drag `PedalCues.app` (standalone) to *Applications*. Copy `PedalCues.vst3` to `~/Library/Audio/Plug-Ins/VST3/` and
    `PedalCues.component` to `~/Library/Audio/Plug-Ins/Components/`.
-3. Re-scan plug-ins in Reaper.
+3. Re-scan plug-ins in your DAW.
 
 **Linux** (new; x86-64, Ubuntu 22.04+ / Debian 12 / Fedora and similar)
 1. Unzip `PedalCues-Linux.zip`. Copy `PedalCues.vst3` to `~/.vst3/` and `PedalCues.lv2` to `~/.lv2/`; run `./PedalCues` for the standalone app.
 2. For *Sync from QC* over USB, add the one-time permission rule:
    `echo 'KERNEL=="hidraw*", ATTRS{idVendor}=="152a", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/70-quad-cortex.rules && sudo udevadm control --reload-rules && sudo udevadm trigger`
-   then replug the QC. Details: [guide, Install](docs/GUIDE.md#1-install).
+   then replug the QC. Details: [guide, Install](https://thankost.github.io/pedal-cues/guide.html#1-install).
 
 To publish a new release: `git tag v0.1.1 && git push origin v0.1.1`.
 
@@ -96,7 +96,7 @@ cmake --build build --target PedalCuesTests
 4. Create two tracks, **QC Cues** and **Whammy Cues**, insert *PedalCues* on each, and set each track's MIDI output as above (Reaper: *I/O > MIDI Hardware Output*, leave *Send to original channels*).
 5. Turn snapping on and drag QC tiles onto QC Cues and Whammy tiles onto Whammy Cues at the bars you want.
 
-Details and pictures: [guide, section 2](docs/GUIDE.md#2-connect-your-rig).
+Details and pictures: [guide, section 2](https://thankost.github.io/pedal-cues/guide.html#2-connect-your-rig).
 
 ## Verify with your pedals
 
@@ -115,7 +115,7 @@ Source/PluginProcessor.* MIDI passthrough, preview scheduling, host tempo, state
 Source/Theme.*           colour palette + custom LookAndFeel
 Source/PluginEditor.*    window, header tabs, first-run tour host
 Source/QcPage.cpp        Quad Cortex page    Source/WhammyPage.cpp  Whammy V page
-Source/SettingsPage.cpp  MIDI Setup tab (your pedals, Reaper tracks, test) and the wiring guide
+Source/SettingsPage.cpp  MIDI Setup tab (your pedals, DAW tracks, test) and the wiring guide
 Source/Tour.*            quick-tour overlay (steps + spotlight)
 Tools/DocShots.cpp       renders docs/images/*.png
 docs/GUIDE.md            user guide

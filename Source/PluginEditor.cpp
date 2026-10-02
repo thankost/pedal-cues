@@ -235,6 +235,7 @@ void PedalCuesEditor::showHelpMenu (juce::Component* target, const juce::String&
     m.addItem (1, "Quick tour");
     m.addItem (2, "User guide");
     m.addItem (14, "Wiring guide");
+    m.addItem (15, "What's new");
     m.addSeparator();
     m.addSectionHeader ("Your setup (names + MIDI settings)");
     m.addItem (10, "Save as default setup");
@@ -246,6 +247,7 @@ void PedalCuesEditor::showHelpMenu (juce::Component* target, const juce::String&
     m.addSeparator();
     m.addItem (3, "About PedalCues");
     m.addItem (4, "PedalCues on GitHub");
+    m.addItem (16, "Report a problem");
     m.addItem (5, "Support PedalCues");
     if (extra)
     {
@@ -272,6 +274,8 @@ void PedalCuesEditor::showHelpMenu (juce::Component* target, const juce::String&
             case 12: safe->exportSetup(); break;
             case 13: safe->importSetup(); break;
             case 14: ui::showWiringGuide(); break;
+            case 15: juce::URL (ui::changelogUrl).launchInDefaultBrowser(); break;
+            case 16: ui::problemReportUrl().launchInDefaultBrowser(); break;
             default: break;
         }
     });

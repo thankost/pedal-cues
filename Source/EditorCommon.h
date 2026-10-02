@@ -26,10 +26,24 @@ std::unique_ptr<juce::Component> makeWiringGuide();
 
 inline const juce::String repoUrl { "https://github.com/thankost/pedal-cues" };
 inline const juce::String author { "Thanasis Kostopoulos" };
-inline const juce::String guideUrl { "https://github.com/thankost/pedal-cues/blob/main/docs/GUIDE.md" };
+inline const juce::String guideUrl { "https://thankost.github.io/pedal-cues/guide.html" };
+inline const juce::String changelogUrl { "https://thankost.github.io/pedal-cues/changelog.html" };
+inline const juce::String helpUrl { "https://thankost.github.io/pedal-cues/help.html" };
 inline const juce::String coffeeUrl { "https://buymeacoffee.com/athkost" };
 inline const juce::String paypalUrl { "https://paypal.me/athkost" };
 inline const juce::String revolutUrl { "https://revolut.me/athkost" };
+
+// The "Report a problem" form on GitHub, with this version, the computer and the host filled in.
+inline juce::URL problemReportUrl()
+{
+    const auto host = PedalCuesProcessor::isStandalone() ? juce::String ("none (standalone app)")
+                                                          : juce::String (juce::PluginHostType().getHostDescription());
+    return juce::URL (repoUrl + "/issues/new")
+        .withParameter ("template", "problem.yml")
+        .withParameter ("version", JucePlugin_VersionString)
+        .withParameter ("os", juce::SystemStats::getOperatingSystemName())
+        .withParameter ("daw", host);
+}
 
 //==============================================================================
 // A rounded card with a small caps title and an optional hint, drawn behind the

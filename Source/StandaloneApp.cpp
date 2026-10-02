@@ -60,7 +60,7 @@ public:
 
 private:
     enum ItemIds { checkUpdates = 1, autoCheck, tour, guide, github, support, about,
-                   saveDefault, loadDefault, exportSetup, importSetup, wiringGuide, midiNone = 100, midiFirst = 101 };
+                   saveDefault, loadDefault, exportSetup, importSetup, wiringGuide, whatsNew, reportProblem, midiNone = 100, midiFirst = 101 };
 
     PedalCuesProcessor* processor() const
     {
@@ -99,7 +99,10 @@ private:
             m.addItem (tour, "Quick Tour");
             m.addItem (guide, "User Guide");
             m.addItem (wiringGuide, "Wiring Guide");
+            m.addItem (whatsNew, "What's New");
+            m.addSeparator();
             m.addItem (github, "PedalCues on GitHub");
+            m.addItem (reportProblem, "Report a Problem");
             m.addSeparator();
             m.addItem (support, "Support PedalCues");
            #if ! JUCE_MAC
@@ -139,6 +142,8 @@ private:
             case exportSetup:   if (e != nullptr) e->exportSetup(); break;
             case importSetup:   if (e != nullptr) e->importSetup(); break;
             case wiringGuide:   ui::showWiringGuide(); break;
+            case whatsNew:      juce::URL (ui::changelogUrl).launchInDefaultBrowser(); break;
+            case reportProblem: ui::problemReportUrl().launchInDefaultBrowser(); break;
             default: break;
         }
     }

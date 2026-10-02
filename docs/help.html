@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Help - PedalCues</title>
+  <meta name="description" content="Get help with PedalCues: the user guide, troubleshooting, reporting a problem or suggesting an idea.">
+  <link rel="icon" type="image/png" href="images/icon.png">
+  <link rel="stylesheet" href="pages.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="./"><img src="images/icon.png" alt=""><b>PedalCues</b></a>
+  <nav><a href="./">Home</a><a href="guide.html">User guide</a>
+       <a href="changelog.html">What's new</a><a href="help.html" aria-current="page">Help</a></nav>
+</div></header>
+<main class="wrap narrow">
+  <h1>Need help?</h1>
+  <p class="lead">Stuck on something, or found a bug? Here's the fastest way to sort it out.</p>
+
+  <div class="options">
+    <a class="option" href="guide.html#9-troubleshooting">
+      <h3>Troubleshooting</h3>
+      <p>Quick fixes for the most common problems: nothing on the pedal, Sync from QC, macOS warnings.</p>
+      <span class="go">Read the fixes &rsaquo;</span>
+    </a>
+    <a class="option" href="https://github.com/thankost/pedal-cues/issues/new?template=problem.yml">
+      <h3>Report a problem</h3>
+      <p>Something doesn't work? A short form asks for what you need to tell us. We reply on the same page.</p>
+      <span class="go">Open the form &rsaquo;</span>
+    </a>
+    <a class="option" href="https://github.com/thankost/pedal-cues/issues/new?template=idea.yml">
+      <h3>Suggest an idea</h3>
+      <p>A feature, another pedal, or something that could be easier. Ideas shape what comes next.</p>
+      <span class="go">Share your idea &rsaquo;</span>
+    </a>
+  </div>
+
+  <p>The forms are on GitHub, so you need a free GitHub account to send one. Your report is public, which means
+     others with the same problem find the answer too. Please don't include anything private.</p>
+  <p><b>Tip:</b> in the app, <b>☰ &gt; Report a problem</b> (or <b>Help &gt; Report a Problem</b> in the standalone app)
+     opens the form with your PedalCues version and computer already filled in.</p>
+
+  <h2 class="section">Quick answers</h2>
+  <div class="faq">
+    <details><summary>Nothing happens on the pedal</summary>
+      <p>Check the cue track's MIDI hardware output in your DAW and that the pedal's MIDI device is enabled there.
+         Press a tile's play button to test. In the standalone app, pick a port in <b>MIDI Setup &gt; Test your pedals</b>.</p></details>
+    <details><summary>Sync from QC says "No Quad Cortex found"</summary>
+      <p>Connect the QC's USB port (a MIDI cable isn't enough), switch it on, and quit Cortex Control, which keeps the USB
+         connection to itself. On Linux, install the USB permission rule from the guide once.</p></details>
+    <details><summary>The Whammy doesn't react</summary>
+      <p>If the QC is on USB and the Whammy hangs off the QC's Thru, that can't work: the QC doesn't forward USB MIDI.
+         Open the <b>Wiring guide</b> in the app for setups that work.</p></details>
+    <details><summary>macOS says PedalCues "is damaged"</summary>
+      <p>It isn't. macOS blocks apps Apple hasn't notarised. Run the <code>xattr -cr</code> command from the
+         <a href="./#install">install steps</a>, or use <i>Privacy &amp; Security &gt; Open Anyway</i>.</p></details>
+    <details><summary>How do I update?</summary>
+      <p>When the app shows <b>Update to vX.Y.Z</b>, click it and download. Close your DAW and replace the plugin files the
+         same way you installed them. Your setup and projects are kept. See <a href="changelog.html">What's new</a> for what changed.</p></details>
+  </div>
+</main>
+<footer><div class="wrap">&copy; 2026 Thanasis Kostopoulos &middot; MIT License &middot;
+  <a href="guide.html">User guide</a> &middot; <a href="changelog.html">What's new</a> &middot; <a href="help.html">Help</a></div></footer>
+</body>
+</html>
