@@ -2,6 +2,11 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.4.24 (2026-10-02)
+
+- **My drawings (new):** save your drawn moves by name and reuse them in any song. In Draw mode, **Save** keeps the drawing, the **My drawings** list loads one to use or edit (the tile says *edited* until you save again), and **…** saves a copy, renames or deletes. The same list works for Whammy treadle moves and Quad Cortex expression moves, and clips take the drawing's name (`Whammy Big Bend 1 bar`).
+- Your drawings are saved on your computer, so every project and the standalone app see them and updates keep them. **Export setup** now includes them; **Import setup** adds them to your list.
+
 ## 0.4.23 (2026-10-02)
 
 - Scenes header: the **Load 1A first / Current QC preset** buttons are now one **Load 1A first** switch, the same as in Expression. Off means scenes and stomps act on the preset the QC has loaded; the header says which way it's set.

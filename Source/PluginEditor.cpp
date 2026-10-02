@@ -213,7 +213,8 @@ void PedalCuesEditor::exportSetup()
                           [safe] (const juce::FileChooser& fc)
                           {
                               const auto file = fc.getResult();
-                              if (safe != nullptr && file != juce::File() && ! state::saveLibrary (safe->state, file.withFileExtension ("xml")))
+                              const auto drawings = state::myDrawings();   // an exported setup carries My drawings
+                              if (safe != nullptr && file != juce::File() && ! state::saveLibrary (safe->state, file.withFileExtension ("xml"), &drawings))
                                   juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "Export failed",
                                                                           "PedalCues couldn't write " + file.getFileName() + ".");
                           });
@@ -228,7 +229,12 @@ void PedalCuesEditor::importSetup()
                           [safe] (const juce::FileChooser& fc)
                           {
                               const auto file = fc.getResult();
-                              if (safe != nullptr && file.existsAsFile() && ! state::loadLibrary (safe->state, file))
+                              auto drawings = state::myDrawings();   // its drawings are added to My drawings
+                              if (safe == nullptr || ! file.existsAsFile())
+                                  return;
+                              if (state::loadLibrary (safe->state, file, &drawings))
+                                  state::storeMyDrawings();
+                              else
                                   juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "Not a PedalCues setup",
                                                                           file.getFileName() + " isn't a PedalCues setup file.");
                           });

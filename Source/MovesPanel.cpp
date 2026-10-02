@@ -155,6 +155,7 @@ MovesPanel::MovesPanel (PedalCuesProcessor& p, MovesConfig c)
       section (config.idPrefix + ".sweeps", config.title, config.hint, config.colour)
 {
     pad = std::make_unique<DrawPad> (config);
+    drawings.addListener (this);   // another panel or PedalCues instance saved, renamed or deleted one
 
     addAndMakeVisible (section);
     addAndMakeVisible (controls);
@@ -219,6 +220,23 @@ MovesPanel::MovesPanel (PedalCuesProcessor& p, MovesConfig c)
         b->setColour (juce::TextButton::textColourOffId, text);
         addChildComponent (b);
     }
+    for (auto* b : { &saveButton, &moreButton })
+    {
+        b->setColour (juce::TextButton::buttonColourId, surface);
+        b->setColour (juce::TextButton::textColourOffId, text);
+        addChildComponent (b);
+    }
+    saveButton.setTooltip ("Save this drawing in My drawings (it's kept with your setup)");
+    moreButton.setTooltip ("Save as new, rename or delete a saved drawing");
+    saveButton.onClick = [this] { saveDrawing(); };
+    moreButton.onClick = [this] { showDrawingMenu(); };
+
+    libraryBox.setTextWhenNothingSelected ("My drawings");
+    libraryBox.setTextWhenNoChoicesAvailable ("No saved drawings");
+    libraryBox.setTooltip ("Load one of your saved drawings to use or edit it. Shared by the Whammy and the QC expression.");
+    libraryBox.onChange = [this] { loadDrawing (libraryBox.getSelectedId()); };
+    addChildComponent (libraryBox);
+
     clearButton.setTooltip ("Reset the drawing to heel");
     smoothButton.setTooltip ("Round off sharp edges in the drawing");
     clearButton.onClick = [this]
@@ -245,7 +263,10 @@ MovesPanel::MovesPanel (PedalCuesProcessor& p, MovesConfig c)
     refresh();
 }
 
-MovesPanel::~MovesPanel() = default;
+MovesPanel::~MovesPanel()
+{
+    drawings.removeListener (this);
+}
 
 void MovesPanel::refresh()
 {
@@ -269,15 +290,27 @@ void MovesPanel::refresh()
     pad->points = cues::whammy::decodeDrawing (state[config.drawingId].toString());
     pad->beats = beats;
     pad->setVisible (drawMode);
-    clearButton.setVisible (drawMode);
-    smoothButton.setVisible (drawMode);
+    for (auto* c : std::initializer_list<juce::Component*> { &clearButton, &smoothButton, &saveButton, &moreButton, &libraryBox })
+        c->setVisible (drawMode);
+
+    // My drawings, with the loaded one selected.
+    libraryBox.clear (juce::dontSendNotification);
+    const auto saved = drawings;
+    for (int i = 0; i < saved.getNumChildren(); ++i)
+        libraryBox.addItem (saved.getChild (i)[IDs::name].toString(), i + 1);
+    if (saved.getNumChildren() > 0)
+        libraryBox.addSeparator();
+    libraryBox.addItem ("New drawing", newDrawingId);
+    for (int i = 0; i < saved.getNumChildren(); ++i)
+        if (saved.getChild (i)[IDs::name].toString() == drawingName())
+            libraryBox.setSelectedId (i + 1, juce::dontSendNotification);
     pad->repaint();
 
     drawTile.reset (new Tile (proc, Tile::Look::sweep));
-    drawTile->title = "Drawn move";
+    drawTile->title = drawingName().isNotEmpty() ? drawingName() : juce::String ("Drawn move");
     drawTile->colour = config.line;
     drawTile->setTooltip (config.drawnTooltip + config.tileNote);
-    drawTile->makeCue = [this] { return finished (config.makeDrawn (pad->points)); };
+    drawTile->makeCue = [this] { return finished (config.makeDrawn (pad->points, drawingName())); };
     addChildComponent (drawTile.get());
     drawTile->setVisible (drawMode);
     updateDrawTile();
@@ -338,10 +371,21 @@ void MovesPanel::resized()
     if (drawTile != nullptr)
         drawTile->setBounds (area.removeFromRight (tileW).withSizeKeepingCentre (tileW, juce::jmin (area.getHeight(), 160)));
     area.removeFromRight (6);
-    auto buttons = area.removeFromRight (96).reduced (3, 0).withSizeKeepingCentre (90, 78);
-    clearButton.setBounds (buttons.removeFromTop (36));
-    buttons.removeFromTop (6);
-    smoothButton.setBounds (buttons.removeFromTop (36));
+    {
+        // My drawings, Save / ..., Clear / Smooth.
+        auto buttons = area.removeFromRight (150).reduced (3, 0).withSizeKeepingCentre (144, 3 * 30 + 2 * 8);
+        libraryBox.setBounds (buttons.removeFromTop (30));
+        buttons.removeFromTop (8);
+        auto saveRow = buttons.removeFromTop (30);
+        moreButton.setBounds (saveRow.removeFromRight (36));
+        saveRow.removeFromRight (6);
+        saveButton.setBounds (saveRow);
+        buttons.removeFromTop (8);
+        auto editRow = buttons.removeFromTop (30);
+        clearButton.setBounds (editRow.removeFromLeft ((editRow.getWidth() - 6) / 2));
+        editRow.removeFromLeft (6);
+        smoothButton.setBounds (editRow);
+    }
     area.removeFromRight (6);
     pad->setBounds (area.reduced (3));
 }
@@ -351,8 +395,8 @@ void MovesPanel::updateDrawTile()
     if (drawTile == nullptr)
         return;
 
-    curveOf (*drawTile, config.makeDrawn (pad->points));
-    drawTile->subtitle = cues::formatBeats ((double) state[config.beatsId]);
+    curveOf (*drawTile, config.makeDrawn (pad->points, drawingName()));
+    drawTile->subtitle = cues::formatBeats ((double) state[config.beatsId]) + (drawingEdited() ? "  -  edited" : "");
     drawTile->repaint();
 }
 
@@ -361,5 +405,114 @@ void MovesPanel::commitDrawing()
     pad->repaint();
     updateDrawTile();
     state.setProperty (config.drawingId, cues::whammy::encodeDrawing (pad->points), nullptr);
+}
+
+//==============================================================================
+juce::String MovesPanel::drawingName() const
+{
+    const auto name = state[config.drawingNameId].toString();
+    return state::findDrawing (drawings, name).isValid() ? name : juce::String();
+}
+
+bool MovesPanel::drawingEdited() const
+{
+    const auto saved = state::findDrawing (drawings, drawingName());
+    return saved.isValid() && saved[IDs::points].toString() != cues::whammy::encodeDrawing (pad->points);
+}
+
+void MovesPanel::loadDrawing (int itemId)
+{
+    if (itemId == newDrawingId)
+    {
+        std::fill (pad->points.begin(), pad->points.end(), 0.0f);
+        state.setProperty (config.drawingNameId, juce::String(), nullptr);
+        commitDrawing();
+        return;
+    }
+
+    const auto d = drawings.getChild (itemId - 1);
+    if (! d.isValid())
+        return;
+
+    pad->points = cues::whammy::decodeDrawing (d[IDs::points].toString());
+    state.setProperty (config.drawingNameId, d[IDs::name], nullptr);
+    commitDrawing();
+}
+
+void MovesPanel::saveDrawing()
+{
+    if (drawingName().isEmpty())
+    {
+        saveDrawingAs ("My move");
+        return;
+    }
+
+    state::saveDrawing (drawings, drawingName(), cues::whammy::encodeDrawing (pad->points));
+    state::storeMyDrawings();
+}
+
+void MovesPanel::saveDrawingAs (const juce::String& suggestion)
+{
+    juce::Component::SafePointer<MovesPanel> safe (this);
+    askText ("Save drawing as", suggestion, [safe] (const juce::String& name)
+    {
+        if (safe == nullptr || name.isEmpty())
+            return;
+
+        state::saveDrawing (safe->drawings, name, cues::whammy::encodeDrawing (safe->pad->points));
+        state::storeMyDrawings();
+        safe->state.setProperty (safe->config.drawingNameId, name, nullptr);
+    });
+}
+
+void MovesPanel::showDrawingMenu()
+{
+    const auto name = drawingName();
+
+    juce::PopupMenu m;
+    m.addItem (1, "Save as new drawing");
+    m.addItem (2, name.isNotEmpty() ? "Rename \"" + name + "\"" : juce::String ("Rename"), name.isNotEmpty());
+    m.addItem (3, name.isNotEmpty() ? "Delete \"" + name + "\"" : juce::String ("Delete"), name.isNotEmpty());
+
+    juce::Component::SafePointer<MovesPanel> safe (this);
+    m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&moreButton), [safe, name] (int result)
+    {
+        if (safe == nullptr)
+            return;
+
+        if (result == 1)
+        {
+            safe->saveDrawingAs (name.isNotEmpty() ? name + " 2" : juce::String ("My move"));
+        }
+        else if (result == 2)
+        {
+            askText ("Rename drawing", name, [safe, name] (const juce::String& to)
+            {
+                if (safe != nullptr && state::renameDrawing (safe->drawings, name, to))
+                {
+                    state::storeMyDrawings();
+                    safe->state.setProperty (safe->config.drawingNameId, to, nullptr);
+                }
+            });
+        }
+        else if (result == 3)
+        {
+            juce::AlertWindow::showAsync (juce::MessageBoxOptions()
+                                              .withIconType (juce::MessageBoxIconType::QuestionIcon)
+                                              .withTitle ("Delete drawing")
+                                              .withMessage ("Delete \"" + name + "\" from My drawings? Clips you already dragged "
+                                                            "onto the timeline keep working.")
+                                              .withButton ("Delete")
+                                              .withButton ("Cancel"),
+                                          [safe, name] (int button)
+            {
+                if (safe == nullptr || button != 1)
+                    return;
+                state::deleteDrawing (safe->drawings, name);
+                state::storeMyDrawings();
+                safe->state.setProperty (safe->config.drawingNameId, juce::String(), nullptr);
+            });
+        }
+    });
 }
 } // namespace ui

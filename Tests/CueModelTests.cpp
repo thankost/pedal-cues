@@ -277,6 +277,38 @@ int main (int argc, char** argv)
         CHECK (drawnExp.name == "QC Exp 2 Drawn 1 beat" && isCC (drawnExp.events.back().second, 1, 2, 127));
     }
 
+    // My drawings: named drawn moves, saved in the state and the setup library
+    {
+        CHECK (whammy::drawn (2, { 0.0f, 1.0f }, 4.0, false, "Big Bend").name == "Whammy Big Bend 1 bar");
+        CHECK (qc::expressionDrawn (1, 1, { 0.0f, 1.0f }, 2.0, false, "Slow Swell").name == "QC Exp 1 Slow Swell 2 beats");
+
+        juce::ValueTree list (IDs::Drawings);
+        state::saveDrawing (list, "Big Bend", "0,1000");
+        state::saveDrawing (list, "Swell", "0,500,1000");
+        state::saveDrawing (list, "Big Bend", "1000,0");   // overwrite, no duplicate
+        CHECK (list.getNumChildren() == 2);
+        CHECK (state::findDrawing (list, "Big Bend")[IDs::points].toString() == "1000,0");
+        CHECK (! state::renameDrawing (list, "Big Bend", "Swell"));   // name taken
+        CHECK (state::renameDrawing (list, "Big Bend", "Dive"));
+        CHECK (! state::findDrawing (list, "Big Bend").isValid() && state::findDrawing (list, "Dive").isValid());
+
+        // Projects don't carry drawings; an exported setup does, and importing adds them without removing any.
+        auto root = state::createDefault();
+        CHECK (! root.getChildWithName (IDs::Drawings).isValid());
+        const auto file = juce::File::createTempFile (".xml");
+        CHECK (state::saveLibrary (root, file, &list));
+        juce::ValueTree mine (IDs::Drawings);
+        state::saveDrawing (mine, "Mine", "0,1000");
+        auto other = state::createDefault();
+        CHECK (state::loadLibrary (other, file, &mine));
+        CHECK (mine.getNumChildren() == 3 && state::findDrawing (mine, "Dive")[IDs::points].toString() == "1000,0");
+        CHECK (! other.getChildWithName (IDs::Drawings).isValid());
+        file.deleteFile();
+
+        state::deleteDrawing (list, "Dive");
+        CHECK (list.getNumChildren() == 1);
+    }
+
     // MIDI file round trip
     auto file = writeMidiFile (up, 90.0);
     CHECK (file.existsAsFile() && file.getFileName() == "Whammy Ramp Up 1 bar.mid");

@@ -131,7 +131,7 @@ private:
         c.colour = qcBlue;
         c.line = expLine;
         c.beatsId = IDs::expBeats;  c.curveId = IDs::expCurve;  c.resetId = IDs::expReset;
-        c.drawId = IDs::expDraw;    c.drawingId = IDs::expDrawing;
+        c.drawId = IDs::expDraw;    c.drawingId = IDs::expDrawing;  c.drawingNameId = IDs::expDrawingName;
         c.resetText = "Back to heel after move";
         c.resetTooltip = "After a move, put the expression pedal back to heel (0). Leave it off for a swell that should stay up.";
         c.padHint = "Drag here to draw an expression move";
@@ -153,10 +153,10 @@ private:
             return cues::qc::expressionMove (qcChannel(), pedalNumber(), (cues::qc::ExpShape) s, (double) state[IDs::expBeats],
                                              (double) state[IDs::expCurve], (bool) state[IDs::expReset]);
         };
-        c.makeDrawn = [this] (const std::vector<float>& points)
+        c.makeDrawn = [this] (const std::vector<float>& points, const juce::String& name)
         {
             return cues::qc::expressionDrawn (qcChannel(), pedalNumber(), points, (double) state[IDs::expBeats],
-                                              (bool) state[IDs::expReset]);
+                                              (bool) state[IDs::expReset], name);
         };
         return c;
     }

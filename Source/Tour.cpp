@@ -41,7 +41,7 @@ const std::vector<TourStep>& tourSteps()
           "parks the treadle at heel before switching so nothing jumps in pitch." },
         { 1, { "wh.sweepControls", "wh.sweeps" }, "7. Automate the treadle",
           "Pick a length and curve, then drag a move. It becomes CC#11 automation that follows your project tempo: "
-          "ramps, dives, trills, or a bend that lands exactly on the next bar. Or click Draw and sketch your own move." },
+          "ramps, dives, trills, or a bend that lands exactly on the next bar. Or click Draw, sketch your own move and save it in My drawings." },
         { 2, { "set.pedals" }, "8. MIDI Setup: your pedals",
           "Set each pedal's MIDI channel to match the pedal itself, and give the QC and the Whammy different channels. "
           "Every cue is sent on these channels. You set them once." },

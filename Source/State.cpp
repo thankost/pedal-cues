@@ -105,6 +105,10 @@ void sanitise (juce::ValueTree& root)
     setDefault (root, IDs::expReset, false);   // a swell usually stays where it ends
     setDefault (root, IDs::expDraw, false);
     setDefault (root, IDs::expDrawing, cues::whammy::encodeDrawing (cues::whammy::defaultDrawing()));
+    setDefault (root, IDs::sweepDrawingName, juce::String());   // the saved drawing loaded in the pad, if any
+    setDefault (root, IDs::expDrawingName, juce::String());
+
+    root.removeChild (root.getChildWithName (IDs::Drawings), nullptr);   // My drawings live on the computer, not in projects
 
     auto qc = root.getOrCreateChildWithName (IDs::QC, nullptr);
     for (int i = qc.getNumChildren(); --i >= 0;)
@@ -185,11 +189,107 @@ static const std::array<const juce::Identifier*, 5>& setupProperties()
     return ids;
 }
 
-bool saveLibrary (const juce::ValueTree& root, const juce::File& file)
+static juce::File& myDrawingsFile()
+{
+    static juce::File file = defaultLibraryFile().getSiblingFile ("drawings.xml");
+    return file;
+}
+
+static void tidyDrawings (juce::ValueTree list)
+{
+    for (int i = list.getNumChildren(); --i >= 0;)
+        if (! list.getChild (i).hasType (IDs::Drawing) || list.getChild (i)[IDs::name].toString().isEmpty())
+            list.removeChild (i, nullptr);
+}
+
+static juce::ValueTree& myDrawingsTree()
+{
+    static juce::ValueTree list = []
+    {
+        juce::ValueTree t (IDs::Drawings);
+        if (auto xml = juce::XmlDocument::parse (myDrawingsFile()))
+            mergeDrawings (t, juce::ValueTree::fromXml (*xml));
+        return t;
+    }();
+    return list;
+}
+
+juce::ValueTree myDrawings()
+{
+    return myDrawingsTree();
+}
+
+void storeMyDrawings()
+{
+    if (auto xml = myDrawingsTree().createXml())
+        if (myDrawingsFile().getParentDirectory().createDirectory())
+            xml->writeTo (myDrawingsFile());
+}
+
+void useMyDrawingsFile (const juce::File& file)
+{
+    myDrawingsFile() = file;
+    auto list = myDrawingsTree();
+    list.removeAllChildren (nullptr);
+    if (auto xml = juce::XmlDocument::parse (file))
+        mergeDrawings (list, juce::ValueTree::fromXml (*xml));
+}
+
+juce::ValueTree findDrawing (const juce::ValueTree& list, const juce::String& name)
+{
+    if (name.isNotEmpty())
+        for (auto d : list)
+            if (d.hasType (IDs::Drawing) && d[IDs::name].toString() == name)
+                return d;
+    return {};
+}
+
+void saveDrawing (juce::ValueTree list, const juce::String& name, const juce::String& points)
+{
+    if (name.isEmpty() || ! list.isValid())
+        return;
+
+    auto d = findDrawing (list, name);
+    if (! d.isValid())
+    {
+        d = juce::ValueTree (IDs::Drawing);
+        d.setProperty (IDs::name, name, nullptr);
+        list.appendChild (d, nullptr);
+    }
+    d.setProperty (IDs::points, points, nullptr);
+}
+
+bool renameDrawing (juce::ValueTree list, const juce::String& from, const juce::String& to)
+{
+    auto d = findDrawing (list, from);
+    if (! d.isValid() || to.isEmpty() || (to != from && findDrawing (list, to).isValid()))
+        return false;
+    d.setProperty (IDs::name, to, nullptr);
+    return true;
+}
+
+void deleteDrawing (juce::ValueTree list, const juce::String& name)
+{
+    const auto d = findDrawing (list, name);
+    if (d.isValid())
+        list.removeChild (d, nullptr);
+}
+
+void mergeDrawings (juce::ValueTree into, const juce::ValueTree& from)
+{
+    for (const auto d : from)
+        if (d.hasType (IDs::Drawing))
+            saveDrawing (into, d[IDs::name].toString(), d[IDs::points].toString());
+    tidyDrawings (into);
+}
+
+bool saveLibrary (const juce::ValueTree& root, const juce::File& file, const juce::ValueTree* drawings)
 {
     juce::ValueTree lib (IDs::PedalCues);
     lib.appendChild (root.getChildWithName (IDs::QC).createCopy(), nullptr);
     lib.appendChild (root.getChildWithName (IDs::Whammy).createCopy(), nullptr);
+    if (drawings != nullptr)
+        lib.appendChild (drawings->createCopy(), nullptr);
 
     // The MIDI setup travels with the names, so a default/exported setup is ready to use.
     for (const auto* id : setupProperties())
@@ -202,7 +302,7 @@ bool saveLibrary (const juce::ValueTree& root, const juce::File& file)
     return false;
 }
 
-bool loadLibrary (juce::ValueTree& root, const juce::File& file)
+bool loadLibrary (juce::ValueTree& root, const juce::File& file, juce::ValueTree* drawingsInto)
 {
     const auto xml = juce::XmlDocument::parse (file);
     if (xml == nullptr)
@@ -211,6 +311,9 @@ bool loadLibrary (juce::ValueTree& root, const juce::File& file)
     const auto lib = juce::ValueTree::fromXml (*xml);
     if (! lib.hasType (IDs::PedalCues))
         return false;
+
+    if (drawingsInto != nullptr)
+        mergeDrawings (*drawingsInto, lib.getChildWithName (IDs::Drawings));
 
     for (const auto* id : { &IDs::QC, &IDs::Whammy })
     {

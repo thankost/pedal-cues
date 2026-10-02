@@ -13,12 +13,15 @@ namespace IDs
     PEDALCUES_ID (Stomp)
     PEDALCUES_ID (Whammy)
     PEDALCUES_ID (Effect)
+    PEDALCUES_ID (Drawings)
+    PEDALCUES_ID (Drawing)
 
     PEDALCUES_ID (name)
     PEDALCUES_ID (colour)
     PEDALCUES_ID (setlist)
     PEDALCUES_ID (bank)
     PEDALCUES_ID (slot)
+    PEDALCUES_ID (points)
 
     PEDALCUES_ID (qcChannel)
     PEDALCUES_ID (whChannel)
@@ -35,6 +38,7 @@ namespace IDs
     PEDALCUES_ID (sweepReset)
     PEDALCUES_ID (sweepDraw)
     PEDALCUES_ID (sweepDrawing)
+    PEDALCUES_ID (sweepDrawingName)
     PEDALCUES_ID (qcExpressionView)
     PEDALCUES_ID (expPedal)
     PEDALCUES_ID (expLoadFirst)
@@ -43,6 +47,7 @@ namespace IDs
     PEDALCUES_ID (expReset)
     PEDALCUES_ID (expDraw)
     PEDALCUES_ID (expDrawing)
+    PEDALCUES_ID (expDrawingName)
 #undef PEDALCUES_ID
 }
 
@@ -68,6 +73,22 @@ namespace state
     void setFlag (const juce::String& name, bool value);
     juce::String getSetting (const juce::String& name);
     void setSetting (const juce::String& name, const juce::String& value);
-    bool saveLibrary (const juce::ValueTree& root, const juce::File&);
-    bool loadLibrary (juce::ValueTree& root, const juce::File&);
+    // "My drawings": saved freehand moves (Drawings > Drawing { name, points }), shared by the Whammy treadle
+    // and QC expression. They live on this computer (drawings.xml next to the default setup), not in projects,
+    // so every project and every PedalCues instance sees the same list and updates keep it.
+    // 'points' is cues::whammy::encodeDrawing text. Message thread only.
+    juce::ValueTree myDrawings();                        // the shared list, read from disk on first use
+    void storeMyDrawings();                              // write it to disk; call after every change
+    void useMyDrawingsFile (const juce::File&);          // tests and screenshots: keep the user's file untouched
+
+    juce::ValueTree findDrawing (const juce::ValueTree& list, const juce::String& name);
+    void saveDrawing (juce::ValueTree list, const juce::String& name, const juce::String& points);   // adds or overwrites
+    bool renameDrawing (juce::ValueTree list, const juce::String& from, const juce::String& to);     // false if 'to' is taken
+    void deleteDrawing (juce::ValueTree list, const juce::String& name);
+    void mergeDrawings (juce::ValueTree into, const juce::ValueTree& from);                          // adds / overwrites by name
+
+    // The setup file: names + MIDI settings, and with 'drawings' also My drawings (Export setup).
+    // Loading adds any drawings in the file to 'drawingsInto' (Import setup); it never removes any.
+    bool saveLibrary (const juce::ValueTree& root, const juce::File&, const juce::ValueTree* drawings = nullptr);
+    bool loadLibrary (juce::ValueTree& root, const juce::File&, juce::ValueTree* drawingsInto = nullptr);
 }

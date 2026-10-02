@@ -18,6 +18,7 @@ struct MovesConfig
     juce::Colour line;                     // curves on the tiles and the pad
 
     juce::Identifier beatsId, curveId, resetId, drawId, drawingId;
+    juce::Identifier drawingNameId;        // name of the saved drawing loaded in the pad ("" = not saved)
 
     juce::String resetText, resetTooltip;
     juce::String padHint, padTooltip;      // shown on an empty pad / its tooltip
@@ -32,11 +33,13 @@ struct MovesConfig
     std::function<juce::String (int)> shapeName, shapeDescription;
     std::function<bool (int)> shapeHolds;  // "hold 1 bar" rather than "1 bar"
     std::function<cues::Cue (int)> makeShape;
-    std::function<cues::Cue (const std::vector<float>&)> makeDrawn;
+    std::function<cues::Cue (const std::vector<float>&, const juce::String& name)> makeDrawn;
     std::function<cues::Cue (cues::Cue)> finish;   // optional, applied to what's dragged or played (not the preview curve)
 };
 
-class MovesPanel final : public juce::Component
+class MovesPanel final : public juce::Component,
+                         private juce::ValueTree::Listener,
+                         private juce::AsyncUpdater
 {
 public:
     MovesPanel (PedalCuesProcessor&, MovesConfig);
@@ -51,16 +54,28 @@ public:
 
     // Height of the controls row plus the gap below it, inside the card.
     static constexpr int controlsHeight = 42;
+    static constexpr int newDrawingId = 10000;   // "New drawing" in My drawings
 
 private:
     class DrawPad;
 
     void updateDrawTile();
+    void handleAsyncUpdate() override  { refresh(); }
+    void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override        { triggerAsyncUpdate(); }
+    void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override { triggerAsyncUpdate(); }
+    void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override { triggerAsyncUpdate(); }
+    void loadDrawing (int itemId);
+    void saveDrawing();
+    void saveDrawingAs (const juce::String& suggestion);
+    void showDrawingMenu();
+    juce::String drawingName() const;
+    bool drawingEdited() const;
     cues::Cue finished (cues::Cue c) const   { return config.finish ? config.finish (std::move (c)) : c; }
     void commitDrawing();
 
     PedalCuesProcessor& proc;
     juce::ValueTree state;
+    juce::ValueTree drawings { state::myDrawings() };   // My drawings, shared by every panel and project
     const MovesConfig config;
 
     Section section;
@@ -71,6 +86,8 @@ private:
     juce::ToggleButton resetToggle;
     juce::TextButton shapesButton { "Shapes" }, drawButton { "Draw" };
     juce::TextButton clearButton { "Clear" }, smoothButton { "Smooth" };
+    juce::ComboBox libraryBox;             // My drawings
+    juce::TextButton saveButton { "Save" }, moreButton { "..." };
     std::unique_ptr<DrawPad> pad;
     std::unique_ptr<Tile> drawTile;
     juce::OwnedArray<Tile> shapeTiles;

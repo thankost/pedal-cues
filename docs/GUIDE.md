@@ -220,7 +220,7 @@ Click **Expression** under the preset screen. Its tiles move whatever you assign
 | **Rise to Bar** | Holds heel, then rises during the last beat | Opening up exactly on the downbeat |
 | **Toe Down / Heel Down** | Jump there and hold | |
 
-- **Draw** sketches your own move, the same way as the [Whammy's drawn moves](#draw-your-own-move).
+- **Draw** sketches your own move, the same way as the [Whammy's drawn moves](#draw-your-own-move), and you can save it in [My drawings](#my-drawings-save-and-reuse-your-moves), shared with the Whammy.
 - **Back to heel after move** (off by default) puts the pedal back to heel when the move ends. Leave it off for a swell that should stay up.
 
 **Which preset do they act on?** By default, the one the QC has loaded at that moment, like the Utilities: expression clips don't load a preset, and what a move does depends on that preset's own assignment (the same **Swell In** can swell the volume in one preset and open a wah in another). So place expression clips after the preset clip they belong to.
@@ -308,7 +308,18 @@ When no ready-made shape fits, click **Draw** in the *Treadle moves* header.
 3. **Clear** resets the pad to heel. **Smooth** rounds off sharp edges; click it again for a softer curve.
 4. **Drag the *Drawn move* tile** onto the timeline where the move should start, or click its play button to try it on the pedal.
 
-The drawing is saved with your project and stretches to whatever *Length* you pick. *Return to heel after move* works here too; *Curve* only applies to the shapes. Click **Shapes** to go back to the ready-made moves.
+The drawing stretches to whatever *Length* you pick. *Return to heel after move* works here too; *Curve* only applies to the shapes. Click **Shapes** to go back to the ready-made moves.
+
+#### My drawings: save and reuse your moves
+
+Keep the moves you like and use them again in any song:
+
+- **Save** keeps the drawing on the pad under a name, for example *Big Bend*. The tile and the clips you drag take that name (`Whammy Big Bend 1 bar`).
+- **My drawings** (the list above Save) loads a saved drawing onto the pad, ready to drag or to edit. Pick **New drawing** to start from a clear pad.
+- **Edit** a loaded drawing by drawing over it, or with Clear and Smooth. The tile shows *edited* until you click **Save** again, which updates that saved drawing.
+- **…** has **Save as new drawing** (keep the original and save a copy), **Rename** and **Delete**.
+
+My drawings are saved **on your computer**, not in one project, so every project, every PedalCues track and the standalone app see the same list, and updates keep them. The same list appears in the Quad Cortex page's [Expression](#expression-swells-fades-and-wah) Draw mode, so a drawing works as a treadle move and as an expression move. Clips you've already dragged onto the timeline never change when you edit or delete a drawing. To take them to another computer, use **Export setup** (it includes My drawings) and **Import setup** there, which adds them to that computer's list.
 
 ---
 
@@ -331,7 +342,7 @@ The **MIDI Setup** tab has two cards in the plugin, and a third, **Test your ped
 Your setup is your preset, scene, footswitch and Whammy names and colours, plus the MIDI settings above. It's stored inside each DAW project automatically. From the **☰** menu (the **File** menu in the standalone app):
 - **Save as default setup:** new PedalCues instances start with it.
 - **Load default setup:** brings it back into this project.
-- **Export setup / Import setup:** a file to back up, move to another computer, or share with your band.
+- **Export setup / Import setup:** a file to back up, move to another computer, or share with your band. It also carries your [saved drawings](#my-drawings-save-and-reuse-your-moves); importing adds them to your list and never removes any.
 
 ### Updates
 

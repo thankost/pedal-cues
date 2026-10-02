@@ -62,7 +62,8 @@ namespace qc
     juce::String expShapeDescription (ExpShape);
 
     Cue expressionMove  (int channel, int pedal, ExpShape, double lengthBeats, double curve, bool resetToHeel);
-    Cue expressionDrawn (int channel, int pedal, const std::vector<float>& points, double lengthBeats, bool resetToHeel);
+    Cue expressionDrawn (int channel, int pedal, const std::vector<float>& points, double lengthBeats, bool resetToHeel,
+                         const juce::String& name = {});
     Cue expressionSet   (int channel, int pedal, float position);   // 0 = heel, 1 = toe
 
     // The same cue, but it loads a preset first and starts 1/16 note later ("Load 1A first").
@@ -101,7 +102,9 @@ namespace whammy
     // Freehand treadle move. 'points' are evenly spaced treadle positions (0 = heel, 1 = toe)
     // spread across the length; values in between are interpolated.
     constexpr int drawPoints = 64;
-    Cue drawn (int channel, const std::vector<float>& points, double lengthBeats, bool resetToHeel);
+    // 'name' is the saved drawing's name, if any ("Whammy Big Bend 1 bar"; otherwise "Whammy Drawn 1 bar").
+    Cue drawn (int channel, const std::vector<float>& points, double lengthBeats, bool resetToHeel,
+               const juce::String& name = {});
 
     std::vector<float> defaultDrawing();
     juce::String       encodeDrawing (const std::vector<float>&);

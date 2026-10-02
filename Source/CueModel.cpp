@@ -257,10 +257,11 @@ namespace qc
                        len, resetToHeel, value);
     }
 
-    Cue expressionDrawn (int channel, int pedal, const std::vector<float>& points, double lengthBeats, bool resetToHeel)
+    Cue expressionDrawn (int channel, int pedal, const std::vector<float>& points, double lengthBeats, bool resetToHeel,
+                         const juce::String& name)
     {
         const auto len = juce::jmax (0.125, lengthBeats);
-        return ccMove (expPrefix (pedal) + "Drawn " + formatBeats (len), channel, expController (pedal), len, resetToHeel,
+        return ccMove (expPrefix (pedal) + (name.isNotEmpty() ? name : juce::String ("Drawn")) + " " + formatBeats (len), channel, expController (pedal), len, resetToHeel,
                        [&points] (double t) { return samplePoints (points, t); });
     }
 
@@ -412,10 +413,11 @@ namespace whammy
                        [s, len, curve] (double t) { return shapeValue (s, t, len, curve); }, s == Shape::trill);
     }
 
-    Cue drawn (int channel, const std::vector<float>& points, double lengthBeats, bool resetToHeel)
+    Cue drawn (int channel, const std::vector<float>& points, double lengthBeats, bool resetToHeel,
+               const juce::String& name)
     {
         const auto len = juce::jmax (0.125, lengthBeats);
-        return ccMove ("Whammy Drawn " + formatBeats (len), channel, 11, len, resetToHeel,
+        return ccMove ("Whammy " + (name.isNotEmpty() ? name : juce::String ("Drawn")) + " " + formatBeats (len), channel, 11, len, resetToHeel,
                        [&points] (double t) { return samplePoints (points, t); });
     }
 

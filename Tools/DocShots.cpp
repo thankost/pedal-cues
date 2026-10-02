@@ -61,6 +61,18 @@ void fillDemoState (juce::ValueTree root)
     root.setProperty (IDs::selectedPreset, 0, nullptr);
     root.setProperty (IDs::stompOn, true, nullptr);
     root.setProperty (IDs::sweepBeats, 4.0, nullptr);
+
+    // My drawings: the default drawing saved as "Big Bend" (loaded on the Whammy pad), plus a slow swell
+    // loaded on the expression pad.
+    state::useMyDrawingsFile (juce::File::createTempFile (".xml"));   // leave the user's own drawings alone
+    state::saveDrawing (state::myDrawings(), "Big Bend", cues::whammy::encodeDrawing (cues::whammy::defaultDrawing()));
+    std::vector<float> swell ((size_t) cues::whammy::drawPoints);
+    for (size_t i = 0; i < swell.size(); ++i)
+        swell[i] = std::pow ((float) i / (float) (swell.size() - 1), 2.0f);
+    state::saveDrawing (state::myDrawings(), "Slow Swell", cues::whammy::encodeDrawing (swell));
+    root.setProperty (IDs::sweepDrawingName, "Big Bend", nullptr);
+    root.setProperty (IDs::expDrawingName, "Slow Swell", nullptr);
+    root.setProperty (IDs::expDrawing, cues::whammy::encodeDrawing (swell), nullptr);
 }
 
 juce::Image snapshot (juce::Component& c)

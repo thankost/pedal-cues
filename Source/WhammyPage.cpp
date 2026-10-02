@@ -240,7 +240,7 @@ private:
         c.colour = whammyRed;
         c.line = juce::Colour (0xffff5a6a);
         c.beatsId = IDs::sweepBeats;  c.curveId = IDs::sweepCurve;  c.resetId = IDs::sweepReset;
-        c.drawId = IDs::sweepDraw;    c.drawingId = IDs::sweepDrawing;
+        c.drawId = IDs::sweepDraw;    c.drawingId = IDs::sweepDrawing;  c.drawingNameId = IDs::sweepDrawingName;
         c.resetText = "Return to heel after move";
         c.resetTooltip = "After a treadle move, return the treadle to heel (CC#11 = 0)";
         c.padHint = "Drag here to draw a treadle move";
@@ -257,10 +257,10 @@ private:
             return cues::whammy::sweep ((int) state[IDs::whChannel], (cues::whammy::Shape) s, (double) state[IDs::sweepBeats],
                                         (double) state[IDs::sweepCurve], (bool) state[IDs::sweepReset]);
         };
-        c.makeDrawn = [this] (const std::vector<float>& points)
+        c.makeDrawn = [this] (const std::vector<float>& points, const juce::String& name)
         {
             return cues::whammy::drawn ((int) state[IDs::whChannel], points, (double) state[IDs::sweepBeats],
-                                        (bool) state[IDs::sweepReset]);
+                                        (bool) state[IDs::sweepReset], name);
         };
         return c;
     }
