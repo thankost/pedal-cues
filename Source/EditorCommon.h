@@ -18,6 +18,7 @@ struct Page : public juce::Component
 };
 
 std::unique_ptr<Page> makeQcPage       (PedalCuesProcessor&);
+std::unique_ptr<Page> makeQcExpression (PedalCuesProcessor&);   // Quad Cortex page > Expression
 std::unique_ptr<Page> makeWhammyPage   (PedalCuesProcessor&);
 std::unique_ptr<Page> makeSettingsPage (PedalCuesProcessor&, std::function<void()> startTour);
 void showWiringGuide();   // Help > Wiring guide

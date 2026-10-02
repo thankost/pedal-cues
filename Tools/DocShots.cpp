@@ -462,6 +462,15 @@ int main (int argc, char** argv)
 
         editor.showPage (0);
         save (snapshot (editor), outDir.getChildFile ("quad-cortex.png"));
+        proc.state.setProperty (IDs::qcExpressionView, true, nullptr);
+        editor.refreshNow();
+        save (snapshot (editor), outDir.getChildFile ("qc-expression.png"));
+        proc.state.setProperty (IDs::expDraw, true, nullptr);
+        editor.refreshNow();
+        save (snapshot (editor), outDir.getChildFile ("qc-expression-draw.png"));
+        proc.state.setProperty (IDs::expDraw, false, nullptr);
+        proc.state.setProperty (IDs::qcExpressionView, false, nullptr);
+        editor.refreshNow();
         editor.showPage (1);
         save (snapshot (editor), outDir.getChildFile ("whammy.png"));
         proc.state.setProperty (IDs::sweepDraw, true, nullptr);
@@ -471,13 +480,14 @@ int main (int argc, char** argv)
         editor.refreshNow();
 
         const std::pair<int, const char*> tourShots[] = {
-            { 0, "tour-welcome.png" }, { 3, "tour-scenes.png" }, { 4, "tour-target.png" }, { 7, "tour-whammy.png" }, { 9, "tour-treadle.png" }
+            { 0, "tour-welcome.png" }, { 3, "tour-scenes.png" }, { 4, "tour-target.png" }, { 8, "tour-whammy.png" }, { 10, "tour-treadle.png" }
         };
         for (const auto& [step, name] : tourShots)
         {
             editor.startTour (step);
             save (snapshot (editor), outDir.getChildFile (name));
         }
+        proc.state.setProperty (IDs::qcExpressionView, false, nullptr);   // the tour's expression step switched it
     }
 
     {

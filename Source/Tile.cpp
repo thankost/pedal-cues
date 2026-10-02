@@ -239,12 +239,21 @@ void Tile::paintUtility (juce::Graphics& g, juce::Rectangle<float> b, bool hover
     g.drawRoundedRectangle (b.reduced (0.5f), 10.0f, 1.0f);
 
     auto area = b.reduced (10.0f, 8.0f);
-    const auto icon = area.removeFromLeft (32.0f).withSizeKeepingCentre (32.0f, 32.0f);
-    g.setColour (colour);
-    g.fillRoundedRectangle (icon, 8.0f);
-    g.setColour (readableOn (colour));
-    g.setFont (font (12.0f, true));
-    g.drawText (badge, icon, juce::Justification::centred);
+    if (badge.isEmpty())
+    {
+        // Compact: a colour bar instead of the badge.
+        g.setColour (colour);
+        g.fillRoundedRectangle (area.removeFromLeft (4.0f).reduced (0.0f, 2.0f), 2.0f);
+    }
+    else
+    {
+        const auto icon = area.removeFromLeft (32.0f).withSizeKeepingCentre (32.0f, 32.0f);
+        g.setColour (colour);
+        g.fillRoundedRectangle (icon, 8.0f);
+        g.setColour (readableOn (colour));
+        g.setFont (font (12.0f, true));
+        g.drawText (badge, icon, juce::Justification::centred);
+    }
 
     area.removeFromLeft (10.0f);
     area.removeFromRight (makeCue ? 22.0f : 0.0f);

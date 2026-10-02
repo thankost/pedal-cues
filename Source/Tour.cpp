@@ -30,19 +30,22 @@ const std::vector<TourStep>& tourSteps()
         { 0, { "qc.stomps", "qc.utils" }, "4. Stomps, tuner and gig view",
           "Switch single footswitches on or off, open the tuner for a guitar change, or flip the QC between "
           "preset, scene and stomp mode. The switch in the Stomps header picks ON or OFF tiles." },
-        { 1, { "wh.modes" }, "5. Whammy V modes",
+        { 0, { "qc.view", "qc.exp.sweeps" }, "5. Automate the QC's expression",
+          "Switch to Expression to move anything you assign to Expression 1 or 2 on the QC: wah, volume, a delay mix, drive. "
+          "Drag a swell, a fade or a wah rhythm (or draw your own) to where it should happen.", true },
+        { 1, { "wh.modes" }, "6. Whammy V modes",
           "The Whammy tab works the same way, laid out like the pedal: Whammy modes on top, Harmony below, Detune on its own row. Colours: "
           "red Whammy, blue Detune, green Harmony. A dark LED means the mode loads bypassed." },
         { 1, { "wh.options" }, "Chords, bypass, heel first",
           "Chords uses the polyphonic program range. Load bypassed selects a mode without engaging it. Heel first "
           "parks the treadle at heel before switching so nothing jumps in pitch." },
-        { 1, { "wh.sweepControls", "wh.sweeps" }, "6. Automate the treadle",
+        { 1, { "wh.sweepControls", "wh.sweeps" }, "7. Automate the treadle",
           "Pick a length and curve, then drag a move. It becomes CC#11 automation that follows your project tempo: "
           "ramps, dives, trills, or a bend that lands exactly on the next bar. Or click Draw and sketch your own move." },
-        { 2, { "set.pedals" }, "7. MIDI Setup: your pedals",
+        { 2, { "set.pedals" }, "8. MIDI Setup: your pedals",
           "Set each pedal's MIDI channel to match the pedal itself, and give the QC and the Whammy different channels. "
           "Every cue is sent on these channels. You set them once." },
-        { 2, { "set.tracks" }, "8. DAW tracks",
+        { 2, { "set.tracks" }, "9. DAW tracks",
           "Pick your wiring at the top (a daisy chain through the QC, or separate outputs), then make the two cue tracks, "
           "QC Cues and Whammy Cues, as shown. Not sure how to cable the pedals? Click 'How should I wire my pedals?'." },
         { 2, { "hdr.help" }, "You are ready",
@@ -85,6 +88,8 @@ void TourOverlay::setStep (int index)
     step = juce::jlimit (0, (int) tourSteps().size() - 1, index);
     const auto& s = tourSteps()[(size_t) step];
     host.showPage (s.page);
+    if (s.page == 0)
+        host.showQcExpression (s.qcExpression);
     layoutCard();
     repaint();
 }

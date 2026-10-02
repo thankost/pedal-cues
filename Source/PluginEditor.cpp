@@ -114,6 +114,12 @@ void PedalCuesEditor::showPage (int index)
     repaint();
 }
 
+void PedalCuesEditor::showQcExpression (bool show)
+{
+    state.setProperty (IDs::qcExpressionView, show, nullptr);
+    refreshNow();   // lay out the view now, so the tour can find its targets
+}
+
 juce::Rectangle<int> PedalCuesEditor::targetBounds (const juce::StringArray& ids)
 {
     juce::Rectangle<int> result;
@@ -702,8 +708,8 @@ public:
         tap.onClick = [this] { tapped(); };
         addAndMakeVisible (tap);
 
-        hint.setText ("Sets how long treadle moves last when you click their play button "
-                      "(Whammy V tab). In your DAW the plugin follows the project tempo.", juce::dontSendNotification);
+        hint.setText ("Sets how long treadle and expression moves last when you click their "
+                      "play button. In your DAW the plugin follows the project tempo.", juce::dontSendNotification);
         hint.setFont (font (11.0f));
         hint.setColour (juce::Label::textColourId, dim);
         hint.setJustificationType (juce::Justification::topLeft);

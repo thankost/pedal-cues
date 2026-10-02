@@ -11,6 +11,7 @@ struct TourHost
 {
     virtual ~TourHost() = default;
     virtual void showPage (int index) = 0;
+    virtual void showQcExpression (bool) = 0;
     virtual juce::Rectangle<int> targetBounds (const juce::StringArray& componentIds) = 0;
     virtual void closeTour (bool finished) = 0;
 };
@@ -20,6 +21,7 @@ struct TourStep
     int page;
     juce::StringArray targets;
     juce::String title, body;
+    bool qcExpression = false;   // Quad Cortex page: show the Expression view (else Scenes & Stomps)
 };
 
 const std::vector<TourStep>& tourSteps();

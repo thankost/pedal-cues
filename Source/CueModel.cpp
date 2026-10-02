@@ -1,6 +1,7 @@
 #include "CueModel.h"
 
 #include <cmath>
+#include <functional>
 
 namespace cues
 {
@@ -60,6 +61,61 @@ juce::String formatBeats (double beats)
 
     return juce::String (beats, beats == std::floor (beats) ? 0 : 2) + " beats";
 }
+
+//==============================================================================
+// Continuous-controller moves shared by the Whammy treadle and the QC's expression pedals: the
+// value (0 = heel, 1 = toe) is sampled 32 times per beat and only changes are written.
+static constexpr int moveStepsPerBeat = 32;
+
+static Cue ccMove (const juce::String& name, int channel, int controller, double lengthBeats, bool resetToHeel,
+                   const std::function<double (double)>& valueAt, bool skipLastStep = false)
+{
+    const auto ch = juce::jlimit (1, 16, channel);
+    const auto len = juce::jmax (0.125, lengthBeats);
+    const auto steps = juce::jmax (1, juce::roundToInt (len * moveStepsPerBeat));
+
+    Cue c;
+    c.name = name;
+
+    int last = -1;
+    for (int i = 0; i <= steps; ++i)
+    {
+        if (skipLastStep && i == steps)
+            break;
+
+        const auto v = juce::jlimit (0, 127, juce::roundToInt (valueAt ((double) i / steps) * 127.0));
+        if (v != last)
+        {
+            c.add (len * i / steps, juce::MidiMessage::controllerEvent (ch, controller, v));
+            last = v;
+        }
+    }
+
+    c.lengthBeats = len + 1.0 / 32.0;
+
+    if (resetToHeel && last != 0)
+    {
+        c.add (len + 1.0 / 16.0, juce::MidiMessage::controllerEvent (ch, controller, 0));
+        c.lengthBeats = len + 1.0 / 8.0;
+    }
+
+    return c;
+}
+
+// Linear interpolation through evenly spaced points (a drawn move).
+static double samplePoints (const std::vector<float>& points, double t)
+{
+    const auto n = (int) points.size();
+    if (n == 0)
+        return 0.0;
+    const auto pos = t * (n - 1);
+    const auto i0 = juce::jlimit (0, n - 1, (int) std::floor (pos));
+    const auto i1 = juce::jmin (n - 1, i0 + 1);
+    const auto frac = pos - i0;
+    return juce::jlimit (0.0, 1.0, (double) points[(size_t) i0] * (1.0 - frac) + (double) points[(size_t) i1] * frac);
+}
+
+static double eased (double x, double curve) { return std::pow (juce::jlimit (0.0, 1.0, x), curve); }
 
 //==============================================================================
 namespace qc
@@ -137,6 +193,84 @@ namespace qc
         c.name = juce::String ("QC ") + names[m] + " Mode";
         static const int values[] = { 0, 2, 1 }; // CC#47 values for preset, scene, stomp
         c.add (0.0, juce::MidiMessage::controllerEvent (clampChannel (channel), cc::gigMode, values[m]));
+        return c;
+    }
+
+    static int expController (int pedal) { return pedal == 2 ? cc::exp2 : cc::exp1; }
+    static juce::String expPrefix (int pedal) { return "QC Exp " + juce::String (pedal == 2 ? 2 : 1) + " "; }
+
+    juce::String expShapeName (ExpShape s)
+    {
+        switch (s)
+        {
+            case ExpShape::swellIn:   return "Swell In";
+            case ExpShape::fadeOut:   return "Fade Out";
+            case ExpShape::riseFall:  return "Rise & Fall";
+            case ExpShape::slowRise:  return "Slow Rise";
+            case ExpShape::wahRhythm: return "Wah Rhythm";
+            case ExpShape::riseToBar: return "Rise to Bar";
+            case ExpShape::toe:       return "Toe Down";
+            case ExpShape::heel:      return "Heel Down";
+        }
+        return {};
+    }
+
+    juce::String expShapeDescription (ExpShape s)
+    {
+        switch (s)
+        {
+            case ExpShape::swellIn:   return "Heel to toe over the whole length (volume swell, opening a filter)";
+            case ExpShape::fadeOut:   return "Toe to heel over the whole length";
+            case ExpShape::riseFall:  return "Heel to toe and back";
+            case ExpShape::slowRise:  return "Barely moves at first, then rises quickly to toe (a build-up)";
+            case ExpShape::wahRhythm: return "Heel to toe and back on every beat (rhythmic wah)";
+            case ExpShape::riseToBar: return "Hold heel, then rise during the last beat so it reaches toe on the next bar line";
+            case ExpShape::toe:       return "Jump to toe and hold";
+            case ExpShape::heel:      return "Jump to heel and hold";
+        }
+        return {};
+    }
+
+    Cue expressionMove (int channel, int pedal, ExpShape s, double lengthBeats, double curve, bool resetToHeel)
+    {
+        const auto len = juce::jmax (0.125, lengthBeats);
+        auto value = [s, len, curve] (double t)
+        {
+            switch (s)
+            {
+                case ExpShape::swellIn:   return eased (t, curve);
+                case ExpShape::fadeOut:   return 1.0 - eased (t, curve);
+                case ExpShape::riseFall:  return t < 0.5 ? eased (t * 2.0, curve) : 1.0 - eased ((t - 0.5) * 2.0, curve);
+                case ExpShape::slowRise:  return eased (t, 3.0 * curve);
+                case ExpShape::wahRhythm: return 0.5 - 0.5 * std::cos (juce::MathConstants<double>::twoPi * t * len);
+                case ExpShape::riseToBar:
+                {
+                    const auto start = juce::jmax (0.0, 1.0 - 1.0 / len);
+                    return t < start ? 0.0 : eased ((t - start) / (1.0 - start), curve);
+                }
+                case ExpShape::toe:  return 1.0;
+                case ExpShape::heel: return 0.0;
+            }
+            return 0.0;
+        };
+        return ccMove (expPrefix (pedal) + expShapeName (s) + " " + formatBeats (len), channel, expController (pedal),
+                       len, resetToHeel, value);
+    }
+
+    Cue expressionDrawn (int channel, int pedal, const std::vector<float>& points, double lengthBeats, bool resetToHeel)
+    {
+        const auto len = juce::jmax (0.125, lengthBeats);
+        return ccMove (expPrefix (pedal) + "Drawn " + formatBeats (len), channel, expController (pedal), len, resetToHeel,
+                       [&points] (double t) { return samplePoints (points, t); });
+    }
+
+    Cue expressionSet (int channel, int pedal, float position)
+    {
+        const auto v = juce::jlimit (0, 127, juce::roundToInt (juce::jlimit (0.0f, 1.0f, position) * 127.0f));
+        Cue c;
+        c.name = expPrefix (pedal) + (v == 0 ? juce::String ("Heel") : v == 127 ? juce::String ("Toe")
+                                                                     : juce::String (juce::roundToInt (position * 100.0f)) + "%");
+        c.add (0.0, juce::MidiMessage::controllerEvent (clampChannel (channel), expController (pedal), v));
         return c;
     }
 }
@@ -234,14 +368,12 @@ namespace whammy
 
     static double shapeValue (Shape s, double t, double lengthBeats, double curve)
     {
-        auto eased = [curve] (double x) { return std::pow (juce::jlimit (0.0, 1.0, x), curve); };
-
         switch (s)
         {
-            case Shape::rampUp:   return eased (t);
-            case Shape::rampDown: return 1.0 - eased (t);
-            case Shape::swell:    return t < 0.5 ? eased (t * 2.0) : 1.0 - eased ((t - 0.5) * 2.0);
-            case Shape::dive:     return std::pow (juce::jlimit (0.0, 1.0, t), 3.0 * curve);
+            case Shape::rampUp:   return eased (t, curve);
+            case Shape::rampDown: return 1.0 - eased (t, curve);
+            case Shape::swell:    return t < 0.5 ? eased (t * 2.0, curve) : 1.0 - eased ((t - 0.5) * 2.0, curve);
+            case Shape::dive:     return eased (t, 3.0 * curve);
             case Shape::trill:
             {
                 const auto sixteenth = (int) std::floor (t * lengthBeats * 4.0 + 1.0e-9);
@@ -250,7 +382,7 @@ namespace whammy
             case Shape::bendToBar:
             {
                 const auto start = juce::jmax (0.0, 1.0 - 1.0 / lengthBeats);
-                return t < start ? 0.0 : eased ((t - start) / (1.0 - start));
+                return t < start ? 0.0 : eased ((t - start) / (1.0 - start), curve);
             }
             case Shape::toe:  return 1.0;
             case Shape::heel: return 0.0;
@@ -260,85 +392,17 @@ namespace whammy
 
     Cue sweep (int channel, Shape s, double lengthBeats, double curve, bool resetToHeel)
     {
-        const auto ch = juce::jlimit (1, 16, channel);
         const auto len = juce::jmax (0.125, lengthBeats);
-        constexpr int stepsPerBeat = 32;
-        const auto steps = juce::jmax (1, juce::roundToInt (len * stepsPerBeat));
-
-        Cue c;
-        c.name = "Whammy " + shapeName (s) + " " + formatBeats (len);
-
-        int last = -1;
-        for (int i = 0; i <= steps; ++i)
-        {
-            const auto beat = len * i / steps;
-            const auto t = (double) i / steps;
-            const auto v = juce::jlimit (0, 127, juce::roundToInt (shapeValue (s, t, len, curve) * 127.0));
-
-            // Hold the trill's last state until the end rather than toggling on the final tick.
-            if (s == Shape::trill && i == steps)
-                break;
-
-            if (v != last)
-            {
-                c.add (beat, juce::MidiMessage::controllerEvent (ch, 11, v));
-                last = v;
-            }
-        }
-
-        c.lengthBeats = len + 1.0 / 32.0;
-
-        if (resetToHeel && last != 0)
-        {
-            c.add (len + 1.0 / 16.0, juce::MidiMessage::controllerEvent (ch, 11, 0));
-            c.lengthBeats = len + 1.0 / 8.0;
-        }
-
-        return c;
+        // The trill holds its last state until the end rather than toggling on the final tick.
+        return ccMove ("Whammy " + shapeName (s) + " " + formatBeats (len), channel, 11, len, resetToHeel,
+                       [s, len, curve] (double t) { return shapeValue (s, t, len, curve); }, s == Shape::trill);
     }
 
     Cue drawn (int channel, const std::vector<float>& points, double lengthBeats, bool resetToHeel)
     {
-        const auto ch = juce::jlimit (1, 16, channel);
         const auto len = juce::jmax (0.125, lengthBeats);
-        constexpr int stepsPerBeat = 32;
-        const auto steps = juce::jmax (1, juce::roundToInt (len * stepsPerBeat));
-        const auto n = (int) points.size();
-
-        auto sample = [&] (double t)
-        {
-            if (n == 0)
-                return 0.0;
-            const auto pos = t * (n - 1);
-            const auto i0 = juce::jlimit (0, n - 1, (int) std::floor (pos));
-            const auto i1 = juce::jmin (n - 1, i0 + 1);
-            const auto frac = pos - i0;
-            return juce::jlimit (0.0, 1.0, (double) points[(size_t) i0] * (1.0 - frac) + (double) points[(size_t) i1] * frac);
-        };
-
-        Cue c;
-        c.name = "Whammy Drawn " + formatBeats (len);
-
-        int last = -1;
-        for (int i = 0; i <= steps; ++i)
-        {
-            const auto v = juce::roundToInt (sample ((double) i / steps) * 127.0);
-            if (v != last)
-            {
-                c.add (len * i / steps, juce::MidiMessage::controllerEvent (ch, 11, v));
-                last = v;
-            }
-        }
-
-        c.lengthBeats = len + 1.0 / 32.0;
-
-        if (resetToHeel && last != 0)
-        {
-            c.add (len + 1.0 / 16.0, juce::MidiMessage::controllerEvent (ch, 11, 0));
-            c.lengthBeats = len + 1.0 / 8.0;
-        }
-
-        return c;
+        return ccMove ("Whammy Drawn " + formatBeats (len), channel, 11, len, resetToHeel,
+                       [&points] (double t) { return samplePoints (points, t); });
     }
 
     std::vector<float> defaultDrawing()

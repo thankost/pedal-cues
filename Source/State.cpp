@@ -97,6 +97,13 @@ void sanitise (juce::ValueTree& root)
     setDefault (root, IDs::sweepReset, true);
     setDefault (root, IDs::sweepDraw, false);
     setDefault (root, IDs::sweepDrawing, cues::whammy::encodeDrawing (cues::whammy::defaultDrawing()));
+    setDefault (root, IDs::qcExpressionView, false);   // Quad Cortex page: Scenes & Stomps or Expression
+    setDefault (root, IDs::expPedal, 1);
+    setDefault (root, IDs::expBeats, 4.0);
+    setDefault (root, IDs::expCurve, 1.0);
+    setDefault (root, IDs::expReset, false);   // a swell usually stays where it ends
+    setDefault (root, IDs::expDraw, false);
+    setDefault (root, IDs::expDrawing, cues::whammy::encodeDrawing (cues::whammy::defaultDrawing()));
 
     auto qc = root.getOrCreateChildWithName (IDs::QC, nullptr);
     for (int i = qc.getNumChildren(); --i >= 0;)

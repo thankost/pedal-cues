@@ -37,6 +37,8 @@ namespace qc
         constexpr int scene   = 43; // 0..7 = scene A..H
         constexpr int tuner   = 45; // 0-63 off / 64-127 on
         constexpr int gigMode = 47; // 0 preset, 1 stomp, 2 scene (tested on a QC)
+        constexpr int exp1    = 1;  // expression pedal 1, 0-127 (heel to toe)
+        constexpr int exp2    = 2;  // expression pedal 2
     }
 
     juce::String letter (int zeroBasedIndex);
@@ -50,6 +52,18 @@ namespace qc
     Cue tuner   (int channel, bool on);
     Cue stomp   (int channel, int footswitch, bool on, const juce::String& label);
     Cue gigMode (int channel, int mode);
+
+    // Expression pedal automation (CC#1 / CC#2). Moves whatever is assigned to Expression 1 or 2 on the QC.
+    // 'pedal' is 1 or 2. 'curve' is an exponent (1 = linear).
+    enum class ExpShape { swellIn, fadeOut, riseFall, slowRise, wahRhythm, riseToBar, toe, heel };
+    constexpr int numExpShapes = 8;
+
+    juce::String expShapeName        (ExpShape);
+    juce::String expShapeDescription (ExpShape);
+
+    Cue expressionMove  (int channel, int pedal, ExpShape, double lengthBeats, double curve, bool resetToHeel);
+    Cue expressionDrawn (int channel, int pedal, const std::vector<float>& points, double lengthBeats, bool resetToHeel);
+    Cue expressionSet   (int channel, int pedal, float position);   // 0 = heel, 1 = toe
 }
 
 //==============================================================================

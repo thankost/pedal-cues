@@ -62,6 +62,30 @@ public:
         stompOnToggle.onClick = [this] { state.setProperty (IDs::stompOn, stompOnToggle.getToggleState(), nullptr); };
         addAndMakeVisible (stompOnToggle);
 
+        // Scenes & Stomps or Expression in the lower part of the page.
+        viewChoice.setComponentID ("qc.view");
+        viewChoice.setInterceptsMouseClicks (false, true);
+        addAndMakeVisible (viewChoice);
+        for (auto* b : { &scenesViewButton, &expressionViewButton })
+        {
+            b->setClickingTogglesState (true);
+            b->setRadioGroupId (4304);
+            b->setColour (juce::TextButton::buttonColourId, surface);
+            b->setColour (juce::TextButton::buttonOnColourId, qcBlue);
+            b->setColour (juce::TextButton::textColourOffId, dim);
+            b->setColour (juce::TextButton::textColourOnId, juce::Colours::black);
+            viewChoice.addAndMakeVisible (b);
+        }
+        scenesViewButton.setConnectedEdges (juce::Button::ConnectedOnRight);
+        expressionViewButton.setConnectedEdges (juce::Button::ConnectedOnLeft);
+        scenesViewButton.setTooltip ("Scene and footswitch tiles for the open preset");
+        expressionViewButton.setTooltip ("Expression pedal moves (CC#1 / CC#2): swells, fades, wah, or draw your own. "
+                                         "They act on the preset the QC has loaded.");
+        scenesViewButton.onClick     = [this] { if (scenesViewButton.getToggleState())     state.setProperty (IDs::qcExpressionView, false, nullptr); };
+        expressionViewButton.onClick = [this] { if (expressionViewButton.getToggleState()) state.setProperty (IDs::qcExpressionView, true, nullptr); };
+
+        addChildComponent (*expression);
+
         refresh();
     }
 
@@ -154,6 +178,15 @@ public:
         addUtil ("Stomp Mode",  "STO", "CC#47 = 1",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 2); });
         addUtil ("Scene Mode",  "SCN", "CC#47 = 2",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 1); });
 
+        const auto showExpression = (bool) state[IDs::qcExpressionView];
+        (showExpression ? expressionViewButton : scenesViewButton).setToggleState (true, juce::dontSendNotification);
+        for (auto* c : std::initializer_list<juce::Component*> { &scenesSection, &stompsSection, &targetChoice, &stompOnToggle })
+            c->setVisible (! showExpression);
+        for (auto* t : sceneTiles) t->setVisible (! showExpression);
+        for (auto* t : stompTiles) t->setVisible (! showExpression);
+        expression->setVisible (showExpression);
+        expression->refresh();
+
         resized();
     }
 
@@ -180,10 +213,19 @@ public:
 
         if (screen != nullptr)
             screen->setBounds (r.removeFromTop (104).expanded (3));
-        r.removeFromTop (12);
+        r.removeFromTop (10);
+
+        viewChoice.setBounds (r.removeFromTop (30).removeFromLeft (320));
+        {
+            auto c = viewChoice.getLocalBounds();
+            scenesViewButton.setBounds (c.removeFromLeft (c.getWidth() / 2));
+            expressionViewButton.setBounds (c);
+        }
+        r.removeFromTop (10);
 
         utilsSection.setBounds (r.removeFromBottom (Section::headerHeight + 60));
         r.removeFromBottom (12);
+        expression->setBounds (r);
         stompsSection.setBounds (r.removeFromBottom (Section::headerHeight + 64));
         r.removeFromBottom (12);
         scenesSection.setBounds (r);
@@ -398,6 +440,9 @@ private:
     juce::Component targetChoice;
     juce::TextButton loadFirstButton, currentButton;
     juce::ToggleButton stompOnToggle { "Tiles switch ON" };
+    juce::Component viewChoice;
+    juce::TextButton scenesViewButton { "Scenes & Stomps" }, expressionViewButton { "Expression" };
+    std::unique_ptr<Page> expression { makeQcExpression (proc) };
 
     juce::OwnedArray<Tile> presetTiles, sceneTiles, stompTiles, utilTiles;
     std::unique_ptr<Tile> screen;

@@ -244,6 +244,33 @@ int main (int argc, char** argv)
         CHECK ((int) whammy::decodeDrawing ("garbage").size() == whammy::drawPoints);
     }
 
+    // QC expression pedals (CC#1 / CC#2)
+    {
+        auto swell = qc::expressionMove (1, 1, qc::ExpShape::swellIn, 4.0, 1.0, false);
+        CHECK (swell.name == "QC Exp 1 Swell In 1 bar");
+        CHECK (isCC (swell.events.front().second, 1, 1, 0) && isCC (swell.events.back().second, 1, 1, 127));
+        CHECK (swell.events.back().first <= 4.0);   // no reset: the swell stays up
+
+        auto exp2 = qc::expressionMove (3, 2, qc::ExpShape::fadeOut, 2.0, 1.0, true);
+        CHECK (isCC (exp2.events.front().second, 3, 2, 127) && isCC (exp2.events.back().second, 3, 2, 0));
+
+        auto wah = qc::expressionMove (1, 1, qc::ExpShape::wahRhythm, 2.0, 1.0, false);
+        int toes = 0;
+        for (auto& [beat, m] : wah.events)
+            if (m.getControllerValue() == 127) ++toes;
+        CHECK (toes == 2);   // toe once per beat
+
+        auto rise = qc::expressionMove (1, 1, qc::ExpShape::riseToBar, 4.0, 1.0, false);
+        CHECK (rise.events[1].first >= 3.0 && rise.events.back().second.getControllerValue() == 127);
+
+        auto half = qc::expressionSet (5, 2, 0.5f);
+        CHECK (half.name == "QC Exp 2 50%" && half.events.size() == 1 && isCC (half.events[0].second, 5, 2, 64));
+        CHECK (qc::expressionSet (1, 1, 0.0f).name == "QC Exp 1 Heel" && qc::expressionSet (1, 1, 1.0f).name == "QC Exp 1 Toe");
+
+        auto drawnExp = qc::expressionDrawn (1, 2, { 0.0f, 1.0f }, 1.0, false);
+        CHECK (drawnExp.name == "QC Exp 2 Drawn 1 beat" && isCC (drawnExp.events.back().second, 1, 2, 127));
+    }
+
     // MIDI file round trip
     auto file = writeMidiFile (up, 90.0);
     CHECK (file.existsAsFile() && file.getFileName() == "Whammy Ramp Up 1 bar.mid");

@@ -25,6 +25,7 @@ public:
 
     // TourHost
     void showPage (int index) override;
+    void showQcExpression (bool show) override;
     juce::Rectangle<int> targetBounds (const juce::StringArray& componentIds) override;
     void closeTour (bool finished) override;
 

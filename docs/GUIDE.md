@@ -152,6 +152,8 @@ One step explains the **Load 1A first / Current QC preset** choice:
 | **Scenes** | 8 scenes laid out like the QC display: **A-D top, E-H bottom**. | `CC#43` = 0-7 |
 | **Load 1A first / Current QC preset** | Picks which preset scene and stomp tiles act on. See [below](#which-preset-do-scenes-and-stomps-act-on). | Preset + `CC#43` / `CC#35-42`, or the CC alone |
 | **Stomps** | Switch one footswitch A-H. The header switch picks whether tiles send **ON** or **OFF**. | `CC#35-42` |
+| **Scenes & Stomps / Expression** | The switch under the screen picks what the lower part shows: scene and stomp tiles, or [expression moves](#expression-swells-fades-and-wah). | |
+| **Expression** | Moves whatever you assign to Expression 1 or 2 on the QC: swells, fades, wah, or your own drawing. | `CC#1` / `CC#2` |
 | **Utilities** | Tuner on/off and gig view mode (Preset / Stomp / Scene). | `CC#45`, `CC#47` |
 
 **Every tile:**
@@ -192,6 +194,43 @@ Scenes the QC leaves unlabelled keep the name they had in PedalCues. Scene colou
 
 > This uses the QC's private USB connection (the one Cortex Control uses), which Neural DSP doesn't document. It follows the community's reverse-engineering in [pyquadcortex](https://github.com/stokes-audio/pyquadcortex). Tested on a Quad Cortex; a CorOS update could break syncing until PedalCues is updated, but your MIDI cues keep working regardless. On the QC Mini it should work but isn't tested yet.
 
+### Expression: swells, fades and wah
+
+Click **Expression** under the preset screen. Its tiles move whatever you assign to an **expression pedal** on the Quad Cortex: a volume block for swells, a wah, a delay or reverb mix, drive, a filter. PedalCues sends `CC#1` (Expression 1) or `CC#2` (Expression 2), which is what the QC listens to for its expression pedals, so you don't need a physical pedal plugged in.
+
+| Expression view | Draw your own |
+|---|---|
+| ![Expression moves on the Quad Cortex page](images/qc-expression.png) | ![Drawing an expression move](images/qc-expression-draw.png) |
+
+**On the Quad Cortex (once per preset):** assign the parameter you want to move to **Expression 1** (or 2), the same way you would for a real expression pedal, and set its range: heel is the lowest setting, toe the highest. Save the preset; the assignment is stored in it.
+
+**In PedalCues:**
+
+- **Exp 1 / Exp 2** (header) picks which expression pedal the tiles move.
+- **Set to** tiles put it at a fixed spot: **Heel**, **25%**, **Half**, **75%** or **Toe**. Drop one at the start of a song or right after a preset loads, so you always start from a known position.
+- **Moves**, with a **Length** (1/16 to 4 bars) and a **Curve**, written in beats so they follow the project tempo:
+
+| Move | What it does | Good for |
+|---|---|---|
+| **Swell In** | Heel to toe over the length | Volume swells, opening a filter |
+| **Fade Out** | Toe to heel | Fading the end of a song, closing a delay |
+| **Rise & Fall** | Heel to toe and back | A swell that dies away |
+| **Slow Rise** | Barely moves at first, then rises quickly | Build-ups into a chorus |
+| **Wah Rhythm** | Heel to toe and back on every beat | Rhythmic wah |
+| **Rise to Bar** | Holds heel, then rises during the last beat | Opening up exactly on the downbeat |
+| **Toe Down / Heel Down** | Jump there and hold | |
+
+- **Draw** sketches your own move, the same way as the [Whammy's drawn moves](#draw-your-own-move).
+- **Back to heel after move** (off by default) puts the pedal back to heel when the move ends. Leave it off for a swell that should stay up.
+
+**Which preset do they act on?** Always the one the QC has loaded at that moment, like the Utilities. Expression tiles never load a preset (unlike scenes with *Load 1A first*), and the preset you have open in PedalCues doesn't matter. What a move does depends on that preset's own assignment: the same **Swell In** can swell the volume in one preset and open a wah in another. So place expression clips after the preset clip they belong to.
+
+Expression clips go on the **QC Cues** track, like your other QC cues, and are named like `QC Exp 1 Swell In 1 bar`.
+
+**Example: volume swells.** In a preset, add a **Volume** block after your drives (before delay and reverb, so the tails ring on) and assign its level to Expression 1 with the range from silent to full. In PedalCues, set *Length* to `2 beats` and drop **Heel** at the start of the passage, **Swell In** where you strike each chord, and **Heel** again just before the next chord. Play each chord while the volume is still at heel, and it fades in in time with the song.
+
+> Don't let two expression clips on the same pedal overlap: both would send values and the setting would jump between them. If you also have a real expression pedal plugged in, the last value wins, so leave it alone while the clips play.
+
 ### Adding a preset by hand
 
 1. Click **+ Preset**.
@@ -210,6 +249,7 @@ This example covers a song with a clean verse, a crunchy chorus and a Whammy sol
 3. **Mark every section.** Drag **Verse** to bar 3, **Chorus** to bar 9, **Solo** to bar 13, and so on. Each clip is named after the scene, so the arrangement reads like a setlist.
 4. **Whammy mode for the solo.** On the Whammy tab, drag **Oct Up** to one beat before the solo.
 5. **Treadle move.** Set *Length* to `2 bars`, then drag **Rise & Fall** to the bar where the bend starts.
+   Optional: for a delay that swells into the last chorus, assign the delay's mix to Expression 1 on the QC, then drag **Swell In** (Quad Cortex page > **Expression**) a few bars before it.
 6. **Test.** Press play in your DAW and watch the QC and the Whammy follow. To check a single cue, click its tile's play button.
 7. **Tuner between songs.** Drop **Tuner On** at the end of the song and **Tuner Off** before the next one.
 
@@ -314,6 +354,7 @@ PedalCues asks GitHub for the latest release when it opens; nothing else is sent
 | A stomp tile changes scenes | The QC is in Scene mode, where footswitch A-H select scenes. Put the QC in Stomp mode (or drop the **Stomp Mode** tile before your stomp cues). Before v0.4.2 the Scene Mode and Stomp Mode tiles were swapped; drag those clips in again. |
 | Wrong preset loads | Check setlist, bank and slot in *Edit preset*. If presets are in other setlists, turn on *Send setlist*. |
 | Whammy doesn't react | If the QC is on USB and the Whammy hangs off the QC's Thru, that can't work: the QC doesn't forward USB MIDI (a known QC limitation). Use one of the [three working setups](#2-connect-your-rig). Otherwise check the cable direction (MIDI Out to MIDI In) and the channels, set the QC to a fixed channel (not *Omni*), and for the daisy chain turn on QC MIDI Thru. |
+| Expression tiles do nothing | Assign the parameter to **Expression 1** (or 2) on the QC, in that preset, and pick the same **Exp 1 / Exp 2** in PedalCues. The clips must be on the **QC Cues** track, on the QC's channel. |
 | Whammy clips do nothing | Whammy clips must be on the **Whammy Cues** track, whose output leads to the Whammy. |
 | How do I update? | When the header says **Update available**, click it and choose **Download**. Close your DAW, then replace the plugin files the same way you [installed](#1-install) them. Your setup and projects are kept. |
 | Whammy mode is one off | *MIDI Setup > Whammy program numbering > Zero-based*. |
