@@ -51,19 +51,20 @@ CueDrop-style USB sync would rely on Neural DSP's undocumented protocol, so it i
 
 ## Install (no code needed)
 
-Download the zip for your system from the [website](https://thankost.github.io/pedal-cues/) or the [Releases page](https://github.com/thankost/pedal-cues/releases/latest).
+Download the installer or zip for your system from the [website](https://thankost.github.io/pedal-cues/) or the [Releases page](https://github.com/thankost/pedal-cues/releases/latest).
 
 **Windows**
 1. Unzip, copy `PedalCues.vst3` to `C:\Program Files\Common Files\VST3\`.
 2. Re-scan plug-ins in your DAW (Reaper: *Options > Preferences > Plug-ins > VST > Re-scan*). `PedalCues.exe` is the standalone version.
 
 **macOS** (Apple Silicon and Intel, macOS 11 or later)
-1. Unzip. The build is not notarised by Apple, so clear the download quarantine once in Terminal:
-   `xattr -cr ~/Downloads/PedalCues-macOS`
-   (without this, macOS says *"PedalCues is damaged and can't be opened"*).
-2. Drag `PedalCues.app` (standalone) to *Applications*. Copy `PedalCues.vst3` to `~/Library/Audio/Plug-Ins/VST3/` and
-   `PedalCues.component` to `~/Library/Audio/Plug-Ins/Components/`.
+1. Open `PedalCues-macOS.pkg`. It isn't notarised by Apple, so the first time macOS says it can't verify it:
+   click **Done**, then *System Settings > Privacy & Security > Open Anyway*.
+2. Click **Install**. The app goes to *Applications*, the VST3 and AU to `/Library/Audio/Plug-Ins/`.
 3. Re-scan plug-ins in your DAW.
+
+Prefer copying by hand? `PedalCues-macOS.zip` has the same files; see the [guide](https://thankost.github.io/pedal-cues/guide.html#1-install)
+(it needs a one-time `xattr -cr` in Terminal). Coming from a zip install? Delete the old copies in `~/Library/Audio/Plug-Ins/`.
 
 **Linux** (x86-64, Ubuntu 22.04+ / Debian 12 / Fedora and similar)
 1. Unzip `PedalCues-Linux.zip`. Copy `PedalCues.vst3` to `~/.vst3/` and `PedalCues.lv2` to `~/.lv2/`; run `./PedalCues` for the standalone app.

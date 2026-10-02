@@ -50,6 +50,6 @@ Follow these steps in order. Stop and report if any step fails.
 
 10. **Verify, then tell the user.**
    - `gh release list -R thankost/pedal-cues --limit 3`: the new version is **Latest**.
-   - `gh release view vX.Y.Z -R thankost/pedal-cues --json assets -q '.assets[].name'`: `PedalCues-macOS.zip`, `PedalCues-Windows.zip` and `PedalCues-Linux.zip` are all attached.
+   - `gh release view vX.Y.Z -R thankost/pedal-cues --json assets -q '.assets[].name'`: `PedalCues-macOS.pkg` (the installer), `PedalCues-macOS.zip`, `PedalCues-Windows.zip` and `PedalCues-Linux.zip` are all attached.
    - `gh api 'repos/thankost/pedal-cues/commits?per_page=1' --jq '.[0].commit.verification.verified'` prints `true`.
    - If an older version is marked Latest, run `gh release edit vX.Y.Z -R thankost/pedal-cues --latest` as thankost.

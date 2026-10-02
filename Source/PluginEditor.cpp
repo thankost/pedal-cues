@@ -604,7 +604,11 @@ void PedalCuesEditor::showUpdateDialog (const update::Info& info)
     auto* w = new juce::AlertWindow ("PedalCues v" + info.latest + " is available",
                                      "You have v" JucePlugin_VersionString ".\n\n"
                                      + (notes.isNotEmpty() ? "What's new:\n" + notes + "\n\n" : juce::String())
+                                    #if JUCE_MAC
+                                     + "Download the installer, close your DAW, then open it and click Install.",
+                                    #else
                                      + "Download the zip, close your DAW, then replace the plugin files the same way you installed them.",
+                                    #endif
                                      juce::MessageBoxIconType::NoIcon);
     w->addButton ("Download", 1);
     w->addButton ("Release page", 2);

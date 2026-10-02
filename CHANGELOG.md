@@ -2,6 +2,12 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.4.27 (2026-10-03)
+
+- **macOS installer (new):** download `PedalCues-macOS.pkg`, open it and click Install. The app goes to Applications and the VST3 and AU plugins to `/Library/Audio/Plug-Ins/`, with no Terminal step and no copying. The first time, macOS asks you to allow it in *System Settings > Privacy & Security > Open Anyway* (PedalCues isn't notarised by Apple). The zip is still there if you prefer copying by hand.
+- On macOS, the app's **Update** button now downloads the installer.
+- Coming from a zip install? Delete the old copies in `~/Library/Audio/Plug-Ins/` so your DAW doesn't list PedalCues twice.
+
 ## 0.4.26 (2026-10-03)
 
 - **Fixed:** on macOS 27, PedalCues could quit while connecting to the Quad Cortex over USB the second time: syncing again, or reading scenes, colours and stomps for every ticked preset. Each sync now starts a fresh USB connection.

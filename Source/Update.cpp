@@ -10,7 +10,7 @@ juce::String thisVersion() { return JucePlugin_VersionString; }
 juce::String assetName()
 {
    #if JUCE_MAC
-    return "PedalCues-macOS.zip";
+    return "PedalCues-macOS.pkg";   // the installer (a zip is published too, for manual installs)
    #elif JUCE_LINUX
     return "PedalCues-Linux.zip";
    #else
