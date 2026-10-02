@@ -28,7 +28,7 @@ You don't need the source code. Download the latest zip from the [PedalCues webs
 |---|---|---|
 | Windows | `PedalCues-Windows.zip` | Copy `PedalCues.vst3` to `C:\Program Files\Common Files\VST3\` |
 | macOS (Apple Silicon or Intel) | `PedalCues-macOS.zip` | `PedalCues.app` to *Applications*, `PedalCues.vst3` to `~/Library/Audio/Plug-Ins/VST3/`, `PedalCues.component` to `~/Library/Audio/Plug-Ins/Components/` |
-| Linux (x86-64, new) | `PedalCues-Linux.zip` | `PedalCues.vst3` to `~/.vst3/`, `PedalCues.lv2` to `~/.lv2/`, and the `PedalCues` standalone app anywhere you like |
+| Linux (x86-64) | `PedalCues-Linux.zip` | `PedalCues.vst3` to `~/.vst3/`, `PedalCues.lv2` to `~/.lv2/`, and the `PedalCues` standalone app anywhere you like |
 
 On **macOS**, the app isn't notarised by Apple. Without the next step, macOS says *"PedalCues is damaged and can't be opened"*. It isn't damaged; macOS is blocking an app that was downloaded from the internet. Clear the flag **once, right after unzipping**: open *Terminal* and run
 
@@ -42,7 +42,7 @@ xattr -cr ~/Downloads/PedalCues-macOS
 >
 > Without Terminal: open the app once, click **Done**, then go to *System Settings > Privacy & Security* and click **Open Anyway** next to the PedalCues message.
 
-On **Linux** (new, built for Ubuntu 22.04 and newer, Debian 12, Fedora and similar; not tested on every distro yet):
+On **Linux** (built for Ubuntu 22.04 and newer, Debian 12, Fedora and similar; not tested on every distro yet):
 
 ```bash
 unzip PedalCues-Linux.zip && cd PedalCues-Linux

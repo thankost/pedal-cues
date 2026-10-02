@@ -128,7 +128,8 @@ def markdown(source: str):
 # ---------------------------------------------------------------- pages
 
 def page(title: str, description: str, current: str, main: str, source: str) -> str:
-    nav = [("./", "Home"), ("guide.html", "User guide"), ("changelog.html", "What's new"), ("help.html", "Help")]
+    nav = [("./#features", "Features"), ("./#install", "Install"), ("guide.html", "User guide"),
+           ("changelog.html", "What's new"), ("help.html", "Help"), ("./#support", "Support"), (REPO, "GitHub")]   # same as index.html
     links = "".join(f'<a href="{href}"' + (' aria-current="page"' if href == current else "") + f">{name}</a>"
                     for href, name in nav)
     return f"""<!doctype html>

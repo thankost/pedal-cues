@@ -59,7 +59,7 @@ Download the zip for your system from the [website](https://thankost.github.io/p
    `PedalCues.component` to `~/Library/Audio/Plug-Ins/Components/`.
 3. Re-scan plug-ins in your DAW.
 
-**Linux** (new; x86-64, Ubuntu 22.04+ / Debian 12 / Fedora and similar)
+**Linux** (x86-64, Ubuntu 22.04+ / Debian 12 / Fedora and similar)
 1. Unzip `PedalCues-Linux.zip`. Copy `PedalCues.vst3` to `~/.vst3/` and `PedalCues.lv2` to `~/.lv2/`; run `./PedalCues` for the standalone app.
 2. For *Sync from QC* over USB, add the one-time permission rule:
    `echo 'KERNEL=="hidraw*", ATTRS{idVendor}=="152a", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/70-quad-cortex.rules && sudo udevadm control --reload-rules && sudo udevadm trigger`

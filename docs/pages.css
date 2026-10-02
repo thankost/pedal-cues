@@ -18,7 +18,7 @@ header.top b { font-size: 20px; }
 header.top nav { margin-left: auto; display: flex; gap: 22px; }
 header.top nav a { color: var(--dim); text-decoration: none; font-weight: 600; font-size: 14px; }
 header.top nav a:hover, header.top nav a[aria-current] { color: var(--text); }
-@media (max-width: 640px) { header.top nav { gap: 14px; } header.top nav a:first-child { display: none; } }
+@media (max-width: 640px) { header.top nav { gap: 16px; min-width: 0; overflow-x: auto; scrollbar-width: none; } header.top nav a { white-space: nowrap; } }
 
 main { padding: 48px 0 72px; }
 h1 { font-size: 36px; margin: 0 0 6px; }
