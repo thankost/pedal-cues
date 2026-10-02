@@ -129,7 +129,7 @@ def markdown(source: str):
 
 def page(title: str, description: str, current: str, main: str, source: str) -> str:
     nav = [("./#features", "Features"), ("./#install", "Install"), ("guide.html", "User guide"),
-           ("changelog.html", "What's new"), ("help.html", "Help"), ("./#support", "Support"), (REPO, "GitHub")]   # same as index.html
+           ("changelog.html", "What's new"), ("help.html", "Help"), ("./#support", "Support"), (REPO, "GitHub")]   # menu and footer match index.html and help.html
     links = "".join(f'<a href="{href}"' + (' aria-current="page"' if href == current else "") + f">{name}</a>"
                     for href, name in nav)
     return f"""<!doctype html>
@@ -149,8 +149,12 @@ def page(title: str, description: str, current: str, main: str, source: str) -> 
   <nav>{links}</nav>
 </div></header>
 {main}
-<footer><div class="wrap">&copy; 2026 Thanasis Kostopoulos &middot; MIT License &middot;
-  <a href="guide.html">User guide</a> &middot; <a href="changelog.html">What's new</a> &middot; <a href="help.html">Help</a></div></footer>
+<footer>
+  <div class="wrap">
+    <span>&copy; 2026 Thanasis Kostopoulos &middot; MIT License &middot; Built with JUCE &middot; <a href="guide.html">User guide</a> &middot; <a href="changelog.html">What's new</a> &middot; <a href="help.html">Help</a> &middot; <a href="https://github.com/thankost/pedal-cues">GitHub</a></span>
+    <span>Not affiliated with Neural DSP or DigiTech. Quad Cortex and Whammy are trademarks of their owners.</span>
+  </div>
+</footer>
 <script>
   document.querySelectorAll('.code .copy').forEach(function (b) {{
     b.addEventListener('click', function () {{
