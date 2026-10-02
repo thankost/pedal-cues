@@ -2,6 +2,10 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.4.26 (2026-10-03)
+
+- **Fixed:** on macOS 27, PedalCues could quit while connecting to the Quad Cortex over USB the second time: syncing again, or reading scenes, colours and stomps for every ticked preset. Each sync now starts a fresh USB connection.
+
 ## 0.4.25 (2026-10-02)
 
 - **Your setup now includes your playing preferences:** the Whammy's Chords, Load bypassed and Heel first, Return to heel / Back to heel after move, and Expression's Load 1A first. They come along with **Save as default setup** and **Export / Import setup**.

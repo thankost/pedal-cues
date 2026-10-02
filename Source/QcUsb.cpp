@@ -474,6 +474,22 @@ Position parsePosition (const Message& m)
     return p;
 }
 
+// hidapi's macOS device manager is tied to the run loop of the thread that calls hid_init(). Every sync runs on
+// its own worker thread, so hidapi is started and stopped around each sync, on that thread: a manager left over
+// from an earlier, finished thread made the second sync crash (macOS 27 traps the dead run loop).
+// One USB sync at a time, so two PedalCues windows can't stop hidapi under each other.
+class UsbScope
+{
+public:
+    UsbScope() : lock (mutex()) { ok = hid_init() == 0; }
+    ~UsbScope() { hid_exit(); }
+    bool ok = false;
+
+private:
+    static std::mutex& mutex() { static std::mutex m; return m; }
+    std::lock_guard<std::mutex> lock;
+};
+
 struct Connected
 {
     std::unique_ptr<Session> session;
@@ -592,6 +608,7 @@ Result readSetlists (const std::function<void (const juce::String&)>& progress, 
     Result result;
     auto fail = [&result] (const juce::String& why) { result.ok = false; result.error = why; return result; };
 
+    const UsbScope usb;   // outlives the session below
     auto c = connect (progress, cancel);
     if (c.session == nullptr)
         return fail (c.error);
@@ -687,6 +704,7 @@ ScanResult scanPresets (const std::vector<ScanTarget>& targets, const std::funct
     ScanResult result;
     auto fail = [&result] (const juce::String& why) { result.ok = false; result.error = why; return result; };
 
+    const UsbScope usb;   // outlives the session below
     auto c = connect ([&progress] (const juce::String& t) { progress (t, 0.0); }, cancel);
     if (c.session == nullptr)
         return fail (c.error);
