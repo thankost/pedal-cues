@@ -295,6 +295,11 @@ int main (int argc, char** argv)
         // Projects don't carry drawings; an exported setup does, and importing adds them without removing any.
         auto root = state::createDefault();
         CHECK (! root.getChildWithName (IDs::Drawings).isValid());
+        root.setProperty (IDs::whChords, true, nullptr);          // playing preferences travel with the setup
+        root.setProperty (IDs::expLoadFirst, true, nullptr);
+        root.setProperty (IDs::sweepReset, false, nullptr);
+        root.setProperty (IDs::sweepBeats, 16.0, nullptr);        // per song: stays in the project
+        root.setProperty (IDs::setupViaQcChain, true, nullptr);   // export adds the wiring choice like this
         const auto file = juce::File::createTempFile (".xml");
         CHECK (state::saveLibrary (root, file, &list));
         juce::ValueTree mine (IDs::Drawings);
@@ -303,6 +308,9 @@ int main (int argc, char** argv)
         CHECK (state::loadLibrary (other, file, &mine));
         CHECK (mine.getNumChildren() == 3 && state::findDrawing (mine, "Dive")[IDs::points].toString() == "1000,0");
         CHECK (! other.getChildWithName (IDs::Drawings).isValid());
+        CHECK ((bool) other[IDs::whChords] && (bool) other[IDs::expLoadFirst] && ! (bool) other[IDs::sweepReset]);
+        CHECK ((double) other[IDs::sweepBeats] == 4.0);
+        CHECK ((bool) other[IDs::setupViaQcChain]);
         file.deleteFile();
 
         state::deleteDrawing (list, "Dive");

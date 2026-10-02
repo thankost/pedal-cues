@@ -339,10 +339,12 @@ The **MIDI Setup** tab has two cards in the plugin, and a third, **Test your ped
 
 ### Your setup: save, share, start new projects with it
 
-Your setup is your preset, scene, footswitch and Whammy names and colours, plus the MIDI settings above. It's stored inside each DAW project automatically. From the **☰** menu (the **File** menu in the standalone app):
+Your setup is your preset, scene, footswitch and Whammy names and colours, the MIDI settings above, and your playing preferences: the Whammy's **Chords**, **Load bypassed** and **Heel first**, **Return to heel** / **Back to heel after move**, and Expression's **Load 1A first**. It's stored inside each DAW project automatically. (Length and Curve change from song to song, so they stay in each project.) From the **☰** menu (the **File** menu in the standalone app):
 - **Save as default setup:** new PedalCues instances start with it.
 - **Load default setup:** brings it back into this project.
-- **Export setup / Import setup:** a file to back up, move to another computer, or share with your band. It also carries your [saved drawings](#my-drawings-save-and-reuse-your-moves); importing adds them to your list and never removes any.
+- **Export setup / Import setup:** a file to back up, move to another computer, or share with your band. It also carries your **wiring choice** (Daisy chain or Separate outputs) and your [saved drawings](#my-drawings-save-and-reuse-your-moves); importing adds the drawings to your list and never removes any.
+
+Settings that belong to one computer stay there and aren't exported: the standalone app's MIDI port and tempo (port names differ between computers), *Check for updates automatically*, and whether you've seen the quick tour.
 
 ### Updates
 

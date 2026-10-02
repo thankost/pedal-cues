@@ -2,6 +2,11 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.4.25 (2026-10-02)
+
+- **Your setup now includes your playing preferences:** the Whammy's Chords, Load bypassed and Heel first, Return to heel / Back to heel after move, and Expression's Load 1A first. They come along with **Save as default setup** and **Export / Import setup**.
+- **Export setup** also carries your wiring choice (Daisy chain or Separate outputs) and My drawings, so moving to another computer brings everything over. Computer-specific settings (the standalone app's MIDI port and tempo, update checks) stay on each computer.
+
 ## 0.4.24 (2026-10-02)
 
 - **My drawings (new):** save your drawn moves by name and reuse them in any song. In Draw mode, **Save** keeps the drawing, the **My drawings** list loads one to use or edit (the tile says *edited* until you save again), and **…** saves a copy, renames or deletes. The same list works for Whammy treadle moves and Quad Cortex expression moves, and clips take the drawing's name (`Whammy Big Bend 1 bar`).

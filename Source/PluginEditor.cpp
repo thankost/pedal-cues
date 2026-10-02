@@ -190,7 +190,7 @@ void PedalCuesEditor::saveDefaultSetup()
 {
     const auto ok = state::saveLibrary (state, state::defaultLibraryFile());
     juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, ok ? "Default setup saved" : "Couldn't save",
-                                            ok ? "New PedalCues instances will start with your names, colours and MIDI settings."
+                                            ok ? "New PedalCues instances will start with your names, colours, MIDI settings and playing preferences."
                                                : "PedalCues couldn't write the default setup file.");
 }
 
@@ -213,8 +213,13 @@ void PedalCuesEditor::exportSetup()
                           [safe] (const juce::FileChooser& fc)
                           {
                               const auto file = fc.getResult();
-                              const auto drawings = state::myDrawings();   // an exported setup carries My drawings
-                              if (safe != nullptr && file != juce::File() && ! state::saveLibrary (safe->state, file.withFileExtension ("xml"), &drawings))
+                              if (safe == nullptr || file == juce::File())
+                                  return;
+                              // An exported setup also carries My drawings and the wiring choice (a per-computer setting).
+                              const auto drawings = state::myDrawings();
+                              auto setup = safe->state.createCopy();
+                              setup.setProperty (IDs::setupViaQcChain, state::getFlag ("setupViaQcChain"), nullptr);
+                              if (! state::saveLibrary (setup, file.withFileExtension ("xml"), &drawings))
                                   juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "Export failed",
                                                                           "PedalCues couldn't write " + file.getFileName() + ".");
                           });
@@ -233,7 +238,15 @@ void PedalCuesEditor::importSetup()
                               if (safe == nullptr || ! file.existsAsFile())
                                   return;
                               if (state::loadLibrary (safe->state, file, &drawings))
+                              {
                                   state::storeMyDrawings();
+                                  if (safe->state.hasProperty (IDs::setupViaQcChain))
+                                  {
+                                      state::setFlag ("setupViaQcChain", (bool) safe->state[IDs::setupViaQcChain]);
+                                      safe->state.removeProperty (IDs::setupViaQcChain, nullptr);
+                                      safe->refreshNow();   // MIDI Setup shows the imported wiring
+                                  }
+                              }
                               else
                                   juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "Not a PedalCues setup",
                                                                           file.getFileName() + " isn't a PedalCues setup file.");
@@ -249,7 +262,7 @@ void PedalCuesEditor::showHelpMenu (juce::Component* target, const juce::String&
     m.addItem (14, "Wiring guide");
     m.addItem (15, "What's new");
     m.addSeparator();
-    m.addSectionHeader ("Your setup (names + MIDI settings)");
+    m.addSectionHeader ("Your setup: names, MIDI settings, preferences");
     m.addItem (10, "Save as default setup");
     m.addItem (11, "Load default setup");
     m.addItem (12, "Export setup");

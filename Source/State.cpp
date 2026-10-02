@@ -182,10 +182,15 @@ void setFlag (const juce::String& name, bool value)
     setSetting (name, value ? "1" : "0");
 }
 
-static const std::array<const juce::Identifier*, 5>& setupProperties()
+// What a setup carries besides the names: the MIDI settings and the playing preferences
+// (Whammy Chords / Load bypassed / Heel first, return to heel after moves, Expression's Load 1A first).
+// Length and curve change per song, so they stay in the project.
+static const std::array<const juce::Identifier*, 11>& setupProperties()
 {
-    static const std::array<const juce::Identifier*, 5> ids { &IDs::qcChannel, &IDs::whChannel, &IDs::whPcBase,
-                                                              &IDs::sendSetlist, &IDs::comboPresetScene };
+    static const std::array<const juce::Identifier*, 11> ids { &IDs::qcChannel, &IDs::whChannel, &IDs::whPcBase,
+                                                               &IDs::sendSetlist, &IDs::comboPresetScene,
+                                                               &IDs::whChords, &IDs::whBypass, &IDs::whHeelFirst,
+                                                               &IDs::sweepReset, &IDs::expReset, &IDs::expLoadFirst };
     return ids;
 }
 
@@ -295,6 +300,8 @@ bool saveLibrary (const juce::ValueTree& root, const juce::File& file, const juc
     for (const auto* id : setupProperties())
         if (root.hasProperty (*id))
             lib.setProperty (*id, root[*id], nullptr);
+    if (root.hasProperty (IDs::setupViaQcChain))
+        lib.setProperty (IDs::setupViaQcChain, root[IDs::setupViaQcChain], nullptr);
 
     if (auto xml = lib.createXml())
         return file.getParentDirectory().createDirectory() && xml->writeTo (file);
@@ -328,6 +335,8 @@ bool loadLibrary (juce::ValueTree& root, const juce::File& file, juce::ValueTree
     for (const auto* id : setupProperties())
         if (lib.hasProperty (*id))
             root.setProperty (*id, lib[*id], nullptr);
+    if (lib.hasProperty (IDs::setupViaQcChain))
+        root.setProperty (IDs::setupViaQcChain, lib[IDs::setupViaQcChain], nullptr);   // the caller applies and removes it
 
     root.setProperty (IDs::selectedPreset, 0, nullptr);
     sanitise (root);

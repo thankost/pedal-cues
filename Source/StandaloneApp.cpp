@@ -74,7 +74,7 @@ private:
         juce::PopupMenu m;
         if (index == 0)
         {
-            // Your setup = names, colours and MIDI settings.
+            // Your setup = names, colours, MIDI settings and playing preferences.
             m.addItem (saveDefault, "Save as Default Setup");
             m.addItem (loadDefault, "Load Default Setup");
             m.addSeparator();

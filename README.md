@@ -42,8 +42,8 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 
 **Workflow**
 - Update notice: the header shows your version and whether a newer release is out (one GitHub request when it opens; turn it off in the ☰ menu)
-- Everything is stored in your DAW project. **☰ > Save as default setup** makes new instances start with your names, colours and MIDI settings
-- **☰ > Export / Import setup** as a file (back it up, share it with the band)
+- Everything is stored in your DAW project. **☰ > Save as default setup** makes new instances start with your names, colours, MIDI settings and playing preferences
+- **☰ > Export / Import setup** as a file (back it up, move to another computer, share it with the band): names, MIDI settings, playing preferences, your wiring choice and My drawings
 - MIDI passes through, so the dropped items and the live preview share one track and one route
 
 Preset/scene names are entered in the plugin (double-click to rename, right-click for colour/reorder).
@@ -115,7 +115,7 @@ Details and pictures: [guide, section 2](https://thankost.github.io/pedal-cues/g
 
 ```
 Source/CueModel.*        MIDI definitions for both pedals + .mid file writer
-Source/State.*           ValueTree schema, defaults, setup (names + MIDI settings) save/load
+Source/State.*           ValueTree schema, defaults, setup (names, MIDI settings, preferences) save/load, My drawings
 Source/Tile.*            draggable tile (external file drag + click-to-send)
 Source/PluginProcessor.* MIDI passthrough, preview scheduling, host tempo, state
 Source/Theme.*           colour palette + custom LookAndFeel
