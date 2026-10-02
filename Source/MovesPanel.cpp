@@ -12,9 +12,8 @@ namespace
 {
 constexpr std::array<double, 10> lengths { 0.25, 0.5, 1.0, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0 };
 
-void curveOf (Tile& t)
+void curveOf (Tile& t, const cues::Cue& cue)
 {
-    const auto cue = t.makeCue();
     t.curve.clear();
     for (const auto& [beat, msg] : cue.events)
         if (msg.isController())
@@ -278,7 +277,7 @@ void MovesPanel::refresh()
     drawTile->title = "Drawn move";
     drawTile->colour = config.line;
     drawTile->setTooltip (config.drawnTooltip + config.tileNote);
-    drawTile->makeCue = [this] { return config.makeDrawn (pad->points); };
+    drawTile->makeCue = [this] { return finished (config.makeDrawn (pad->points)); };
     addChildComponent (drawTile.get());
     drawTile->setVisible (drawMode);
     updateDrawTile();
@@ -287,8 +286,8 @@ void MovesPanel::refresh()
     for (int s = 0; s < config.numShapes; ++s)
     {
         auto* t = shapeTiles.add (new Tile (proc, Tile::Look::sweep));
-        t->makeCue = [this, s] { return config.makeShape (s); };
-        curveOf (*t);
+        t->makeCue = [this, s] { return finished (config.makeShape (s)); };
+        curveOf (*t, config.makeShape (s));
         t->title = config.shapeName (s);
         t->subtitle = (config.shapeHolds && config.shapeHolds (s) ? "hold " : "") + cues::formatBeats (beats);
         t->colour = config.line;
@@ -352,7 +351,7 @@ void MovesPanel::updateDrawTile()
     if (drawTile == nullptr)
         return;
 
-    curveOf (*drawTile);
+    curveOf (*drawTile, config.makeDrawn (pad->points));
     drawTile->subtitle = cues::formatBeats ((double) state[config.beatsId]);
     drawTile->repaint();
 }

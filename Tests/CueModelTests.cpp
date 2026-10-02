@@ -267,6 +267,12 @@ int main (int argc, char** argv)
         CHECK (half.name == "QC Exp 2 50%" && half.events.size() == 1 && isCC (half.events[0].second, 5, 2, 64));
         CHECK (qc::expressionSet (1, 1, 0.0f).name == "QC Exp 1 Heel" && qc::expressionSet (1, 1, 1.0f).name == "QC Exp 1 Toe");
 
+        auto first = qc::withPresetFirst (swell, 1, 1, 1, 2, false, "Clean Rig");
+        CHECK (first.name == "QC Clean Rig > Exp 1 Swell In 1 bar");
+        CHECK (first.events[1].second.isProgramChange() && first.events[1].second.getProgramChangeNumber() == 2);
+        CHECK (isCC (first.events[2].second, 1, 1, 0) && std::abs (first.events[2].first - 0.25) < 1.0e-9);
+        CHECK (std::abs (first.lengthBeats - (swell.lengthBeats + 0.25)) < 1.0e-9);
+
         auto drawnExp = qc::expressionDrawn (1, 2, { 0.0f, 1.0f }, 1.0, false);
         CHECK (drawnExp.name == "QC Exp 2 Drawn 1 beat" && isCC (drawnExp.events.back().second, 1, 2, 127));
     }

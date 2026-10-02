@@ -64,6 +64,10 @@ namespace qc
     Cue expressionMove  (int channel, int pedal, ExpShape, double lengthBeats, double curve, bool resetToHeel);
     Cue expressionDrawn (int channel, int pedal, const std::vector<float>& points, double lengthBeats, bool resetToHeel);
     Cue expressionSet   (int channel, int pedal, float position);   // 0 = heel, 1 = toe
+
+    // The same cue, but it loads a preset first and starts 1/16 note later ("Load 1A first").
+    Cue withPresetFirst (const Cue&, int channel, int setlist, int bank, int slot, bool sendSetlist,
+                         const juce::String& presetName);
 }
 
 //==============================================================================

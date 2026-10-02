@@ -264,6 +264,20 @@ namespace qc
                        [&points] (double t) { return samplePoints (points, t); });
     }
 
+    Cue withPresetFirst (const Cue& cue, int channel, int setlist, int bank, int slot, bool sendSetlist,
+                         const juce::String& presetName)
+    {
+        constexpr double delay = 0.25;   // same gap as scene and stomp tiles
+
+        Cue c;
+        c.name = "QC " + presetName + " > " + cue.name.fromFirstOccurrenceOf ("QC ", false, false);
+        addPresetLoad (c, channel, setlist, bank, slot, sendSetlist, 0.0);
+        for (const auto& [beat, msg] : cue.events)
+            c.add (beat + delay, msg);
+        c.lengthBeats = cue.lengthBeats + delay;
+        return c;
+    }
+
     Cue expressionSet (int channel, int pedal, float position)
     {
         const auto v = juce::jlimit (0, 127, juce::roundToInt (juce::jlimit (0.0f, 1.0f, position) * 127.0f));

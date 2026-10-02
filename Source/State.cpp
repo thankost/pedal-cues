@@ -99,6 +99,7 @@ void sanitise (juce::ValueTree& root)
     setDefault (root, IDs::sweepDrawing, cues::whammy::encodeDrawing (cues::whammy::defaultDrawing()));
     setDefault (root, IDs::qcExpressionView, false);   // Quad Cortex page: Scenes & Stomps or Expression
     setDefault (root, IDs::expPedal, 1);
+    setDefault (root, IDs::expLoadFirst, false);   // opt-in: a preset reload can cut the sound
     setDefault (root, IDs::expBeats, 4.0);
     setDefault (root, IDs::expCurve, 1.0);
     setDefault (root, IDs::expReset, false);   // a swell usually stays where it ends

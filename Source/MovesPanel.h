@@ -33,6 +33,7 @@ struct MovesConfig
     std::function<bool (int)> shapeHolds;  // "hold 1 bar" rather than "1 bar"
     std::function<cues::Cue (int)> makeShape;
     std::function<cues::Cue (const std::vector<float>&)> makeDrawn;
+    std::function<cues::Cue (cues::Cue)> finish;   // optional, applied to what's dragged or played (not the preview curve)
 };
 
 class MovesPanel final : public juce::Component
@@ -55,6 +56,7 @@ private:
     class DrawPad;
 
     void updateDrawTile();
+    cues::Cue finished (cues::Cue c) const   { return config.finish ? config.finish (std::move (c)) : c; }
     void commitDrawing();
 
     PedalCuesProcessor& proc;

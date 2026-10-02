@@ -37,6 +37,7 @@ namespace IDs
     PEDALCUES_ID (sweepDrawing)
     PEDALCUES_ID (qcExpressionView)
     PEDALCUES_ID (expPedal)
+    PEDALCUES_ID (expLoadFirst)
     PEDALCUES_ID (expBeats)
     PEDALCUES_ID (expCurve)
     PEDALCUES_ID (expReset)

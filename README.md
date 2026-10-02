@@ -27,7 +27,8 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - Footswitch stomps A–H on/off → `CC#35–42`; tuner on/off → `CC#45`; gig mode → `CC#47`
 - **Expression automation** (Quad Cortex page > **Expression**) → `CC#1` / `CC#2`: moves whatever you assign to
   Expression 1 or 2 on the QC (volume swells, wah, a delay mix, drive). Swell In, Fade Out, Rise & Fall, Slow Rise,
-  Wah Rhythm, Rise to Bar, Toe, Heel, fixed positions (heel / 25% / half / 75% / toe), or draw your own; tempo-synced
+  Wah Rhythm, Rise to Bar, Toe, Heel, fixed positions (heel / 25% / half / 75% / toe), or draw your own; tempo-synced.
+  Acts on the loaded preset, or optionally **loads the open preset first** (safe if a preset gets changed by accident)
 
 **Whammy V**
 - All 21 modes, Classic or Chords, engaged or bypassed (Program Change)

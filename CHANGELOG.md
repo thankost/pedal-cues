@@ -2,6 +2,10 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.4.22 (2026-10-02)
+
+- **Expression: Load 1A first (optional).** Tick it and every expression clip first loads the preset you have open, then makes its move a 1/16 later, so it lands on the right preset even if one was changed by accident on stage. Off by default, because the QC may cut the sound for a moment when it reloads a preset. The guide has tips for staying on the right preset and scene.
+
 ## 0.4.21 (2026-10-02)
 
 - **Quad Cortex expression automation (new):** the Quad Cortex page has a **Scenes & Stomps | Expression** switch. Expression moves whatever you assign to Expression 1 or 2 on the QC (CC#1 / CC#2): volume swells, fades, a wah rhythm, a delay mix that opens into the chorus. Ready-made moves (Swell In, Fade Out, Rise & Fall, Slow Rise, Wah Rhythm, Rise to Bar), fixed positions (heel, 25%, half, 75%, toe), or draw your own. Tempo-synced, and no expression pedal needs to be plugged in. The guide has a volume-swell example.
