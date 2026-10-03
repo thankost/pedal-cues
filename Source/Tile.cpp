@@ -258,7 +258,11 @@ void Tile::paintUtility (juce::Graphics& g, juce::Rectangle<float> b, bool hover
     area.removeFromLeft (10.0f);
     area.removeFromRight (makeCue ? 22.0f : 0.0f);
     g.setColour (text);
-    g.setFont (font (13.5f, true));
+    auto titleFont = font (13.5f, true);   // shrink a long title (down to 11 pt) before squeezing or cutting it
+    const auto titleW = juce::GlyphArrangement::getStringWidth (titleFont, title);
+    if (titleW > area.getWidth())
+        titleFont = font (juce::jmax (11.0f, 13.5f * area.getWidth() / titleW), true);
+    g.setFont (titleFont);
     g.drawFittedText (title, area.removeFromTop (area.getHeight() * 0.55f).toNearestInt(), juce::Justification::bottomLeft, 1);
     g.setColour (dim);
     g.setFont (font (11.0f));

@@ -32,8 +32,8 @@ const std::vector<TourStep>& tourSteps()
           "Every tile has a round play button in its corner. Click it and the MIDI goes to the pedal immediately, "
           "so you can check a cue without pressing play in your DAW." },
         { 0, { "qc.stomps", "qc.utils" }, "4. Stomps, tuner and gig view",
-          "Switch single footswitches on or off, open the tuner for a guitar change, or flip the QC between "
-          "preset, scene and stomp mode. The switch in the Stomps header picks ON or OFF tiles." },
+          "Switch single footswitches on or off, open the tuner for a guitar change, open or close Gig View, or flip the QC "
+          "between preset, scene and stomp mode. The switch in the Stomps header picks ON or OFF tiles." },
         { 0, { "qc.view", "qc.exp.sweeps" }, "5. Automate the QC's expression",
           "Switch to Expression to move anything you assign to Expression 1 or 2 on the QC: wah, volume, a delay mix, drive. "
           "Drag a swell, a fade or a wah rhythm (or draw your own) to where it should happen.", true },
@@ -53,7 +53,8 @@ const std::vector<TourStep>& tourSteps()
           "ramps, dives, trills, or a bend that lands exactly on the next bar. Or click Draw, sketch your own move and save it in My drawings." },
         { 2, { "set.pedals" }, "8. MIDI Setup: your pedals",
           "Pick your amp modeller, then set each pedal's MIDI channel to match the pedal itself, and give the amp modeller and the Whammy different channels. "
-          "Every cue is sent on these channels. You set them once." },
+          "Every cue is sent on these channels, and each clip keeps the channel it was dragged with, so set them once, "
+          "before building songs, then click 'My pedals use these channels'." },
         { 2, { "set.tracks" }, "9. DAW tracks",
           "Pick your wiring at the top (a daisy chain through the QC or Kemper, or separate outputs), then make the two cue tracks, "
           "QC (or Kemper) Cues and Whammy Cues, as shown. Not sure how to cable the pedals? Click 'How should I wire my pedals?'." },

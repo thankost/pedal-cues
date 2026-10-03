@@ -499,6 +499,18 @@ int main (int argc, char** argv)
     proc.state = state::createDefault();
     fillDemoState (proc.state);
 
+    // Screenshots show the channels as confirmed (no reminder banner), except channel-banner.png and settings.png.
+    const auto channelsWereConfirmed = state::getFlag (ui::channelsConfirmedFlag);
+    state::setFlag (ui::channelsConfirmedFlag, false);
+    {
+        PedalCuesEditor editor (proc, false);
+        editor.setSize (1120, 760);
+        editor.refreshNow();
+        editor.showPage (0);
+        save (snapshot (editor), outDir.getChildFile ("channel-banner.png"));
+    }
+    state::setFlag (ui::channelsConfirmedFlag, true);
+
     {
         PedalCuesEditor editor (proc, false);
         editor.setSize (1120, 760);
@@ -560,6 +572,7 @@ int main (int argc, char** argv)
         for (const auto& [viaQc, name] : { std::pair<bool, const char*> { false, "settings.png" }, { true, "settings-qc-chain.png" } })
         {
             state::setFlag ("setupViaQcChain", viaQc);
+            state::setFlag (ui::channelsConfirmedFlag, viaQc);   // settings.png shows the button before it's clicked
             PedalCuesEditor editor (proc, false);
             editor.setSize (1120, 760);
             editor.refreshNow();
@@ -567,6 +580,7 @@ int main (int argc, char** argv)
             save (snapshot (editor), outDir.getChildFile (name));
         }
         state::setFlag ("setupViaQcChain", previous);
+        state::setFlag (ui::channelsConfirmedFlag, true);
     }
 
     {
@@ -588,6 +602,8 @@ int main (int argc, char** argv)
         }
         PedalCuesProcessor::standaloneLayoutForScreenshots = false;
     }
+
+    state::setFlag (ui::channelsConfirmedFlag, channelsWereConfirmed);
 
     save (drawTimeline (proc), outDir.getChildFile ("timeline.png"));
     save (drawRouting(), outDir.getChildFile ("routing.png"));

@@ -2,6 +2,12 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.5.1 (2026-10-03)
+
+- **Gig View On / Off (new):** two Quad Cortex tiles in Utilities open and close the QC's Gig View screen (CC#46). The Preset, Scene and Stomp Mode tiles are still there for the footswitch mode.
+- **Set your MIDI channels first:** every clip keeps the channel it was dragged with, so until you confirm your channels, a reminder above the pages takes you to MIDI Setup. Click **My pedals use these channels** there once to hide it.
+- Long utility tile names now fit their tile.
+
 ## 0.5.0 (2026-10-03)
 
 - **Kemper support (new):** the first tab now works with a **Quad Cortex**, a **Kemper Profiler** (Head, Rack, Stage and the other Profilers, in Performance mode) or a **Kemper Player**. Click the **▾** on the tab (or *MIDI Setup > Amp modeller*) to pick yours; the tab is named after it.

@@ -24,7 +24,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - 8 scene tiles per preset in gig-view colours → `CC#43`
 - Scene and stomp tiles either **load their own preset first** (default; the scene/footswitch follows 1/16 later)
   or act on the **current QC preset** only
-- Footswitch stomps A–H on/off → `CC#35–42`; tuner on/off → `CC#45`; gig mode → `CC#47`
+- Footswitch stomps A–H on/off → `CC#35–42`; tuner on/off → `CC#45`; Gig View screen on/off → `CC#46`; footswitch mode (preset / stomp / scene) → `CC#47`
 - **Expression automation** (Quad Cortex page > **Expression**) → `CC#1` / `CC#2`: moves whatever you assign to
   Expression 1 or 2 on the QC (volume swells, wah, a delay mix, drive). Swell In, Fade Out, Rise & Fall, Slow Rise,
   Wah Rhythm, Rise to Bar, Toe, Heel, fixed positions (heel / 25% / half / 75% / toe), or draw your own; tempo-synced.
@@ -107,7 +107,7 @@ cmake --build build --target PedalCuesTests
    - **Separate MIDI cables:** interface **MIDI Out 1 → QC**, **MIDI Out 2 → Whammy**. QC Cues → MIDI Out 1, Whammy Cues → MIDI Out 2.
    - **QC over USB + interface:** QC on USB, interface **MIDI Out → Whammy MIDI In**. QC Cues → Quad Cortex, Whammy Cues → interface MIDI Out.
    - ⚠️ **Known QC and Kemper limitation:** MIDI Thru doesn't forward MIDI received over **USB**, so "QC / Kemper on USB, Whammy on its Thru" doesn't work. The Whammy has only a 5-pin MIDI In, so it always needs a MIDI interface output (or the Thru of a 5-pin chain).
-2. Give the pedals **different MIDI channels** (defaults: QC 1 via *Settings > MIDI Settings*, not Omni; Whammy 2, see its manual) and set the same numbers in the plugin's **MIDI Setup** tab.
+2. Give the pedals **different MIDI channels** (defaults: QC 1 via *Settings > MIDI Settings*, not Omni; Whammy 2, see its manual) and set the same numbers in the plugin's **MIDI Setup** tab, **before** dragging cues: every clip keeps the channel it was dragged with. Click *My pedals use these channels* to hide the reminder.
 3. In your DAW, enable the MIDI outputs you use (Reaper: *Preferences > MIDI Devices*).
 4. Create two tracks, **QC Cues** and **Whammy Cues**, insert *PedalCues* on each, and set each track's MIDI output as above (Reaper: *I/O > MIDI Hardware Output*, leave *Send to original channels*).
 5. Turn snapping on and drag QC tiles onto QC Cues and Whammy tiles onto Whammy Cues at the bars you want.

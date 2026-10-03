@@ -22,6 +22,7 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
+    void layoutContent();
     void mouseUp (const juce::MouseEvent&) override;
     void mouseMove (const juce::MouseEvent&) override;
 
@@ -115,6 +116,18 @@ private:
         juce::Colour arrowColour { juce::Colours::black };
         void paintButton (juce::Graphics&, bool highlighted, bool down) override;
     } unitMenuButton;
+
+    // Until the MIDI channels are confirmed in MIDI Setup: a reminder above the pedal pages (clips keep the channel
+    // they were dragged with, so it matters before building songs).
+    struct ChannelBanner final : public juce::Component
+    {
+        ChannelBanner();
+        void paint (juce::Graphics&) override;
+        void resized() override;
+        juce::TextButton openButton { "Open MIDI Setup" };
+    } channelBanner;
+    bool channelsConfirmed = true;
+    static constexpr int channelBannerHeight = 44;
     void showUnitMenu();
     // The ☰ menu: tour, guide, setup (save/load/export/import), updates, about, support.
     struct MenuButton final : public juce::Button

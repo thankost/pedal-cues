@@ -11,6 +11,9 @@
 
 namespace ui
 {
+// Set (per computer) once the user confirms the MIDI channels in MIDI Setup; until then the pedal pages show a reminder.
+inline const juce::String channelsConfirmedFlag { "channelsConfirmed" };
+
 // Base for the three tab pages.
 struct Page : public juce::Component
 {

@@ -160,11 +160,13 @@ public:
             addAndMakeVisible (t);
         };
 
-        addUtil ("Tuner On",    "TUN", "CC#45 = 127", qcBlue,         [this] { return cues::qc::tuner (qcChannel(), true); });
-        addUtil ("Tuner Off",   "TUN", "CC#45 = 0",   raised.brighter (0.2f), [this] { return cues::qc::tuner (qcChannel(), false); });
-        addUtil ("Preset Mode", "PRE", "CC#47 = 0",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 0); });
-        addUtil ("Stomp Mode",  "STO", "CC#47 = 1",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 2); });
-        addUtil ("Scene Mode",  "SCN", "CC#47 = 2",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 1); });
+        addUtil ("Tuner On", "", "CC#45 = 127", qcBlue,         [this] { return cues::qc::tuner (qcChannel(), true); });
+        addUtil ("Tuner Off", "", "CC#45 = 0",   raised.brighter (0.2f), [this] { return cues::qc::tuner (qcChannel(), false); });
+        addUtil ("Gig View On", "", "CC#46 = 127", juce::Colour (0xff2ec4b6), [this] { return cues::qc::gigView (qcChannel(), true); });
+        addUtil ("Gig View Off", "", "CC#46 = 0",   juce::Colour (0xff2ec4b6).darker (0.5f), [this] { return cues::qc::gigView (qcChannel(), false); });
+        addUtil ("Preset Mode", "", "CC#47 = 0",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 0); });
+        addUtil ("Stomp Mode", "", "CC#47 = 1",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 2); });
+        addUtil ("Scene Mode", "", "CC#47 = 2",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 1); });
 
         const auto showExpression = (bool) state[IDs::qcExpressionView];
         (showExpression ? expressionViewButton : scenesViewButton).setToggleState (true, juce::dontSendNotification);
@@ -416,7 +418,7 @@ private:
     Section presetsSection { "qc.presetList", "Presets", "click to open" };
     Section scenesSection  { "qc.scenes", "Scenes", "CC#43", qcBlue };
     Section stompsSection  { "qc.stomps", "Stomps", "CC#35-42", ledGreen };
-    Section utilsSection   { "qc.utils", "Utilities", "tuner & gig view" };
+    Section utilsSection   { "qc.utils", "Utilities", "tuner, gig view, footswitch mode" };
 
     juce::TextButton addButton { "+ Preset" };
     juce::TextButton syncButton { "Sync from QC (USB)" };

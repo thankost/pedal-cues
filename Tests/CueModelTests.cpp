@@ -73,6 +73,8 @@ int main (int argc, char** argv)
     CHECK (isCC (qc::tuner (1, true).events[0].second, 1, 45, 127));
     CHECK (isCC (qc::stomp (1, 7, false, {}).events[0].second, 1, 42, 0));
     CHECK (isCC (qc::gigMode (1, 1).events[0].second, 1, 47, 2)); // scene
+    CHECK (isCC (qc::gigView (1, true).events[0].second, 1, 46, 127) && isCC (qc::gigView (3, false).events[0].second, 3, 46, 0));
+    CHECK (qc::gigView (1, true).name == "QC Gig View On");
     CHECK (isCC (qc::gigMode (1, 2).events[0].second, 1, 47, 1)); // stomp
 
     // Whammy V program numbers (manual, 1-based)

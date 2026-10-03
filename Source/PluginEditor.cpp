@@ -75,6 +75,9 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     helpButton.onClick = [this] { showHelpMenu (&helpButton); };
     addAndMakeVisible (helpButton);
 
+    channelBanner.openButton.onClick = [this] { showPage (2); };
+    addChildComponent (channelBanner);
+
     pages.push_back (ui::makeAmpPage (p));
     pages.push_back (ui::makeWhammyPage (p));
     pages.push_back (ui::makeSettingsPage (p));
@@ -115,6 +118,9 @@ PedalCuesEditor::~PedalCuesEditor()
 void PedalCuesEditor::showPage (int index)
 {
     currentPage = juce::jlimit (0, (int) pages.size() - 1, index);
+    channelsConfirmed = state::getFlag (ui::channelsConfirmedFlag);
+    channelBanner.setVisible (! channelsConfirmed && currentPage != 2);
+    layoutContent();
     for (int i = 0; i < (int) pages.size(); ++i)
     {
         pages[(size_t) i]->setVisible (i == currentPage);
@@ -881,6 +887,16 @@ void PedalCuesEditor::showTempoEditor()
                                             this);
 }
 
+// The pages below the header, with the channel reminder above them while it's shown.
+void PedalCuesEditor::layoutContent()
+{
+    auto content = getLocalBounds().withTrimmedTop (64);
+    if (channelBanner.isVisible())
+        channelBanner.setBounds (content.removeFromTop (channelBannerHeight).reduced (14, 0).withTrimmedTop (8));
+    for (auto& page : pages)
+        page->setBounds (content);
+}
+
 void PedalCuesEditor::resized()
 {
     auto header = getLocalBounds().removeFromTop (64).reduced (18, 13);
@@ -897,13 +913,45 @@ void PedalCuesEditor::resized()
         tabButtons[i]->setBounds (t.removeFromLeft (tabWidths[i]));
     unitMenuButton.setBounds (tabButtons[0]->getBounds().removeFromRight (28));
 
-    auto content = getLocalBounds().withTrimmedTop (64);
-    for (auto& page : pages)
-        page->setBounds (content);
+    layoutContent();
 
     if (tour != nullptr)
     {
         tour->setBounds (getLocalBounds());
         tour->setStep (tour->getStep());
     }
+}
+
+//==============================================================================
+PedalCuesEditor::ChannelBanner::ChannelBanner()
+{
+    openButton.setColour (juce::TextButton::buttonColourId, accent);
+    openButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
+    openButton.setTooltip ("Set the channels your pedals use, then click 'My pedals use these channels'");
+    addAndMakeVisible (openButton);
+}
+
+void PedalCuesEditor::ChannelBanner::paint (juce::Graphics& g)
+{
+    const auto b = getLocalBounds().toFloat();
+    g.setColour (accent.withAlpha (0.14f));
+    g.fillRoundedRectangle (b, 8.0f);
+    g.setColour (accent.withAlpha (0.6f));
+    g.drawRoundedRectangle (b.reduced (0.5f), 8.0f, 1.0f);
+
+    auto r = getLocalBounds().reduced (14, 0).withTrimmedRight (openButton.getWidth() + 16);
+    g.setColour (text);
+    g.setFont (font (13.0f, true));
+    const juce::String first ("First, set your pedals' MIDI channels.");
+    g.drawText (first, r, juce::Justification::centredLeft);
+    r.removeFromLeft ((int) juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), first) + 8);
+    g.setColour (dim);
+    g.setFont (font (12.5f));
+    g.drawFittedText ("Every clip keeps the channel it was dragged with, so do this before building songs.", r,
+                      juce::Justification::centredLeft, 1);
+}
+
+void PedalCuesEditor::ChannelBanner::resized()
+{
+    openButton.setBounds (getLocalBounds().removeFromRight (160).reduced (6, 5));
 }

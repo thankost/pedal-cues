@@ -217,6 +217,15 @@ public:
         styleCaption (pcBaseLabel, "Whammy program numbering");
         styleHint (qcHint, "Must match the QC: Settings > MIDI Settings > MIDI Channel (not Omni).");
         styleHint (whHint, "Must match the Whammy's MIDI channel (see its manual). Use a different channel from the QC.");
+        confirmButton.setClickingTogglesState (true);
+        confirmButton.setColour (juce::TextButton::buttonColourId, accent);
+        confirmButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
+        confirmButton.setColour (juce::TextButton::buttonOnColourId, raised);
+        confirmButton.setColour (juce::TextButton::textColourOnId, ledGreen);
+        confirmButton.setTooltip ("Confirm once that your pedals are set to these channels. Clips keep the channel they were dragged with, "
+                                  "so set this before building songs.");
+        confirmButton.onClick = [this] { state::setFlag (ui::channelsConfirmedFlag, confirmButton.getToggleState()); updateConfirm(); };
+        styleHint (confirmHint, "Every clip keeps the channel it was dragged with: set the channels before building songs.");
 
         for (int ch = 1; ch <= 16; ++ch)
         {
@@ -309,7 +318,7 @@ public:
             b->setColour (juce::TextButton::buttonColourId, raised);
 
         for (auto* c : std::initializer_list<juce::Component*> { &ampLabel, &ampBox, &qcChannelLabel, &whChannelLabel, &qcChannelBox, &whChannelBox,
-                                                                 &qcHint, &whHint, &advancedButton, &tracksSteps, &viaQcButton,
+                                                                 &qcHint, &whHint, &confirmButton, &confirmHint, &advancedButton, &tracksSteps, &viaQcButton,
                                                                  &viaInterfaceButton, &wiringLabel, &wiringLink, &dawHint })
             addAndMakeVisible (c);
         for (auto* c : std::initializer_list<juce::Component*> { &pcBaseLabel, &pcBaseBox, &setlistToggle,
@@ -343,7 +352,16 @@ public:
         testQcButton.setTooltip ("Opens the " + ampShort() + "'s tuner for 1.5 seconds: a quick check that it gets MIDI on its channel.");
         viaQcButton.setButtonText ("Daisy chain via " + ampShort());
         setSetupMode (! state::getFlag ("setupViaQcChain"));
+        updateConfirm();
         refreshTestDevices();
+    }
+
+    void updateConfirm()
+    {
+        confirmButton.setToggleState (state::getFlag (ui::channelsConfirmedFlag), juce::dontSendNotification);
+        confirmButton.setButtonText (juce::String (juce::CharPointer_UTF8 (confirmButton.getToggleState()
+                                                                               ? "\xe2\x9c\x93  My pedals use these channels"
+                                                                               : "My pedals use these channels")));
     }
 
     bool isKemper() const          { return (int) state[IDs::ampUnit] != 0; }
@@ -352,7 +370,10 @@ public:
     void visibilityChanged() override
     {
         if (isVisible())
+        {
+            updateConfirm();   // another PedalCues window may have confirmed the channels
             refreshTestDevices();
+        }
     }
 
     void resized() override
@@ -363,7 +384,7 @@ public:
 
         // Left: Your pedals, then (standalone) Test. The quick tour and the user guide are in the ☰ / Help menu.
 
-        const auto pedalsH = Section::headerHeight + 62 + 2 * 84 + 34 + (showAdvanced ? 62 + 40 : 0) + 8;
+        const auto pedalsH = Section::headerHeight + 62 + 2 * 84 + 34 + 70 + (showAdvanced ? 62 + 40 : 0) + 8;
         pedalsSection.setBounds (left.removeFromTop (pedalsH));
         {
             auto m = pedalsSection.contentArea().reduced (6, 2);
@@ -378,6 +399,9 @@ public:
             field (ampLabel, ampBox, nullptr);
             field (qcChannelLabel, qcChannelBox, &qcHint);
             field (whChannelLabel, whChannelBox, &whHint);
+            confirmButton.setBounds (m.removeFromTop (34).withWidth (260));
+            confirmHint.setBounds (m.removeFromTop (34).withTrimmedTop (2));
+            m.removeFromTop (2);
             advancedButton.setBounds (m.removeFromTop (30).withWidth (220));
             m.removeFromTop (4);
             if (showAdvanced)
@@ -530,7 +554,8 @@ private:
     juce::Label ampLabel, qcChannelLabel, whChannelLabel, pcBaseLabel, qcHint, whHint, testHint;
     juce::ComboBox ampBox, qcChannelBox, whChannelBox, pcBaseBox, testOutBox;
     juce::ToggleButton setlistToggle { "Send setlist (CC#32) with preset changes" };
-    juce::TextButton advancedButton;
+    juce::TextButton advancedButton, confirmButton;
+    juce::Label confirmHint;
 
     StepsList tracksSteps;
     juce::Label wiringLabel, dawHint;

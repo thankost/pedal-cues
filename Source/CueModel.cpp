@@ -193,6 +193,14 @@ namespace qc
         return c;
     }
 
+    Cue gigView (int channel, bool open)
+    {
+        Cue c;
+        c.name = open ? "QC Gig View On" : "QC Gig View Off";
+        c.add (0.0, juce::MidiMessage::controllerEvent (clampChannel (channel), cc::gigView, open ? 127 : 0));
+        return c;
+    }
+
     Cue gigMode (int channel, int mode)
     {
         static const char* names[] = { "Preset", "Scene", "Stomp" };
