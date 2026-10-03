@@ -194,6 +194,9 @@ public:
 
         addUtil ("Tuner On", "", "CC#45 = 127", qcBlue,         [this] { return cues::qc::tuner (qcChannel(), true); });
         addUtil ("Tuner Off", "", "CC#45 = 0",   raised.brighter (0.2f), [this] { return cues::qc::tuner (qcChannel(), false); });
+        addUtil ("Tap", "", "CC#44 = 127", juce::Colour (0xfff5a623), [this] { return cues::qc::tap (qcChannel()); });
+        utilTiles.getLast()->setTooltip ("One Tap Tempo press (CC#44). Tempo needs several taps a beat apart: drop the clip on each beat, "
+                                         "or set the tempo in the preset.");
         addUtil ("Gig View On", "", "CC#46 = 127", juce::Colour (0xff2ec4b6), [this] { return cues::qc::gigView (qcChannel(), true); });
         addUtil ("Gig View Off", "", "CC#46 = 0",   juce::Colour (0xff2ec4b6).darker (0.5f), [this] { return cues::qc::gigView (qcChannel(), false); });
         addUtil ("Preset Mode", "", "CC#47 = 0",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 0); });
@@ -249,7 +252,7 @@ public:
         }
         r.removeFromTop (10);
 
-        utilsSection.setBounds (r.removeFromBottom (Section::headerHeight + 60));
+        utilsSection.setBounds (r.removeFromBottom (Section::headerHeight + 2 * 60 + 6));   // eight utilities: two rows of four
         r.removeFromBottom (12);
         expression->setBounds (r);
         stompsSection.setBounds (r.removeFromBottom (Section::headerHeight + 64));
@@ -273,7 +276,7 @@ public:
         }
 
         layoutStrip (stompTiles, stompsSection.contentArea().expanded (3));
-        layoutStrip (utilTiles, utilsSection.contentArea().expanded (3));
+        layoutGrid (utilTiles, utilsSection.contentArea().expanded (3), 4, 6);
     }
 
 private:
@@ -454,7 +457,7 @@ private:
     Section presetsSection { "qc.presetList", "Presets", "click to open" };
     Section scenesSection  { "qc.scenes", "Scenes", "CC#43", qcBlue };
     Section stompsSection  { "qc.stomps", "Stomps", "CC#35-42", ledGreen };
-    Section utilsSection   { "qc.utils", "Utilities", "tuner, gig view, footswitch mode" };
+    Section utilsSection   { "qc.utils", "Utilities", "tuner, tap, gig view, footswitch mode" };
 
     juce::TextButton addButton { "+ Preset" };
     juce::TextButton syncButton { "Sync from QC (USB)" };

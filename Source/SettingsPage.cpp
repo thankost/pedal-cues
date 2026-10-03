@@ -280,6 +280,31 @@ private:
     juce::TextButton guideButton { "Open the user guide" };
 };
 
+// Looks like a drop-down, opens the device list (the same searchable picker as the ▾ on the first tab).
+class DeviceButton final : public juce::Button
+{
+public:
+    DeviceButton() : juce::Button ("Device") {}
+
+    void paintButton (juce::Graphics& g, bool over, bool down) override
+    {
+        const auto b = getLocalBounds().toFloat().reduced (0.5f);
+        g.setColour (down ? surfaceHi.brighter (0.05f) : over ? surfaceHi : raised);
+        g.fillRoundedRectangle (b, 8.0f);
+        auto r = getLocalBounds().reduced (14, 0);
+        const auto arrow = r.removeFromRight (16).toFloat().withSizeKeepingCentre (10.0f, 6.0f);
+        juce::Path p;
+        p.startNewSubPath (arrow.getX(), arrow.getY());
+        p.lineTo (arrow.getCentreX(), arrow.getBottom());
+        p.lineTo (arrow.getRight(), arrow.getY());
+        g.setColour (dim);
+        g.strokePath (p, juce::PathStrokeType (1.6f));
+        g.setColour (theme::text);
+        g.setFont (font (15.0f));
+        g.drawFittedText (getButtonText(), r, juce::Justification::centredLeft, 1, 0.85f);
+    }
+};
+
 class SettingsPage final : public Page
 {
 public:
@@ -294,26 +319,9 @@ public:
         styleCaption (qcChannelLabel, "Quad Cortex channel");
         styleCaption (whChannelLabel, "Whammy channel");
         styleCaption (ampLabel, "Amp modeller or MIDI device");
-        ampBox.setTooltip ("Quad Cortex, Kemper Profiler, Kemper Player, a Fractal or Line 6 unit, or your own MIDI device (beta): the first tab and the channel below "
-                           "follow it (the same as the menu on the first tab)");
-        ampBox.onChange = [this]
-        {
-            const auto id = ampBox.getSelectedId();
-            if (id == newCustomId)
-                newCustomUnit (state);
-            else if (id == moreDevicesId)
-                showUnitPicker (state, ampBox, {});
-            else if (id == modellerId)
-                state.setProperty (IDs::ampUnit, state::modellerAmpUnit, nullptr);
-            else if (id >= firstCustomId)
-            {
-                state.setProperty (IDs::selectedCustomUnit, id - firstCustomId, nullptr);
-                state.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
-            }
-            else if (id > 0)
-                state.setProperty (IDs::ampUnit, id - 1, nullptr);
-        };
-        styleCaption (pcBaseLabel, "Whammy program numbering");
+        ampBox.setTooltip ("Quad Cortex, Kemper, a Fractal or Line 6 unit, or your own MIDI device: the first tab and the channel below "
+                           "follow it. Opens the same searchable list as the arrow on the first tab.");
+        ampBox.onClick = [this] { showUnitPicker (state, ampBox, {}); };
         styleHint (qcHint, "Must match the QC: Settings > MIDI Settings > MIDI Channel (not Omni).");
         styleHint (whHint, "Must match the Whammy's MIDI channel (see its manual). Use a different channel from the QC.");
         confirmButton.setClickingTogglesState (true);
@@ -331,17 +339,10 @@ public:
             qcChannelBox.addItem ("Channel " + juce::String (ch), ch);
             whChannelBox.addItem ("Channel " + juce::String (ch), ch);
         }
-        pcBaseBox.addItem ("As printed in the manual (1 = first)", 1);
-        pcBaseBox.addItem ("Zero-based (0 = first)", 2);
 
         qcChannelBox.onChange = [this] { state.setProperty (IDs::qcChannel, qcChannelBox.getSelectedId(), nullptr); };
         whChannelBox.onChange = [this] { state.setProperty (IDs::whChannel, whChannelBox.getSelectedId(), nullptr); };
-        pcBaseBox.onChange    = [this] { state.setProperty (IDs::whPcBase, pcBaseBox.getSelectedId() == 1 ? 1 : 0, nullptr); };
-        pcBaseBox.setTooltip ("Only change this if every Whammy mode lands one position off.");
 
-        advancedButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
-        advancedButton.setColour (juce::TextButton::textColourOffId, dim);
-        advancedButton.onClick = [this] { showAdvanced = ! showAdvanced; updateAdvanced(); resized(); };
 
         // My wiring (in the DAW tracks header): the steps below depend on it. The cable details are in Help > Wiring guide.
         for (auto* b : { &viaQcButton, &viaInterfaceButton })
@@ -444,11 +445,10 @@ public:
             b->setColour (juce::TextButton::buttonColourId, raised);
 
         for (auto* c : std::initializer_list<juce::Component*> { &ampLabel, &ampBox, &qcChannelLabel, &whChannelLabel, &qcChannelBox, &whChannelBox,
-                                                                 &qcHint, &whHint, &confirmButton, &confirmHint, &advancedButton, &tracksSteps, &viaQcButton,
+                                                                 &qcHint, &whHint, &confirmButton, &confirmHint, &tracksSteps, &viaQcButton,
                                                                  &viaInterfaceButton, &wiringLabel, &wiringLink, &dawHint })
             addAndMakeVisible (c);
-        for (auto* c : std::initializer_list<juce::Component*> { &pcBaseLabel, &pcBaseBox,
-                                                                 &testOutBox, &testQcButton, &testWhButton, &testHint })
+        for (auto* c : std::initializer_list<juce::Component*> { &testOutBox, &testQcButton, &testWhButton, &testHint })
             addChildComponent (c);
 
         const auto standalone = PedalCuesProcessor::isStandalone();
@@ -456,7 +456,6 @@ public:
             c->setVisible (standalone);
 
         setSetupMode (! state::getFlag ("setupViaQcChain"));
-        updateAdvanced();
         refresh();
     }
 
@@ -464,24 +463,10 @@ public:
     {
         qcChannelBox.setSelectedId ((int) state[IDs::qcChannel], juce::dontSendNotification);
         whChannelBox.setSelectedId ((int) state[IDs::whChannel], juce::dontSendNotification);
-        pcBaseBox.setSelectedId ((int) state[IDs::whPcBase] == 1 ? 1 : 2, juce::dontSendNotification);
 
         // The first channel belongs to the amp unit (picked here or on the first tab).
-        ampBox.clear (juce::dontSendNotification);
-        for (int u = 0; u < 3; ++u)
-            ampBox.addItem (ampUnitName (u), u + 1);
-        ampBox.addSectionHeading ("Custom MIDI devices (beta)");
-        const auto units = state.getChildWithName (IDs::CustomUnits);
-        for (int i = 0; i < units.getNumChildren(); ++i)
-            ampBox.addItem (units.getChild (i)[IDs::name].toString(), firstCustomId + i);
-        if (const auto* model = modellers::find (state[IDs::modellerProfile].toString()))
-            ampBox.addItem (model->model, modellerId);   // the Fractal / Line 6 unit last picked
-        ampBox.addItem ("Fractal, Line 6 and more...", moreDevicesId);
-        ampBox.addItem ("New MIDI device...", newCustomId);
         const auto amp = ampInfo (state);
-        ampBox.setSelectedId (amp.isCustom() ? firstCustomId + (int) state[IDs::selectedCustomUnit]
-                              : amp.isModeller() ? modellerId : (int) state[IDs::ampUnit] + 1,
-                              juce::dontSendNotification);
+        ampBox.setButtonText (amp.isModeller() ? modellers::find (state[IDs::modellerProfile].toString())->model : amp.name);
         qcChannelLabel.setText (amp.name + " channel", juce::dontSendNotification);
         qcHint.setText (amp.isModeller() ? amp.channelHint
                         : amp.isCustom() ? "Must match the MIDI channel set on the " + amp.name + " (see its manual; not Omni)."
@@ -508,7 +493,6 @@ public:
 
     bool isKemper() const          { return ampInfo (state).isKemper(); }
     juce::String ampShort() const  { return ampInfo (state).shortName; }
-    static constexpr int firstCustomId = 100, newCustomId = 99, moreDevicesId = 98, modellerId = 97;
 
     void visibilityChanged() override
     {
@@ -527,7 +511,7 @@ public:
 
         // Left: Your pedals, then (standalone) Test. The quick tour and the user guide are in the ☰ / Help menu.
 
-        const auto pedalsH = Section::headerHeight + 62 + 2 * 84 + 34 + 70 + (showAdvanced ? 62 : 0) + 8;
+        const auto pedalsH = Section::headerHeight + 62 + 2 * 84 + 34 + 70 + 8;
         pedalsSection.setBounds (left.removeFromTop (pedalsH));
         {
             auto m = pedalsSection.contentArea().reduced (6, 2);
@@ -544,11 +528,6 @@ public:
             field (whChannelLabel, whChannelBox, &whHint);
             confirmButton.setBounds (m.removeFromTop (34).withWidth (260));
             confirmHint.setBounds (m.removeFromTop (34).withTrimmedTop (2));
-            m.removeFromTop (2);
-            advancedButton.setBounds (m.removeFromTop (30).withWidth (220));
-            m.removeFromTop (4);
-            if (showAdvanced)
-                field (pcBaseLabel, pcBaseBox, nullptr);
         }
 
         if (PedalCuesProcessor::isStandalone())
@@ -592,13 +571,6 @@ private:
         l.setFont (font (11.5f));
         l.setColour (juce::Label::textColourId, dim);
         l.setJustificationType (juce::Justification::topLeft);
-    }
-
-    void updateAdvanced()
-    {
-        advancedButton.setButtonText (juce::String (showAdvanced ? "v" : ">") + "  Advanced: Whammy numbering");
-        for (auto* c : std::initializer_list<juce::Component*> { &pcBaseLabel, &pcBaseBox })
-            c->setVisible (showAdvanced);
     }
 
     void refreshTestDevices()
@@ -695,15 +667,15 @@ private:
 
     PedalCuesProcessor& proc;
     juce::ValueTree state;
-    bool showAdvanced = false;
 
     Section pedalsSection { "set.pedals", "Your pedals", "set once, must match the pedals" };
     Section testSection   { "set.test", "Test your pedals", "sends on the channels above", ledGreen };
     Section tracksSection { "set.tracks", "DAW tracks", "two cue tracks, once", qcBlue };
 
-    juce::Label ampLabel, qcChannelLabel, whChannelLabel, pcBaseLabel, qcHint, whHint, testHint;
-    juce::ComboBox ampBox, qcChannelBox, whChannelBox, pcBaseBox, testOutBox;
-    juce::TextButton advancedButton, confirmButton;
+    juce::Label ampLabel, qcChannelLabel, whChannelLabel, qcHint, whHint, testHint;
+    DeviceButton ampBox;
+    juce::ComboBox qcChannelBox, whChannelBox, testOutBox;
+    juce::TextButton confirmButton;
     juce::Label confirmHint;
 
     StepsList tracksSteps;

@@ -208,6 +208,14 @@ namespace qc
         return c;
     }
 
+    Cue tap (int channel)
+    {
+        Cue c;
+        c.name = "QC Tap";
+        c.add (0.0, juce::MidiMessage::controllerEvent (clampChannel (channel), cc::tap, 127));
+        return c;
+    }
+
     Cue gigView (int channel, bool open)
     {
         Cue c;

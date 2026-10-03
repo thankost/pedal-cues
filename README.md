@@ -25,7 +25,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - 8 scene tiles per preset in gig-view colours → `CC#43`
 - Scene and stomp tiles either **load their own preset first** (default; the scene/footswitch follows 1/16 later)
   or act on the **current QC preset** only
-- Footswitch stomps A–H on/off → `CC#35–42`; tuner on/off → `CC#45`; Gig View screen on/off → `CC#46`; footswitch mode (preset / stomp / scene) → `CC#47`
+- Footswitch stomps A–H on/off → `CC#35–42`; tuner on/off → `CC#45`; tap tempo → `CC#44`; Gig View screen on/off → `CC#46`; footswitch mode (preset / stomp / scene) → `CC#47`
 - **Expression automation** (Quad Cortex page > **Expression**) → `CC#1` / `CC#2`: moves whatever you assign to
   Expression 1 or 2 on the QC (volume swells, wah, a delay mix, drive). Swell In, Fade Out, Rise & Fall, Slow Rise,
   Wah Rhythm, Rise to Bar, Toe, Heel, fixed positions (heel / 25% / half / 75% / toe), or draw your own; tempo-synced.
@@ -127,8 +127,8 @@ Details and pictures: [guide, section 2](https://thankost.github.io/pedal-cues/g
 ## Verify with your pedals
 
 - **Whammy numbering:** the plugin uses the manual's 1-based numbers (Classic 1–21 on / 22–42 bypassed,
-  Chords 43–63 on / 64–84 bypassed; on the Whammy DT, 43–78 are Drop Tune). If every mode arrives one step off, change *MIDI Setup → Whammy program
-  numbering*. Mode names can be renamed if your chart differs.
+  Chords 43–63 on / 64–84 bypassed; on the Whammy DT, 43–78 are Drop Tune). If every mode arrives one step off, choose *Zero-based* in the Whammy page's
+  **...** menu (Modes header). Mode names can be renamed if your chart differs.
 - **QC setlist:** `CC#32` = the setlist number as the QC shows it (0 = Factory Presets). Turn on *Switch to the preset's setlist* (under the preset list) when your presets are in more than one setlist (the QC page shows a reminder), and drag preset clips in again after turning it on.
 
 ## Layout

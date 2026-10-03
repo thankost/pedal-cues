@@ -106,6 +106,13 @@ public:
         bypassToggle.onClick = [this] { state.setProperty (IDs::whBypass, bypassToggle.getToggleState(), nullptr); };
         heelToggle.onClick   = [this] { state.setProperty (IDs::whHeelFirst, heelToggle.getToggleState(), nullptr); };
 
+        // Program numbering: rarely needed, so it's in the Modes header's "..." menu rather than among the options.
+        moreButton.setComponentID ("wh.more");
+        moreButton.setColour (juce::TextButton::buttonColourId, raised);
+        moreButton.setTooltip ("Program numbering: only change it if every mode lands one position off on your Whammy.");
+        moreButton.onClick = [this] { showMoreMenu(); };
+        addAndMakeVisible (moreButton);
+
         // Which Whammy (V or DT): picked right on the faceplate, where players look for their pedal.
         for (auto* b : { &modelVButton, &modelDtButton })
         {
@@ -267,6 +274,8 @@ public:
         modesSection.setBounds (r);
         {
             auto hdr = modesSection.headerArea().withSizeKeepingCentre (modesSection.headerArea().getWidth(), 28);
+            moreButton.setBounds (hdr.removeFromRight (40));
+            hdr.removeFromRight (8);
             dropTuneViewButton.setBounds (hdr.removeFromRight (100));
             whammyViewButton.setBounds (hdr.removeFromRight (100));
         }
@@ -404,6 +413,24 @@ private:
     juce::OwnedArray<Tile> modeTiles, dropTiles;
     juce::TextButton whammyViewButton { "Whammy" }, dropTuneViewButton { "Drop Tune" };
     juce::TextButton modelVButton { "Whammy V" }, modelDtButton { "Whammy DT" };
+    juce::TextButton moreButton { "..." };
+
+    void showMoreMenu()
+    {
+        const auto base = (int) state[IDs::whPcBase];
+        juce::PopupMenu m;
+        m.addSectionHeader ("Program numbering");
+        m.addItem (1, "As printed in the manual (1 = first)", true, base == 1);
+        m.addItem (2, "Zero-based (0 = first)", true, base != 1);
+        m.addSeparator();
+        m.addItem (3, "Only change this if every mode lands one position off.", false, false);
+        juce::Component::SafePointer<WhammyPage> safe (this);
+        m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&moreButton), [safe] (int result)
+        {
+            if (safe != nullptr && (result == 1 || result == 2))
+                safe->state.setProperty (IDs::whPcBase, result == 1 ? 1 : 0, nullptr);
+        });
+    }
 };
 } // namespace
 
