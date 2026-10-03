@@ -24,7 +24,6 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 
 **Quad Cortex**
 - Preset tiles (name, colour, setlist / bank / slot) → `CC#0` page [+ `CC#32` setlist] + Program Change
-- **Fuzzy search** in the preset list (also Kemper performances and custom device tiles): letters in order, one typo, or a location like `SL2` / `3B`
 - **Sync from QC (USB):** reads your setlists, preset names (bank/slot), and scene names, scene colours and stomp names straight from the pedal (quit Cortex Control first). Optional "every preset" mode loads each preset in turn to read it. The QC doesn't report setlist numbers, so you check them once in the sync window and PedalCues remembers them; the sync also turns on *Switch to the preset's setlist*
 - 8 scene tiles per preset in gig-view colours → `CC#43`
 - Scene and stomp tiles either **load their own preset first** (default; the scene/footswitch follows 1/16 later)
@@ -64,6 +63,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
   optional return to heel afterwards
 
 **Workflow**
+- **Search every list:** presets on the Quad Cortex, Fractal and Line 6 pages, Kemper performances, custom device tiles and the device list. Forgiving: letters in order (`drpc` finds *Drop C Heavy*), one typo, or a location like `SL2` / `3B`
 - Update notice: the header shows your version and whether a newer release is out (one GitHub request when it opens; turn it off in the ☰ menu)
 - Everything is stored in your DAW project. **☰ > Save as default setup** makes new instances start with your names, colours, MIDI settings and playing preferences
 - **☰ > Export / Import setup** as a file (back it up, move to another computer, share it with the band): your presets, scenes and names for every unit (Quad Cortex, Kemper, Fractal / Line 6 pages, custom MIDI devices), MIDI settings, playing preferences, your wiring choice and My drawings
