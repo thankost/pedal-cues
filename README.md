@@ -1,9 +1,9 @@
 # PedalCues
 
-Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex / QC Mini**, the **Kemper Profiler / Kemper Player** and the **DigiTech Whammy V / Whammy DT**, plus **any other MIDI device** with tiles you make yourself (beta).
+Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex / QC Mini**, the **Kemper Profiler / Kemper Player**, **Fractal Audio** (Axe-Fx, FM, AX8, FX8, VP4) and **Line 6** (Helix, HX, POD Go, Helix Stadium) units (beta) and the **DigiTech Whammy V / Whammy DT**, plus **any other MIDI device** with tiles you make yourself (beta).
 A VST3 / AU / LV2 / Standalone plugin (JUCE) for Windows, macOS and Linux. Tested in Reaper; it should work in any DAW that accepts dragged MIDI files and can send a MIDI track to a hardware output (Ableton Live, Cubase, Bitwig, Studio One; in Logic the clips work on an External MIDI track).
 
-**[Download for Windows and macOS](https://thankost.github.io/pedal-cues/)**
+**[Download for Windows, macOS and Linux](https://thankost.github.io/pedal-cues/)**
 
 Drag a tile onto the arrangement → a **named MIDI item** lands at the drop position (e.g. `QC Scene B - Chorus`,
 `Whammy Oct Up [Chords]`, `Whammy Ramp Up 1 bar`). Click a tile's ▶ corner to send it to the pedal right away.
@@ -12,16 +12,20 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 
 📖 **[User guide with pictures and step-by-step instructions](https://thankost.github.io/pedal-cues/guide.html)** · 📝 **[What's new](https://thankost.github.io/pedal-cues/changelog.html)** · 🛟 **[Help and problem reports](https://thankost.github.io/pedal-cues/help.html)**. A quick tour also starts the first time you open the plugin (open it again later from the **☰** menu).
 
-| Kemper | Whammy V / DT | MIDI Setup |
+| Helix (Line 6) | Axe-Fx II (Fractal) | Kemper |
 |---|---|---|
-| ![Kemper page](docs/images/kemper.png) | ![Whammy page](docs/images/whammy.png) | ![MIDI Setup tab](docs/images/settings.png) |
+| ![Helix Floor page](docs/images/helix.png) | ![Axe-Fx II page](docs/images/axe-fx-2.png) | ![Kemper page](docs/images/kemper.png) |
+
+| Whammy V / DT | Custom MIDI device | MIDI Setup |
+|---|---|---|
+| ![Whammy page](docs/images/whammy.png) | ![A custom MIDI device](docs/images/custom-device.png) | ![MIDI Setup tab](docs/images/settings.png) |
 
 ## Features
 
 **Quad Cortex**
 - Preset tiles (name, colour, setlist / bank / slot) → `CC#0` page [+ `CC#32` setlist] + Program Change
 - **Fuzzy search** in the preset list (also Kemper performances and custom device tiles): letters in order, one typo, or a location like `SL2` / `3B`
-- **Sync from QC (USB):** reads your setlists, preset names (bank/slot), and scene names, scene colours and stomp names straight from the pedal (quit Cortex Control first). Optional "every preset" mode loads each preset in turn to read it. The QC doesn't report setlist numbers, so you check them once in the sync window and PedalCues remembers them; the sync also turns on *Send setlist*
+- **Sync from QC (USB):** reads your setlists, preset names (bank/slot), and scene names, scene colours and stomp names straight from the pedal (quit Cortex Control first). Optional "every preset" mode loads each preset in turn to read it. The QC doesn't report setlist numbers, so you check them once in the sync window and PedalCues remembers them; the sync also turns on *Switch to the preset's setlist*
 - 8 scene tiles per preset in gig-view colours → `CC#43`
 - Scene and stomp tiles either **load their own preset first** (default; the scene/footswitch follows 1/16 later)
   or act on the **current QC preset** only
@@ -62,11 +66,10 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 **Workflow**
 - Update notice: the header shows your version and whether a newer release is out (one GitHub request when it opens; turn it off in the ☰ menu)
 - Everything is stored in your DAW project. **☰ > Save as default setup** makes new instances start with your names, colours, MIDI settings and playing preferences
-- **☰ > Export / Import setup** as a file (back it up, move to another computer, share it with the band): names, MIDI settings, playing preferences, your wiring choice and My drawings
+- **☰ > Export / Import setup** as a file (back it up, move to another computer, share it with the band): your presets, scenes and names for every unit (Quad Cortex, Kemper, Fractal / Line 6 pages, custom MIDI devices), MIDI settings, playing preferences, your wiring choice and My drawings
 - MIDI passes through, so the dropped items and the live preview share one track and one route
 
-Preset/scene names are entered in the plugin (double-click to rename, right-click for colour/reorder).
-CueDrop-style USB sync would rely on Neural DSP's undocumented protocol, so it isn't included.
+Preset and scene names are entered in the plugin (double-click to rename, right-click for colour/reorder), or read from the Quad Cortex with **Sync from QC (USB)**.
 
 ## Install (no code needed)
 
@@ -91,8 +94,6 @@ Prefer copying by hand? `PedalCues-macOS.zip` has the same files; see the [guide
    `echo 'KERNEL=="hidraw*", ATTRS{idVendor}=="152a", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/70-quad-cortex.rules && sudo udevadm control --reload-rules && sudo udevadm trigger`
    then replug the QC. Details: [guide, Install](https://thankost.github.io/pedal-cues/guide.html#1-install).
 
-To publish a new release: `git tag v0.1.1 && git push origin v0.1.1`.
-
 ## Build (macOS)
 
 ```bash
@@ -112,15 +113,15 @@ cmake --build build --target PedalCuesTests
 
 ## DAW setup (Reaper as the example)
 
-1. Connect your devices one of three ways (**Help > Wiring Guide** in the app shows each; one device needs no chain at all). The examples use a QC and a Whammy; a Kemper or a custom device goes where the QC is, and any second device where the Whammy is:
-   - **Daisy chain:** interface **MIDI Out → QC MIDI In**, QC **MIDI Thru → Whammy MIDI In** (MIDI Thru on). Both cue tracks output to that interface MIDI Out.
-   - **Separate MIDI cables:** interface **MIDI Out 1 → QC**, **MIDI Out 2 → Whammy**. QC Cues → MIDI Out 1, Whammy Cues → MIDI Out 2.
-   - **QC over USB + interface:** QC on USB, interface **MIDI Out → Whammy MIDI In**. QC Cues → Quad Cortex, Whammy Cues → interface MIDI Out.
-   - ⚠️ **Known QC and Kemper limitation:** MIDI Thru doesn't forward MIDI received over **USB**, so "QC / Kemper on USB, Whammy on its Thru" doesn't work. The Whammy has only a 5-pin MIDI In, so it always needs a MIDI interface output (or the Thru of a 5-pin chain).
-2. Give the pedals **different MIDI channels** (defaults: QC 1 via *Settings > MIDI Settings*, not Omni; Whammy 2, see its manual) and set the same numbers in the plugin's **MIDI Setup** tab, **before** dragging cues: every clip keeps the channel it was dragged with. Click *My pedals use these channels* to hide the reminder.
+1. Connect your devices one of three ways. **Help > Wiring Guide** in the app shows each, named after your unit. "Your unit" is the Quad Cortex, Kemper, Fractal, Line 6 or custom device on the first tab; the second device, if you have one, is for example a Whammy:
+   - **One device:** your unit on USB, or a MIDI cable from your interface's MIDI Out to its MIDI In. One cue track.
+   - **Daisy chain:** interface **MIDI Out → your unit's MIDI In**, its **MIDI Thru → the second device's MIDI In** (MIDI Thru on). Both cue tracks output to that interface MIDI Out.
+   - **Separate outputs:** your unit on **USB or MIDI Out 1**, the second device on **MIDI Out 2**. Each cue track outputs to its device's port.
+   - ⚠️ **A MIDI Thru only passes on MIDI from the 5-pin MIDI In**, not MIDI received over **USB** (confirmed for the Quad Cortex and Kemper, true for most units). So "your unit on USB, the second device on its Thru" doesn't work; the Wiring Guide notes the exceptions (Helix Stadium with *MIDI Over USB C*, Axe-Fx II with *USB Adapter Mode*). The Whammy has only a 5-pin MIDI In, so it always needs a MIDI cable; POD Go has only USB MIDI, so it can't be in a chain.
+2. Give each device its **own MIDI channel** (not Omni; e.g. your unit on 1, the Whammy on 2) and set the same numbers in the plugin's **MIDI Setup** tab, **before** dragging cues: every clip keeps the channel it was dragged with. Click *My pedals use these channels* to hide the reminder.
 3. In your DAW, enable the MIDI outputs you use (Reaper: *Preferences > MIDI Devices*).
-4. Create two tracks, **QC Cues** and **Whammy Cues**, insert *PedalCues* on each, and set each track's MIDI output as above (Reaper: *I/O > MIDI Hardware Output*, leave *Send to original channels*).
-5. Turn snapping on and drag QC tiles onto QC Cues and Whammy tiles onto Whammy Cues at the bars you want.
+4. Create one track per device (e.g. **QC Cues** and **Whammy Cues**), insert *PedalCues* on each, and set each track's MIDI output as above (Reaper: *I/O > MIDI Hardware Output*, leave *Send to original channels*).
+5. Turn snapping on and drag each device's tiles onto its own track at the bars you want.
 
 Details and pictures: [guide, section 2](https://thankost.github.io/pedal-cues/guide.html#2-connect-your-rig).
 
@@ -140,7 +141,11 @@ Source/Tile.*            draggable tile (external file drag + click-to-send)
 Source/PluginProcessor.* MIDI passthrough, preview scheduling, host tempo, state
 Source/Theme.*           colour palette + custom LookAndFeel
 Source/PluginEditor.*    window, header tabs, first-run tour host
-Source/QcPage.cpp        Quad Cortex page    Source/KemperPage.cpp  Kemper page    Source/CustomPage.cpp  custom MIDI devices (beta)
+Source/QcPage.cpp        Quad Cortex page (+ QcExpression.cpp)    Source/KemperPage.cpp  Kemper page
+Source/Modellers.*       Fractal / Line 6 model profiles (from the manuals)    Source/ModellerPage.cpp  their pages
+Source/DeviceTemplates.* Axe-Fx III / FM9 / FM3 / VP4 editable devices    Source/CustomPage.cpp  custom MIDI devices + tile editor
+Source/UnitPicker.cpp    searchable device list    Source/Fuzzy.h  fuzzy search    Source/MovesPanel.*  expression / treadle moves
+Source/QcUsb.*, QcSyncDialog.cpp  Sync from QC (USB, read-only)
 Source/WhammyPage.cpp    Whammy V / DT page
 Source/SettingsPage.cpp  MIDI Setup tab (your pedals, DAW tracks, test) and the wiring guide
 Source/Tour.*            quick-tour overlay (steps + spotlight)
@@ -159,10 +164,10 @@ build/DocShots_artefacts/Release/DocShots docs/images
 ## Support
 
 PedalCues is free. If it helps your show and you'd like to say thanks, you can donate (completely optional):
-[Buy Me a Coffee](https://buymeacoffee.com/athkost) · [PayPal](https://paypal.me/athkost) · [Revolut](https://revolut.me/athkost). In the plugin: **☰ > Support PedalCues**.
+[Buy Me a Coffee](https://buymeacoffee.com/athkost) · [PayPal](https://paypal.me/athkost) · [Revolut](https://revolut.me/athkost) · [GitHub Sponsors](https://github.com/sponsors/thankost). In the plugin: **☰ > Support PedalCues**.
 
 ## License
 
 Free and open source under the [MIT License](LICENSE). Copyright (c) 2026 **Thanasis Kostopoulos**. [github.com/thankost/pedal-cues](https://github.com/thankost/pedal-cues)
 
-Built with [JUCE](https://juce.com), which is licensed separately (AGPLv3 / JUCE licence), and [hidapi](https://github.com/libusb/hidapi) (BSD licence option). The USB sync follows the protocol documented by [pyquadcortex](https://github.com/stokes-audio/pyquadcortex) (MIT). Quad Cortex is a trademark of Neural DSP Technologies, Kemper and Profiler are trademarks of Kemper GmbH, and Whammy is a trademark of DigiTech. This project is not affiliated with any of these companies.
+Built with [JUCE](https://juce.com), which is licensed separately (AGPLv3 / JUCE licence), and [hidapi](https://github.com/libusb/hidapi) (BSD licence option). The USB sync follows the protocol documented by [pyquadcortex](https://github.com/stokes-audio/pyquadcortex) (MIT). Quad Cortex is a trademark of Neural DSP Technologies, Kemper and Profiler are trademarks of Kemper GmbH, Axe-Fx is a trademark of Fractal Audio Systems, Helix and POD are trademarks of Line 6 / Yamaha Guitar Group, and Whammy is a trademark of DigiTech. This project is not affiliated with any of these companies.

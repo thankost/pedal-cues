@@ -88,6 +88,6 @@ Use the `release` skill (`.claude/skills/release/SKILL.md`). In short:
 
 ## Links used in the app and docs
 
-- Donations (optional, never pop up by themselves): Buy Me a Coffee `https://buymeacoffee.com/athkost`, PayPal `https://paypal.me/athkost`, Revolut `https://revolut.me/athkost`. They're shown in brand colours (#FFDD00, #0070BA, white). `.github/FUNDING.yml` drives the repo's Sponsor button. Add `github: thankost` once GitHub Sponsors is approved.
+- Donations (optional, never pop up by themselves): Buy Me a Coffee `https://buymeacoffee.com/athkost`, PayPal `https://paypal.me/athkost`, Revolut `https://revolut.me/athkost`. They're shown in brand colours (#FFDD00, #0070BA, white). GitHub Sponsors (approved): `https://github.com/sponsors/thankost`, on the website, README, guide and `.github/FUNDING.yml` (`github: thankost`, drives the repo's Sponsor button); still to add to the app's Support dialog.
 - The support text mentions the author's band **ORIA** (progressive groove metal, Thessaloniki) and bandmate Leo.
 - The update check (`Source/Update.*`) reads the redirect of `https://github.com/thankost/pedal-cues/releases/latest` to find the newest tag. Don't use `api.github.com` for it: that's limited to 60 requests an hour per IP, and shared networks run out. The API is only used, best-effort, for the release notes when an update exists. The check can be turned off in Settings.
