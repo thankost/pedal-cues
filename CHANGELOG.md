@@ -2,6 +2,12 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.6.3 (2026-10-03)
+
+- **Search your presets (new):** type in the box above the preset list to find one fast. It's forgiving: letters in order (`drpc` finds *Drop C Heavy*), one typo (`hevy`), several words, or a location like `SL2` or `3B`. Return opens the best match, Esc clears. The Kemper's performance list and custom MIDI devices have the same search.
+- **Send setlist is easier to find:** it moved out of Advanced to **MIDI Setup > Your pedals**, right under the Quad Cortex channel.
+- The window keeps the keyboard until you click into a search box, so your DAW's keys (like the space bar) keep working.
+
 ## 0.6.2 (2026-10-03)
 
 - **Fixed: presets from another setlist didn't load.** PedalCues only sends the setlist when *Send setlist* is on, and it was off by default, hidden in MIDI Setup > Advanced. **Sync from QC now turns it on** (a new switch in the sync window, on by default), and the Quad Cortex page shows a **Setlists not sent: turn on** button when your presets are in more than one setlist. Drag preset clips you made before into your DAW again: clips keep the settings they were dragged with.

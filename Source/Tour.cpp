@@ -18,7 +18,7 @@ const std::vector<TourStep>& tourSteps()
           "with performances, slots and effects.", false, false, true },
         { 0, { "qc.presetList" }, "1. Add your presets",
           "Add each Quad Cortex preset (a whole rig, often one per song) with '+ Preset', or read them all from the pedal with "
-          "'Sync from QC (USB)' (quit Cortex Control first). Click a preset to open it, double-click to edit, right-click to recolour or reorder." },
+          "'Sync from QC (USB)' (quit Cortex Control first). Click a preset to open it, double-click to edit, right-click to recolour or reorder. Type in the search box to find one fast." },
         { 0, { "qc.screen" }, "2. Load a preset",
           "This screen shows the preset you opened. Drag it onto the timeline where the song starts: the clip "
           "loads that preset at that bar. The chips on the right preview its scene colours." },

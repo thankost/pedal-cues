@@ -550,6 +550,27 @@ int main (int argc, char** argv)
 
         editor.showPage (0);
         save (snapshot (editor), outDir.getChildFile ("quad-cortex.png"));
+
+        // The preset search in use ("rig": Clean Rig and Lead Rig).
+        {
+            std::function<juce::Component* (juce::Component&)> find = [&find] (juce::Component& c) -> juce::Component*
+            {
+                if (c.getComponentID() == "qc.search")
+                    return &c;
+                for (auto* child : c.getChildren())
+                    if (auto* f = find (*child))
+                        return f;
+                return nullptr;
+            };
+            if (auto* box = dynamic_cast<juce::TextEditor*> (find (editor)))
+            {
+                box->setText ("rig", false);
+                box->onTextChange();   // the editor reports changes asynchronously; filter now
+                save (snapshot (editor), outDir.getChildFile ("qc-search.png"));
+                box->setText ({}, false);
+                box->onTextChange();
+            }
+        }
         proc.state.setProperty (IDs::qcExpressionView, true, nullptr);
         editor.refreshNow();
         save (snapshot (editor), outDir.getChildFile ("qc-expression.png"));

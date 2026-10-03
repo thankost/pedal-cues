@@ -146,6 +146,15 @@ public:
         addButton.onClick = [this] { addPerformance(); };
         addAndMakeVisible (addButton);
 
+        search.setComponentID ("km.search");
+        search.onSearch = [this] { layoutRows(); listView.setViewPosition (0, 0); };
+        search.onSubmit = [this]
+        {
+            if (! shownRows.empty())
+                state.setProperty (IDs::selectedPerformance, shownRows.front(), nullptr);
+        };
+        addAndMakeVisible (search);
+
         listView.setViewedComponent (&list, false);
         listView.setScrollBarsShown (true, false);
         listView.setScrollBarThickness (8);
@@ -201,6 +210,7 @@ public:
         const auto player = isPlayer (state);
 
         performancesSection.title = player ? "Banks" : "Performances";
+        search.setTextToShowWhenEmpty (player ? "Search banks" : "Search performances", dim);
         performancesSection.repaint();
         addButton.setButtonText (player ? "+ Bank" : "+ Perf.");
         loadFirstToggle.setButtonText ("Load " + shortName (perf) + " first");
@@ -324,13 +334,13 @@ public:
         performancesSection.setBounds (r.removeFromLeft (juce::jlimit (230, 300, r.getWidth() / 4)));
         r.removeFromLeft (12);
         addButton.setBounds (performancesSection.headerArea().removeFromRight (86));
-        listView.setBounds (performancesSection.contentArea());
-
-        const auto listWidth = listView.getWidth() - listView.getScrollBarThickness() - 2;
-        constexpr int rowHeight = 50;
-        list.setSize (listWidth, rowHeight * rows.size());
-        for (int i = 0; i < rows.size(); ++i)
-            rows[i]->setBounds (0, i * rowHeight, listWidth, rowHeight);
+        {
+            auto content = performancesSection.contentArea();
+            search.setBounds (content.removeFromTop (32).reduced (2, 0));
+            content.removeFromTop (6);
+            listView.setBounds (content);
+        }
+        layoutRows();
 
         if (screen != nullptr)
             screen->setBounds (r.removeFromTop (104).expanded (3));
@@ -525,6 +535,13 @@ private:
     Section utilsSection   { "km.utils", "Utilities", "tuner, tap, morph" };
 
     juce::TextButton addButton { "+ Perf." };
+    SearchBox search { "Search performances" };
+    std::vector<int> shownRows;
+
+    void layoutRows()
+    {
+        shownRows = layoutFilteredRows (rows, list, listView.getWidth() - listView.getScrollBarThickness() - 2, 50, search.getText());
+    }
     juce::Viewport listView;
     juce::Component list;
     juce::ToggleButton loadFirstToggle, effectOnToggle { "Tiles switch ON" }, tailsToggle { "Keep tails" };

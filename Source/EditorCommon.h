@@ -5,6 +5,7 @@
 #include "PluginProcessor.h"
 #include "Tile.h"
 #include "Theme.h"
+#include "Fuzzy.h"
 
 #include <functional>
 #include <memory>
@@ -95,6 +96,21 @@ public:
     juce::Colour accentColour;
     juce::Colour fill { theme::surface.withAlpha (0.55f) };
 };
+
+//==============================================================================
+// A search field for preset lists: fuzzy matching, Esc clears, Return picks the best match (onSubmit).
+class SearchBox final : public juce::TextEditor
+{
+public:
+    explicit SearchBox (const juce::String& placeholder);
+    void paintOverChildren (juce::Graphics&) override;
+    std::function<void()> onSearch, onSubmit;
+};
+
+// Shows the rows whose title / subtitle match the search, best first, in a scrolling list; hides the rest.
+// Returns the row indices in the order shown.
+std::vector<int> layoutFilteredRows (juce::OwnedArray<Tile>& rows, juce::Component& list, int width, int rowHeight,
+                                     const juce::String& query);
 
 //==============================================================================
 juce::ValueTree nthOfType (const juce::ValueTree& parent, const juce::Identifier& type, int n);

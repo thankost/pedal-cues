@@ -20,6 +20,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 
 **Quad Cortex**
 - Preset tiles (name, colour, setlist / bank / slot) → `CC#0` page [+ `CC#32` setlist] + Program Change
+- **Fuzzy search** in the preset list (also Kemper performances and custom device tiles): letters in order, one typo, or a location like `SL2` / `3B`
 - **Sync from QC (USB):** reads your setlists, preset names (bank/slot), and scene names, scene colours and stomp names straight from the pedal (quit Cortex Control first). Optional "every preset" mode loads each preset in turn to read it. The QC doesn't report setlist numbers, so you check them once in the sync window and PedalCues remembers them; the sync also turns on *Send setlist*
 - 8 scene tiles per preset in gig-view colours → `CC#43`
 - Scene and stomp tiles either **load their own preset first** (default; the scene/footswitch follows 1/16 later)

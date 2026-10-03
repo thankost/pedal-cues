@@ -86,6 +86,15 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
 
     state.addListener (this);
 
+    // Keep keyboard focus on the window itself rather than handing it to the first text field (a search box)
+    // or a header button (a focused button clicks on Space/Return: the first tab would open the unit menu),
+    // so the DAW's keys, like the space bar, still work until the player clicks into a field.
+    setWantsKeyboardFocus (true);
+    for (auto* b : tabButtons)
+        b->setWantsKeyboardFocus (false);
+    for (auto* b : std::initializer_list<juce::Component*> { &unitMenuButton, &helpButton, &updateBadge })
+        b->setWantsKeyboardFocus (false);
+
     setResizable (true, true);
     setResizeLimits (980, 680, 2400, 1600);
     setSize (1120, 760);

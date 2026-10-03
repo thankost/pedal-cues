@@ -33,10 +33,19 @@ public:
         setlistWarning.setColour (juce::TextButton::buttonColourId, accent.withAlpha (0.18f));
         setlistWarning.setColour (juce::TextButton::textColourOffId, accent);
         setlistWarning.setTooltip ("Your presets are in more than one setlist, but Send setlist (CC#32) is off, so a preset tile loads its "
-                                   "bank and slot in whatever setlist the QC is on. Click to turn it on (MIDI Setup > Advanced), then drag "
+                                   "bank and slot in whatever setlist the QC is on. Click to turn it on (it's also in MIDI Setup > Your pedals), then drag "
                                    "preset clips you made before into your DAW again.");
         setlistWarning.onClick = [this] { state.setProperty (IDs::sendSetlist, true, nullptr); };
         addChildComponent (setlistWarning);
+
+        search.setComponentID ("qc.search");
+        search.onSearch = [this] { layoutPresets(); presetView.setViewPosition (0, 0); };
+        search.onSubmit = [this]
+        {
+            if (! shownPresets.empty())
+                state.setProperty (IDs::selectedPreset, shownPresets.front(), nullptr);
+        };
+        addAndMakeVisible (search);
 
         presetView.setViewedComponent (&presetList, false);
         presetView.setScrollBarsShown (true, false);
@@ -213,14 +222,11 @@ public:
                 setlistWarning.setBounds (content.removeFromBottom (30).reduced (2, 0));
                 content.removeFromBottom (6);
             }
+            search.setBounds (content.removeFromTop (32).reduced (2, 0));
+            content.removeFromTop (6);
             presetView.setBounds (content);
         }
-
-        const auto listWidth = presetView.getWidth() - presetView.getScrollBarThickness() - 2;
-        constexpr int rowHeight = 50;
-        presetList.setSize (listWidth, rowHeight * presetTiles.size());
-        for (int i = 0; i < presetTiles.size(); ++i)
-            presetTiles[i]->setBounds (0, i * rowHeight, listWidth, rowHeight);
+        layoutPresets();
 
         if (screen != nullptr)
             screen->setBounds (r.removeFromTop (104).expanded (3));
@@ -443,6 +449,15 @@ private:
 
     juce::TextButton addButton { "+ Preset" };
     juce::TextButton syncButton { "Sync from QC (USB)" };
+    SearchBox search { "Search presets" };
+    std::vector<int> shownPresets;
+
+    // The preset rows that match the search, best first.
+    void layoutPresets()
+    {
+        shownPresets = layoutFilteredRows (presetTiles, presetList, presetView.getWidth() - presetView.getScrollBarThickness() - 2,
+                                           50, search.getText());
+    }
     juce::TextButton setlistWarning;
     juce::Viewport presetView;
     juce::Component presetList;

@@ -2,6 +2,7 @@
 #include "../Source/Update.h"
 #include "../Source/State.h"
 #include "../Source/QcUsb.h"
+#include "../Source/Fuzzy.h"
 
 #include <cstdio>
 
@@ -95,6 +96,23 @@ int main (int argc, char** argv)
     CHECK (isCC (qc::gigMode (1, 1).events[0].second, 1, 47, 2)); // scene
     CHECK (isCC (qc::gigView (1, true).events[0].second, 1, 46, 127) && isCC (qc::gigView (3, false).events[0].second, 3, 46, 0));
     CHECK (qc::gigView (1, true).name == "QC Gig View On");
+
+    // Fuzzy search for preset lists.
+    {
+        const juce::StringArray names { "Clean Rig", "Plexi Crunch", "Drop C Heavy", "Lead Rig", "Ambient Pads" };
+        const juce::StringArray where { "SL1 | 1A", "SL1 | 1B", "SL1 | 2B", "SL2 | 1C", "SL1 | 2A" };
+        CHECK (fuzzy::order ({}, names, where).size() == 5 && fuzzy::order ({}, names, where)[0] == 0);   // empty: everything, in order
+        CHECK (fuzzy::order ("drop", names, where) == std::vector<int> { 2 });
+        CHECK (fuzzy::order ("drpc", names, where).front() == 2);                              // letters in order
+        CHECK (fuzzy::order ("hevy", names, where) == std::vector<int> { 2 });                 // one typo
+        CHECK (fuzzy::order ("crnch", names, where) == std::vector<int> { 1 });
+        CHECK (fuzzy::order ("rig", names, where).size() == 2);                                // Clean Rig, Lead Rig
+        CHECK (fuzzy::order ("lead rig", names, where) == std::vector<int> { 3 });             // every word must match
+        CHECK (fuzzy::order ("sl2", names, where) == std::vector<int> { 3 } && fuzzy::order ("2b", names, where) == std::vector<int> { 2 });   // location, as typed
+        CHECK (fuzzy::order ("cl", names, where) == std::vector<int> { 0 });                   // no scattered letters from "SL1"
+        CHECK (fuzzy::order ("xyzzy", names, where).empty());
+        CHECK (fuzzy::score ("cr", "Crunch") > fuzzy::score ("cr", "Clean Rig"));               // unbroken run beats scattered letters
+    }
 
     // Custom units (beta): typed message lists.
     {

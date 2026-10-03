@@ -170,7 +170,7 @@ The first tab is named after your amp modeller. Click the **▾** on it (or use 
 
 | Area | What it does | MIDI sent |
 |---|---|---|
-| **Presets** (left) | Your QC presets. Click one to open it; drag it to load that preset. | `CC#0` bank page, optional `CC#32` setlist, then Program Change |
+| **Presets** (left) | Your QC presets. Click one to open it; drag it to load that preset. **Search presets** at the top finds one fast (see below). | `CC#0` bank page, optional `CC#32` setlist, then Program Change |
 | **Setlists not sent: turn on** (above *Sync from QC*) | Appears when your presets are in more than one setlist but *Send setlist* is off. Click it to turn it on, so each preset loads in its own setlist; then drag preset clips you made before into your DAW again. | Turns on `CC#32` |
 | **Loaded preset** screen | The opened preset, with its location and scene colours. Drag it like a preset. | Same as above |
 | **Scenes** | 8 scenes laid out like the QC display: **A-D top, E-H bottom**. | `CC#43` = 0-7 |
@@ -179,6 +179,12 @@ The first tab is named after your amp modeller. Click the **▾** on it (or use 
 | **Scenes & Stomps / Expression** | The switch under the screen picks what the lower part shows: scene and stomp tiles, or [expression moves](#expression-swells-fades-and-wah). | |
 | **Expression** | Moves whatever you assign to Expression 1 or 2 on the QC: swells, fades, wah, or your own drawing. | `CC#1` / `CC#2` |
 | **Utilities** | Tuner on/off, **Gig View** on/off (opens or closes the QC's big-text Gig View screen), and the footswitch mode (Preset / Stomp / Scene). | `CC#45`, `CC#46`, `CC#47` |
+
+### Search your presets
+
+![Searching the preset list](images/qc-search.png)
+
+With a long list, type in **Search presets** above it. The search is forgiving: letters in order find a name (`drpc` finds *Drop C Heavy*), one typo is fine (`hevy`), and several words must all match (`lead rig`). You can also type a location as the QC shows it, like `SL2` or `3B`. The best matches come first. **Return** opens the first one, **Esc** clears the search. The Kemper's performance list and custom MIDI devices have the same search.
 
 **Every tile:**
 
@@ -216,7 +222,7 @@ Instead of typing every preset, let PedalCues read them from the pedal:
 2. **Quit Cortex Control**: it keeps the USB connection to itself.
 3. Click **Sync from QC (USB)** under the preset list.
 4. PedalCues lists your setlists with their preset counts. Tick the ones to import and **check each one's setlist number**: the QC doesn't report its setlist numbers over USB, so PedalCues guesses new ones (My Presets first, then A-Z). Set each to the number it has on your QC; the Factory Presets are **0** and your own setlists start at **1**. PedalCues **remembers the numbers you set**, so the next sync gets them right. The Factory Library is unticked by default.
-5. Leave **Send the setlist with every preset change** on (it's on by default here; it's the same switch as *MIDI Setup > Advanced > Send setlist*). It sends the setlist number (CC#32) before each preset, so the QC switches to the right setlist even when it's on another one. Preset clips you dragged into your DAW before turning it on don't have it: drag them in again.
+5. Leave **Send the setlist with every preset change** on (it's on by default here; it's the same switch as **Send setlist** in *MIDI Setup > Your pedals*). It sends the setlist number (CC#32) before each preset, so the QC switches to the right setlist even when it's on another one. Preset clips you dragged into your DAW before turning it on don't have it: drag them in again.
 6. Optional: tick **Also read scenes, colours and stomps for every ticked preset** (see below).
 7. Click **Import**. New presets are added at their bank and slot; presets you already have at the same setlist, bank and slot are renamed. Tick *Replace my current preset list* to start fresh instead.
 
@@ -288,7 +294,7 @@ Pick **Kemper Profiler** (Head, Rack, Stage, Player... every Profiler model, in 
 
 | Area | What it does | MIDI sent |
 |---|---|---|
-| **Performances** (left) | Your performances, with the number they have on the Kemper (1-125). **+ Perf.** adds one; double-click to edit, right-click to recolour, reorder or delete. | |
+| **Performances** (left) | Your performances, with the number they have on the Kemper (1-125). **Search performances** at the top finds one fast. **+ Perf.** adds one; double-click to edit, right-click to recolour, reorder or delete. | |
 | **Loaded performance** screen | The opened performance and its slot names. Drag it to load slot 1. | Bank select `CC#32`, then Program Change |
 | **Slots** | Slots 1-5 of the open performance. Double-click to rename, right-click for a colour. | See below |
 | **Load P1 first** (Slots header) | **On** (the default): a slot tile loads its performance and slot from anywhere. **Off**: it loads that slot of the performance the Kemper already has loaded. | On: `CC#32` + Program Change. Off: `CC#50-54` |
@@ -329,6 +335,8 @@ Not on a Quad Cortex or Kemper? Any device that takes MIDI works: a Fractal, a H
 - **Programs count from 0 / 1:** how the device's manual numbers presets. Some count the first preset as 0, others as 1; Program Change tiles use the same counting.
 - **Notes:** anything worth remembering: which manual page the numbers come from, and why it's set up this way. Notes travel with the device when you share it.
 - **Export device... / Import device...:** save the device (groups, tiles and notes) as a `.pedalcues-device` file, to back it up or share it. One person sets up a device and everyone with the same gear imports it.
+
+**Search tiles** (above the groups) finds a tile by its name, messages, note or group; groups without a match are hidden while you search.
 
 **Groups and tiles (right):** name groups however your device works, for example *Presets*, *Scenes*, *Snapshots* or *Switches*. **+ Group** adds one, **+ Tile** adds a tile to a group, and each group's **...** renames, moves or deletes it. Tiles drag, play and right-click like every other tile; a clip is named after the device and the tile, for example `My Rig Verse`.
 
@@ -459,7 +467,7 @@ My drawings are saved **on your computer**, not in one project, so every project
 
 The **MIDI Setup** tab has two cards in the plugin, and a third, **Test your pedals**, in the standalone app:
 
-- **Your pedals** (set once, required): your **Amp modeller or MIDI device** (Quad Cortex, Kemper Profiler, Kemper Player or a [custom MIDI device](#7-custom-midi-devices-beta); the same choice as the ▾ on the first tab), then the MIDI channel of the amp modeller and of the Whammy (V or DT: pick which on the Whammy page). They must match the pedals themselves and be different from each other. Every cue is sent on these channels, whatever your wiring, and each clip keeps the channel it was dragged with. When they match your pedals, click **My pedals use these channels** (this hides the reminder on the other pages; click again to undo it). **Advanced** (folded away) has *Whammy program numbering*, only for when every mode lands one position off, and *Send setlist (CC#32)*, for presets in several setlists.
+- **Your pedals** (set once, required): your **Amp modeller or MIDI device** (Quad Cortex, Kemper Profiler, Kemper Player or a [custom MIDI device](#7-custom-midi-devices-beta); the same choice as the ▾ on the first tab), then the MIDI channel of the amp modeller and of the Whammy (V or DT: pick which on the Whammy page). With a Quad Cortex, **Send setlist (CC#32) with preset changes** sits under its channel: turn it on when your presets are in more than one setlist (Sync from QC turns it on for you). They must match the pedals themselves and be different from each other. Every cue is sent on these channels, whatever your wiring, and each clip keeps the channel it was dragged with. When they match your pedals, click **My pedals use these channels** (this hides the reminder on the other pages; click again to undo it). **Advanced** (folded away) has *Whammy program numbering*, only for when every mode lands one position off.
 - **DAW tracks:** pick **My wiring** at the top (**Daisy chain via QC / Kemper** or **Separate outputs**), and the card shows the two cue tracks and their MIDI outputs for it. Not sure how to cable the pedals? **How should I wire my pedals?** opens the **Wiring guide** (also in the ☰ / **Help** menu): one device, a daisy chain or separate outputs, with the cables and signal flow for each and the setup that doesn't work.
 - **Test your pedals** (standalone app only): the MIDI port the app sends to, with **Test QC** and **Test Whammy**. They send on the channels from *Your pedals*: Test QC (Test Kemper) turns the tuner on and, 1.5 s later, off again (CC#45 on the QC, CC#31 on the Kemper); with a custom MIDI device, its Test button sends your first tile, so it opens and closes (or just closes if it was open); Test Whammy steps through **Oct Up, 5th Up and 2 Oct Up** half a second apart (Program Changes), so you see the LED move whatever mode it was on. After each click the card tells you what it sent; check that the pedal reacted.
 
@@ -496,7 +504,7 @@ PedalCues asks GitHub for the latest release when it opens; nothing else is sent
 | Standalone app: tiles do nothing | Pick the port your pedals are on in **MIDI Setup > Test your pedals** (or **Options > MIDI Output**), then try **Test QC** / **Test Whammy**. On Windows, close your DAW first; only one program can use a MIDI port at a time. |
 | Scene or stomp changes the wrong preset | **Load 1A first** is off, so tiles act on whatever preset the QC has loaded. Switch it on in the Scenes header so they load their own preset first. |
 | A stomp tile changes scenes | The QC is in Scene mode, where footswitch A-H select scenes. Put the QC in Stomp mode (or drop the **Stomp Mode** tile before your stomp cues). Before v0.4.2 the Scene Mode and Stomp Mode tiles were swapped; drag those clips in again. |
-| The QC stays in another setlist | Turn on **Send setlist** (*MIDI Setup > Advanced*, or the **Setlists not sent: turn on** button above *Sync from QC*), check the preset's setlist number in *Edit preset*, then drag its clips into your DAW again: clips keep what they were dragged with. |
+| The QC stays in another setlist | Turn on **Send setlist** (*MIDI Setup > Your pedals*, or the **Setlists not sent: turn on** button above *Sync from QC*), check the preset's setlist number in *Edit preset*, then drag its clips into your DAW again: clips keep what they were dragged with. |
 | Wrong preset loads | Check setlist, bank and slot in *Edit preset*. If presets are in other setlists, turn on *Send setlist*. Setlist numbers are as the QC shows them (Factory Presets = 0). Before v0.4.28 PedalCues sent one less, so if you added 1 to work around it, set them back. |
 | The scene changes a little after the beat | That's the 1/16 gap of **Load 1A first**, which gives the QC time to load the preset. Drop the tile 1/16 early, or switch Load 1A first off inside the song. See [Timing](#timing-scenes-right-after-a-preset). |
 | Whammy doesn't react | If the QC is on USB and the Whammy hangs off the QC's Thru, that can't work: the QC doesn't forward USB MIDI (a known QC limitation). Use one of the [three working setups](#2-connect-your-rig). Otherwise check the cable direction (MIDI Out to MIDI In) and the channels, set the QC to a fixed channel (not *Omni*), and for the daisy chain turn on QC MIDI Thru. |

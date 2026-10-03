@@ -48,6 +48,53 @@ juce::Rectangle<int> Section::contentArea() const
 }
 
 //==============================================================================
+SearchBox::SearchBox (const juce::String& placeholder)
+{
+    setTextToShowWhenEmpty (placeholder, dim);
+    setFont (font (13.5f));
+    setIndents (30, 0);
+    setJustification (juce::Justification::centredLeft);
+    setSelectAllWhenFocused (true);
+    setTooltip ("Type part of a name or location; letters in order and small typos also match. Esc clears, Return opens the first.");
+    onTextChange = [this] { if (onSearch) onSearch(); };
+    // Return and Esc hand the keyboard back, so the DAW's own keys (the space bar) work again.
+    onEscapeKey  = [this] { clear(); if (onSearch) onSearch(); giveAwayKeyboardFocus(); };
+    onReturnKey  = [this] { if (onSubmit) onSubmit(); giveAwayKeyboardFocus(); };
+}
+
+void SearchBox::paintOverChildren (juce::Graphics& g)
+{
+    juce::TextEditor::paintOverChildren (g);   // the placeholder text
+    // A magnifier on the left.
+    const auto c = juce::Point<float> (15.0f, (float) getHeight() * 0.5f - 1.0f);
+    g.setColour (dim);
+    g.drawEllipse (c.x - 5.0f, c.y - 5.0f, 10.0f, 10.0f, 1.6f);
+    g.drawLine (c.x + 3.6f, c.y + 3.6f, c.x + 7.0f, c.y + 7.0f, 1.8f);
+}
+
+std::vector<int> layoutFilteredRows (juce::OwnedArray<Tile>& rows, juce::Component& list, int width, int rowHeight, const juce::String& query)
+{
+    juce::StringArray names, locations;
+    for (auto* t : rows)
+    {
+        names.add (t->title);
+        locations.add (t->subtitle);
+    }
+    const auto shown = fuzzy::order (query, names, locations);
+
+    for (auto* t : rows)
+        t->setVisible (false);
+    for (size_t k = 0; k < shown.size(); ++k)
+    {
+        auto* t = rows[shown[k]];
+        t->setBounds (0, (int) k * rowHeight, width, rowHeight);
+        t->setVisible (true);
+    }
+    list.setSize (width, juce::jmax (rowHeight, rowHeight * (int) shown.size()));
+    return shown;
+}
+
+//==============================================================================
 juce::ValueTree nthOfType (const juce::ValueTree& parent, const juce::Identifier& type, int n)
 {
     int count = 0;

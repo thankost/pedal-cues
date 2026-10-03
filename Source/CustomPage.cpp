@@ -441,6 +441,10 @@ public:
         groupsView.setScrollBarThickness (8);
         addAndMakeVisible (groupsView);
 
+        search.setComponentID ("cu.search");
+        search.onSearch = [this] { resized(); groupsView.setViewPosition (0, 0); };
+        addAndMakeVisible (search);
+
         addGroupButton.setComponentID ("cu.addGroup");
         addGroupButton.setColour (juce::TextButton::buttonColourId, raised);
         addGroupButton.setTooltip ("Add a group of tiles, for example Presets, Scenes, Snapshots or Effects");
@@ -471,6 +475,8 @@ public:
         groupButtons.clear();
         tiles.clear();
         tileGroup.clear();
+        tileText.clear();
+        tileExact.clear();
 
         for (int gi = 0; gi < u.getNumChildren(); ++gi)
         {
@@ -505,6 +511,9 @@ public:
 
                 auto* t = tiles.add (new Tile (proc, Tile::Look::utility));
                 tileGroup.add (gi);
+                tileText.add (tile[IDs::name].toString());
+                tileExact.add ((parsed.ok() ? cues::custom::describe (parsed, base) : juce::String())
+                               + "  " + note + "  " + group[IDs::name].toString());
                 t->title = tile[IDs::name].toString();
                 t->subtitle = parsed.ok() ? cues::custom::describe (parsed, base) : juce::String ("Check the messages");
                 t->colour = state::colourOf (tile);
@@ -547,14 +556,28 @@ public:
             notesEditor.setBounds (c);
         }
 
-        // Right: the groups, stacked and scrollable.
+        // Right: a search, then the groups, stacked and scrollable. While searching, only matching tiles show,
+        // and groups with none are hidden.
+        search.setBounds (r.removeFromTop (32).withWidth (juce::jmin (r.getWidth(), 360)));
+        r.removeFromTop (10);
         groupsView.setBounds (r);
+        const auto query = search.getText().trim();
+        for (int ti = 0; ti < tiles.size(); ++ti)
+            tiles[ti]->setVisible (fuzzy::score (query, tileText[ti], tileExact[ti]) >= 0);
+
         const auto width = r.getWidth() - groupsView.getScrollBarThickness() - 4;
         int y = 0;
-        const auto u = unit();
         for (int gi = 0; gi < groupSections.size(); ++gi)
         {
-            const auto count = u.getChild (gi).getNumChildren();
+            int count = 0;
+            for (int ti = 0; ti < tiles.size(); ++ti)
+                count += (tileGroup[ti] == gi && tiles[ti]->isVisible()) ? 1 : 0;
+            const auto showGroup = query.isEmpty() || count > 0;
+            groupSections[gi]->setVisible (showGroup);
+            groupButtons[gi * 2]->setVisible (showGroup);
+            groupButtons[gi * 2 + 1]->setVisible (showGroup);
+            if (! showGroup)
+                continue;
             const auto rows = juce::jmax (1, (count + tileColumns - 1) / tileColumns);
             const auto height = Section::headerHeight + rows * (tileHeight + tileGap) - tileGap + Section::padding;
             auto* section = groupSections[gi];
@@ -569,7 +592,7 @@ public:
             const auto cellW = (area.getWidth() + tileGap) / tileColumns;
             int i = 0;
             for (int ti = 0; ti < tiles.size(); ++ti)
-                if (tileGroup[ti] == gi)
+                if (tileGroup[ti] == gi && tiles[ti]->isVisible())
                 {
                     tiles[ti]->setBounds (area.getX() + (i % tileColumns) * cellW, area.getY() + (i / tileColumns) * (tileHeight + tileGap),
                                           cellW - tileGap, tileHeight);
@@ -577,6 +600,7 @@ public:
                 }
             y += height + groupGap;
         }
+        addGroupButton.setVisible (query.isEmpty());
         addGroupButton.setBounds (0, y, 140, 32);
         groupsContent.setSize (width, y + 40);
     }
@@ -749,6 +773,8 @@ private:
     juce::OwnedArray<juce::TextButton> groupButtons;   // per group: + Tile, ...
     juce::OwnedArray<Tile> tiles;
     juce::Array<int> tileGroup;                        // which group each tile belongs to
+    juce::StringArray tileText, tileExact;             // what the search looks in: the name (fuzzy); messages, note, group (plain)
+    SearchBox search { "Search tiles" };
 };
 } // namespace
 
