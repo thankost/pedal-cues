@@ -28,6 +28,16 @@ public:
         syncButton.onClick = [this] { showQcSyncDialog (state); };
         addAndMakeVisible (syncButton);
 
+        // Presets in several setlists only load right if the setlist is sent too (CC#32, off by default).
+        setlistWarning.setComponentID ("qc.setlistWarning");
+        setlistWarning.setColour (juce::TextButton::buttonColourId, accent.withAlpha (0.18f));
+        setlistWarning.setColour (juce::TextButton::textColourOffId, accent);
+        setlistWarning.setTooltip ("Your presets are in more than one setlist, but Send setlist (CC#32) is off, so a preset tile loads its "
+                                   "bank and slot in whatever setlist the QC is on. Click to turn it on (MIDI Setup > Advanced), then drag "
+                                   "preset clips you made before into your DAW again.");
+        setlistWarning.onClick = [this] { state.setProperty (IDs::sendSetlist, true, nullptr); };
+        addChildComponent (setlistWarning);
+
         presetView.setViewedComponent (&presetList, false);
         presetView.setScrollBarsShown (true, false);
         presetView.setScrollBarThickness (8);
@@ -81,6 +91,12 @@ public:
         const auto preset = qc.getChild (sel);
         const auto combo = (bool) state[IDs::comboPresetScene];
         const auto stompOn = (bool) state[IDs::stompOn];
+
+        juce::SortedSet<int> setlists;
+        for (auto p : qc)
+            setlists.add ((int) p[IDs::setlist]);
+        setlistWarning.setButtonText ("Setlists not sent: turn on");
+        setlistWarning.setVisible (setlists.size() > 1 && ! (bool) state[IDs::sendSetlist]);
 
         loadFirstToggle.setButtonText (preset.isValid() ? "Load " + shortLocation (preset) + " first" : "Load preset first");
         loadFirstToggle.setToggleState (combo, juce::dontSendNotification);
@@ -192,6 +208,11 @@ public:
             auto content = presetsSection.contentArea();
             syncButton.setBounds (content.removeFromBottom (34).reduced (2, 0));
             content.removeFromBottom (8);
+            if (setlistWarning.isVisible())
+            {
+                setlistWarning.setBounds (content.removeFromBottom (30).reduced (2, 0));
+                content.removeFromBottom (6);
+            }
             presetView.setBounds (content);
         }
 
@@ -422,6 +443,7 @@ private:
 
     juce::TextButton addButton { "+ Preset" };
     juce::TextButton syncButton { "Sync from QC (USB)" };
+    juce::TextButton setlistWarning;
     juce::Viewport presetView;
     juce::Component presetList;
     juce::ToggleButton loadFirstToggle;

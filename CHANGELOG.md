@@ -2,6 +2,11 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.6.2 (2026-10-03)
+
+- **Fixed: presets from another setlist didn't load.** PedalCues only sends the setlist when *Send setlist* is on, and it was off by default, hidden in MIDI Setup > Advanced. **Sync from QC now turns it on** (a new switch in the sync window, on by default), and the Quad Cortex page shows a **Setlists not sent: turn on** button when your presets are in more than one setlist. Drag preset clips you made before into your DAW again: clips keep the settings they were dragged with.
+- **Setlist numbers in Sync from QC:** the Quad Cortex doesn't report its setlist numbers over USB, so the sync window now says clearly that it guesses them, and **remembers the numbers you set**, so you only fix them once. Numbers go up to 32.
+
 ## 0.6.1 (2026-10-03)
 
 - **Any MIDI device (beta, new):** not on a Quad Cortex or Kemper? Choose **New MIDI device...** under the **▾** on the first tab, and make your own tiles for a Fractal, a Helix, a Boss, a synth, a looper, or anything else that takes MIDI. Name your groups (presets, scenes, snapshots, switches...) and tiles; they drag onto the timeline like every other tile.

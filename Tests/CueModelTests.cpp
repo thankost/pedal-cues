@@ -53,6 +53,26 @@ int main (int argc, char** argv)
         return info.status == update::Info::Status::failed ? 1 : 0;
     }
 
+    // Hardware diagnostics: PedalCuesTests --qc-setlists lists the QC's setlists in the order it sends them,
+    // with any folder fields PedalCues doesn't decode (to find how the QC numbers its setlists). Quit Cortex Control first.
+    if (argc > 1 && juce::String (argv[1]) == "--qc-setlists")
+    {
+        std::atomic<bool> cancel { false };
+        const auto r = qcusb::readSetlists ([] (const juce::String& s) { std::printf ("  %s\n", s.toRawUTF8()); }, cancel);
+        if (! r.ok)
+        {
+            std::printf ("failed: %s\n", r.error.toRawUTF8());
+            return 1;
+        }
+        auto byArrival = r.setlists;
+        std::sort (byArrival.begin(), byArrival.end(), [] (const auto& a, const auto& b) { return a.arrival < b.arrival; });
+        std::printf ("CorOS %s, %d setlists, in the order the QC sent them:\n", r.corosVersion.toRawUTF8(), (int) byArrival.size());
+        for (const auto& f : byArrival)
+            std::printf ("  #%d  %-24s %3d presets  key=%s%s  %s\n", f.arrival, f.name.toRawUTF8(), (int) f.presets.size(),
+                         f.key.toRawUTF8(), f.isFactory ? "  (factory)" : "", f.otherFields.joinIntoString (" ").toRawUTF8());
+        return 0;
+    }
+
     using namespace cues;
 
     // Quad Cortex scene C on channel 1 -> CC43 = 2

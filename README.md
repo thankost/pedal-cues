@@ -20,7 +20,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 
 **Quad Cortex**
 - Preset tiles (name, colour, setlist / bank / slot) → `CC#0` page [+ `CC#32` setlist] + Program Change
-- **Sync from QC (USB):** reads your setlists, preset names (bank/slot), and scene names, scene colours and stomp names straight from the pedal (quit Cortex Control first). Optional "every preset" mode loads each preset in turn to read it
+- **Sync from QC (USB):** reads your setlists, preset names (bank/slot), and scene names, scene colours and stomp names straight from the pedal (quit Cortex Control first). Optional "every preset" mode loads each preset in turn to read it. The QC doesn't report setlist numbers, so you check them once in the sync window and PedalCues remembers them; the sync also turns on *Send setlist*
 - 8 scene tiles per preset in gig-view colours → `CC#43`
 - Scene and stomp tiles either **load their own preset first** (default; the scene/footswitch follows 1/16 later)
   or act on the **current QC preset** only
@@ -124,7 +124,7 @@ Details and pictures: [guide, section 2](https://thankost.github.io/pedal-cues/g
 - **Whammy numbering:** the plugin uses the manual's 1-based numbers (Classic 1–21 on / 22–42 bypassed,
   Chords 43–63 on / 64–84 bypassed; on the Whammy DT, 43–78 are Drop Tune). If every mode arrives one step off, change *MIDI Setup → Whammy program
   numbering*. Mode names can be renamed if your chart differs.
-- **QC setlist:** `CC#32` = the setlist number as the QC shows it (0 = Factory Presets). Leave *Send setlist* off if all presets are in the active setlist.
+- **QC setlist:** `CC#32` = the setlist number as the QC shows it (0 = Factory Presets). Turn on *Send setlist* when your presets are in more than one setlist (the QC page shows a reminder), and drag preset clips in again after turning it on.
 
 ## Layout
 

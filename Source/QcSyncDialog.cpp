@@ -37,6 +37,21 @@ public:
         status.setJustificationType (juce::Justification::topLeft);
         addAndMakeVisible (status);
 
+        // The QC doesn't report setlist numbers over USB: say so plainly, next to the numbers.
+        numbersNote.setText ("Check the setlist numbers: the Quad Cortex doesn't send them over USB, so PedalCues guesses new ones "
+                             "(My Presets first, then A-Z). Set each to the number it has on your QC. PedalCues remembers them for next time.",
+                             juce::dontSendNotification);
+        numbersNote.setFont (font (12.5f, true));
+        numbersNote.setColour (juce::Label::textColourId, accent);
+        numbersNote.setJustificationType (juce::Justification::topLeft);
+        addChildComponent (numbersNote);
+
+        sendSetlistToggle.setButtonText ("Send the setlist with every preset change (CC#32), so the QC switches setlist too");
+        sendSetlistToggle.setTooltip ("The same switch as MIDI Setup > Advanced > Send setlist. Without it, a preset tile loads that "
+                                      "bank and slot in whatever setlist the QC is on.");
+        sendSetlistToggle.setToggleState (true, juce::dontSendNotification);
+        addChildComponent (sendSetlistToggle);
+
         replaceToggle.setButtonText ("Replace my current preset list (otherwise add new presets and rename matching ones)");
         addChildComponent (replaceToggle);
 
@@ -59,7 +74,7 @@ public:
         addAndMakeVisible (primary);
         addAndMakeVisible (secondary);
 
-        setSize (640, 560);
+        setSize (660, 640);
         startReading();
     }
 
@@ -88,7 +103,10 @@ public:
         }
 
         status.setBounds (r.removeFromTop (52));
+        numbersNote.setBounds (r.removeFromTop (36));
+        r.removeFromTop (4);
         replaceToggle.setBounds (r.removeFromBottom (28));
+        sendSetlistToggle.setBounds (r.removeFromBottom (28));
         scanWarning.setBounds (r.removeFromBottom (44).withTrimmedLeft (26));
         scanToggle.setBounds (r.removeFromBottom (28));
         r.removeFromBottom (6);
@@ -166,7 +184,7 @@ private:
         primary.setButtonText ("Import");
         status.setText ("Found " + juce::String ((int) result.setlists.size()) + " setlists on your "
                         + juce::String (result.isMini ? "QC Mini" : "Quad Cortex") + " (CorOS " + result.corosVersion + "). "
-                        "Tick the ones to import, and check each one's setlist number (used when \"Send setlist\" is on)."
+                        "Tick the ones to import."
                         + (result.current ? " The loaded preset (" + result.current->name + ") comes with its scenes, colours and stomps."
                                           : juce::String()),
                         juce::dontSendNotification);
@@ -174,6 +192,8 @@ private:
         setlistRows.clear();
         rows.removeAllChildren();
         // Numbers as the QC counts them (and as CC#32 selects them): 0 = Factory Presets, then your setlists from 1.
+        // The QC doesn't report them, so use the numbers the player set last time, else guess (My Presets, then A-Z).
+        const auto remembered = rememberedNumbers();
         int number = 1;
         for (const auto& f : result.setlists)
         {
@@ -182,9 +202,12 @@ private:
             row->tick.setButtonText (f.name + "  (" + juce::String ((int) f.presets.size()) + " presets)");
             row->tick.setToggleState (! f.isFactory && ! f.presets.empty(), juce::dontSendNotification);
             row->number.addItem ("Factory (0)", factoryId);
-            for (int n = 1; n <= 16; ++n)
+            for (int n = 1; n <= maxSetlist; ++n)
                 row->number.addItem ("Setlist " + juce::String (n), n);
-            row->number.setSelectedId (f.isFactory ? factoryId : juce::jlimit (1, 16, number++), juce::dontSendNotification);
+            const auto guess = juce::jlimit (1, maxSetlist, number++);
+            const auto key = f.key.trimCharactersAtEnd ("/");
+            row->number.setSelectedId (f.isFactory ? factoryId : remembered.count (key) > 0 ? remembered.at (key) : guess,
+                                       juce::dontSendNotification);
             rows.addAndMakeVisible (row->tick);
             rows.addAndMakeVisible (row->number);
             setlistRows.push_back (std::move (row));
@@ -196,7 +219,7 @@ private:
 
     void showPickers (bool show)
     {
-        for (auto* c : std::initializer_list<juce::Component*> { &rowsView, &replaceToggle, &scanToggle, &scanWarning })
+        for (auto* c : std::initializer_list<juce::Component*> { &rowsView, &numbersNote, &sendSetlistToggle, &replaceToggle, &scanToggle, &scanWarning })
             c->setVisible (show);
     }
 
@@ -262,6 +285,9 @@ private:
             details.emplace (std::make_pair (lastResult.currentFolderKey, lastResult.currentPosition), *lastResult.current);
 
         auto qc = state.getChildWithName (IDs::QC);
+        rememberNumbers();
+        const auto sendSetlist = sendSetlistToggle.getToggleState();
+        state.setProperty (IDs::sendSetlist, sendSetlist, nullptr);
         if (replaceToggle.getToggleState())
             qc.removeAllChildren (nullptr);
 
@@ -307,7 +333,9 @@ private:
         secondary.setButtonText ("Close");
         status.setText ("Done: " + juce::String (added) + " presets added, " + juce::String (renamed) + " renamed, "
                         + juce::String (withScenes) + " with their scene names, colours and stomps from the QC. "
-                        "Use the menu's Save as default setup to keep them for new projects.",
+                        + (sendSetlist ? "Send setlist is on: drag preset clips you made before into your DAW again, so they switch setlist too. "
+                                       : "Send setlist is off: preset tiles load in whatever setlist the QC is on. ")
+                        + "Use the menu's Save as default setup to keep them for new projects.",
                         juce::dontSendNotification);
         primary.setButtonText ("Sync again");
         resized();
@@ -341,14 +369,39 @@ private:
             dw->exitModalState (0);
     }
 
+    // The setlist numbers the player picked, per setlist (its folder key), kept on this computer: "key=6\n...".
+    static std::map<juce::String, int> rememberedNumbers()
+    {
+        std::map<juce::String, int> numbers;
+        for (const auto& line : juce::StringArray::fromLines (state::getSetting (numbersSetting)))
+            if (line.containsChar ('='))
+                numbers[line.upToLastOccurrenceOf ("=", false, false)] = line.fromLastOccurrenceOf ("=", false, false).getIntValue();
+        return numbers;
+    }
+
+    void rememberNumbers() const
+    {
+        auto numbers = rememberedNumbers();
+        for (const auto& row : setlistRows)
+            if (! row->folder.isFactory)
+                numbers[row->folder.key.trimCharactersAtEnd ("/")] = row->number.getSelectedId();
+        juce::StringArray lines;
+        for (const auto& [key, number] : numbers)
+            lines.add (key + "=" + juce::String (number));
+        state::setSetting (numbersSetting, lines.joinIntoString ("\n"));
+    }
+
     static constexpr int factoryId = 100;   // the setlist combo's "Factory (0)" item (ids must be non-zero)
+    static constexpr int maxSetlist = 32;
+    static inline const juce::String numbersSetting { "qcSetlistNumbers" };
 
     juce::ValueTree state;
     std::shared_ptr<std::atomic<bool>> cancel = std::make_shared<std::atomic<bool>> (false);
     bool picking = false;
 
     juce::Label title, note, warning, status;
-    juce::ToggleButton replaceToggle, scanToggle;
+    juce::ToggleButton replaceToggle, scanToggle, sendSetlistToggle;
+    juce::Label numbersNote;
     juce::Label scanWarning;
     qcusb::Result lastResult;
     juce::Viewport rowsView;

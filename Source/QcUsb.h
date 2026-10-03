@@ -85,6 +85,8 @@ struct Folder
     bool isFactory = false;
     std::vector<Preset> presets;    // named slots only
     int fileCount = 0;              // entries in the push (incl. empty slots)
+    int arrival = -1;               // the order the QC sent it in (readSetlists)
+    juce::StringArray otherFields;  // fields not decoded above, e.g. "f2=5" (diagnostics: setlist order)
 };
 
 // A File push (type 4, action UPDATE) describing one folder, or nothing.

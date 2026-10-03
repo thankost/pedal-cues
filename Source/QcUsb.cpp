@@ -190,6 +190,10 @@ std::optional<Folder> parseFolder (const Message& m)
         if (f.number == 1 && f.wireType == 2) folder.key = f.text();
         else if (f.number == 3 && f.wireType == 2) folder.name = f.text();
         else if (f.number == 4 && f.wireType == 0) folder.isFactory = f.value != 0;
+        else if (f.number != 7)
+            folder.otherFields.add ("f" + juce::String (f.number) + (f.wireType == 0 ? "=" + juce::String ((juce::int64) f.value)
+                                                                                    : f.wireType == 2 ? "=\"" + f.text().substring (0, 40) + "\""
+                                                                                                      : " (wire " + juce::String (f.wireType) + ")"));
         else if (f.number == 7 && f.wireType == 2)
         {
             // ProductData: f2 index (may be missing; then the array position is the slot), f3 name.
@@ -660,8 +664,10 @@ Result readSetlists (const std::function<void (const juce::String&)>& progress, 
                     if (isSetlist (*f) && f->fileCount > 0)
                     {
                         auto& slot = folders[f->key.trimCharactersAtEnd ("/")];
+                        const auto arrival = slot.arrival >= 0 ? slot.arrival : (int) folders.size() - 1;
                         if (f->fileCount >= slot.fileCount)
                             slot = *f;
+                        slot.arrival = arrival;
                         lastSetlistAt = juce::Time::getMillisecondCounter();
                     }
 

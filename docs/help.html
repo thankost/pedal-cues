@@ -55,6 +55,9 @@
     <details><summary>The Kemper doesn't react</summary>
       <p>Set the Kemper to a fixed MIDI channel (it's Omni out of the box) and the same number in <b>MIDI Setup &gt; Your pedals</b>,
          and check that <b>Amp modeller</b> is your Kemper model. Put Kemper clips on the Kemper Cues track.</p></details>
+    <details><summary>The Quad Cortex stays in another setlist</summary>
+      <p>Turn on <b>Send setlist</b> (<i>MIDI Setup &gt; Advanced</i>), check each preset's setlist number (the QC doesn't report its
+         numbers over USB, so Sync from QC guesses them; set them as your QC shows them), then drag the preset clips into your DAW again.</p></details>
     <details><summary>A custom MIDI device doesn't react</summary>
       <p>Check its MIDI channel (the same in MIDI Setup and on the device) and the CC numbers and values in its MIDI chart, which
          differ for every device. Use <b>Test on the device</b> in the tile editor. If it loads the preset next to the one you wanted,
