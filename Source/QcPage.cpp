@@ -1,4 +1,5 @@
 #include "EditorCommon.h"
+#include "Modellers.h"
 
 using namespace theme;
 
@@ -33,10 +34,15 @@ public:
         setlistWarning.setColour (juce::TextButton::buttonColourId, accent.withAlpha (0.18f));
         setlistWarning.setColour (juce::TextButton::textColourOffId, accent);
         setlistWarning.setTooltip ("Your presets are in more than one setlist, but Send setlist (CC#32) is off, so a preset tile loads its "
-                                   "bank and slot in whatever setlist the QC is on. Click to turn it on (it's \"Switch to the preset's setlist\" in MIDI Setup > Your pedals), then drag "
+                                   "bank and slot in whatever setlist the QC is on. Click to turn it on (it's \"Switch to the preset's setlist\" just above), then drag "
                                    "preset clips you made before into your DAW again.");
         setlistWarning.onClick = [this] { state.setProperty (IDs::sendSetlist, true, nullptr); };
         addChildComponent (setlistWarning);
+
+        setlistToggle.setButtonText ("Switch to the preset's setlist");
+        setlistToggle.setTooltip (setlistSwitchTooltip ("QC"));
+        setlistToggle.onClick = [this] { state.setProperty (IDs::sendSetlist, setlistToggle.getToggleState(), nullptr); };
+        addAndMakeVisible (setlistToggle);
 
         search.setComponentID ("qc.search");
         search.onSearch = [this] { layoutPresets(); presetView.setViewPosition (0, 0); };
@@ -106,6 +112,7 @@ public:
             setlists.add ((int) p[IDs::setlist]);
         setlistWarning.setButtonText ("Setlists not sent: turn on");
         setlistWarning.setVisible (setlists.size() > 1 && ! (bool) state[IDs::sendSetlist]);
+        setlistToggle.setToggleState ((bool) state[IDs::sendSetlist], juce::dontSendNotification);
 
         loadFirstToggle.setButtonText (preset.isValid() ? "Load " + shortLocation (preset) + " first" : "Load preset first");
         loadFirstToggle.setToggleState (combo, juce::dontSendNotification);
@@ -222,6 +229,8 @@ public:
                 setlistWarning.setBounds (content.removeFromBottom (30).reduced (2, 0));
                 content.removeFromBottom (6);
             }
+            setlistToggle.setBounds (content.removeFromBottom (30).reduced (2, 0));
+            content.removeFromBottom (4);
             search.setBounds (content.removeFromTop (32).reduced (2, 0));
             content.removeFromTop (6);
             presetView.setBounds (content);
@@ -459,6 +468,7 @@ private:
                                            50, search.getText());
     }
     juce::TextButton setlistWarning;
+    juce::ToggleButton setlistToggle;
     juce::Viewport presetView;
     juce::Component presetList;
     juce::ToggleButton loadFirstToggle;
@@ -486,7 +496,20 @@ AmpInfo ampInfo (const juce::ValueTree& state)
 {
     AmpInfo a;
     const auto unit = (int) state[IDs::ampUnit];
-    if (unit == state::customAmpUnit)
+    if (unit == state::modellerAmpUnit)
+    {
+        if (const auto* p = modellers::find (state[IDs::modellerProfile].toString()))
+        {
+            a.kind = AmpInfo::Kind::modeller;
+            a.name = a.box = a.shortName = p->shortName;
+            a.colour = p->colour;
+            a.hasDin = p->hasDin;
+            a.usbToThru = p->usbToThru;
+            a.usbThruSetting = p->usbThruSetting;
+            a.channelHint = p->channelHint;
+        }
+    }
+    else if (unit == state::customAmpUnit)
     {
         if (const auto u = state::customUnit (state); u.isValid())
         {
@@ -512,32 +535,34 @@ class AmpPage final : public Page
 {
 public:
     explicit AmpPage (PedalCuesProcessor& p)
-        : state (p.state), qc (makeQcPage (p)), kemper (makeKemperPage (p)), custom (makeCustomPage (p))
+        : state (p.state), qc (makeQcPage (p)), kemper (makeKemperPage (p)), custom (makeCustomPage (p)), modeller (makeModellerPage (p))
     {
         addChildComponent (*qc);
         addChildComponent (*kemper);
         addChildComponent (*custom);
+        addChildComponent (*modeller);
         refresh();
     }
 
     void refresh() override
     {
         const auto kind = ampInfo (state).kind;
-        auto* shown = kind == AmpInfo::Kind::custom ? custom.get() : kind == AmpInfo::Kind::kemper ? kemper.get() : qc.get();
-        for (auto* page : { qc.get(), kemper.get(), custom.get() })
+        auto* shown = kind == AmpInfo::Kind::custom ? custom.get() : kind == AmpInfo::Kind::kemper ? kemper.get()
+                    : kind == AmpInfo::Kind::modeller ? modeller.get() : qc.get();
+        for (auto* page : { qc.get(), kemper.get(), custom.get(), modeller.get() })
             page->setVisible (page == shown);
         shown->refresh();
     }
 
     void resized() override
     {
-        for (auto* page : { qc.get(), kemper.get(), custom.get() })
+        for (auto* page : { qc.get(), kemper.get(), custom.get(), modeller.get() })
             page->setBounds (getLocalBounds());
     }
 
 private:
     juce::ValueTree state;
-    std::unique_ptr<Page> qc, kemper, custom;
+    std::unique_ptr<Page> qc, kemper, custom, modeller;
 };
 } // namespace
 

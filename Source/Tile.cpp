@@ -175,6 +175,39 @@ void Tile::paintFootswitch (juce::Graphics& g, juce::Rectangle<float> b, bool ho
     g.setColour (colour);
     g.fillRoundedRectangle (bar, 2.5f);
 
+    // Short tiles (small windows, busy pages): the footswitch on the left and the name beside it, so the name never disappears.
+    if (b.getHeight() < 110.0f)
+    {
+        auto body = b.withTrimmedTop (bar.getBottom() - b.getY() + 4.0f).reduced (12.0f, 6.0f);
+        const auto d = juce::jlimit (22.0f, 36.0f, body.getHeight() - 4.0f);
+        const auto sw = body.removeFromLeft (d).withSizeKeepingCentre (d, d);
+        g.setColour (colour.withAlpha (hover ? 0.35f : 0.2f));
+        g.fillEllipse (sw.expanded (4.0f));
+        g.setGradientFill (juce::ColourGradient (juce::Colour (0xff3a3e47), sw.getTopLeft(),
+                                                 juce::Colour (0xff15171b), sw.getBottomRight(), false));
+        g.fillEllipse (sw);
+        g.setColour (colour);
+        g.drawEllipse (sw.reduced (1.5f), 2.5f);
+        g.setColour (text);
+        g.setFont (font (d * 0.42f, true));
+        g.drawText (badge, sw, juce::Justification::centred);
+
+        body.removeFromLeft (10.0f);
+        body.removeFromRight (16.0f);   // the play button
+        const auto hasSub = subtitle.isNotEmpty() && body.getHeight() >= 34.0f;
+        g.setColour (text);
+        g.setFont (font (15.0f, true));
+        g.drawFittedText (title, (hasSub ? body.removeFromTop (body.getHeight() * 0.55f) : body).toNearestInt(),
+                          hasSub ? juce::Justification::bottomLeft : juce::Justification::centredLeft, 1, 0.8f);
+        if (hasSub)
+        {
+            g.setColour (dim);
+            g.setFont (font (11.0f));
+            g.drawFittedText (subtitle, body.toNearestInt(), juce::Justification::topLeft, 1);
+        }
+        return;
+    }
+
     // Footswitch with a coloured LED ring.
     const auto d = juce::jlimit (26.0f, 44.0f, b.getHeight() * 0.3f);
     const juce::Rectangle<float> sw (b.getCentreX() - d * 0.5f, b.getBottom() - 12.0f - d, d, d);

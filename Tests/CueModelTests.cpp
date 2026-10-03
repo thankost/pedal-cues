@@ -3,6 +3,8 @@
 #include "../Source/State.h"
 #include "../Source/QcUsb.h"
 #include "../Source/Fuzzy.h"
+#include "../Source/DeviceTemplates.h"
+#include "../Source/Modellers.h"
 
 #include <cstdio>
 
@@ -97,6 +99,14 @@ int main (int argc, char** argv)
     CHECK (isCC (qc::gigView (1, true).events[0].second, 1, 46, 127) && isCC (qc::gigView (3, false).events[0].second, 3, 46, 0));
     CHECK (qc::gigView (1, true).name == "QC Gig View On");
 
+    // Clips with every event on the first tick are padded for Ableton, never with a second Program Change.
+    {
+        CHECK (isCC (lengthPadding (qc::scene (1, 2, {})), 1, 43, 2));                                  // a CC is repeated as is
+        CHECK (isCC (lengthPadding (qc::preset (1, 3, 2, 1, true, {})), 1, 32, 3));                    // QC preset: its setlist CC
+        CHECK (isCC (lengthPadding (qc::preset (1, 3, 2, 1, false, {})), 1, 0, 0));                    // ... or its bank CC
+        CHECK (isCC (lengthPadding (custom::cue (2, "x", "PC 5", 0)), 2, 0, 0));                       // PC only: a bank select of 0
+    }
+
     // Fuzzy search for preset lists.
     {
         const juce::StringArray names { "Clean Rig", "Plexi Crunch", "Drop C Heavy", "Lead Rig", "Ambient Pads" };
@@ -188,6 +198,123 @@ int main (int argc, char** argv)
                && loaded.getChild (0).getChild (0)[IDs::messages].toString() == "bank 1, PC 7");
         CHECK (! state::loadUnit (juce::File::createTempFile (".xml")).isValid());
         unitFile.deleteFile();
+    }
+
+    // Fractal / Line 6 pages: preset numbering, timing and numbers from the manuals.
+    {
+        using namespace modellers;
+        CHECK (all().size() == 11);
+        for (const auto& p : all())
+        {
+            for (const auto& list : { p.utilities, p.looper })
+                for (const auto& a : list)
+                    CHECK (custom::parse (a.messages, 0).ok());
+            CHECK (custom::parse (p.tunerOn, 0).ok() && custom::parse (p.tunerOff, 0).ok() && ! p.notes.isEmpty() && find (p.id) == &p);
+            const auto last = presetsPerSetlist (p, defaultSetlist (p)) - 1;
+            const auto c = preset (p, 1, defaultSetlist (p), last, true, {});
+            CHECK (c.events.back().second.isProgramChange());
+        }
+        const auto& helix = *find ("line6.helix-floor");
+        CHECK (presetLabel (helix, 2, 0) == "01A" && presetLabel (helix, 2, 5) == "02B" && presetLabel (helix, 2, 127) == "32D");
+        CHECK (setlistLabel (helix, 2) == "USER 1" && setlistLabel (helix, 7) == "TEMPLATES");
+        auto h = preset (helix, 1, 2, 5, true, "Clean");
+        CHECK (h.name == "Helix Floor Clean" && h.events.size() == 2 && isCC (h.events[0].second, 1, 32, 2) && h.events[1].second.getProgramChangeNumber() == 5);
+        CHECK (preset (helix, 1, 2, 5, false, {}).events.size() == 1);                                   // setlist only when switched on
+        auto hs = sceneAfterPreset (helix, 1, 2, 5, false, "Clean", 1, "Verse");
+        CHECK (hs.events.size() == 2 && isCC (hs.events[1].second, 1, 69, 1) && hs.events[1].first == 0.0);   // Line 6: same tick
+        CHECK (isCC (switchCue (helix, 1, 5, true, {}).events[0].second, 1, 54, 127));                    // 6th entry = FS7
+        const auto& stomp = *find ("line6.hx-stomp");
+        CHECK (stomp.sceneCount == 3 && presetLabel (stomp, -1, 125) == "42C" && presetsPerSetlist (stomp, -1) == 126);
+        const auto& stadium = *find ("line6.helix-stadium");
+        CHECK (presetLabel (stadium, 2, 0) == "33A" && presetLabel (stadium, 1, 0) == "01A");
+        CHECK (custom::parse (stadium.utilities[0].messages, 0).steps[0].number == 9 && custom::parse (stadium.utilities[0].messages, 0).steps[0].value == 34);
+        CHECK (! find ("line6.pod-go")->hasDin);
+        const auto& axe = *find ("fractal.axe-fx-2");
+        CHECK (presetLabel (axe, -1, 0) == "A000" && presetLabel (axe, -1, 130) == "B002");
+        auto a = sceneAfterPreset (axe, 3, -1, 130, true, "Lead", 2, {});
+        CHECK (a.events.size() == 3 && isCC (a.events[0].second, 3, 0, 1) && a.events[1].second.getProgramChangeNumber() == 2
+               && isCC (a.events[2].second, 3, 34, 2) && a.events[2].first == fractalGap);              // Fractal: 1/16 later
+        CHECK (isCC (switchCue (axe, 1, 0, false, {}).events[0].second, 1, 37, 0) && switchCue (axe, 1, 0, true, {}).name == "Axe-Fx II Amp 1 On");
+        const auto& ax8 = *find ("fractal.ax8");
+        CHECK (presetLabel (ax8, -1, 128) == "17:1" && isCC (preset (ax8, 1, -1, 128, false, {}).events[0].second, 1, 0, 1));
+        const auto& fx8 = *find ("fractal.fx8");
+        CHECK (presetLabel (fx8, -1, 9) == "B2" && preset (fx8, 1, -1, 9, true, {}).events.size() == 1);   // no bank select
+    }
+
+    // Fractal / Line 6 page data: one subtree per model, kept in the setup, unknown models fall back to the QC.
+    {
+        auto root = state::createDefault();
+        auto helix = state::modeller (root, "line6.helix-floor");
+        CHECK (helix.isValid() && helix.getChildWithName (IDs::ModPreset).isValid());
+        const auto first = helix.getChildWithName (IDs::ModPreset);
+        CHECK ((int) first[IDs::setlist] == 2 && first.getChildWithName (IDs::Scene).isValid()
+               && first[IDs::name].toString() == "Preset 01A");
+        int scenes = 0, switches = 0;
+        for (auto c : first) scenes += c.hasType (IDs::Scene) ? 1 : 0;
+        for (auto c : helix) switches += c.hasType (IDs::ModSwitch) ? 1 : 0;
+        CHECK (scenes == 8 && switches == 10);
+        CHECK (state::modeller (root, "line6.helix-floor") == helix);                          // the same one again
+        CHECK (! state::modeller (root, "nope").isValid());
+        first.getChildWithName (IDs::Scene).setProperty (IDs::name, "Verse", nullptr);
+        root.setProperty (IDs::ampUnit, state::modellerAmpUnit, nullptr);
+        root.setProperty (IDs::modellerProfile, "line6.helix-floor", nullptr);
+        const auto file = juce::File::createTempFile (".xml");
+        CHECK (state::saveLibrary (root, file));
+        auto fresh = state::createDefault();
+        CHECK (state::loadLibrary (fresh, file));
+        CHECK ((int) fresh[IDs::ampUnit] == state::modellerAmpUnit
+               && state::modeller (fresh, "line6.helix-floor").getChildWithName (IDs::ModPreset).getChildWithName (IDs::Scene)[IDs::name].toString() == "Verse");
+        file.deleteFile();
+        fresh.setProperty (IDs::modellerProfile, "gone.model", nullptr);
+        state::sanitise (fresh);
+        CHECK ((int) fresh[IDs::ampUnit] == 0);
+    }
+
+    // Device templates (Fractal, Line 6): every tile's messages read back, names are unique in each group,
+    // and a few numbers straight from the manuals.
+    {
+        CHECK (templates::all().size() == 4);   // Axe-Fx III, FM9, FM3, VP4: no default CCs, so editable devices
+        juce::StringArray ids;
+        for (const auto& t : templates::all())
+        {
+            CHECK (! ids.contains (t.id) && t.notes.contains ("Not tested on hardware"));
+            ids.add (t.id);
+            const auto unit = templates::createUnit (t);
+            CHECK (unit[IDs::templateId].toString() == t.id && unit.getNumChildren() == (int) t.groups.size());
+            for (auto g : unit)
+            {
+                juce::StringArray names;
+                for (auto tile : g)
+                {
+                    const auto parsed = custom::parse (tile[IDs::messages].toString(), 0);
+                    if (! parsed.ok())
+                        std::printf ("  %s / %s: %s\n", t.id.toRawUTF8(), tile[IDs::name].toString().toRawUTF8(), parsed.error.toRawUTF8());
+                    CHECK (parsed.ok() && ! names.contains (tile[IDs::name].toString()));
+                    names.add (tile[IDs::name].toString());
+                }
+            }
+        }
+        auto tileOf = [] (const juce::String& id, const juce::String& group, const juce::String& name)
+        {
+            for (auto g : templates::createUnit (*templates::find (id)))
+                if (g[IDs::name].toString() == group)
+                    for (auto t : g)
+                        if (t[IDs::name].toString() == name)
+                            return custom::cue (1, name, t[IDs::messages].toString(), 0);
+            return Cue {};
+        };
+        CHECK (isCC (tileOf ("fractal.axe-fx-3", "Scenes", "Scene 3").events[0].second, 1, 34, 2));
+        const auto axe3Preset = tileOf ("fractal.axe-fx-3", "Presets", "Preset 128");
+        CHECK (isCC (axe3Preset.events[0].second, 1, 0, 1) && axe3Preset.events[1].second.getProgramChangeNumber() == 0);
+        CHECK (tileOf ("fractal.vp4", "Presets", "A1").events.size() == 1);                                 // VP4: no bank select
+        CHECK (templates::find ("fractal.fm3")->notes.contains ("can't be controlled over USB"));
+        CHECK (templates::find ("fractal.axe-fx-3")->notes.startsWith ("Why this is an editable device"));
+
+        // The template id survives export and import, so the disclaimer follows the device.
+        const auto file = juce::File::createTempFile (".pedalcues-device");
+        CHECK (state::saveUnit (templates::createUnit (*templates::find ("fractal.fm3")), file));
+        CHECK (state::loadUnit (file)[IDs::templateId].toString() == "fractal.fm3");
+        file.deleteFile();
     }
 
     // Quad Cortex USB (read-only sync): framing and decoding, checked against real captures.

@@ -39,7 +39,11 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - **Pedal moves** on Wah (`CC#1`), Pitch (`CC#4`), Volume (`CC#7`) or Morph (`CC#11`): the same shapes, Set to tiles and Draw as QC expression
 - Built from Kemper's MIDI documentation; not tested on a real Kemper yet
 
-**Custom MIDI devices (beta)**: any device that takes MIDI (Fractal, Helix, Boss, a synth, a looper...)
+**Fractal Audio and Line 6 (beta)**, built from the manuals, not tested on hardware yet (pick them from the searchable device list, the ▾ on the first tab):
+- **Pages like the Quad Cortex** for units with defined MIDI numbers: Helix Floor / LT / Rack, HX Stomp, HX Stomp XL, HX Effects, POD Go, Helix Stadium (Line 6) and Axe-Fx II / XL / XL+, AX8, FX8 (Fractal factory defaults). Presets with setlists or banks as the unit shows them, scenes / snapshots named per preset (load the preset first, or not), footswitches or blocks, utilities, looper and expression moves
+- **Editable devices** for the Axe-Fx III, FM9, FM3 and VP4, which have no default MIDI CCs: preset tiles plus scene, tuner and looper tiles with suggested numbers to set on the unit
+
+**Custom MIDI devices (beta)**: any device that takes MIDI (Boss, a synth, a looper...)
 - Groups and tiles you name yourself; each tile is one or more standard messages (Program Change, Control Change, bank select), set up in a guided editor with ready-made starting points and a Test button
 - Programs counted from 0 or 1, as the device's manual does; notes on the device and on each tile
 - **Export / Import device** as a `.pedalcues-device` file, so one person sets up a device and everyone with the same gear imports it
@@ -125,7 +129,7 @@ Details and pictures: [guide, section 2](https://thankost.github.io/pedal-cues/g
 - **Whammy numbering:** the plugin uses the manual's 1-based numbers (Classic 1–21 on / 22–42 bypassed,
   Chords 43–63 on / 64–84 bypassed; on the Whammy DT, 43–78 are Drop Tune). If every mode arrives one step off, change *MIDI Setup → Whammy program
   numbering*. Mode names can be renamed if your chart differs.
-- **QC setlist:** `CC#32` = the setlist number as the QC shows it (0 = Factory Presets). Turn on *Send setlist* when your presets are in more than one setlist (the QC page shows a reminder), and drag preset clips in again after turning it on.
+- **QC setlist:** `CC#32` = the setlist number as the QC shows it (0 = Factory Presets). Turn on *Switch to the preset's setlist* (under the preset list) when your presets are in more than one setlist (the QC page shows a reminder), and drag preset clips in again after turning it on.
 
 ## Layout
 

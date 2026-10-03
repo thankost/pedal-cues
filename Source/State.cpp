@@ -1,5 +1,6 @@
 #include "State.h"
 #include "CueModel.h"
+#include "Modellers.h"
 
 #include <array>
 #include <iterator>
@@ -177,6 +178,78 @@ juce::ValueTree loadUnit (const juce::File& file)
     return unit;
 }
 
+//==============================================================================
+static void sanitiseModPreset (juce::ValueTree& p, const modellers::Profile& profile)
+{
+    setDefault (p, IDs::name, "Preset");
+    setDefault (p, IDs::setlist, modellers::defaultSetlist (profile));
+    setDefault (p, IDs::presetIndex, 0);
+    setDefault (p, IDs::colour, paletteColour (5).toString());
+    int scenes = 0;
+    for (auto c : p)
+        if (c.hasType (IDs::Scene))
+            ++scenes;
+    for (int i = scenes; i < profile.sceneCount; ++i)
+    {
+        juce::ValueTree s (IDs::Scene);
+        s.setProperty (IDs::name, profile.sceneWord + " " + juce::String (i + 1), nullptr);
+        s.setProperty (IDs::colour, paletteColour (i).toString(), nullptr);
+        p.appendChild (s, nullptr);
+    }
+}
+
+static void sanitiseModeller (juce::ValueTree& m, const modellers::Profile& profile)
+{
+    setDefault (m, IDs::selectedPreset, 0);
+    for (int i = m.getNumChildren(); --i >= 0;)
+        if (! m.getChild (i).hasType (IDs::ModPreset) && ! m.getChild (i).hasType (IDs::ModSwitch))
+            m.removeChild (i, nullptr);
+    if (m.getChildWithName (IDs::ModPreset) == juce::ValueTree())
+        m.addChild (createModPreset (profile.id, "Preset " + modellers::presetLabel (profile, modellers::defaultSetlist (profile), 0),
+                                     modellers::defaultSetlist (profile), 0, paletteColour (5)), 0, nullptr);
+    for (auto c : m)
+        if (c.hasType (IDs::ModPreset))
+            sanitiseModPreset (c, profile);
+    int switches = 0;
+    for (auto c : m)
+        if (c.hasType (IDs::ModSwitch))
+            ++switches;
+    for (int i = switches; i < (int) profile.switches.size(); ++i)
+    {
+        juce::ValueTree s (IDs::ModSwitch);
+        s.setProperty (IDs::name, profile.switches[(size_t) i].name, nullptr);
+        m.appendChild (s, nullptr);
+    }
+}
+
+juce::ValueTree createModPreset (const juce::String& profileId, const juce::String& name, int setlist, int index, juce::Colour colour)
+{
+    juce::ValueTree p (IDs::ModPreset);
+    p.setProperty (IDs::name, name, nullptr);
+    p.setProperty (IDs::setlist, setlist, nullptr);
+    p.setProperty (IDs::presetIndex, index, nullptr);
+    p.setProperty (IDs::colour, colour.toString(), nullptr);
+    if (const auto* profile = modellers::find (profileId))
+        sanitiseModPreset (p, *profile);
+    return p;
+}
+
+juce::ValueTree modeller (juce::ValueTree& root, const juce::String& profileId)
+{
+    auto all = root.getOrCreateChildWithName (IDs::Modellers, nullptr);
+    for (auto m : all)
+        if (m[IDs::profile].toString() == profileId)
+            return m;
+    const auto* profile = modellers::find (profileId);
+    if (profile == nullptr)
+        return {};
+    juce::ValueTree m (IDs::Modeller);
+    m.setProperty (IDs::profile, profileId, nullptr);
+    sanitiseModeller (m, *profile);
+    all.appendChild (m, nullptr);
+    return m;
+}
+
 static void sanitisePerformance (juce::ValueTree& p)
 {
     setDefault (p, IDs::name, "New Performance");
@@ -224,6 +297,18 @@ void sanitise (juce::ValueTree& root)
     setDefault (root, IDs::qcChannel, 1);
     setDefault (root, IDs::ampUnit, 0);
     setDefault (root, IDs::selectedCustomUnit, 0);
+    setDefault (root, IDs::modellerProfile, juce::String());
+    setDefault (root, IDs::mdLoadFirst, true);
+    setDefault (root, IDs::mdSendSetlist, false);   // like the QC: only when the setlist numbers are known to be right
+    setDefault (root, IDs::mdSwitchOn, true);
+    setDefault (root, IDs::mdView, 0);
+    setDefault (root, IDs::mdPedal, 0);
+    setDefault (root, IDs::mdBeats, 4.0);
+    setDefault (root, IDs::mdCurve, 1.0);
+    setDefault (root, IDs::mdReset, false);
+    setDefault (root, IDs::mdDraw, false);
+    setDefault (root, IDs::mdDrawing, cues::whammy::encodeDrawing (cues::whammy::defaultDrawing()));
+    setDefault (root, IDs::mdDrawingName, juce::String());
     setDefault (root, IDs::selectedPerformance, 0);
     setDefault (root, IDs::kemperSlotFirst, true);
     setDefault (root, IDs::kemperEffectOn, true);
@@ -307,6 +392,25 @@ void sanitise (juce::ValueTree& root)
     if ((int) root[IDs::ampUnit] == customAmpUnit && units.getNumChildren() == 0)
         root.setProperty (IDs::ampUnit, 0, nullptr);
 
+    // Fractal / Line 6 pages: one subtree per model, so switching units keeps each one's presets.
+    auto mods = root.getOrCreateChildWithName (IDs::Modellers, nullptr);
+    for (int i = mods.getNumChildren(); --i >= 0;)
+    {
+        auto m = mods.getChild (i);
+        const auto* profile = m.hasType (IDs::Modeller) ? modellers::find (m[IDs::profile].toString()) : nullptr;
+        if (profile == nullptr)
+            mods.removeChild (i, nullptr);
+        else
+            sanitiseModeller (m, *profile);
+    }
+    if ((int) root[IDs::ampUnit] == modellerAmpUnit)
+    {
+        if (modellers::find (root[IDs::modellerProfile].toString()) == nullptr)
+            root.setProperty (IDs::ampUnit, 0, nullptr);   // unknown model: back to the Quad Cortex
+        else
+            modeller (root, root[IDs::modellerProfile].toString());
+    }
+
     auto wh = root.getOrCreateChildWithName (IDs::Whammy, nullptr);
     for (int i = wh.getNumChildren(); i < cues::whammy::numEffects; ++i)
     {
@@ -371,9 +475,10 @@ void setFlag (const juce::String& name, bool value)
 // What a setup carries besides the names: the MIDI settings and the playing preferences
 // (Whammy Chords / Load bypassed / Heel first, return to heel after moves, Expression's Load 1A first).
 // Length and curve change per song, so they stay in the project.
-static const std::array<const juce::Identifier*, 17>& setupProperties()
+static const std::array<const juce::Identifier*, 21>& setupProperties()
 {
-    static const std::array<const juce::Identifier*, 17> ids { &IDs::ampUnit, &IDs::selectedCustomUnit, &IDs::kemperSlotFirst, &IDs::kemperKeepTails,
+    static const std::array<const juce::Identifier*, 21> ids { &IDs::ampUnit, &IDs::selectedCustomUnit, &IDs::modellerProfile,
+                                                               &IDs::mdLoadFirst, &IDs::mdSendSetlist, &IDs::mdReset, &IDs::kemperSlotFirst, &IDs::kemperKeepTails,
                                                                &IDs::kpReset, &IDs::qcChannel, &IDs::whChannel, &IDs::whModel, &IDs::whPcBase,
                                                                &IDs::sendSetlist, &IDs::comboPresetScene,
                                                                &IDs::whChords, &IDs::whBypass, &IDs::whHeelFirst,
@@ -482,6 +587,7 @@ bool saveLibrary (const juce::ValueTree& root, const juce::File& file, const juc
     lib.appendChild (root.getChildWithName (IDs::Whammy).createCopy(), nullptr);
     lib.appendChild (root.getChildWithName (IDs::Kemper).createCopy(), nullptr);
     lib.appendChild (root.getChildWithName (IDs::CustomUnits).createCopy(), nullptr);
+    lib.appendChild (root.getChildWithName (IDs::Modellers).createCopy(), nullptr);
     if (drawings != nullptr)
         lib.appendChild (drawings->createCopy(), nullptr);
 
@@ -511,7 +617,7 @@ bool loadLibrary (juce::ValueTree& root, const juce::File& file, juce::ValueTree
     if (drawingsInto != nullptr)
         mergeDrawings (*drawingsInto, lib.getChildWithName (IDs::Drawings));
 
-    for (const auto* id : { &IDs::QC, &IDs::Whammy, &IDs::Kemper, &IDs::CustomUnits })
+    for (const auto* id : { &IDs::QC, &IDs::Whammy, &IDs::Kemper, &IDs::CustomUnits, &IDs::Modellers })
     {
         const auto src = lib.getChildWithName (*id);
         if (! src.isValid())

@@ -9,6 +9,21 @@ namespace cues
 
 static constexpr int ticksPerQuarter = 960;
 
+// The message that gives an all-at-tick-0 clip its length: the last message again, unless that's a Program Change.
+// A repeated Program Change can reload the preset (Fractal's "Ignore Redundant PC" is off by default), so repeat the
+// clip's last bank-select / setlist CC instead, which does nothing until a Program Change follows. A clip with only a
+// Program Change gets a bank select of 0 (CC#0), which units without banks ignore.
+juce::MidiMessage lengthPadding (const Cue& cue)
+{
+    const auto& last = cue.events.back().second;
+    if (! last.isProgramChange())
+        return last;
+    for (auto it = cue.events.rbegin(); it != cue.events.rend(); ++it)
+        if (it->second.isController())
+            return it->second;
+    return juce::MidiMessage::controllerEvent (last.getChannel(), 0, 0);
+}
+
 juce::File writeMidiFile (const Cue& cue, double bpm)
 {
     const auto safeBpm = juce::jlimit (20.0, 400.0, bpm);
@@ -27,7 +42,7 @@ juce::File writeMidiFile (const Cue& cue, double bpm)
     const auto allAtStart = ! cue.events.empty()
                          && std::all_of (cue.events.begin(), cue.events.end(), [] (const auto& e) { return e.first <= 0.0; });
     if (allAtStart)
-        seq.addEvent (cue.events.back().second, 0.25 * ticksPerQuarter);
+        seq.addEvent (lengthPadding (cue), 0.25 * ticksPerQuarter);
 
     seq.addEvent (juce::MidiMessage::endOfTrack(), juce::jmax (cue.lengthBeats, 0.5) * ticksPerQuarter);
 

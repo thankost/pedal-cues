@@ -22,6 +22,10 @@ namespace IDs
     PEDALCUES_ID (Group)
     PEDALCUES_ID (CueTile)
     PEDALCUES_ID (PedalCuesUnit)   // root of an exported unit file
+    PEDALCUES_ID (Modellers)       // Fractal / Line 6 pages: Modeller { profile } > ModPreset > Scene, and ModSwitch names
+    PEDALCUES_ID (Modeller)
+    PEDALCUES_ID (ModPreset)
+    PEDALCUES_ID (ModSwitch)
     PEDALCUES_ID (Drawings)
     PEDALCUES_ID (Drawing)
 
@@ -36,9 +40,24 @@ namespace IDs
     PEDALCUES_ID (note)            // custom tile: a short note
     PEDALCUES_ID (messages)        // custom tile: "PC 5, wait, CC 34=2"
     PEDALCUES_ID (programBase)     // custom unit: its manual counts programs from 0 or 1
+    PEDALCUES_ID (profile)         // Modeller: its modellers::Profile id
+    PEDALCUES_ID (presetIndex)     // ModPreset: index within its setlist (0-based, as sent)
+    PEDALCUES_ID (modellerProfile) // the Fractal / Line 6 page shown when ampUnit == 4
+    PEDALCUES_ID (mdLoadFirst)
+    PEDALCUES_ID (mdSendSetlist)
+    PEDALCUES_ID (mdSwitchOn)
+    PEDALCUES_ID (mdView)          // 0 scenes & switches, 1 looper, 2 expression
+    PEDALCUES_ID (mdPedal)
+    PEDALCUES_ID (mdBeats)
+    PEDALCUES_ID (mdCurve)
+    PEDALCUES_ID (mdReset)
+    PEDALCUES_ID (mdDraw)
+    PEDALCUES_ID (mdDrawing)
+    PEDALCUES_ID (mdDrawingName)
+    PEDALCUES_ID (templateId)      // custom unit made from a device template (DeviceTemplates.h): "line6.helix-floor"
     PEDALCUES_ID (selectedCustomUnit)
 
-    PEDALCUES_ID (ampUnit)         // first tab: 0 = Quad Cortex, 1 = Kemper Profiler, 2 = Kemper Player, 3 = a custom unit
+    PEDALCUES_ID (ampUnit)         // first tab: 0 = Quad Cortex, 1 = Kemper Profiler, 2 = Kemper Player, 3 = a custom unit, 4 = a Fractal / Line 6 page
     PEDALCUES_ID (qcChannel)       // the amp unit's MIDI channel (Quad Cortex or Kemper)
     PEDALCUES_ID (selectedPerformance)
     PEDALCUES_ID (kemperSlotFirst) // Kemper "Load P1 first" for slot and effect tiles
@@ -95,6 +114,10 @@ namespace state
 
     // Custom units (beta). A new unit comes with example groups and tiles to edit.
     constexpr int customAmpUnit = 3;
+    // Fractal / Line 6 pages (Modellers.h): ampUnit 4 shows the one named by modellerProfile.
+    constexpr int modellerAmpUnit = 4;
+    juce::ValueTree modeller (juce::ValueTree& root, const juce::String& profileId);   // its data, created on first use
+    juce::ValueTree createModPreset (const juce::String& profileId, const juce::String& name, int setlist, int index, juce::Colour);
     juce::ValueTree createCustomUnit (const juce::String& name);
     juce::ValueTree customUnit (const juce::ValueTree& root);   // the selected custom unit (invalid if there's none)
     juce::ValueTree addCustomUnit (juce::ValueTree& root, juce::ValueTree unit);   // makes its name unique, selects it

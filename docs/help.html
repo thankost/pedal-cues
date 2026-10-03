@@ -18,7 +18,7 @@
   <p class="lead">Stuck on something, or found a bug? Here's the fastest way to sort it out.</p>
 
   <div class="options">
-    <a class="option" href="guide.html#11-troubleshooting">
+    <a class="option" href="guide.html#12-troubleshooting">
       <h3>Troubleshooting</h3>
       <p>Quick fixes for the most common problems: nothing on the pedal, Sync from QC, macOS warnings.</p>
       <span class="go">Read the fixes &rsaquo;</span>
@@ -56,8 +56,13 @@
       <p>Set the Kemper to a fixed MIDI channel (it's Omni out of the box) and the same number in <b>MIDI Setup &gt; Your pedals</b>,
          and check that <b>Amp modeller</b> is your Kemper model. Put Kemper clips on the Kemper Cues track.</p></details>
     <details><summary>The Quad Cortex stays in another setlist</summary>
-      <p>Turn on <b>Switch to the preset's setlist</b> (<i>MIDI Setup &gt; Your pedals</i>), check each preset's setlist number (the QC doesn't report its
+      <p>Turn on <b>Switch to the preset's setlist</b> (under the Quad Cortex preset list; hover it for what it does), check each preset's setlist number (the QC doesn't report its
          numbers over USB, so Sync from QC guesses them; set them as your QC shows them), then drag the preset clips into your DAW again.</p></details>
+    <details><summary>A Fractal or Line 6 page doesn't react</summary>
+      <p>These pages are built from the manufacturers' manuals and not tested on hardware yet. Check the unit's MIDI channel
+         (<b>About this unit</b> on the page says where it's set) against MIDI Setup, and that the cue track sends to the unit.
+         Fractal pages use the factory default CCs: if you changed them, use a custom MIDI device. On an Axe-Fx III, FM9, FM3 or VP4,
+         assign the CC numbers from the device's <b>About this unit</b> on the unit first. Please tell us what works.</p></details>
     <details><summary>A custom MIDI device doesn't react</summary>
       <p>Check its MIDI channel (the same in MIDI Setup and on the device) and the CC numbers and values in its MIDI chart, which
          differ for every device. Use <b>Test on the device</b> in the tile editor. If it loads the preset next to the one you wanted,

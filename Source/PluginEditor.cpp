@@ -51,8 +51,11 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
         b->setColour (juce::TextButton::buttonOnColourId, tabColour (i));
         b->setColour (juce::TextButton::textColourOffId, dim);
         b->setColour (juce::TextButton::textColourOnId, i == 1 ? juce::Colours::white : juce::Colours::black);
-        b->onClick = [this, i]
+        b->onClick = [this, i, b]
         {
+            // Radio buttons also "click" when another tab switches them off: only react to the tab that's now on.
+            if (! b->getToggleState())
+                return;
             if (i == 0 && currentPage == 0)
                 showUnitMenu();   // clicking the open amp tab again: pick the unit
             showPage (i);
@@ -715,39 +718,14 @@ void PedalCuesEditor::UnitMenuButton::paintButton (juce::Graphics& g, bool highl
 
 void PedalCuesEditor::showUnitMenu()
 {
-    const auto current = (int) state[IDs::ampUnit];
-    juce::PopupMenu m;
-    m.addSectionHeader ("Amp modeller");
-    for (int u = 0; u < 3; ++u)
-        m.addItem (u + 1, ui::ampUnitName (u), true, u == current);
-
-    // Custom units (beta): any MIDI gear, with tiles you define.
-    static constexpr int firstCustom = 100, newUnit = 10, importUnit = 11;   // static: usable in the lambda below on MSVC too
-    m.addSectionHeader ("Custom MIDI devices (beta)");
-    const auto units = state.getChildWithName (IDs::CustomUnits);
-    for (int i = 0; i < units.getNumChildren(); ++i)
-        m.addItem (firstCustom + i, units.getChild (i)[IDs::name].toString(), true,
-                   current == state::customAmpUnit && i == (int) state[IDs::selectedCustomUnit]);
-    m.addItem (newUnit, "New MIDI device...");
-    m.addItem (importUnit, "Import MIDI device...");
-
+    // A searchable list: Quad Cortex, Kemper, the Fractal and Line 6 templates, and the player's own MIDI devices.
     juce::Component::SafePointer<PedalCuesEditor> safe (this);
-    m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (tabButtons[0]), [safe] (int result)
+    ui::showUnitPicker (state, *tabButtons[0], [safe]
     {
-        if (safe == nullptr || result == 0)
+        if (safe == nullptr)
             return;
-        if (result == newUnit)
-            ui::newCustomUnit (safe->state);
-        else if (result == importUnit)
-            ui::importCustomUnit (safe->state);
-        else if (result >= firstCustom)
-        {
-            safe->state.setProperty (IDs::selectedCustomUnit, result - firstCustom, nullptr);
-            safe->state.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
-        }
-        else
-            safe->state.setProperty (IDs::ampUnit, result - 1, nullptr);
         safe->showPage (0);
+        safe->grabKeyboardFocus();   // back to the window, so the DAW's keys work again
     });
 }
 

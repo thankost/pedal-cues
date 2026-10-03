@@ -30,21 +30,41 @@ juce::String ampUnitName (int unit);   // "Quad Cortex", "Kemper Profiler", "Kem
 // The amp unit on the first tab, for labels and the wiring guide: a Quad Cortex, a Kemper or a custom unit (beta).
 struct AmpInfo
 {
-    enum class Kind { quadCortex, kemper, custom };
+    enum class Kind { quadCortex, kemper, custom, modeller };   // modeller: a Fractal / Line 6 page (Modellers.h)
     Kind kind = Kind::quadCortex;
     juce::String name { "Quad Cortex" };   // the tab: "Quad Cortex", "Kemper Profiler", "Axe-Fx II"
     juce::String box { "Quad Cortex" };    // a wiring box: "Quad Cortex", "Kemper", "Axe-Fx II"
     juce::String shortName { "QC" };       // in sentences and track names: "QC", "Kemper", "Axe-Fx II"
     juce::Colour colour { theme::qcBlue };
+    // Connection facts for the wiring guide.
+    bool hasDin = true;                    // 5-pin MIDI (POD Go: USB only)
+    int usbToThru = 0;                     // 0 never (QC, Kemper), 1 yes, 2 only with a setting, 3 not documented
+    juce::String usbThruSetting;
+    juce::String channelHint;
     bool isKemper() const { return kind == Kind::kemper; }
+    bool isModeller() const { return kind == Kind::modeller; }
     bool isCustom() const { return kind == Kind::custom; }
 };
 AmpInfo ampInfo (const juce::ValueTree& state);
 
 std::unique_ptr<Page> makeCustomPage (PedalCuesProcessor&);   // a custom unit (beta)
+std::unique_ptr<Page> makeModellerPage (PedalCuesProcessor&); // a Fractal / Line 6 unit with defined MIDI numbers
 void newCustomUnit (juce::ValueTree state);      // adds one with example tiles, shows it and asks for its name
 void importCustomUnit (juce::ValueTree state);   // Import unit: a .pedalcues-unit file
 void exportCustomUnit (juce::ValueTree unit);
+// The hover text for "Switch to the preset's setlist" (Quad Cortex, Helix, POD Go, Stadium pages).
+inline juce::String setlistSwitchTooltip (const juce::String& unit)
+{
+    return "What it does: each preset tile also sends its setlist number (CC#32) before the preset change, so the " + unit
+         + " switches to that preset's setlist even when it's on another one.\n\n"
+           "Turn it on if your presets are in more than one setlist. Leave it off if you keep the " + unit
+         + " in one setlist: a preset then loads from whichever setlist is active.\n\n"
+           "Clips keep what they were dragged with: drag preset clips in again after changing this.";
+}
+
+// The unit picker: built-in units, the Fractal / Line 6 templates and your MIDI devices, with a search. onDone runs after a pick.
+void showUnitPicker (juce::ValueTree state, juce::Component& target, std::function<void()> onDone);
+std::unique_ptr<juce::Component> makeUnitPicker (juce::ValueTree state, const juce::String& search = {});   // screenshots
 std::unique_ptr<juce::Component> makeTileEditor (PedalCuesProcessor&, juce::ValueTree tile, bool isNew);   // custom tile: guided MIDI editor
 std::unique_ptr<Page> makeQcExpression (PedalCuesProcessor&);   // Quad Cortex page > Expression
 std::unique_ptr<Page> makeWhammyPage   (PedalCuesProcessor&);

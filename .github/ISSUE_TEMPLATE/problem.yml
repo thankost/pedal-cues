@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time! Many problems are answered in the [Troubleshooting](https://thankost.github.io/pedal-cues/guide.html#11-troubleshooting) section of the guide, so have a quick look there first.
+        Thanks for taking the time! Many problems are answered in the [Troubleshooting](https://thankost.github.io/pedal-cues/guide.html#12-troubleshooting) section of the guide, so have a quick look there first.
         Opening this form from the app (**☰ > Report a problem**, or **Help > Report a Problem**) fills in your version and system for you.
   - type: textarea
     id: what-happened
@@ -77,6 +77,8 @@ body:
         - QC Mini
         - Kemper Profiler (Head, Rack, Stage, ...)
         - Kemper Player
+        - Line 6 (Helix, HX Stomp, HX Effects, POD Go, Stadium), name the model above
+        - Fractal Audio (Axe-Fx, FM9, FM3, AX8, FX8, VP4), name the model above
         - Custom MIDI device (beta), name it above
         - None
   - type: dropdown

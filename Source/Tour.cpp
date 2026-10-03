@@ -13,7 +13,7 @@ const std::vector<TourStep>& tourSteps()
           "your timeline. This one-minute tour shows you around. Use the arrow keys or the buttons below.", false, false, true },
         { 0, { "hdr.tabs" }, "Quad Cortex or Kemper?",
           "Click the arrow on the first tab to pick your amp modeller: Quad Cortex, Kemper Profiler (Head, Rack, Stage...) or "
-          "Kemper Player, or any other MIDI device (beta: synths, effects, loopers...), where you make your own tiles. The tab, its page and the MIDI it sends "
+          "Kemper Player, a Fractal or Line 6 unit (ready-made from their manuals, beta), or any other MIDI device, where you make your own tiles. Type in the list to search. The tab, its page and the MIDI it sends "
           "follow your choice (it's also in MIDI Setup). The next steps show the Quad Cortex page; the Kemper page works the same way, "
           "with performances, slots and effects.", false, false, true },
         { 0, { "qc.presetList" }, "1. Add your presets",

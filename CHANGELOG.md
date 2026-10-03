@@ -2,6 +2,15 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.7.0 (2026-10-04)
+
+- **Fractal Audio and Line 6 (new, beta):** pick your unit from the device list. **Helix Floor, LT and Rack, HX Stomp, HX Stomp XL, HX Effects, POD Go, Helix Stadium, Axe-Fx II / XL / XL+, AX8 and FX8** each get a page like the Quad Cortex: your presets (with setlists or banks as the unit shows them), scenes or snapshots named per preset, footswitches or blocks, tuner, tap, looper and expression moves. Everything is built from the manufacturers' manuals and not tested on hardware yet: each page says so, and **About this unit** tells you what to check.
+- **Axe-Fx III, FM9, FM3 and VP4 (beta):** these have no default MIDI numbers, so they come as editable MIDI devices: preset tiles ready to use, and scene, tuner and looper tiles with suggested numbers to set on your unit.
+- **A searchable device list:** the arrow on the first tab opens a list you can search ("helix", "axe"), with the Quad Cortex, Kemper, Fractal, Line 6 and your own MIDI devices.
+- **Switch to the preset's setlist** is now on the Quad Cortex page, under the preset list, like on the Helix, POD Go and Stadium pages. Hover it to see what it does.
+- **Fixed:** clicking the Whammy or MIDI Setup tab could open the device list.
+- **Fixed:** a preset clip could send its Program Change twice (the second one, 1/16 later, gives the clip a length for Ableton), and some units reload the preset when that happens. Now the clip ends with a bank select instead of a second Program Change.
+
 ## 0.6.3 (2026-10-03)
 
 - **Search your presets (new):** type in the box above the preset list to find one fast. It's forgiving: letters in order (`drpc` finds *Drop C Heavy*), one typo (`hevy`), several words, or a location like `SL2` or `3B`. Return opens the best match, Esc clears. The Kemper's performance list and custom MIDI devices have the same search.

@@ -1,4 +1,5 @@
 #include "EditorCommon.h"
+#include "DeviceTemplates.h"
 
 using namespace theme;
 
@@ -409,6 +410,22 @@ public:
         styleCaption (channelLabel, {});
         addAndMakeVisible (channelLabel);
 
+        // Made from a Fractal / Line 6 template: say where the numbers come from, and that they're untested.
+        disclaimerLabel.setFont (font (12.0f, true));
+        disclaimerLabel.setColour (juce::Label::textColourId, accent);
+        disclaimerLabel.setJustificationType (juce::Justification::topLeft);
+        addChildComponent (disclaimerLabel);
+        aboutButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
+        aboutButton.setColour (juce::TextButton::textColourOffId, qcBlue);
+        aboutButton.setTooltip ("What the numbers come from and what to set on your unit. Kept by PedalCues (updates keep it current); "
+                                "write your own notes below.");
+        aboutButton.onClick = [this]
+        {
+            if (const auto* t = templates::find (unit()[IDs::templateId].toString()))
+                juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, t->model, t->notes);
+        };
+        addChildComponent (aboutButton);
+
         programBox.addItem ("Programs count from 0 (PC 0 = first)", 1);
         programBox.addItem ("Programs count from 1 (PC 1 = first)", 2);
         programBox.setTooltip ("How your device's manual numbers programs. PC numbers in your tiles use the same counting.");
@@ -467,6 +484,14 @@ public:
         if (! nameLabel.isBeingEdited())
             nameLabel.setText (name, juce::dontSendNotification);
         channelLabel.setText ("Sends on channel " + juce::String ((int) state[IDs::qcChannel]) + " (MIDI Setup)", juce::dontSendNotification);
+        const auto* fromTemplate = templates::find (u[IDs::templateId].toString());
+        disclaimerLabel.setText (fromTemplate != nullptr ? templates::disclaimer (*fromTemplate) : juce::String(), juce::dontSendNotification);
+        disclaimerLabel.setVisible (fromTemplate != nullptr);
+        aboutButton.setVisible (fromTemplate != nullptr);
+        aboutButton.setButtonText ("About this unit (from the manual) >");
+        notesLabel.setText (fromTemplate != nullptr ? "YOUR NOTES" : "NOTES", juce::dontSendNotification);
+        notesEditor.setTextToShowWhenEmpty (fromTemplate != nullptr ? "What you set on your unit, what you changed..."
+                                                                    : "Why it's set up this way: manual pages, parameters, values...", dim);
         programBox.setSelectedId (base == 1 ? 2 : 1, juce::dontSendNotification);
         if (! notesEditor.hasKeyboardFocus (true) && notesEditor.getText() != u[IDs::notes].toString())
             notesEditor.setText (u[IDs::notes].toString(), false);
@@ -544,6 +569,11 @@ public:
             auto c = unitSection.contentArea().reduced (4, 2);
             nameLabel.setBounds (c.removeFromTop (34));
             channelLabel.setBounds (c.removeFromTop (20));
+            if (disclaimerLabel.isVisible())
+            {
+                disclaimerLabel.setBounds (c.removeFromTop (48).withTrimmedTop (6));
+                aboutButton.setBounds (c.removeFromTop (26).withTrimmedLeft (-6).withWidth (260));
+            }
             c.removeFromTop (8);
             programBox.setBounds (c.removeFromTop (30));
             c.removeFromTop (12);
@@ -761,7 +791,8 @@ private:
 
     Section unitSection { "cu.device", "MIDI device", "beta", customViolet };
     juce::TextButton unitMenuButton { "..." };
-    juce::Label nameLabel, channelLabel, notesLabel;
+    juce::Label nameLabel, channelLabel, notesLabel, disclaimerLabel;
+    juce::TextButton aboutButton;
     juce::ComboBox programBox;
     juce::TextEditor notesEditor;
     juce::TextButton exportButton { "Export device..." }, importButton { "Import device..." };

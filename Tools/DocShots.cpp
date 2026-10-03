@@ -3,6 +3,8 @@
 
 #include "../Source/PluginEditor.h"
 #include "../Source/PluginProcessor.h"
+#include "../Source/DeviceTemplates.h"
+#include "../Source/Modellers.h"
 
 using namespace theme;
 
@@ -593,6 +595,73 @@ int main (int argc, char** argv)
         proc.state.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
         editor.refreshNow();
         save (snapshot (editor), outDir.getChildFile ("custom-device.png"));
+
+        // Devices made from the Fractal and Line 6 templates, and the unit picker.
+        {
+            auto root = proc.state;
+            state::addCustomUnit (root, templates::createUnit (*templates::find ("fractal.axe-fx-3")));
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("template-axe-fx-3.png"));
+        }
+
+        // Fractal / Line 6 pages with demo presets.
+        {
+            struct Demo { const char* name; int setlist, index, colour; std::vector<const char*> scenes; };
+            auto fill = [&proc] (const char* id, const std::vector<Demo>& demos)
+            {
+                auto root = proc.state;
+                auto m = state::modeller (root, id);
+                for (int i = m.getNumChildren(); --i >= 0;)
+                    if (m.getChild (i).hasType (IDs::ModPreset))
+                        m.removeChild (i, nullptr);
+                for (const auto& d : demos)
+                {
+                    auto preset = state::createModPreset (id, d.name, d.setlist, d.index, ui::paletteColour (d.colour));
+                    for (int s = 0; s < (int) d.scenes.size(); ++s)
+                    {
+                        auto scene = ui::nthOfType (preset, IDs::Scene, s);
+                        scene.setProperty (IDs::name, d.scenes[(size_t) s], nullptr);
+                        scene.setProperty (IDs::colour, ui::paletteColour (s * 3 + d.colour).toString(), nullptr);
+                    }
+                    m.appendChild (preset, nullptr);
+                }
+                proc.state.setProperty (IDs::modellerProfile, id, nullptr);
+                proc.state.setProperty (IDs::ampUnit, state::modellerAmpUnit, nullptr);
+            };
+            fill ("line6.helix-floor", { { "Clean Verse", 2, 0, 4, { "Intro", "Verse", "Pre", "Chorus", "Bridge", "Solo", "Breakdown", "Outro" } },
+                                         { "Crunch Rhythm", 2, 1, 1, {} }, { "Lead Boost", 2, 2, 0, {} }, { "Ambient Swells", 2, 4, 6, {} },
+                                         { "Drop D Heavy", 3, 0, 2, {} } });
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("helix.png"));
+            proc.state.setProperty (IDs::mdView, 1, nullptr);
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("helix-looper.png"));
+            proc.state.setProperty (IDs::mdView, 2, nullptr);
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("helix-expression.png"));
+            proc.state.setProperty (IDs::mdView, 0, nullptr);
+
+            fill ("fractal.axe-fx-2", { { "Clean Rig", -1, 0, 4, { "Intro", "Verse", "Chorus", "Solo", "Bridge", "Outro", "Ambient", "Heavy" } },
+                                        { "Plexi Crunch", -1, 1, 1, {} }, { "Lead Rig", -1, 130, 0, {} } });
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("axe-fx-2.png"));
+            fill ("line6.hx-stomp", { { "Stomp Clean", -1, 0, 4, { "Verse", "Chorus", "Solo" } }, { "Stomp Drive", -1, 1, 1, {} } });
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("hx-stomp.png"));
+            proc.state.setProperty (IDs::ampUnit, 0, nullptr);
+            editor.refreshNow();
+        }
+        for (const auto& [query, name] : { std::pair<const char*, const char*> { "", "unit-picker.png" }, { "helix", "unit-picker-search.png" } })
+        {
+            auto picker = ui::makeUnitPicker (proc.state, query);
+            save (picker->createComponentSnapshot (picker->getLocalBounds(), true, scale), outDir.getChildFile (name));
+        }
+        {
+            auto units = proc.state.getChildWithName (IDs::CustomUnits);
+            while (units.getNumChildren() > 1)
+                units.removeChild (units.getNumChildren() - 1, nullptr);
+            proc.state.setProperty (IDs::selectedCustomUnit, 0, nullptr);
+        }
         {
             const auto scene = state::customUnit (proc.state).getChild (0).getChild (2);   // Presets > Lead
             auto tileEditor = ui::makeTileEditor (proc, scene, false);

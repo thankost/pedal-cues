@@ -1,5 +1,6 @@
 #include "EditorCommon.h"
 #include "Update.h"
+#include "Modellers.h"
 
 using namespace theme;
 
@@ -149,17 +150,27 @@ public:
         oneDevice.steps = { "USB from the " + d + " to the computer" + (amp.isCustom() ? juce::String (", if it has USB MIDI.") : juce::String (".")),
                             "Or a MIDI cable from your interface's MIDI Out to the " + d + "'s MIDI In.",
                             "Set the " + d + "'s MIDI channel in MIDI Setup, the same as on the device (not Omni)." };
+        if (! amp.hasDin)
+            oneDevice.steps = { "USB from the " + d + " to the computer. It has no 5-pin MIDI, so USB is the only way.",
+                                "Set the " + d + "'s MIDI channel in MIDI Setup, the same as on the device (not Omni)." };
 
         const auto thruNote = amp.kind == AmpInfo::Kind::quadCortex ? juce::String (" Turn MIDI Thru on in the QC.")
                             : amp.isKemper() ? juce::String (" If your Kemper shares one jack for MIDI Out and Thru, set it to Thru.")
+                            : amp.isModeller() ? juce::String (" Turn MIDI Thru on in its MIDI settings.")
                                              : juce::String (" See its manual for the Thru setting.");
         daisy.steps = { "A MIDI cable from your interface's MIDI Out to the " + d + "'s MIDI In.",
                         "A MIDI cable from the " + d + "'s MIDI Thru to the second device's MIDI In (for example a Whammy)." + thruNote,
                         "Give the two devices different MIDI channels, so each only reacts to its own cues." };
+        if (! amp.hasDin)
+        {
+            daisy.steps = { "The " + d + " has no 5-pin MIDI, so it can't pass MIDI on to a second device: there's no daisy chain.",
+                            "Use Separate outputs instead: the " + d + " on USB, the second device on your interface's MIDI Out." };
+            daisy.showFlow = false;
+        }
 
         separate.viaInterface = true;
         separate.steps = { d + ": USB to the computer" + (amp.isCustom() ? juce::String (" (if it has USB MIDI)") : juce::String())
-                             + ", or a MIDI cable from MIDI Out 1 to its MIDI In.",
+                             + (amp.hasDin ? ", or a MIDI cable from MIDI Out 1 to its MIDI In." : " (it has no 5-pin MIDI)."),
                            "Second device (for example a Whammy): a MIDI cable from MIDI Out 2 to its MIDI In. "
                            "The Whammy has no USB MIDI, so it always needs a MIDI cable.",
                            "Each DAW track sends to the output its device is on." };
@@ -221,14 +232,26 @@ public:
 
         if (current == 0)
             return;
-        const auto specific = amp.kind == AmpInfo::Kind::quadCortex ? juce::String ("The Quad Cortex never forwards USB MIDI to its Thru.")
-                            : amp.isKemper() ? juce::String ("Kemper confirms USB MIDI has no MIDI Thru.")
-                                             : juce::String ("That's true for most devices; check its manual.");
+        // What happens to USB MIDI at the unit's Thru: from its manual where it says, otherwise the general rule.
+        juce::String warn;
+        if (! amp.hasDin)
+            warn = "The " + amp.box + " has no 5-pin MIDI: it can't pass MIDI on to a second device. Give the second device its own MIDI output.";
+        else if (amp.usbToThru == 2)
+            warn = "On USB only, a second device on the " + amp.box + "'s Thru gets MIDI only with " + amp.usbThruSetting
+                 + " on (see the manual). Without it, use the 5-pin MIDI In.";
+        else if (amp.usbToThru == 3)
+            warn = "Usually doesn't work: the " + amp.box + " on USB only, with a second device on its MIDI Thru. Its manual doesn't say whether "
+                   "USB MIDI is passed on, so send to its 5-pin MIDI In to be safe.";
+        else
+            warn = "Doesn't work: the " + amp.box + " on USB only, with a second device on its MIDI Thru. A MIDI Thru only passes on MIDI from the "
+                   "5-pin MIDI In. "
+                 + (amp.kind == AmpInfo::Kind::quadCortex ? juce::String ("The Quad Cortex never forwards USB MIDI to its Thru.")
+                    : amp.isKemper() ? juce::String ("Kemper confirms USB MIDI has no MIDI Thru.")
+                    : amp.isModeller() ? juce::String ("Its manual says so too.")
+                                       : juce::String ("That's true for most devices; check its manual."));
         g.setColour (whammyRed);
         g.setFont (font (12.5f, true));
-        g.drawFittedText ("Doesn't work: the " + amp.box + " on USB only, with a second device on its MIDI Thru. A MIDI Thru only "
-                          "passes on MIDI from the 5-pin MIDI In. " + specific,
-                          warning, juce::Justification::centredLeft, 2);
+        g.drawFittedText (warn, warning, juce::Justification::centredLeft, 2);
     }
 
     void resized() override
@@ -271,13 +294,17 @@ public:
         styleCaption (qcChannelLabel, "Quad Cortex channel");
         styleCaption (whChannelLabel, "Whammy channel");
         styleCaption (ampLabel, "Amp modeller or MIDI device");
-        ampBox.setTooltip ("Quad Cortex, Kemper Profiler, Kemper Player or a custom MIDI device (beta): the first tab and the channel below "
+        ampBox.setTooltip ("Quad Cortex, Kemper Profiler, Kemper Player, a Fractal or Line 6 unit, or your own MIDI device (beta): the first tab and the channel below "
                            "follow it (the same as the menu on the first tab)");
         ampBox.onChange = [this]
         {
             const auto id = ampBox.getSelectedId();
             if (id == newCustomId)
                 newCustomUnit (state);
+            else if (id == moreDevicesId)
+                showUnitPicker (state, ampBox, {});
+            else if (id == modellerId)
+                state.setProperty (IDs::ampUnit, state::modellerAmpUnit, nullptr);
             else if (id >= firstCustomId)
             {
                 state.setProperty (IDs::selectedCustomUnit, id - firstCustomId, nullptr);
@@ -310,12 +337,7 @@ public:
         qcChannelBox.onChange = [this] { state.setProperty (IDs::qcChannel, qcChannelBox.getSelectedId(), nullptr); };
         whChannelBox.onChange = [this] { state.setProperty (IDs::whChannel, whChannelBox.getSelectedId(), nullptr); };
         pcBaseBox.onChange    = [this] { state.setProperty (IDs::whPcBase, pcBaseBox.getSelectedId() == 1 ? 1 : 0, nullptr); };
-        setlistToggle.onClick = [this] { state.setProperty (IDs::sendSetlist, setlistToggle.getToggleState(), nullptr); };
-        styleHint (setlistHint, "Turn on if your presets are in more than one setlist: each preset tile also selects its setlist (CC#32).");
         pcBaseBox.setTooltip ("Only change this if every Whammy mode lands one position off.");
-        setlistToggle.setTooltip ("Send the setlist (CC#32) before each preset change, so the QC switches to the preset's setlist even when "
-                                  "it's on another one. Needed when your presets are in more than one setlist. Clips keep what they were "
-                                  "dragged with: drag preset clips in again after changing this.");
 
         advancedButton.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
         advancedButton.setColour (juce::TextButton::textColourOffId, dim);
@@ -375,6 +397,17 @@ public:
                     proc.preview (c);
                 return;
             }
+            if (const auto* model = ampInfo (state).isModeller() ? modellers::find (state[IDs::modellerProfile].toString()) : nullptr)
+            {
+                // The unit's tuner on, then off ~1.5 s later (Line 6: the same toggle twice).
+                for (const auto& [text, beat] : { std::pair<juce::String, double> { model->tunerOn, 0.0 }, { model->tunerOff, proc.getHostBpm() / 40.0 } })
+                    for (const auto& [b, m] : cues::custom::cue (ch, {}, text, 0).events)
+                        c.add (beat + b, m);
+                proc.preview (c);
+                setTestStatus ("Sent tuner on/off to " + currentPortName() + " on channel " + juce::String (ch) + ". Did the " + ampShort()
+                               + "'s tuner open and close? If not, check the cable direction, its channel (" + model->channelHint + ") and MIDI Thru.");
+                return;
+            }
             const auto kemper = isKemper();
             c.add (0.0, (kemper ? cues::kemper::tuner (ch, true) : cues::qc::tuner (ch, true)).events.front().second);
             c.add (proc.getHostBpm() / 40.0, (kemper ? cues::kemper::tuner (ch, false) : cues::qc::tuner (ch, false)).events.front().second);   // ~1.5 s later
@@ -414,7 +447,7 @@ public:
                                                                  &qcHint, &whHint, &confirmButton, &confirmHint, &advancedButton, &tracksSteps, &viaQcButton,
                                                                  &viaInterfaceButton, &wiringLabel, &wiringLink, &dawHint })
             addAndMakeVisible (c);
-        for (auto* c : std::initializer_list<juce::Component*> { &pcBaseLabel, &pcBaseBox, &setlistToggle, &setlistHint,
+        for (auto* c : std::initializer_list<juce::Component*> { &pcBaseLabel, &pcBaseBox,
                                                                  &testOutBox, &testQcButton, &testWhButton, &testHint })
             addChildComponent (c);
 
@@ -432,7 +465,6 @@ public:
         qcChannelBox.setSelectedId ((int) state[IDs::qcChannel], juce::dontSendNotification);
         whChannelBox.setSelectedId ((int) state[IDs::whChannel], juce::dontSendNotification);
         pcBaseBox.setSelectedId ((int) state[IDs::whPcBase] == 1 ? 1 : 2, juce::dontSendNotification);
-        setlistToggle.setToggleState ((bool) state[IDs::sendSetlist], juce::dontSendNotification);
 
         // The first channel belongs to the amp unit (picked here or on the first tab).
         ampBox.clear (juce::dontSendNotification);
@@ -442,12 +474,17 @@ public:
         const auto units = state.getChildWithName (IDs::CustomUnits);
         for (int i = 0; i < units.getNumChildren(); ++i)
             ampBox.addItem (units.getChild (i)[IDs::name].toString(), firstCustomId + i);
+        if (const auto* model = modellers::find (state[IDs::modellerProfile].toString()))
+            ampBox.addItem (model->model, modellerId);   // the Fractal / Line 6 unit last picked
+        ampBox.addItem ("Fractal, Line 6 and more...", moreDevicesId);
         ampBox.addItem ("New MIDI device...", newCustomId);
         const auto amp = ampInfo (state);
-        ampBox.setSelectedId (amp.isCustom() ? firstCustomId + (int) state[IDs::selectedCustomUnit] : (int) state[IDs::ampUnit] + 1,
+        ampBox.setSelectedId (amp.isCustom() ? firstCustomId + (int) state[IDs::selectedCustomUnit]
+                              : amp.isModeller() ? modellerId : (int) state[IDs::ampUnit] + 1,
                               juce::dontSendNotification);
         qcChannelLabel.setText (amp.name + " channel", juce::dontSendNotification);
-        qcHint.setText (amp.isCustom() ? "Must match the MIDI channel set on the " + amp.name + " (see its manual; not Omni)."
+        qcHint.setText (amp.isModeller() ? amp.channelHint
+                        : amp.isCustom() ? "Must match the MIDI channel set on the " + amp.name + " (see its manual; not Omni)."
                         : isKemper() ? "Must match the Kemper: System Settings > MIDI > MIDI Global Channel (not OMNI)."
                                      : "Must match the QC: Settings > MIDI Settings > MIDI Channel (not Omni).", juce::dontSendNotification);
         whHint.setText ("Must match the Whammy's MIDI channel (see its manual). Use a different channel from the " + ampShort() + ".",
@@ -471,7 +508,7 @@ public:
 
     bool isKemper() const          { return ampInfo (state).isKemper(); }
     juce::String ampShort() const  { return ampInfo (state).shortName; }
-    static constexpr int firstCustomId = 100, newCustomId = 99;
+    static constexpr int firstCustomId = 100, newCustomId = 99, moreDevicesId = 98, modellerId = 97;
 
     void visibilityChanged() override
     {
@@ -490,10 +527,7 @@ public:
 
         // Left: Your pedals, then (standalone) Test. The quick tour and the user guide are in the ☰ / Help menu.
 
-        const auto isQc = ampInfo (state).kind == AmpInfo::Kind::quadCortex;
-        setlistToggle.setVisible (isQc);   // a Quad Cortex setting: next to its channel
-        setlistHint.setVisible (isQc);
-        const auto pedalsH = Section::headerHeight + 62 + 2 * 84 + 34 + 70 + (isQc ? 54 : 0) + (showAdvanced ? 62 : 0) + 8;
+        const auto pedalsH = Section::headerHeight + 62 + 2 * 84 + 34 + 70 + (showAdvanced ? 62 : 0) + 8;
         pedalsSection.setBounds (left.removeFromTop (pedalsH));
         {
             auto m = pedalsSection.contentArea().reduced (6, 2);
@@ -507,11 +541,6 @@ public:
             };
             field (ampLabel, ampBox, nullptr);
             field (qcChannelLabel, qcChannelBox, &qcHint);
-            if (isQc)
-            {
-                setlistToggle.setBounds (m.removeFromTop (30).translated (0, -6));
-                setlistHint.setBounds (m.removeFromTop (24).translated (0, -8));
-            }
             field (whChannelLabel, whChannelBox, &whHint);
             confirmButton.setBounds (m.removeFromTop (34).withWidth (260));
             confirmHint.setBounds (m.removeFromTop (34).withTrimmedTop (2));
@@ -629,14 +658,25 @@ private:
 
     void setSetupMode (bool viaInterface)
     {
-        state::setFlag ("setupViaQcChain", ! viaInterface);
+        const auto amp = ampInfo (state);
+        if (amp.hasDin)
+            state::setFlag ("setupViaQcChain", ! viaInterface);
+        else
+            viaInterface = true;   // USB only (POD Go): no daisy chain, and the saved choice stays for other units
+        viaQcButton.setEnabled (amp.hasDin);
+        viaQcButton.setTooltip (amp.hasDin ? "Interface MIDI Out > " + amp.box + " 5-pin MIDI In > its MIDI Thru > the second device (e.g. a Whammy). "
+                                             "A MIDI Thru only passes on MIDI from the 5-pin MIDI In, so this needs a 5-pin MIDI Out."
+                                           : "The " + amp.box + " has no 5-pin MIDI, so it can't be in a daisy chain.");
+        viaInterfaceButton.setTooltip ("Each device on its own output: the " + amp.box + " over USB" + (amp.hasDin ? juce::String (" (or MIDI Out 1)") : juce::String())
+                                       + ", the second device (e.g. a Whammy) on a MIDI Out");
         (viaInterface ? viaInterfaceButton : viaQcButton).setToggleState (true, juce::dontSendNotification);
 
         if (viaInterface)
         {
             tracksSteps.steps = {
                 "In your DAW, enable the MIDI outputs your pedals are on.",
-                "Track '" + ampShort() + " Cues': insert PedalCues and set its MIDI output to the " + ampInfo (state).box + " (USB) or MIDI Out 1.",
+                "Track '" + ampShort() + " Cues': insert PedalCues and set its MIDI output to the " + amp.box
+                    + (amp.hasDin ? juce::String (" (USB) or MIDI Out 1.") : juce::String (" (USB): it has no 5-pin MIDI.")),
                 "Track 'Whammy Cues': insert PedalCues and set its MIDI output to MIDI Out 2.",
                 "Keep the original MIDI channels. Drag " + ampShort() + " tiles onto " + ampShort() + " Cues and Whammy tiles onto Whammy Cues."
             };
@@ -663,8 +703,6 @@ private:
 
     juce::Label ampLabel, qcChannelLabel, whChannelLabel, pcBaseLabel, qcHint, whHint, testHint;
     juce::ComboBox ampBox, qcChannelBox, whChannelBox, pcBaseBox, testOutBox;
-    juce::ToggleButton setlistToggle { "Switch to the preset's setlist" };   // shown for the Quad Cortex
-    juce::Label setlistHint;
     juce::TextButton advancedButton, confirmButton;
     juce::Label confirmHint;
 

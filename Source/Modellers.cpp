@@ -1,0 +1,413 @@
+#include "Modellers.h"
+
+// Numbers from: Line 6 Owner's Manuals for firmware 3.80 (Helix, Helix LT, Helix Rack/Control, HX Stomp, HX Stomp XL,
+// HX Effects; MIDI chapters), the POD Go Owner's Manual 2.50, the Helix Stadium online manual (Rev D, v1.3), and the
+// Fractal Audio Owner's Manuals (Axe-Fx II Doc Q7.0 default CC table p.194; AX8 pp.99-100; FX8 default CC table).
+namespace modellers
+{
+namespace
+{
+const juce::Colour line6Colour   { 0xffd9534f };
+const juce::Colour fractalColour { 0xff4e9bd8 };
+
+juce::String n (int v) { return juce::String (v); }
+
+const juce::String oneTap ("One tap. Tempo needs several taps a beat apart: drop the clip on each beat, or set the tempo in the preset.");
+const juce::String toggle ("Any value toggles it: each clip switches it the other way.");
+
+std::vector<Action> helixLooper (int record, int play, int once, int undo, int direction, int speed, int block)
+{
+    std::vector<Action> a { { "Record", "CC " + n (record) + "=127", {}, 0 }, { "Overdub", "CC " + n (record) + "=0", {}, 1 },
+                            { "Play", "CC " + n (play) + "=127", {}, 3 },     { "Stop", "CC " + n (play) + "=0", {}, 9 },
+                            { "Play once", "CC " + n (once) + "=127", {}, 4 }, { "Undo/redo", "CC " + n (undo) + "=127", {}, 6 },
+                            { "Forward", "CC " + n (direction) + "=0", {}, 5 }, { "Reverse", "CC " + n (direction) + "=127", {}, 5 },
+                            { "Full speed", "CC " + n (speed) + "=0", {}, 7 },  { "Half speed", "CC " + n (speed) + "=127", {}, 7 } };
+    if (block > 0)
+    {
+        a.push_back ({ "Looper on", "CC " + n (block) + "=127", "Turns the looper block on (and enters Looper footswitch mode).", 3 });
+        a.push_back ({ "Looper off", "CC " + n (block) + "=0", {}, 9 });
+    }
+    return a;
+}
+
+std::vector<Action> fractalLooper()
+{
+    return { { "Record", "CC 28=127", {}, 0 }, { "Play", "CC 29=127", {}, 3 }, { "Once", "CC 30=127", {}, 4 },
+             { "Dub", "CC 31=127", {}, 1 }, { "Reverse", "CC 32=127", {}, 5 }, { "Half speed", "CC 120=127", {}, 7 },
+             { "Undo", "CC 121=127", {}, 6 } };
+}
+
+std::vector<Control> numbered (const juce::String& prefix, int first, int count, int firstCc)
+{
+    std::vector<Control> c;
+    for (int i = 0; i < count; ++i)
+        c.push_back ({ prefix + n (first + i), firstCc + i, 127 });
+    return c;
+}
+
+const juce::String line6Buffered ("Line 6: a snapshot sent during a preset load is held until the preset has loaded, so with Load preset "
+                                  "first the snapshot goes out with the preset.");
+const juce::String fsNote ("Presses the footswitch in whatever mode the unit is in (Stomp, Preset or Snapshot), like your foot would. "
+                           "It acts on the preset that's loaded.");
+
+Profile helixBase (const juce::String& id, const juce::String& model, const juce::String& aliases, const juce::String& manual, bool exp3)
+{
+    Profile p;
+    p.id = id; p.brand = "Line 6"; p.model = model; p.shortName = model; p.aliases = "line6 helix " + aliases;
+    p.colour = line6Colour; p.manual = manual; p.scheme = Scheme::helix;
+    p.sceneWord = "Snapshot"; p.sceneCount = 8; p.sceneCc = 69; p.sceneBuffered = true; p.sceneNote = line6Buffered;
+    p.switchesTitle = "Footswitches";
+    p.switches = numbered ("FS", 1, 5, 49);
+    for (const auto& c : numbered ("FS", 7, 5, 54))
+        p.switches.push_back (c);
+    p.switchesNote = fsNote + " There's no MIDI CC for FS6 or FS12.";
+    p.utilities = { { "Tuner", "CC 68=127", "Opens or closes the tuner screen. " + toggle, 5 }, { "Tap", "CC 64=127", oneTap, 1 },
+                    { "Next preset", "CC 72=127", "Firmware 3.80 or newer.", 9 }, { "Previous preset", "CC 72=0", "Firmware 3.80 or newer.", 9 },
+                    { "EXP toe switch", "CC 59=127", toggle, 7 } };
+    p.looper = helixLooper (60, 61, 62, 63, 65, 66, 67);
+    p.pedals = { { "EXP 1", 1 }, { "EXP 2", 2 } };
+    if (exp3)
+        p.pedals.push_back ({ "EXP 3", 3 });
+    p.pedalNote = "Moves what the preset assigns to this expression pedal, like a real pedal.";
+    p.tunerOn = "CC 68=127"; p.tunerOff = "CC 68=127";
+    p.channelHint = "Must match the unit: Global Settings > MIDI/Tempo > MIDI Base Channel.";
+    p.usbToThru = 3;   // not documented
+    p.notes = "Presets: PC 0-127 = 01A-32D in the setlist the unit is on. With \"Switch to the preset's setlist\" on, each preset also sends its "
+              "setlist (CC#32: 0 FACTORY 1, 1 FACTORY 2, 2-6 USER 1-5, 7 TEMPLATES).\n\n" + line6Buffered + "\n\n"
+              "Footswitch CCs 49-58 press FS1-FS5 and FS7-FS11 (no CC for FS6 or FS12). Next/previous preset needs firmware 3.80 or newer.\n\n"
+              "MIDI Thru passes on what arrives at the 5-pin MIDI In; Line 6 doesn't say whether USB MIDI is passed on too.";
+    return p;
+}
+
+Profile hxBase (const juce::String& id, const juce::String& model, const juce::String& aliases, const juce::String& manual, Scheme scheme,
+                int snapshots, std::vector<Control> switches, int looperBlock)
+{
+    Profile p;
+    p.id = id; p.brand = "Line 6"; p.model = model; p.shortName = model; p.aliases = "line6 helix hx " + aliases;
+    p.colour = line6Colour; p.manual = manual; p.scheme = scheme;
+    p.sceneWord = "Snapshot"; p.sceneCount = snapshots; p.sceneCc = 69; p.sceneBuffered = true; p.sceneNote = line6Buffered;
+    p.switchesTitle = "Footswitches"; p.switches = std::move (switches); p.switchesNote = fsNote;
+    p.utilities = { { "Tuner", "CC 68=127", "Opens or closes the tuner screen. " + toggle, 5 }, { "Tap", "CC 64=127", oneTap, 1 },
+                    { "All bypass", "CC 70=0", "Bypasses every block (CC#70, 0-63).", 9 }, { "All on", "CC 70=127", "Turns the blocks back on (CC#70, 64-127).", 3 },
+                    { "Next preset", "CC 72=127", "Firmware 3.80 or newer.", 9 }, { "Previous preset", "CC 72=0", "Firmware 3.80 or newer.", 9 } };
+    p.looper = helixLooper (60, 61, 62, 63, 65, 66, looperBlock);
+    p.pedals = { { "EXP 1", 1 }, { "EXP 2", 2 } };
+    p.pedalNote = "Moves what the preset assigns to this expression pedal, like a real pedal.";
+    p.tunerOn = "CC 68=127"; p.tunerOff = "CC 68=127";
+    p.channelHint = "Must match the unit: Global Settings > MIDI/Tempo > MIDI Base Channel (channel 1 out of the box).";
+    p.usbToThru = 3;
+    p.notes = "No setlists. " + line6Buffered + "\n\nMIDI Thru passes on what arrives at the 5-pin MIDI In; Line 6 doesn't say whether USB MIDI "
+              "is passed on too. It listens on MIDI channel 1 out of the box.";
+    return p;
+}
+
+Profile fractalBase (const juce::String& id, const juce::String& model, const juce::String& shortName, const juce::String& aliases,
+                     const juce::String& manual, Scheme scheme)
+{
+    Profile p;
+    p.id = id; p.brand = "Fractal Audio"; p.model = model; p.shortName = shortName; p.aliases = "fractal " + aliases;
+    p.colour = fractalColour; p.manual = manual; p.scheme = scheme;
+    p.sceneWord = "Scene"; p.sceneCount = 8; p.sceneCc = 34; p.sceneBuffered = false;
+    p.sceneNote = "Scene Select is CC#34 (factory default). With Load preset first, the scene follows the preset 1/16 later, like on the QC.";
+    p.switchesTitle = "Blocks"; p.switchesOnOff = true;
+    p.switchesNote = "Factory default CCs. Fractal units can be set to treat these as a toggle (any value flips it); the tiles assume the "
+                     "default: 0-63 = off (bypassed), 64-127 = on.";
+    p.looper = fractalLooper();
+    p.pedalNote = "An External Controller: it moves whatever a preset's modifier uses it for. Set the modifier's source to this controller.";
+    p.tunerOn = "CC 15=127"; p.tunerOff = "CC 15=0";
+    p.channelHint = "Must match the unit's MIDI channel (Setup > MIDI, 1 by default).";
+    p.usbToThru = 3;
+    return p;
+}
+}
+
+const std::vector<Profile>& all()
+{
+    static const std::vector<Profile> list = []
+    {
+        std::vector<Profile> v;
+
+        // Line 6
+        v.push_back (helixBase ("line6.helix-floor", "Helix Floor", "floor", "Helix Owner's Manual, firmware 3.80", true));
+        v.push_back (helixBase ("line6.helix-lt", "Helix LT", "lt", "Helix LT Owner's Manual, firmware 3.80", false));
+        {
+            auto p = helixBase ("line6.helix-rack", "Helix Rack", "rack control", "Helix Rack/Helix Control Owner's Manual, firmware 3.80", true);
+            p.model = "Helix Rack (+ Control)";
+            p.switchesNote = fsNote + " The footswitches are on Helix Control. There's no MIDI CC for FS6 or FS12.";
+            v.push_back (p);
+        }
+        {
+            std::vector<Control> fs { { "FS1", 49, 127 }, { "FS2", 50, 127 }, { "FS3", 51, 127 }, { "FS4 (ext.)", 52, 127 }, { "FS5 (ext.)", 53, 127 } };
+            auto p = hxBase ("line6.hx-stomp", "HX Stomp", "stomp", "HX Stomp Owner's Manual, firmware 3.80", Scheme::hxStomp, 3, fs, 0);
+            p.switchesNote = fsNote + " FS4 and FS5 are the external footswitch jack (tip and ring).";
+            p.sceneNote = line6Buffered + " The manual says HX Stomp has three snapshots per preset (its MIDI table also lists a fourth value).";
+            p.notes = "Presets: 42 banks of three, 01A-42C = PC 0-125. " + p.notes + "\n\nThe manual says three snapshots per preset, but its MIDI "
+                      "table also lists value 3 = Snapshot 4: this page uses three.";
+            v.push_back (p);
+        }
+        {
+            auto p = hxBase ("line6.hx-stomp-xl", "HX Stomp XL", "stomp xl", "HX Stomp XL Owner's Manual, firmware 3.80", Scheme::hxFour, 4,
+                             numbered ("FS", 1, 8, 49), 0);
+            p.notes = "Presets: 32 banks of four, 01A-32D = PC 0-127. " + p.notes;
+            v.push_back (p);
+        }
+        {
+            auto p = hxBase ("line6.hx-effects", "HX Effects", "effects fx", "HX Effects Owner's Manual, firmware 3.80", Scheme::hxFour, 4,
+                             numbered ("FS", 1, 6, 49), 67);
+            p.notes = "Presets: 32 banks of four, 01A-32D = PC 0-127. " + p.notes;
+            v.push_back (p);
+        }
+        {
+            Profile p = hxBase ("line6.pod-go", "POD Go", "pod go wireless podgo", "POD Go Owner's Manual 2.50 (also covers POD Go Wireless)",
+                                Scheme::podGo, 4, numbered ("FS", 1, 8, 49), 0);
+            p.model = "POD Go / POD Go Wireless";
+            p.utilities = { { "Tuner", "CC 68=127", "Opens or closes the tuner screen. " + toggle, 5 }, { "Tap", "CC 64=127", oneTap, 1 } };
+            p.hasDin = false;
+            p.usbToThru = 0;
+            p.channelHint = "Must match POD Go: Global Settings > MIDI/Tempo > MIDI Channel (1 out of the box).";
+            p.notes = "POD Go takes MIDI over USB only: it has no 5-pin MIDI, so it can't be in a daisy chain or pass MIDI on to another pedal. "
+                      "Set its cue track's MIDI output to POD Go (USB).\n\nPresets: PC 0-127 = 01A-32D. With \"Switch to the preset's setlist\" on, "
+                      "each preset also sends its setlist (CC#32: 0 Factory, 1 User).\n\n" + line6Buffered;
+            v.push_back (p);
+        }
+        {
+            Profile p;
+            p.id = "line6.helix-stadium"; p.brand = "Line 6"; p.model = "Helix Stadium / Stadium XL"; p.shortName = "Helix Stadium";
+            p.aliases = "line6 helix stadium xl"; p.colour = line6Colour; p.manual = "Helix Stadium online manual (Rev D, v1.3)";
+            p.scheme = Scheme::stadium;
+            p.sceneWord = "Snapshot"; p.sceneCount = 8; p.sceneCc = 69; p.sceneBuffered = true; p.sceneNote = line6Buffered;
+            p.switchesTitle = "Footswitch mode";
+            p.switches = { { "Stomp A", 37, 0 }, { "Stomp B", 37, 1 }, { "Preset", 37, 2 }, { "Snapshot", 37, 3 }, { "Combo", 37, 4 }, { "Transport", 37, 6 } };
+            p.switchesNote = "Sets the footswitch mode (CC#37). Stadium has no MIDI CCs that press single footswitches.";
+            p.utilities = { { "Tuner", "CC 9=34", "Opens or closes the tuner. " + toggle, 5 }, { "Mute all", "CC 9=24", toggle, 0 },
+                            { "Tap", "CC 64=127", oneTap, 1 }, { "Preset up", "CC 9=13", {}, 9 }, { "Preset down", "CC 9=12", {}, 9 },
+                            { "Toe switch", "CC 36=127", toggle, 7 } };
+            p.looper = helixLooper (58, 59, 60, 53, 55, 54, 62);
+            p.looper.push_back ({ "Clear", "CC 52=127", {}, 0 });
+            p.pedals = { { "EXP 1", 1 }, { "EXP 2", 2 } };
+            p.pedalNote = "Moves what the preset assigns to this expression pedal, like a real pedal.";
+            p.tunerOn = "CC 9=34"; p.tunerOff = "CC 9=34";
+            p.channelHint = "Must match Stadium's Global MIDI Channel (Global Settings > MIDI, 1 out of the box).";
+            p.usbToThru = 2; p.usbThruSetting = "MIDI Over USB C";
+            p.notes = "Stadium uses a different MIDI map from older Helix units.\n\nPresets: with \"Switch to the preset's setlist\" on, each preset sends "
+                      "CC#32 first: 0 = FACTORY PRESETS, 1-4 = the USER PRESETS groups (1A-32D, 33A-64D, 65A-96D, 97A-128D), 5 and up = your setlists. "
+                      "Then PC 0-127.\n\n" + line6Buffered + "\n\nChannels: this page uses the Global MIDI Channel. Block bypass and parameter control use "
+                      "a separate Bypass/Ctrl channel (2 out of the box), which this page doesn't cover.\n\nWith MIDI Thru on, Stadium passes on MIDI from "
+                      "its MIDI In and from USB-C (with MIDI Over USB C on).";
+            v.push_back (p);
+        }
+
+        // Fractal Audio (factory default CCs)
+        {
+            auto p = fractalBase ("fractal.axe-fx-2", "Axe-Fx II / XL / XL+", "Axe-Fx II", "axe fx axefx 2 ii xl plus",
+                                  "Axe-Fx II Owner's Manual (Doc Q7.0)", Scheme::axeFx2);
+            p.switches = { { "Amp 1", 37, 127 }, { "Amp 2", 38, 127 }, { "Cab 1", 39, 127 }, { "Drive 1", 49, 127 }, { "Drive 2", 50, 127 },
+                           { "Delay 1", 47, 127 }, { "Reverb 1", 83, 127 }, { "Chorus 1", 41, 127 }, { "Comp 1", 43, 127 }, { "Wah 1", 97, 127 } };
+            p.utilities = { { "Tuner on", "CC 15=127", {}, 5 }, { "Tuner off", "CC 15=0", {}, 9 }, { "Tap", "CC 14=127", oneTap, 1 },
+                            { "Next scene", "CC 123=127", {}, 9 }, { "Previous scene", "CC 124=127", {}, 9 } };
+            p.pedals = { { "External 1", 16 }, { "External 2", 17 }, { "External 3", 18 }, { "External 4", 19 } };
+            p.usbToThru = 2; p.usbThruSetting = "USB Adapter Mode (I/O > MIDI)";
+            p.notes = "These are the factory default CCs (default table p.194). If you changed them on the unit (I/O > CTRL), use a custom MIDI device "
+                      "instead.\n\nPresets: banks A-F of 128 (A-C on the Mark I/II), selected with CC#0 and then the Program Change.\n\n"
+                      "\"Ignore Redundant PC\" is off by default, so loading the preset that's already loaded reloads it.\n\n"
+                      "USB: MIDI over USB reaches the 5-pin MIDI Out only with USB Adapter Mode on.";
+            v.push_back (p);
+        }
+        {
+            auto p = fractalBase ("fractal.ax8", "AX8", "AX8", "ax8 ax 8", "AX8 Owner's Manual (default CCs p.99)", Scheme::ax8);
+            p.switches = { { "Drive 1", 49, 127 }, { "Drive 2", 50, 127 }, { "Delay 1", 47, 127 }, { "Delay 2", 48, 127 }, { "Reverb", 83, 127 },
+                           { "Chorus", 41, 127 }, { "Comp", 43, 127 }, { "Wah", 97, 127 }, { "Pitch", 77, 127 }, { "Flanger", 56, 127 } };
+            p.switchesNote += " The AX8 manual doesn't state the 0-63 / 64-127 rule; it's the Axe-Fx II's. No default CC for Amp or Cab bypass.";
+            p.utilities = { { "Tuner", "CC 15=127", "Enters or exits the tuner (CC#15).", 5 }, { "Tap", "CC 14=127", oneTap, 1 },
+                            { "Next scene", "CC 123=127", {}, 9 }, { "Previous scene", "CC 124=127", {}, 9 } };
+            p.pedals = { { "External 5", 20 }, { "External 6", 21 }, { "External 7", 22 }, { "External 8", 23 } };
+            p.pedalNote += " Externals 1-4 default to the pedal jacks, so these use 5-8.";
+            p.tunerOff = "CC 15=127";
+            p.notes = "These are the factory default CCs (p.99). If you changed them on the unit, use a custom MIDI device instead.\n\n"
+                      "Presets: 512 in 64 banks of 8, shown 01:1-64:8 (CC#0 = 0 for banks 01-16, 1 for 17-32, ...; then the Program Change).\n\n"
+                      "No default CC for Amp or Cab bypass.";
+            v.push_back (p);
+        }
+        {
+            auto p = fractalBase ("fractal.fx8", "FX8 (Mark I / II)", "FX8", "fx8 fx 8", "FX8 Owner's Manual (default CC table)", Scheme::fx8);
+            p.switches = { { "Drive 1", 49, 127 }, { "Drive 2", 50, 127 }, { "Delay 1", 47, 127 }, { "Delay 2", 48, 127 }, { "Reverb 1", 83, 127 },
+                           { "Chorus 1", 41, 127 }, { "Comp 1", 43, 127 }, { "Wah 1", 97, 127 }, { "Pitch", 77, 127 }, { "Phaser 1", 75, 127 } };
+            p.switchesNote += " The FX8 manual doesn't state the 0-63 / 64-127 rule; it's the Axe-Fx II's.";
+            p.utilities = { { "Tuner", "CC 15=127", "Enters or exits the tuner (CC#15).", 5 }, { "Tap", "CC 14=127", oneTap, 1 },
+                            { "Bypass (unit)", "CC 13=127", "The front-panel Bypass (CC#13).", 9 },
+                            { "Next scene", "CC 123=127", {}, 9 }, { "Previous scene", "CC 124=127", {}, 9 } };
+            p.pedals = { { "External 1", 16 }, { "External 2", 17 }, { "External 3", 18 }, { "External 4", 19 } };
+            p.tunerOff = "CC 15=127";
+            p.notes = "These are the factory default CCs. If you changed them on the unit, use a custom MIDI device instead. Mark I needs firmware 3.0 "
+                      "or newer.\n\nPresets: 128, A1-P8 = Program Change 0-127. The FX8 doesn't respond to bank select.";
+            v.push_back (p);
+        }
+        return v;
+    }();
+    return list;
+}
+
+const Profile* find (const juce::String& id)
+{
+    for (const auto& p : all())
+        if (p.id == id)
+            return &p;
+    return nullptr;
+}
+
+//==============================================================================
+bool hasSetlists (const Profile& p)
+{
+    return p.scheme == Scheme::helix || p.scheme == Scheme::podGo || p.scheme == Scheme::stadium;
+}
+
+juce::StringArray setlistNames (const Profile& p)
+{
+    switch (p.scheme)
+    {
+        case Scheme::helix:   return { "FACTORY 1", "FACTORY 2", "USER 1", "USER 2", "USER 3", "USER 4", "USER 5", "TEMPLATES" };
+        case Scheme::podGo:   return { "Factory", "User" };
+        case Scheme::stadium:
+        {
+            juce::StringArray s { "FACTORY PRESETS", "USER 1A-32D", "USER 33A-64D", "USER 65A-96D", "USER 97A-128D" };
+            for (int i = 1; i <= 16; ++i)
+                s.add ("Your setlist " + n (i));
+            return s;
+        }
+        case Scheme::hxStomp: case Scheme::hxFour: case Scheme::axeFx2: case Scheme::ax8: case Scheme::fx8: break;
+    }
+    return {};
+}
+
+int slotsPerBank (const Profile& p)
+{
+    switch (p.scheme)
+    {
+        case Scheme::hxStomp: return 3;
+        case Scheme::axeFx2:  return 128;
+        case Scheme::ax8: case Scheme::fx8: return 8;
+        case Scheme::helix: case Scheme::podGo: case Scheme::stadium: case Scheme::hxFour: break;
+    }
+    return 4;
+}
+
+int presetsPerSetlist (const Profile& p, int)
+{
+    switch (p.scheme)
+    {
+        case Scheme::hxStomp: return 126;
+        case Scheme::axeFx2:  return 768;
+        case Scheme::ax8:     return 512;
+        case Scheme::helix: case Scheme::podGo: case Scheme::stadium: case Scheme::hxFour: case Scheme::fx8: break;
+    }
+    return 128;
+}
+
+juce::StringArray bankNames (const Profile& p, int setlist)
+{
+    juce::StringArray b;
+    const auto banks = presetsPerSetlist (p, setlist) / slotsPerBank (p);
+    const auto letters = p.scheme == Scheme::axeFx2 || p.scheme == Scheme::fx8;
+    // Stadium's USER PRESETS groups continue the bank numbers: group 2 is 33A-64D.
+    const auto first = p.scheme == Scheme::stadium && setlist >= 1 && setlist <= 4 ? (setlist - 1) * 32 + 1 : 1;
+    for (int i = 0; i < banks; ++i)
+        b.add (letters ? juce::String::charToString ((juce::juce_wchar) ('A' + i)) : juce::String (first + i).paddedLeft ('0', 2));
+    return b;
+}
+
+juce::StringArray slotNames (const Profile& p)
+{
+    juce::StringArray s;
+    const auto count = slotsPerBank (p);
+    for (int i = 0; i < count; ++i)
+        s.add (p.scheme == Scheme::axeFx2 ? juce::String (i).paddedLeft ('0', 3)
+               : (p.scheme == Scheme::ax8 || p.scheme == Scheme::fx8) ? n (i + 1)
+               : juce::String::charToString ((juce::juce_wchar) ('A' + i)));
+    return s;
+}
+
+juce::String presetLabel (const Profile& p, int setlist, int index)
+{
+    const auto per = slotsPerBank (p);
+    const auto banks = bankNames (p, setlist);
+    const auto bank = juce::jlimit (0, juce::jmax (0, banks.size() - 1), index / per);
+    return banks[bank] + (p.scheme == Scheme::ax8 ? ":" : "") + slotNames (p)[index % per];
+}
+
+juce::String setlistLabel (const Profile& p, int setlist)
+{
+    return hasSetlists (p) ? setlistNames (p)[setlist] : juce::String();
+}
+
+int defaultSetlist (const Profile& p)
+{
+    return p.scheme == Scheme::helix ? 2 : (p.scheme == Scheme::podGo || p.scheme == Scheme::stadium) ? 1 : -1;
+}
+
+//==============================================================================
+static int channelOf (int channel) { return juce::jlimit (1, 16, channel); }
+
+void addPresetLoad (cues::Cue& c, const Profile& p, int channel, int setlist, int index, bool sendSetlist, double beat)
+{
+    const auto ch = channelOf (channel);
+    index = juce::jlimit (0, presetsPerSetlist (p, setlist) - 1, index);
+    if (hasSetlists (p) && sendSetlist && setlist >= 0)
+        c.add (beat, juce::MidiMessage::controllerEvent (ch, 32, juce::jlimit (0, 127, setlist)));
+    if (p.scheme == Scheme::axeFx2 || p.scheme == Scheme::ax8)
+        c.add (beat, juce::MidiMessage::controllerEvent (ch, 0, index / 128));
+    c.add (beat, juce::MidiMessage::programChange (ch, index % 128));
+}
+
+cues::Cue preset (const Profile& p, int channel, int setlist, int index, bool sendSetlist, const juce::String& name)
+{
+    cues::Cue c;
+    c.name = p.shortName + " " + (name.isNotEmpty() ? name : presetLabel (p, setlist, index));
+    addPresetLoad (c, p, channel, setlist, index, sendSetlist, 0.0);
+    return c;
+}
+
+cues::Cue scene (const Profile& p, int channel, int sceneIndex, const juce::String& name)
+{
+    cues::Cue c;
+    c.name = p.shortName + " " + p.sceneWord + " " + n (sceneIndex + 1) + (name.isNotEmpty() ? " - " + name : juce::String());
+    c.add (0.0, juce::MidiMessage::controllerEvent (channelOf (channel), p.sceneCc, juce::jlimit (0, p.sceneCount - 1, sceneIndex)));
+    return c;
+}
+
+cues::Cue sceneAfterPreset (const Profile& p, int channel, int setlist, int index, bool sendSetlist,
+                            const juce::String& presetName, int sceneIndex, const juce::String& sceneName)
+{
+    cues::Cue c;
+    c.name = p.shortName + " " + presetName + " > " + n (sceneIndex + 1) + (sceneName.isNotEmpty() ? " - " + sceneName : juce::String());
+    addPresetLoad (c, p, channel, setlist, index, sendSetlist, 0.0);
+    c.add (p.sceneBuffered ? 0.0 : fractalGap,
+           juce::MidiMessage::controllerEvent (channelOf (channel), p.sceneCc, juce::jlimit (0, p.sceneCount - 1, sceneIndex)));
+    return c;
+}
+
+cues::Cue switchCue (const Profile& p, int channel, int switchIndex, bool on, const juce::String& name)
+{
+    const auto& s = p.switches[(size_t) juce::jlimit (0, (int) p.switches.size() - 1, switchIndex)];
+    cues::Cue c;
+    const auto label = name.isNotEmpty() ? name : s.name;
+    c.name = p.shortName + " " + label + (p.switchesOnOff ? (on ? " On" : " Off") : juce::String());
+    c.add (0.0, juce::MidiMessage::controllerEvent (channelOf (channel), s.cc, p.switchesOnOff ? (on ? 127 : 0) : s.value));
+    return c;
+}
+
+cues::Cue switchAfterPreset (const Profile& p, int channel, int setlist, int index, bool sendSetlist,
+                             const juce::String& presetName, int switchIndex, bool on, const juce::String& name)
+{
+    auto single = switchCue (p, channel, switchIndex, on, name);
+    cues::Cue c;
+    c.name = p.shortName + " " + presetName + " > " + single.name.fromFirstOccurrenceOf (p.shortName + " ", false, false);
+    addPresetLoad (c, p, channel, setlist, index, sendSetlist, 0.0);
+    c.add (fractalGap, single.events.front().second);
+    return c;
+}
+
+cues::Cue action (const Profile& p, int channel, const Action& a)
+{
+    return cues::custom::cue (channel, p.shortName + " " + a.name, a.messages, 0);
+}
+}

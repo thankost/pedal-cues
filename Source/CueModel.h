@@ -23,6 +23,10 @@ struct Cue
 // ready to be dragged onto a DAW timeline.
 juce::File writeMidiFile (const Cue& cue, double bpm);
 
+// What writeMidiFile repeats 1/16 later when every event sits on the first tick (Ableton needs a clip length):
+// never a second Program Change, which could reload the preset.
+juce::MidiMessage lengthPadding (const Cue& cue);
+
 juce::String formatBeats (double beats);
 
 //==============================================================================
