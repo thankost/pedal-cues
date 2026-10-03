@@ -129,7 +129,7 @@ void editPresetDialog (juce::ValueTree preset)
                                      "(setlist, bank and slot exactly as shown on the pedal).",
                                      juce::MessageBoxIconType::NoIcon);
     w->addTextEditor ("name", preset[IDs::name].toString(), "Name");
-    w->addTextEditor ("setlist", preset[IDs::setlist].toString(), "Setlist number");
+    w->addTextEditor ("setlist", preset[IDs::setlist].toString(), "Setlist number (as on the QC; 0 = Factory Presets)");
     w->addTextEditor ("bank", preset[IDs::bank].toString(), "Bank (1-32)");
 
     juce::StringArray slots;
@@ -151,7 +151,7 @@ void editPresetDialog (juce::ValueTree preset)
         if (name.isNotEmpty())
             preset.setProperty (IDs::name, name, nullptr);
 
-        preset.setProperty (IDs::setlist, juce::jlimit (1, 128, w->getTextEditorContents ("setlist").getIntValue()), nullptr);
+        preset.setProperty (IDs::setlist, juce::jlimit (0, 127, w->getTextEditorContents ("setlist").getIntValue()), nullptr);
         preset.setProperty (IDs::bank,    juce::jlimit (1, 32,  w->getTextEditorContents ("bank").getIntValue()), nullptr);
         preset.setProperty (IDs::slot,    juce::jmax (0, w->getComboBoxComponent ("slot")->getSelectedItemIndex()), nullptr);
     }), true);

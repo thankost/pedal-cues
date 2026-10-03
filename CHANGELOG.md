@@ -2,6 +2,12 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.4.28 (2026-10-03)
+
+- **Fixed: setlists were one off.** With *Send setlist* on, PedalCues sent the setlist one lower than the QC expects (the QC counts the Factory Presets as 0). Setlist numbers are now exactly as the QC shows them, and Sync from QC numbers them that way. If you added 1 to your setlist numbers to work around it, set them back.
+- **Fixed: some tiles wouldn't drop into Ableton Live** (a scene with Load 1A first off, the tuner and the other utilities). Those clips now have a length Ableton accepts.
+- **Guide: scenes exactly on the beat.** Load 1A first sends the scene 1/16 after the preset, so the QC has time to load it. The guide now shows two ways to land exactly on the beat: drop the tile 1/16 early, or switch Load 1A first off inside a song.
+
 ## 0.4.27 (2026-10-03)
 
 - **macOS installer (new):** download `PedalCues-macOS.pkg`, open it and click Install. The app goes to Applications and the VST3 and AU plugins to `/Library/Audio/Plug-Ins/`, with no Terminal step and no copying. The first time, macOS asks you to allow it in *System Settings > Privacy & Security > Open Anyway* (PedalCues isn't notarised by Apple). The zip is still there if you prefer copying by hand.

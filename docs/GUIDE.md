@@ -183,6 +183,15 @@ The **Load 1A first** switch at the top right of the **Scenes** header decides t
 
 The clip names show the difference on the timeline too: `QC Clean Rig > B - Verse` loads the preset first, while `QC Scene B - Verse` switches only the scene.
 
+#### Timing: scenes right after a preset
+
+With **Load 1A first**, the scene (or footswitch) comes **1/16 after** the preset change, so the QC has time to load the preset. It lands a sixteenth after the bar you dropped it on. Two ways to have it exactly on the beat:
+
+- **Drop the tile 1/16 early.** Set your DAW's grid to 1/16 and drop the tile one step before the beat: the preset goes out just before, and the scene lands on the beat. The QC still gets its loading time, so this is safe even if a different preset is loaded.
+- **Inside a song, switch Load 1A first off.** Once the song's preset is loaded (by a preset clip, or the first Load 1A first scene), scene tiles with Load 1A first off send only the scene change, exactly on the beat, with no reload.
+
+The same 1/16 applies to Expression clips with Load 1A first.
+
 > Projects saved with PedalCues 0.4.2 or older keep their old choice. If **Load 1A first** is off in yours and you want the new behaviour, switch it on once.
 
 ### Sync your presets from the Quad Cortex (USB)
@@ -192,7 +201,7 @@ Instead of typing every preset, let PedalCues read them from the pedal:
 1. Connect the **QC's USB port** to the computer and switch the QC on. Name sync only works over **USB**, but your cues can still go over any cable (5-pin MIDI, the daisy chain, or USB).
 2. **Quit Cortex Control**: it keeps the USB connection to itself.
 3. Click **Sync from QC (USB)** under the preset list.
-4. PedalCues lists your setlists with their preset counts. Tick the ones to import and check each one's **setlist number** (the number PedalCues sends as CC#32 when *Send setlist* is on; the QC doesn't report it). The Factory Library is unticked by default.
+4. PedalCues lists your setlists with their preset counts. Tick the ones to import and check each one's **setlist number**: the number the QC shows for it (the QC doesn't report it over USB). The Factory Presets are **0**, your own setlists start at **1**, and PedalCues sends that number as CC#32 when *Send setlist* is on. The Factory Library is unticked by default.
 5. Optional: tick **Also read scenes, colours and stomps for every ticked preset** (see below).
 6. Click **Import**. New presets are added at their bank and slot; presets you already have at the same setlist, bank and slot are renamed. Tick *Replace my current preset list* to start fresh instead.
 
@@ -248,7 +257,7 @@ Expression clips go on the **QC Cues** track, like your other QC cues, and are n
 ### Adding a preset by hand
 
 1. Click **+ Preset**.
-2. Type its name, setlist number, bank (1-32) and slot (A-H), exactly as the QC shows them. For example, *Setlist 1, bank 3, slot B* is shown as `SL1 | 3B`.
+2. Type its name, setlist number, bank (1-32) and slot (A-H), exactly as the QC shows them. For example, *Setlist 1, bank 3, slot B* is shown as `SL1 | 3B`. A factory preset is setlist **0** (shown as `Factory | 3B`).
 3. Click the preset in the list, then double-click each scene to give it the same name as on your QC.
 4. Right-click a scene to give it the same colour you use on the pedal.
 
@@ -379,7 +388,8 @@ PedalCues asks GitHub for the latest release when it opens; nothing else is sent
 | Standalone app: tiles do nothing | Pick the port your pedals are on in **MIDI Setup > Test your pedals** (or **Options > MIDI Output**), then try **Test QC** / **Test Whammy**. On Windows, close your DAW first; only one program can use a MIDI port at a time. |
 | Scene or stomp changes the wrong preset | **Load 1A first** is off, so tiles act on whatever preset the QC has loaded. Switch it on in the Scenes header so they load their own preset first. |
 | A stomp tile changes scenes | The QC is in Scene mode, where footswitch A-H select scenes. Put the QC in Stomp mode (or drop the **Stomp Mode** tile before your stomp cues). Before v0.4.2 the Scene Mode and Stomp Mode tiles were swapped; drag those clips in again. |
-| Wrong preset loads | Check setlist, bank and slot in *Edit preset*. If presets are in other setlists, turn on *Send setlist*. |
+| Wrong preset loads | Check setlist, bank and slot in *Edit preset*. If presets are in other setlists, turn on *Send setlist*. Setlist numbers are as the QC shows them (Factory Presets = 0). Before v0.4.28 PedalCues sent one less, so if you added 1 to work around it, set them back. |
+| The scene changes a little after the beat | That's the 1/16 gap of **Load 1A first**, which gives the QC time to load the preset. Drop the tile 1/16 early, or switch Load 1A first off inside the song. See [Timing](#timing-scenes-right-after-a-preset). |
 | Whammy doesn't react | If the QC is on USB and the Whammy hangs off the QC's Thru, that can't work: the QC doesn't forward USB MIDI (a known QC limitation). Use one of the [three working setups](#2-connect-your-rig). Otherwise check the cable direction (MIDI Out to MIDI In) and the channels, set the QC to a fixed channel (not *Omni*), and for the daisy chain turn on QC MIDI Thru. |
 | Expression tiles do nothing | Assign the parameter to **Expression 1** (or 2) on the QC, in that preset, and pick the same **Exp 1 / Exp 2** in PedalCues. The clips must be on the **QC Cues** track, on the QC's channel. |
 | Expression moves the wrong thing | It acts on the preset the QC has loaded. Put the move after the right preset or scene clip, or switch on **Load 1A first** in Expression. |

@@ -32,7 +32,7 @@ namespace qc
     namespace cc
     {
         constexpr int bankMsb = 0;  // preset page: 0 = presets 1..128, 1 = 129..256
-        constexpr int setlist = 32; // setlist select (value = setlist number - 1)
+        constexpr int setlist = 32; // setlist select: value = setlist number as the QC shows it, 0 = Factory Presets
         constexpr int stompA  = 35; // 35..42 = footswitch A..H, 0-63 off / 64-127 on
         constexpr int scene   = 43; // 0..7 = scene A..H
         constexpr int tuner   = 45; // 0-63 off / 64-127 on
@@ -42,7 +42,7 @@ namespace qc
     }
 
     juce::String letter (int zeroBasedIndex);
-    juce::String location (int setlist, int bank, int slot); // e.g. "SL1 | 3B"
+    juce::String location (int setlist, int bank, int slot); // e.g. "SL1 | 3B"; setlist 0 = "Factory | 3B"
 
     void addScene      (Cue&, int channel, int scene, double beat);
     void addPresetLoad (Cue&, int channel, int setlist, int bank, int slot, bool sendSetlist, double beat);

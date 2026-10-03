@@ -173,6 +173,7 @@ private:
 
         setlistRows.clear();
         rows.removeAllChildren();
+        // Numbers as the QC counts them (and as CC#32 selects them): 0 = Factory Presets, then your setlists from 1.
         int number = 1;
         for (const auto& f : result.setlists)
         {
@@ -180,9 +181,10 @@ private:
             row->folder = f;
             row->tick.setButtonText (f.name + "  (" + juce::String ((int) f.presets.size()) + " presets)");
             row->tick.setToggleState (! f.isFactory && ! f.presets.empty(), juce::dontSendNotification);
-            for (int n = 1; n <= 13; ++n)
+            row->number.addItem ("Factory (0)", factoryId);
+            for (int n = 1; n <= 16; ++n)
                 row->number.addItem ("Setlist " + juce::String (n), n);
-            row->number.setSelectedId (juce::jlimit (1, 13, number++), juce::dontSendNotification);
+            row->number.setSelectedId (f.isFactory ? factoryId : juce::jlimit (1, 16, number++), juce::dontSendNotification);
             rows.addAndMakeVisible (row->tick);
             rows.addAndMakeVisible (row->number);
             setlistRows.push_back (std::move (row));
@@ -268,7 +270,7 @@ private:
         {
             if (! row->tick.getToggleState())
                 continue;
-            const auto setlist = row->number.getSelectedId();
+            const auto setlist = row->number.getSelectedId() == factoryId ? 0 : row->number.getSelectedId();
             for (const auto& p : row->folder.presets)
             {
                 const auto bank = qcusb::bankOf (p.position), slot = qcusb::slotOf (p.position);
@@ -338,6 +340,8 @@ private:
         if (auto* dw = findParentComponentOfClass<juce::DialogWindow>())
             dw->exitModalState (0);
     }
+
+    static constexpr int factoryId = 100;   // the setlist combo's "Factory (0)" item (ids must be non-zero)
 
     juce::ValueTree state;
     std::shared_ptr<std::atomic<bool>> cancel = std::make_shared<std::atomic<bool>> (false);

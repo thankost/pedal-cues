@@ -65,7 +65,9 @@ int main (int argc, char** argv)
     CHECK (p.events.size() == 2 && isCC (p.events[0].second, 1, 0, 0));
     CHECK (p.events[1].second.isProgramChange() && p.events[1].second.getProgramChangeNumber() == 17);
     auto p2 = qc::preset (1, 4, 20, 0, true, {});
-    CHECK (p2.events.size() == 3 && isCC (p2.events[0].second, 1, 0, 1) && isCC (p2.events[1].second, 1, 32, 3));
+    CHECK (p2.events.size() == 3 && isCC (p2.events[0].second, 1, 0, 1) && isCC (p2.events[1].second, 1, 32, 4));   // setlist 4 -> CC#32 = 4
+    CHECK (isCC (qc::preset (1, 0, 1, 0, true, {}).events[1].second, 1, 32, 0));   // 0 = Factory Presets
+    CHECK (qc::location (0, 2, 3) == "Factory | 2D" && qc::location (3, 2, 3) == "SL3 | 2D");
     CHECK (p2.events[2].second.getProgramChangeNumber() == 24);
 
     CHECK (isCC (qc::tuner (1, true).events[0].second, 1, 45, 127));
@@ -330,6 +332,28 @@ int main (int argc, char** argv)
     CHECK (ccCount == (int) up.events.size());
 
     CHECK (formatBeats (0.25) == "1/16" && formatBeats (8.0) == "2 bars" && formatBeats (3.0) == "3 beats");
+
+    // Clips whose events all sit on the first tick (a lone scene, the tuner) repeat their last message 1/16 later,
+    // so DAWs that size a clip by its last event (Ableton Live) accept them. Spread-out clips are written as they are.
+    {
+        auto readEvents = [] (const juce::File& f)
+        {
+            std::vector<std::pair<double, juce::MidiMessage>> out;
+            juce::FileInputStream stream (f);
+            juce::MidiFile midi;
+            if (midi.readFrom (stream))
+                for (auto* ev : *midi.getTrack (0))
+                    if (! ev->message.isMetaEvent())
+                        out.emplace_back (ev->message.getTimeStamp(), ev->message);
+            return out;
+        };
+        const auto lone = readEvents (writeMidiFile (qc::scene (1, 1, "Verse"), 120.0));
+        CHECK (lone.size() == 2 && isCC (lone[0].second, 1, 43, 1) && lone[0].first == 0.0);
+        CHECK (isCC (lone[1].second, 1, 43, 1) && std::abs (lone[1].first - 240.0) < 1.0e-6);
+        const auto loaded = readEvents (writeMidiFile (qc::withPresetFirst (qc::scene (1, 1, {}), 1, 1, 1, 0, false, "Clean"), 120.0));
+        CHECK (loaded.size() == 3);   // preset (CC#0, PC) + the scene 1/16 later: nothing added
+
+    }
 
     std::printf (failures == 0 ? "All tests passed\n" : "%d failure(s)\n", failures);
     return failures == 0 ? 0 : 1;

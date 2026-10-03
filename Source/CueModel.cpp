@@ -1,5 +1,6 @@
 #include "CueModel.h"
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 
@@ -20,7 +21,15 @@ juce::File writeMidiFile (const Cue& cue, double bpm)
     for (const auto& [beat, msg] : cue.events)
         seq.addEvent (msg, beat * ticksPerQuarter);
 
-    seq.addEvent (juce::MidiMessage::endOfTrack(), cue.lengthBeats * ticksPerQuarter);
+    // Ableton Live sizes a dropped clip by its last event and refuses a file whose events all sit on the first
+    // tick (a single scene change, the tuner...). Repeat the last message 1/16 later: the same scene, tuner
+    // state or footswitch value again changes nothing on the pedal, and the clip gets a length.
+    const auto allAtStart = ! cue.events.empty()
+                         && std::all_of (cue.events.begin(), cue.events.end(), [] (const auto& e) { return e.first <= 0.0; });
+    if (allAtStart)
+        seq.addEvent (cue.events.back().second, 0.25 * ticksPerQuarter);
+
+    seq.addEvent (juce::MidiMessage::endOfTrack(), juce::jmax (cue.lengthBeats, 0.5) * ticksPerQuarter);
 
     juce::MidiFile file;
     file.setTicksPerQuarterNote (ticksPerQuarter);
@@ -129,7 +138,7 @@ namespace qc
 
     juce::String location (int setlist, int bank, int slot)
     {
-        return "SL" + juce::String (setlist) + " | " + juce::String (bank) + letter (slot);
+        return (setlist <= 0 ? juce::String ("Factory") : "SL" + juce::String (setlist)) + " | " + juce::String (bank) + letter (slot);
     }
 
     void addScene (Cue& c, int channel, int scene, double beat)
@@ -145,7 +154,7 @@ namespace qc
         c.add (beat, juce::MidiMessage::controllerEvent (ch, cc::bankMsb, index / 128));
 
         if (sendSetlist)
-            c.add (beat, juce::MidiMessage::controllerEvent (ch, cc::setlist, juce::jlimit (0, 127, setlist - 1)));
+            c.add (beat, juce::MidiMessage::controllerEvent (ch, cc::setlist, juce::jlimit (0, 127, setlist)));   // 0 = Factory Presets
 
         c.add (beat, juce::MidiMessage::programChange (ch, index % 128));
     }

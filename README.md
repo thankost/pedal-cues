@@ -110,7 +110,7 @@ Details and pictures: [guide, section 2](https://thankost.github.io/pedal-cues/g
 - **Whammy numbering:** the plugin uses the manual's 1-based numbers (Classic 1–21 on / 22–42 bypassed,
   Chords 43–63 on / 64–84 bypassed). If every mode arrives one step off, change *MIDI Setup → Whammy program
   numbering*. Mode names can be renamed if your chart differs.
-- **QC setlist:** `CC#32` = setlist number − 1. Leave *Send setlist* off if all presets are in the active setlist.
+- **QC setlist:** `CC#32` = the setlist number as the QC shows it (0 = Factory Presets). Leave *Send setlist* off if all presets are in the active setlist.
 
 ## Layout
 
