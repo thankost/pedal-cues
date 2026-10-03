@@ -1,6 +1,6 @@
 # PedalCues
 
-Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex / QC Mini** and the **DigiTech Whammy V / Whammy DT**.
+Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex / QC Mini**, the **Kemper Profiler / Kemper Player** and the **DigiTech Whammy V / Whammy DT**.
 A VST3 / AU / LV2 / Standalone plugin (JUCE) for Windows, macOS and Linux. Tested in Reaper; it should work in any DAW that accepts dragged MIDI files and can send a MIDI track to a hardware output (Ableton Live, Cubase, Bitwig, Studio One; in Logic the clips work on an External MIDI track).
 
 **[Download for Windows and macOS](https://thankost.github.io/pedal-cues/)**
@@ -12,9 +12,9 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 
 📖 **[User guide with pictures and step-by-step instructions](https://thankost.github.io/pedal-cues/guide.html)** · 📝 **[What's new](https://thankost.github.io/pedal-cues/changelog.html)** · 🛟 **[Help and problem reports](https://thankost.github.io/pedal-cues/help.html)**. A quick tour also starts the first time you open the plugin (open it again later from the **☰** menu).
 
-| Whammy V / DT | MIDI Setup |
-|---|---|
-| ![Whammy page](docs/images/whammy.png) | ![MIDI Setup tab](docs/images/settings.png) |
+| Kemper | Whammy V / DT | MIDI Setup |
+|---|---|---|
+| ![Kemper page](docs/images/kemper.png) | ![Whammy page](docs/images/whammy.png) | ![MIDI Setup tab](docs/images/settings.png) |
 
 ## Features
 
@@ -29,6 +29,14 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
   Expression 1 or 2 on the QC (volume swells, wah, a delay mix, drive). Swell In, Fade Out, Rise & Fall, Slow Rise,
   Wah Rhythm, Rise to Bar, Toe, Heel, fixed positions (heel / 25% / half / 75% / toe), or draw your own; tempo-synced.
   Acts on the loaded preset, or optionally **loads the open preset first** (safe if a preset gets changed by accident)
+
+**Kemper Profiler / Kemper Player** (pick the unit with the ▾ on the first tab, or in MIDI Setup)
+- Performance tiles with five slots each → bank select `CC#32` + Program Change (Player: Program Change, 10 banks of 5)
+- Slot tiles either **load their performance first** (default) or switch a slot of the **current performance** → `CC#50–54`
+- Effect modules A, B, C, D, X, MOD, DLY, REV on/off (`CC#17–29`, delay and reverb with or without tails)
+- Tuner (`CC#31`), Tap x4 (`CC#30`), Morph (`CC#80`), Rotary fast/slow (`CC#33`)
+- **Pedal moves** on Wah (`CC#1`), Pitch (`CC#4`), Volume (`CC#7`) or Morph (`CC#11`): the same shapes, Set to tiles and Draw as QC expression
+- Built from Kemper's MIDI documentation; not tested on a real Kemper yet
 
 **Whammy V / Whammy DT** (pick the model with the switch on the Whammy page)
 - All 21 modes, Classic or Chords (Chords on the V only), engaged or bypassed (Program Change)
@@ -94,11 +102,11 @@ cmake --build build --target PedalCuesTests
 
 ## DAW setup (Reaper as the example)
 
-1. Connect the pedals one of three ways (the plugin's **MIDI Setup** tab shows the steps):
+1. Connect the pedals one of three ways (the plugin's **MIDI Setup** tab shows the steps; with a Kemper, put it where the QC is):
    - **Daisy chain:** interface **MIDI Out → QC MIDI In**, QC **MIDI Thru → Whammy MIDI In** (MIDI Thru on). Both cue tracks output to that interface MIDI Out.
    - **Separate MIDI cables:** interface **MIDI Out 1 → QC**, **MIDI Out 2 → Whammy**. QC Cues → MIDI Out 1, Whammy Cues → MIDI Out 2.
    - **QC over USB + interface:** QC on USB, interface **MIDI Out → Whammy MIDI In**. QC Cues → Quad Cortex, Whammy Cues → interface MIDI Out.
-   - ⚠️ **Known QC limitation:** MIDI Thru doesn't forward MIDI the QC receives over **USB**, so "QC on USB, Whammy on the QC's Thru" doesn't work.
+   - ⚠️ **Known QC and Kemper limitation:** MIDI Thru doesn't forward MIDI received over **USB**, so "QC / Kemper on USB, Whammy on its Thru" doesn't work. The Whammy has only a 5-pin MIDI In, so it always needs a MIDI interface output (or the Thru of a 5-pin chain).
 2. Give the pedals **different MIDI channels** (defaults: QC 1 via *Settings > MIDI Settings*, not Omni; Whammy 2, see its manual) and set the same numbers in the plugin's **MIDI Setup** tab.
 3. In your DAW, enable the MIDI outputs you use (Reaper: *Preferences > MIDI Devices*).
 4. Create two tracks, **QC Cues** and **Whammy Cues**, insert *PedalCues* on each, and set each track's MIDI output as above (Reaper: *I/O > MIDI Hardware Output*, leave *Send to original channels*).
@@ -122,7 +130,7 @@ Source/Tile.*            draggable tile (external file drag + click-to-send)
 Source/PluginProcessor.* MIDI passthrough, preview scheduling, host tempo, state
 Source/Theme.*           colour palette + custom LookAndFeel
 Source/PluginEditor.*    window, header tabs, first-run tour host
-Source/QcPage.cpp        Quad Cortex page    Source/WhammyPage.cpp  Whammy V / DT page
+Source/QcPage.cpp        Quad Cortex page    Source/KemperPage.cpp  Kemper page    Source/WhammyPage.cpp  Whammy V / DT page
 Source/SettingsPage.cpp  MIDI Setup tab (your pedals, DAW tracks, test) and the wiring guide
 Source/Tour.*            quick-tour overlay (steps + spotlight)
 Tools/DocShots.cpp       renders docs/images/*.png
@@ -146,4 +154,4 @@ PedalCues is free. If it helps your show and you'd like to say thanks, you can d
 
 Free and open source under the [MIT License](LICENSE). Copyright (c) 2026 **Thanasis Kostopoulos**. [github.com/thankost/pedal-cues](https://github.com/thankost/pedal-cues)
 
-Built with [JUCE](https://juce.com), which is licensed separately (AGPLv3 / JUCE licence), and [hidapi](https://github.com/libusb/hidapi) (BSD licence option). The USB sync follows the protocol documented by [pyquadcortex](https://github.com/stokes-audio/pyquadcortex) (MIT). Quad Cortex is a trademark of Neural DSP Technologies and Whammy is a trademark of DigiTech. This project is not affiliated with either company.
+Built with [JUCE](https://juce.com), which is licensed separately (AGPLv3 / JUCE licence), and [hidapi](https://github.com/libusb/hidapi) (BSD licence option). The USB sync follows the protocol documented by [pyquadcortex](https://github.com/stokes-audio/pyquadcortex) (MIT). Quad Cortex is a trademark of Neural DSP Technologies, Kemper and Profiler are trademarks of Kemper GmbH, and Whammy is a trademark of DigiTech. This project is not affiliated with any of these companies.

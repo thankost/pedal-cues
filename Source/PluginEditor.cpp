@@ -4,7 +4,7 @@ using namespace theme;
 
 namespace
 {
-const juce::Colour tabColours[] = { qcBlue, whammyRed, accent };
+const juce::Colour tabColours[] = { qcBlue, whammyRed, accent };   // the first tab is Kemper green for a Kemper
 
 int liveEditors = 0; // message thread only
 
@@ -41,19 +41,28 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     tabBar.setComponentID ("hdr.tabs");
     addAndMakeVisible (tabBar);
 
-    const char* names[] = { "Quad Cortex", "Whammy V / DT", "MIDI Setup" };
+    const juce::String names[] = { ui::ampUnitName ((int) state[IDs::ampUnit]), "Whammy V / DT", "MIDI Setup" };
     for (int i = 0; i < 3; ++i)
     {
         auto* b = tabButtons.add (new juce::TextButton (names[i]));
         b->setClickingTogglesState (true);
         b->setRadioGroupId (1001);
         b->setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
-        b->setColour (juce::TextButton::buttonOnColourId, tabColours[i]);
+        b->setColour (juce::TextButton::buttonOnColourId, tabColour (i));
         b->setColour (juce::TextButton::textColourOffId, dim);
         b->setColour (juce::TextButton::textColourOnId, i == 1 ? juce::Colours::white : juce::Colours::black);
-        b->onClick = [this, i] { showPage (i); };
+        b->onClick = [this, i]
+        {
+            if (i == 0 && currentPage == 0)
+                showUnitMenu();   // clicking the open amp tab again: pick the unit
+            showPage (i);
+        };
         tabBar.addAndMakeVisible (b);
     }
+    unitMenuButton.setComponentID ("amp.unit");
+    unitMenuButton.setTooltip ("Your amp modeller: Quad Cortex, Kemper Profiler or Kemper Player");
+    unitMenuButton.onClick = [this] { showUnitMenu(); };
+    tabBar.addAndMakeVisible (unitMenuButton);
 
     updateBadge.setComponentID ("hdr.update");
     updateBadge.onOpen = [this] { showUpdateDialog (updateBadge.info); };
@@ -66,7 +75,7 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     helpButton.onClick = [this] { showHelpMenu (&helpButton); };
     addAndMakeVisible (helpButton);
 
-    pages.push_back (ui::makeQcPage (p));
+    pages.push_back (ui::makeAmpPage (p));
     pages.push_back (ui::makeWhammyPage (p));
     pages.push_back (ui::makeSettingsPage (p));
     for (auto& page : pages)
@@ -111,6 +120,8 @@ void PedalCuesEditor::showPage (int index)
         pages[(size_t) i]->setVisible (i == currentPage);
         tabButtons[i]->setToggleState (i == currentPage, juce::dontSendNotification);
     }
+    unitMenuButton.arrowColour = currentPage == 0 ? juce::Colours::black : dim;
+    unitMenuButton.repaint();
     repaint();
 }
 
@@ -118,6 +129,31 @@ void PedalCuesEditor::showQcExpression (bool show)
 {
     state.setProperty (IDs::qcExpressionView, show, nullptr);
     refreshNow();   // lay out the view now, so the tour can find its targets
+}
+
+juce::Colour PedalCuesEditor::tabColour (int tab) const
+{
+    return tab == 0 && (int) state[IDs::ampUnit] != 0 ? theme::kemperGreen : tabColours[juce::jlimit (0, 2, tab)];
+}
+
+void PedalCuesEditor::showQuadCortex (bool show)
+{
+    // The tour's Quad Cortex steps show the QC page, then put a Kemper player's own unit back.
+    if (show)
+    {
+        if (! tourSavedUnit && (int) state[IDs::ampUnit] != 0)
+        {
+            tourSavedUnit = state[IDs::ampUnit];
+            state.setProperty (IDs::ampUnit, 0, nullptr);
+            refreshNow();
+        }
+    }
+    else if (tourSavedUnit)
+    {
+        state.setProperty (IDs::ampUnit, *tourSavedUnit, nullptr);
+        tourSavedUnit.reset();
+        refreshNow();
+    }
 }
 
 void PedalCuesEditor::showWhammyDt (bool show)
@@ -175,6 +211,7 @@ void PedalCuesEditor::closeTour (bool)
         if (safe != nullptr)
         {
             safe->showWhammyDt (false);   // closing on the DT step: put the player's Whammy choice back
+            safe->showQuadCortex (false);
             safe->tour.reset();
             safe->showPage (0);
         }
@@ -322,7 +359,7 @@ void PedalCuesEditor::showHelpMenu (juce::Component* target, const juce::String&
             case 11: safe->loadDefaultSetup(); break;
             case 12: safe->exportSetup(); break;
             case 13: safe->importSetup(); break;
-            case 14: ui::showWiringGuide(); break;
+            case 14: ui::showWiringGuide ((int) safe->state[IDs::ampUnit]); break;
             case 15: juce::URL (ui::changelogUrl).launchInDefaultBrowser(); break;
             case 16: ui::problemReportUrl().launchInDefaultBrowser(); break;
             default: break;
@@ -652,8 +689,45 @@ void PedalCuesEditor::showUpdateDialog (const update::Info& info)
     }), true);
 }
 
+void PedalCuesEditor::UnitMenuButton::paintButton (juce::Graphics& g, bool highlighted, bool)
+{
+    const auto c = getLocalBounds().toFloat().getCentre();
+    juce::Path p;
+    p.addTriangle (c.x - 5.0f, c.y - 2.5f, c.x + 5.0f, c.y - 2.5f, c.x, c.y + 3.5f);
+    g.setColour (highlighted ? arrowColour.withAlpha (1.0f) : arrowColour.withAlpha (0.8f));
+    g.fillPath (p);
+}
+
+void PedalCuesEditor::showUnitMenu()
+{
+    const auto current = (int) state[IDs::ampUnit];
+    juce::PopupMenu m;
+    m.addSectionHeader ("Amp modeller");
+    for (int u = 0; u < 3; ++u)
+        m.addItem (u + 1, ui::ampUnitName (u), true, u == current);
+
+    juce::Component::SafePointer<PedalCuesEditor> safe (this);
+    m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (tabButtons[0]), [safe] (int result)
+    {
+        if (safe == nullptr || result == 0)
+            return;
+        safe->state.setProperty (IDs::ampUnit, result - 1, nullptr);
+        safe->showPage (0);
+    });
+}
+
 void PedalCuesEditor::handleAsyncUpdate()
 {
+    // The first tab is named after the amp unit picked on it (Quad Cortex, Kemper Profiler, Kemper Player).
+    if (auto* b = tabButtons[0])
+    {
+        b->setButtonText (ui::ampUnitName ((int) state[IDs::ampUnit]));
+        b->setColour (juce::TextButton::buttonOnColourId, tabColour (0));
+    }
+    unitMenuButton.arrowColour = currentPage == 0 ? juce::Colours::black : dim;
+    unitMenuButton.repaint();
+    repaint (getLocalBounds().removeFromTop (64));
+
     for (auto& page : pages)
         page->refresh();
 }
@@ -679,7 +753,7 @@ void PedalCuesEditor::paint (juce::Graphics& g)
     g.drawHorizontalLine (header.getBottom() - 1, 0.0f, (float) getWidth());
 
     // Accent line in the colour of the current pedal.
-    g.setColour (tabColours[currentPage]);
+    g.setColour (tabColour (currentPage));
     g.fillRect (0, header.getBottom() - 2, getWidth(), 2);
 
     // Logo: same artwork as the app icon.
@@ -814,11 +888,14 @@ void PedalCuesEditor::resized()
     helpButton.setBounds (header.removeFromRight (38).withSizeKeepingCentre (34, 34));
     updateBadge.setBounds (18 + 40 + 10, 36, 270, 20);
 
-    const auto tabsWidth = 3 * 130 + 8;
+    // The amp tab is wider: it holds names like "Kemper Profiler" plus its ▾ unit menu.
+    const int tabWidths[] = { 172, 130, 130 };
+    const auto tabsWidth = tabWidths[0] + tabWidths[1] + tabWidths[2] + 8;
     tabBar.setBounds (juce::Rectangle<int> (tabsWidth, 38).withCentre ({ getWidth() / 2, header.getCentreY() }));
     auto t = tabBar.getLocalBounds().reduced (4);
-    for (auto* b : tabButtons)
-        b->setBounds (t.removeFromLeft (130));
+    for (int i = 0; i < tabButtons.size(); ++i)
+        tabButtons[i]->setBounds (t.removeFromLeft (tabWidths[i]));
+    unitMenuButton.setBounds (tabButtons[0]->getBounds().removeFromRight (28));
 
     auto content = getLocalBounds().withTrimmedTop (64);
     for (auto& page : pages)

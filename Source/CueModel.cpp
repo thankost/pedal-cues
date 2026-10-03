@@ -240,7 +240,9 @@ namespace qc
         return {};
     }
 
-    Cue expressionMove (int channel, int pedal, ExpShape s, double lengthBeats, double curve, bool resetToHeel)
+    // A ready-made pedal move on any controller (QC expression, Kemper pedals).
+    Cue shapedMove (const juce::String& name, int channel, int controller, ExpShape s, double lengthBeats, double curve,
+                    bool resetToHeel)
     {
         const auto len = juce::jmax (0.125, lengthBeats);
         auto value = [s, len, curve] (double t)
@@ -262,8 +264,20 @@ namespace qc
             }
             return 0.0;
         };
-        return ccMove (expPrefix (pedal) + expShapeName (s) + " " + formatBeats (len), channel, expController (pedal),
-                       len, resetToHeel, value);
+        return ccMove (name + expShapeName (s) + " " + formatBeats (len), channel, controller, len, resetToHeel, value);
+    }
+
+    Cue expressionMove (int channel, int pedal, ExpShape s, double lengthBeats, double curve, bool resetToHeel)
+    {
+        return shapedMove (expPrefix (pedal), channel, expController (pedal), s, lengthBeats, curve, resetToHeel);
+    }
+
+    Cue drawnMove (const juce::String& name, int channel, int controller, const std::vector<float>& points,
+                   double lengthBeats, bool resetToHeel)
+    {
+        const auto len = juce::jmax (0.125, lengthBeats);
+        return ccMove (name + " " + formatBeats (len), channel, controller, len, resetToHeel,
+                       [&points] (double t) { return samplePoints (points, t); });
     }
 
     Cue expressionDrawn (int channel, int pedal, const std::vector<float>& points, double lengthBeats, bool resetToHeel,
@@ -296,6 +310,110 @@ namespace qc
                                                                      : juce::String (juce::roundToInt (position * 100.0f)) + "%");
         c.add (0.0, juce::MidiMessage::controllerEvent (clampChannel (channel), expController (pedal), v));
         return c;
+    }
+}
+
+//==============================================================================
+namespace kemper
+{
+    static int ch (int channel) { return juce::jlimit (1, 16, channel); }
+
+    int numPerformances (Unit u) { return u == Unit::player ? 10 : 125; }
+
+    int slotIndex (int performance, int slot)
+    {
+        return (juce::jmax (1, performance) - 1) * slotsPerPerformance + juce::jlimit (0, slotsPerPerformance - 1, slot);
+    }
+
+    Cue slot (int channel, Unit u, int performance, int slotNumber, const juce::String& label)
+    {
+        const auto index = juce::jlimit (0, numPerformances (u) * slotsPerPerformance - 1, slotIndex (performance, slotNumber));
+        Cue c;
+        c.name = "Kemper P" + juce::String (performance) + "." + juce::String (slotNumber + 1)
+               + (label.isNotEmpty() ? " - " + label : juce::String());
+        if (u == Unit::profiler)
+            c.add (0.0, juce::MidiMessage::controllerEvent (ch (channel), cc::bankLsb, index / 128));   // 625 slots over 5 banks
+        c.add (0.0, juce::MidiMessage::programChange (ch (channel), index % 128));
+        return c;
+    }
+
+    Cue slotOfCurrent (int channel, int slotNumber, const juce::String& label)
+    {
+        Cue c;
+        c.name = "Kemper Slot " + juce::String (slotNumber + 1) + (label.isNotEmpty() ? " - " + label : juce::String());
+        c.add (0.0, juce::MidiMessage::controllerEvent (ch (channel), cc::slot1 + juce::jlimit (0, 4, slotNumber), 1));
+        return c;
+    }
+
+    juce::String effectName (int i)
+    {
+        static const char* names[numEffects] = { "Stomp A", "Stomp B", "Stomp C", "Stomp D", "Effect X", "Mod", "Delay", "Reverb" };
+        return names[juce::jlimit (0, numEffects - 1, i)];
+    }
+
+    int effectController (int i, bool keepTails)
+    {
+        static const int controllers[numEffects] = { 17, 18, 19, 20, 22, 24, 26, 28 };
+        i = juce::jlimit (0, numEffects - 1, i);
+        return controllers[i] + (i >= 6 && keepTails ? 1 : 0);
+    }
+
+    Cue effect (int channel, int i, bool on, bool keepTails, const juce::String& label)
+    {
+        Cue c;
+        c.name = "Kemper " + (label.isNotEmpty() ? label : effectName (i)) + (on ? " On" : " Off");
+        c.add (0.0, juce::MidiMessage::controllerEvent (ch (channel), effectController (i, keepTails), on ? 1 : 0));
+        return c;
+    }
+
+    static Cue switchCue (const juce::String& name, int channel, int controller, bool on)
+    {
+        Cue c;
+        c.name = "Kemper " + name;
+        c.add (0.0, juce::MidiMessage::controllerEvent (ch (channel), controller, on ? 1 : 0));
+        return c;
+    }
+
+    Cue tuner    (int channel, bool on)   { return switchCue (on ? "Tuner On" : "Tuner Off", channel, cc::tuner, on); }
+    Cue morph    (int channel, bool on)   { return switchCue (on ? "Morph On" : "Morph Off", channel, cc::morph, on); }
+    Cue rotary   (int channel, bool fast) { return switchCue (fast ? "Rotary Fast" : "Rotary Slow", channel, cc::rotary, fast); }
+    Cue infinity (int channel, bool on)   { return switchCue (on ? "Delay Infinity On" : "Delay Infinity Off", channel, cc::infinity, on); }
+    Cue freeze   (int channel, bool on)   { return switchCue (on ? "Freeze On" : "Freeze Off", channel, cc::freeze, on); }
+
+    Cue tapTempo (int channel, int taps)
+    {
+        // Value 0: a plain tap. (Holding value 1 for 3 seconds would start the Beat Scanner instead.)
+        Cue c;
+        taps = juce::jlimit (1, 16, taps);
+        c.name = "Kemper Tap Tempo x" + juce::String (taps);
+        for (int i = 0; i < taps; ++i)
+            c.add ((double) i, juce::MidiMessage::controllerEvent (ch (channel), cc::tap, 0));
+        c.lengthBeats = (double) taps;
+        return c;
+    }
+
+    Cue withSlotFirst (const Cue& cue, int channel, Unit u, int performance, int slotNumber, const juce::String& performanceName)
+    {
+        constexpr double delay = 0.25;   // the same 1/16 as the Quad Cortex's Load 1A first
+        auto c = slot (channel, u, performance, slotNumber, {});
+        c.name = "Kemper " + performanceName + " " + juce::String (slotNumber + 1) + " > "
+               + cue.name.fromFirstOccurrenceOf ("Kemper ", false, false);
+        for (const auto& [beat, msg] : cue.events)
+            c.add (beat + delay, msg);
+        c.lengthBeats = cue.lengthBeats + delay;
+        return c;
+    }
+
+    juce::String pedalName (int p)
+    {
+        static const char* names[numPedals] = { "Wah", "Pitch", "Volume", "Morph" };
+        return names[juce::jlimit (0, numPedals - 1, p)];
+    }
+
+    int pedalController (int p)
+    {
+        static const int controllers[numPedals] = { cc::wah, cc::pitch, cc::volume, cc::morphPedal };
+        return controllers[juce::jlimit (0, numPedals - 1, p)];
     }
 }
 

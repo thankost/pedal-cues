@@ -13,6 +13,7 @@ struct TourHost
     virtual void showPage (int index) = 0;
     virtual void showQcExpression (bool) = 0;
     virtual void showWhammyDt (bool) = 0;
+    virtual void showQuadCortex (bool) = 0;
     virtual juce::Rectangle<int> targetBounds (const juce::StringArray& componentIds) = 0;
     virtual void closeTour (bool finished) = 0;
 };
@@ -24,6 +25,7 @@ struct TourStep
     juce::String title, body;
     bool qcExpression = false;   // Quad Cortex page: show the Expression view (else Scenes & Stomps)
     bool whammyDt = false;       // Whammy page: show Whammy DT > Drop Tune for this step (the user's choice comes back after)
+    bool anyUnit = false;        // first tab: leave the user's amp unit (other first-tab steps show the Quad Cortex page)
 };
 
 const std::vector<TourStep>& tourSteps();

@@ -120,7 +120,7 @@ void Tile::paintScreen (juce::Graphics& g, juce::Rectangle<float> b, bool hover)
 
         g.setColour (dim);
         g.setFont (font (10.5f, true));
-        g.drawText ("SCENES", chipArea.removeFromTop (14.0f), juce::Justification::centredLeft);
+        g.drawText (chipsHeading, chipArea.removeFromTop (14.0f), juce::Justification::centredLeft);
 
         for (size_t i = 0; i < chips.size(); ++i)
         {
@@ -129,14 +129,14 @@ void Tile::paintScreen (juce::Graphics& g, juce::Rectangle<float> b, bool hover)
             g.fillRoundedRectangle (c, 5.0f);
             g.setColour (readableOn (chips[i]).withAlpha (0.8f));
             g.setFont (font (10.5f, true));
-            g.drawText (cues::qc::letter ((int) i), c, juce::Justification::centred);
+            g.drawText (numberedChips ? juce::String ((int) i + 1) : cues::qc::letter ((int) i), c, juce::Justification::centred);
         }
         area.removeFromRight (16.0f);
     }
 
     g.setColour (dim);
     g.setFont (font (10.5f, true));
-    g.drawText ("LOADED PRESET", area.removeFromTop (16.0f), juce::Justification::centredLeft);
+    g.drawText (screenHeading, area.removeFromTop (16.0f), juce::Justification::centredLeft);
 
     auto bottom = area.removeFromBottom (20.0f);
     g.setColour (text);
@@ -158,7 +158,7 @@ void Tile::paintScreen (juce::Graphics& g, juce::Rectangle<float> b, bool hover)
 
     g.setColour (dim);
     g.setFont (font (12.0f));
-    g.drawText ("Drag this onto the timeline to load the preset", bottom, juce::Justification::centredLeft);
+    g.drawText (screenHint, bottom, juce::Justification::centredLeft);
 }
 
 void Tile::paintFootswitch (juce::Graphics& g, juce::Rectangle<float> b, bool hover)

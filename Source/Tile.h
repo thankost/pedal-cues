@@ -25,6 +25,9 @@ public:
     bool active = true;
     std::vector<juce::Point<float>> curve;   // sweep: normalised (x, y) CC points
     std::vector<juce::Colour> chips;         // screen: scene colours
+    juce::String screenHeading { "LOADED PRESET" }, chipsHeading { "SCENES" };   // screen labels (Kemper: performance, slots)
+    juce::String screenHint { "Drag this onto the timeline to load the preset" };
+    bool numberedChips = false;              // screen: chips labelled 1, 2, 3 instead of A, B, C
 
     std::function<cues::Cue()> makeCue;
     std::function<void()> onClick;

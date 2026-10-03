@@ -29,6 +29,8 @@ public:
     void showPage (int index) override;
     void showQcExpression (bool show) override;
     void showWhammyDt (bool show) override;
+    void showQuadCortex (bool show) override;
+    juce::Colour tabColour (int tab) const;
     juce::Rectangle<int> targetBounds (const juce::StringArray& componentIds) override;
     void closeTour (bool finished) override;
 
@@ -105,6 +107,15 @@ private:
     } tabBar;
 
     juce::OwnedArray<juce::TextButton> tabButtons;
+
+    // The ▾ on the first tab: picks the amp unit (Quad Cortex, Kemper Profiler, Kemper Player).
+    struct UnitMenuButton final : public juce::Button
+    {
+        UnitMenuButton() : juce::Button ("unit") {}
+        juce::Colour arrowColour { juce::Colours::black };
+        void paintButton (juce::Graphics&, bool highlighted, bool down) override;
+    } unitMenuButton;
+    void showUnitMenu();
     // The ☰ menu: tour, guide, setup (save/load/export/import), updates, about, support.
     struct MenuButton final : public juce::Button
     {
@@ -116,7 +127,8 @@ private:
     UpdateBadge updateBadge;
     std::vector<std::unique_ptr<ui::Page>> pages;
     std::unique_ptr<ui::TourOverlay> tour;
-    std::optional<std::pair<juce::var, juce::var>> tourSavedWhammy;   // model and Drop Tune view, while the tour shows the DT
+    std::optional<std::pair<juce::var, juce::var>> tourSavedWhammy;
+    std::optional<juce::var> tourSavedUnit;   // a Kemper player's unit, while the tour shows the Quad Cortex page   // model and Drop Tune view, while the tour shows the DT
     int currentPage = 0;
     double shownBpm = 0.0;
     juce::Rectangle<float> tempoPill() const;

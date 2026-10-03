@@ -12,7 +12,8 @@ class StepsList final : public juce::Component
 {
 public:
     juce::StringArray steps;
-    bool viaInterface = false;   // true = separate outputs, false = daisy chain through the QC
+    bool viaInterface = false;   // true = separate outputs, false = daisy chain through the QC / Kemper
+    int unit = 0;                // 0 = Quad Cortex, 1/2 = Kemper (Profiler / Player)
     bool showFlow = true;        // draw the signal-flow picture under the steps
     int rowHeight = 58;
 
@@ -39,13 +40,13 @@ public:
 
         r.removeFromTop (14);
         if (showFlow && r.getHeight() >= 110)
-            paintFlow (g, r.removeFromTop (juce::jmin (r.getHeight(), viaInterface ? 150 : 130)), viaInterface);
+            paintFlow (g, r.removeFromTop (juce::jmin (r.getHeight(), viaInterface ? 150 : 130)), viaInterface, unit);
     }
 
 private:
-    struct Node { const char* title; const char* sub; juce::Colour colour; };
+    struct Node { juce::String title, sub; juce::Colour colour; };
 
-    static void paintFlow (juce::Graphics& g, juce::Rectangle<int> area, bool viaInterface)
+    static void paintFlow (juce::Graphics& g, juce::Rectangle<int> area, bool viaInterface, int unit)
     {
         g.setColour (dim);
         g.setFont (font (11.0f, true));
@@ -53,27 +54,29 @@ private:
 
         if (! viaInterface)
         {
-            // The QC only passes on MIDI from its 5-pin MIDI In, not from USB, so the chain starts at an interface.
-            const Node nodes[] = { { "Cue tracks", "QC + Whammy", accent },
+            // A MIDI Thru only passes on MIDI from the 5-pin MIDI In, not from USB, so the chain starts at an interface.
+            const auto kemper = unit != 0;
+            const Node nodes[] = { { "Cue tracks", kemper ? "Kemper + Whammy" : "QC + Whammy", accent },
                                    { "Interface", "MIDI Out", juce::Colour (0xff9aa0ac) },
-                                   { "Quad Cortex", "In + Thru", qcBlue },
+                                   { kemper ? "Kemper" : "Quad Cortex", "MIDI In + Thru", kemper ? kemperGreen : qcBlue },
                                    { "Whammy", "5-pin MIDI In", whammyRed } };
-            const char* links[] = { "", "MIDI", "Thru" };   // the computer->interface hop needs no label
+            const char* links[] = { "USB", "MIDI cable", "Thru" };
             paintChain (g, area.withSizeKeepingCentre (area.getWidth(), 66), nodes, links, 4);
             return;
         }
 
         const auto rowH = (area.getHeight() - 8) / 2;
-        const Node qc[] = { { "QC Cues track", "PedalCues, Quad Cortex tab", accent },
-                            { "Quad Cortex", "USB, or MIDI Out 1", qcBlue } };
-        const char* qcLinks[] = { "QC USB" };
+        const auto kemper = unit != 0;
+        const Node amp[] = { { kemper ? "Kemper Cues track" : "QC Cues track", kemper ? "PedalCues, Kemper tab" : "PedalCues, Quad Cortex tab", accent },
+                             { kemper ? "Kemper" : "Quad Cortex", "USB, or MIDI Out 1", kemper ? kemperGreen : qcBlue } };
+        const char* ampLinks[] = { "USB" };
         const Node wh[] = { { "Whammy Cues track", "PedalCues, Whammy tab", accent },
-                            { "Audio interface", "MIDI Out 2", juce::Colour (0xff9aa0ac) },
-                            { "Whammy", "5-pin MIDI In", whammyRed } };
-        const char* whLinks[] = { "", "MIDI" };
+                            { "MIDI interface", "MIDI Out 2", juce::Colour (0xff9aa0ac) },
+                            { "Whammy", "5-pin MIDI In (no USB MIDI)", whammyRed } };
+        const char* whLinks[] = { "USB", "MIDI cable" };
         auto top = area.removeFromTop (rowH);
         area.removeFromTop (8);
-        paintChain (g, top.removeFromLeft ((top.getWidth() * 2 - 56) / 3), qc, qcLinks, 2);   // same box width as the 3-box row
+        paintChain (g, top.removeFromLeft ((top.getWidth() * 2 - 56) / 3), amp, ampLinks, 2);   // same box width as the 3-box row
         paintChain (g, area, wh, whLinks, 3);
     }
 
@@ -111,20 +114,33 @@ private:
     }
 };
 
-// Help > Wiring guide: which cables go where, for both setups, plus the one that doesn't work.
+// Help > Wiring guide: which cables go where, for both setups, plus the one that doesn't work. Follows the amp unit.
 class WiringGuide final : public juce::Component
 {
 public:
-    WiringGuide()
+    explicit WiringGuide (int ampUnit) : kemper (ampUnit != 0)
     {
         daisy.viaInterface = false;
+        daisy.unit = ampUnit;
         daisy.rowHeight = 44;
-        daisy.steps = { "A MIDI cable from your interface's MIDI Out to the QC's MIDI In.",
-                        "A MIDI cable from the QC's MIDI Out/Thru to the Whammy's MIDI In. Turn MIDI Thru on in the QC." };
         separate.viaInterface = true;
+        separate.unit = ampUnit;
         separate.rowHeight = 44;
-        separate.steps = { "Whammy: a MIDI cable from your interface's MIDI Out 2 to the Whammy's MIDI In.",
-                           "Quad Cortex: USB to the computer, or a MIDI cable from MIDI Out 1 to the QC's MIDI In." };
+        if (kemper)
+        {
+            daisy.steps = { "A MIDI cable from your interface's MIDI Out to the Kemper's MIDI In.",
+                            "A MIDI cable from the Kemper's MIDI Thru to the Whammy's MIDI In (if your Kemper shares one jack for "
+                            "MIDI Out and Thru, set it to Thru; see the Kemper manual)." };
+            separate.steps = { "Whammy: a MIDI cable from your interface's MIDI Out 2 to the Whammy's MIDI In (the Whammy has no USB MIDI).",
+                               "Kemper: USB to the computer, or a MIDI cable from MIDI Out 1 to the Kemper's MIDI In." };
+        }
+        else
+        {
+            daisy.steps = { "A MIDI cable from your interface's MIDI Out to the QC's MIDI In.",
+                            "A MIDI cable from the QC's MIDI Out/Thru to the Whammy's MIDI In. Turn MIDI Thru on in the QC." };
+            separate.steps = { "Whammy: a MIDI cable from your interface's MIDI Out 2 to the Whammy's MIDI In (the Whammy has no USB MIDI).",
+                               "Quad Cortex: USB to the computer, or a MIDI cable from MIDI Out 1 to the QC's MIDI In." };
+        }
         guideButton.onClick = [] { juce::URL (guideUrl + "#2-connect-your-rig").launchInDefaultBrowser(); };
         for (auto* c : std::initializer_list<juce::Component*> { &daisy, &separate, &guideButton })
             addAndMakeVisible (c);
@@ -143,13 +159,16 @@ public:
             g.setFont (font (12.0f));
             g.drawText (sub, r, juce::Justification::topLeft);
         };
-        heading (daisyTitle, "DAISY CHAIN VIA QC", "Both DAW tracks send to the same interface MIDI Out. The pedals share one cable.");
+        heading (daisyTitle, kemper ? "DAISY CHAIN VIA KEMPER" : "DAISY CHAIN VIA QC",
+                 "Both DAW tracks send to the same interface MIDI Out. The pedals share one cable.");
         heading (separateTitle, "SEPARATE OUTPUTS", "Each DAW track sends to the output its pedal is on.");
 
         g.setColour (whammyRed);
         g.setFont (font (12.5f, true));
-        g.drawFittedText ("Doesn't work: the QC on USB only, with the Whammy on the QC's MIDI Thru. "
-                          "The QC's MIDI Thru never forwards MIDI it receives over USB.",
+        g.drawFittedText (kemper ? "Doesn't work: the Kemper on USB only, with the Whammy on the Kemper's MIDI Thru. "
+                                   "USB MIDI has no MIDI Thru, so the Thru only passes on MIDI from the 5-pin MIDI In."
+                                 : "Doesn't work: the QC on USB only, with the Whammy on the QC's MIDI Thru. "
+                                   "The QC's MIDI Thru never forwards MIDI it receives over USB.",
                           warning, juce::Justification::centredLeft, 2);
     }
 
@@ -170,6 +189,7 @@ public:
     }
 
 private:
+    const bool kemper;
     StepsList daisy, separate;
     juce::Rectangle<int> daisyTitle, separateTitle, warning;
     juce::TextButton guideButton { "Open the user guide" };
@@ -188,6 +208,12 @@ public:
         // Your pedals: the channels every cue is sent on.
         styleCaption (qcChannelLabel, "Quad Cortex channel");
         styleCaption (whChannelLabel, "Whammy channel");
+        styleCaption (ampLabel, "Amp modeller");
+        for (int u = 0; u < 3; ++u)
+            ampBox.addItem (ampUnitName (u), u + 1);
+        ampBox.setTooltip ("Quad Cortex, Kemper Profiler or Kemper Player: the first tab and the channel below follow it "
+                           "(the same as the menu on the first tab)");
+        ampBox.onChange = [this] { state.setProperty (IDs::ampUnit, ampBox.getSelectedId() - 1, nullptr); };
         styleCaption (pcBaseLabel, "Whammy program numbering");
         styleHint (qcHint, "Must match the QC: Settings > MIDI Settings > MIDI Channel (not Omni).");
         styleHint (whHint, "Must match the Whammy's MIDI channel (see its manual). Use a different channel from the QC.");
@@ -219,9 +245,9 @@ public:
             b->setColour (juce::TextButton::buttonOnColourId, qcBlue);
             b->setColour (juce::TextButton::textColourOnId, juce::Colours::black);
         }
-        viaQcButton.setTooltip ("Interface MIDI Out > QC 5-pin MIDI In > QC MIDI Thru > Whammy. "
+        viaQcButton.setTooltip ("Interface MIDI Out > QC / Kemper 5-pin MIDI In > its MIDI Thru > Whammy. "
                                 "MIDI Thru does not forward USB MIDI, so this needs a 5-pin MIDI Out.");
-        viaInterfaceButton.setTooltip ("Each pedal on its own output: the QC over USB (or MIDI Out 1), the Whammy on MIDI Out 2");
+        viaInterfaceButton.setTooltip ("Each pedal on its own output: the QC / Kemper over USB (or MIDI Out 1), the Whammy on MIDI Out 2");
         viaQcButton.onClick = [this] { if (viaQcButton.getToggleState()) setSetupMode (false); };
         viaInterfaceButton.onClick = [this] { if (viaInterfaceButton.getToggleState()) setSetupMode (true); };
 
@@ -229,7 +255,7 @@ public:
         tracksSteps.showFlow = false;
         wiringLink.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
         wiringLink.setColour (juce::TextButton::textColourOffId, qcBlue);
-        wiringLink.onClick = [] { showWiringGuide(); };
+        wiringLink.onClick = [this] { showWiringGuide ((int) state[IDs::ampUnit]); };
         styleCaption (wiringLabel, "My wiring:");
         styleHint (dawHint, "Where the track's MIDI output is: Reaper: I/O > MIDI Hardware Output, and enable the port in "
                             "Preferences > MIDI Devices ('Send to original channels'). Ableton Live: MIDI To. Cubase: the track's MIDI output. "
@@ -247,11 +273,13 @@ public:
         {
             cues::Cue c;
             const auto ch = (int) state[IDs::qcChannel];
-            c.add (0.0, cues::qc::tuner (ch, true).events.front().second);
-            c.add (proc.getHostBpm() / 40.0, cues::qc::tuner (ch, false).events.front().second);   // ~1.5 s later
+            const auto kemper = isKemper();
+            c.add (0.0, (kemper ? cues::kemper::tuner (ch, true) : cues::qc::tuner (ch, true)).events.front().second);
+            c.add (proc.getHostBpm() / 40.0, (kemper ? cues::kemper::tuner (ch, false) : cues::qc::tuner (ch, false)).events.front().second);   // ~1.5 s later
             proc.preview (c);
             setTestStatus ("Sent tuner on/off to " + currentPortName() + " on channel " + juce::String (ch)
-                           + ". Did the QC's tuner open and close (or close, if it was open)? If not, check the cable direction, the QC's channel, and MIDI Thru for the daisy chain.");
+                           + ". Did the " + ampShort() + "'s tuner open and close (or close, if it was open)? If not, check the cable direction, the "
+                           + ampShort() + "'s channel, and MIDI Thru for the daisy chain.");
         };
         testWhButton.onClick = [this]
         {
@@ -269,8 +297,9 @@ public:
                 ++step;
             }
             proc.preview (c);
-            if (currentPortName().containsIgnoreCase ("Quad Cortex") || currentPortName().containsIgnoreCase ("QC"))
-                setTestStatus ("Sent Oct Up, 5th Up, 2 Oct Up to " + currentPortName() + ", but that's the Quad Cortex's USB port: the QC's MIDI Thru "
+            if (currentPortName().containsIgnoreCase ("Quad Cortex") || currentPortName().containsIgnoreCase ("QC")
+                || currentPortName().containsIgnoreCase ("Kemper") || currentPortName().containsIgnoreCase ("Profiler"))
+                setTestStatus ("Sent Oct Up, 5th Up, 2 Oct Up to " + currentPortName() + ", but that's the " + ampShort() + "'s USB port: its MIDI Thru "
                                "doesn't pass USB MIDI on, so a Whammy on its Thru won't react. Send to your interface's MIDI Out instead.");
             else
                 setTestStatus ("Sent Oct Up, 5th Up, 2 Oct Up to " + currentPortName() + " on channel " + juce::String ((int) state[IDs::whChannel])
@@ -279,7 +308,7 @@ public:
         for (auto* b : { &testQcButton, &testWhButton })
             b->setColour (juce::TextButton::buttonColourId, raised);
 
-        for (auto* c : std::initializer_list<juce::Component*> { &qcChannelLabel, &whChannelLabel, &qcChannelBox, &whChannelBox,
+        for (auto* c : std::initializer_list<juce::Component*> { &ampLabel, &ampBox, &qcChannelLabel, &whChannelLabel, &qcChannelBox, &whChannelBox,
                                                                  &qcHint, &whHint, &advancedButton, &tracksSteps, &viaQcButton,
                                                                  &viaInterfaceButton, &wiringLabel, &wiringLink, &dawHint })
             addAndMakeVisible (c);
@@ -302,8 +331,23 @@ public:
         whChannelBox.setSelectedId ((int) state[IDs::whChannel], juce::dontSendNotification);
         pcBaseBox.setSelectedId ((int) state[IDs::whPcBase] == 1 ? 1 : 2, juce::dontSendNotification);
         setlistToggle.setToggleState ((bool) state[IDs::sendSetlist], juce::dontSendNotification);
+
+        // The first channel belongs to the amp unit (picked here or on the first tab).
+        ampBox.setSelectedId ((int) state[IDs::ampUnit] + 1, juce::dontSendNotification);
+        qcChannelLabel.setText (ui::ampUnitName ((int) state[IDs::ampUnit]) + " channel", juce::dontSendNotification);
+        qcHint.setText (isKemper() ? "Must match the Kemper: System Settings > MIDI > MIDI Global Channel (not OMNI)."
+                                   : "Must match the QC: Settings > MIDI Settings > MIDI Channel (not Omni).", juce::dontSendNotification);
+        whHint.setText ("Must match the Whammy's MIDI channel (see its manual). Use a different channel from the " + ampShort() + ".",
+                        juce::dontSendNotification);
+        testQcButton.setButtonText ("Test " + ampShort());
+        testQcButton.setTooltip ("Opens the " + ampShort() + "'s tuner for 1.5 seconds: a quick check that it gets MIDI on its channel.");
+        viaQcButton.setButtonText ("Daisy chain via " + ampShort());
+        setSetupMode (! state::getFlag ("setupViaQcChain"));
         refreshTestDevices();
     }
+
+    bool isKemper() const          { return (int) state[IDs::ampUnit] != 0; }
+    juce::String ampShort() const  { return isKemper() ? "Kemper" : "QC"; }
 
     void visibilityChanged() override
     {
@@ -319,7 +363,7 @@ public:
 
         // Left: Your pedals, then (standalone) Test. The quick tour and the user guide are in the ☰ / Help menu.
 
-        const auto pedalsH = Section::headerHeight + 2 * 84 + 34 + (showAdvanced ? 62 + 40 : 0) + 8;
+        const auto pedalsH = Section::headerHeight + 62 + 2 * 84 + 34 + (showAdvanced ? 62 + 40 : 0) + 8;
         pedalsSection.setBounds (left.removeFromTop (pedalsH));
         {
             auto m = pedalsSection.contentArea().reduced (6, 2);
@@ -331,6 +375,7 @@ public:
                 if (hint != nullptr)
                     hint->setBounds (row.withTrimmedTop (2));
             };
+            field (ampLabel, ampBox, nullptr);
             field (qcChannelLabel, qcChannelBox, &qcHint);
             field (whChannelLabel, whChannelBox, &whHint);
             advancedButton.setBounds (m.removeFromTop (30).withWidth (220));
@@ -435,8 +480,8 @@ private:
         testQcButton.setEnabled (hasPort);
         testWhButton.setEnabled (hasPort);
         if (! hasPort)
-            setTestStatus (testDevices.isEmpty() ? "No MIDI devices found. Connect your audio interface (for its MIDI Out), or the Quad Cortex over USB "
-                                                   "to test only the QC (its MIDI Thru doesn't pass USB MIDI on to the Whammy). Then come back to this tab."
+            setTestStatus (testDevices.isEmpty() ? "No MIDI devices found. Connect your audio interface (for its MIDI Out), or the " + ampShort() + " over USB "
+                                                   "to test only the " + ampShort() + " (its MIDI Thru doesn't pass USB MIDI on to the Whammy). Then come back to this tab."
                                                  : "Pick the MIDI port your pedals are on to test them.");
         else if (testHint.getText().isEmpty() || testHint.getText().startsWith ("Pick") || testHint.getText().startsWith ("No MIDI"))
             setTestStatus ("The app sends straight to this port, no DAW or audio needed. Test each pedal, then use any tile's play button.");
@@ -456,18 +501,19 @@ private:
         {
             tracksSteps.steps = {
                 "In your DAW, enable the MIDI outputs your pedals are on.",
-                "Track 'QC Cues': insert PedalCues and set its MIDI output to the Quad Cortex (USB) or MIDI Out 1.",
+                isKemper() ? juce::String ("Track 'Kemper Cues': insert PedalCues and set its MIDI output to the Kemper (USB) or MIDI Out 1.")
+                           : juce::String ("Track 'QC Cues': insert PedalCues and set its MIDI output to the Quad Cortex (USB) or MIDI Out 1."),
                 "Track 'Whammy Cues': insert PedalCues and set its MIDI output to MIDI Out 2.",
-                "Keep the original MIDI channels. Drag QC tiles onto QC Cues and Whammy tiles onto Whammy Cues."
+                "Keep the original MIDI channels. Drag " + ampShort() + " tiles onto " + ampShort() + " Cues and Whammy tiles onto Whammy Cues."
             };
         }
         else
         {
             tracksSteps.steps = {
                 "In your DAW, enable your interface's MIDI output.",
-                "Tracks 'QC Cues' and 'Whammy Cues': insert PedalCues on each.",
+                "Tracks '" + ampShort() + " Cues' and 'Whammy Cues': insert PedalCues on each.",
                 "Set both tracks' MIDI output to the interface MIDI Out, keeping the original MIDI channels.",
-                "Drag QC tiles onto QC Cues and Whammy tiles onto Whammy Cues."
+                "Drag " + ampShort() + " tiles onto " + ampShort() + " Cues and Whammy tiles onto Whammy Cues."
             };
         }
         tracksSteps.repaint();
@@ -481,8 +527,8 @@ private:
     Section testSection   { "set.test", "Test your pedals", "sends on the channels above", ledGreen };
     Section tracksSection { "set.tracks", "DAW tracks", "two cue tracks, once", qcBlue };
 
-    juce::Label qcChannelLabel, whChannelLabel, pcBaseLabel, qcHint, whHint, testHint;
-    juce::ComboBox qcChannelBox, whChannelBox, pcBaseBox, testOutBox;
+    juce::Label ampLabel, qcChannelLabel, whChannelLabel, pcBaseLabel, qcHint, whHint, testHint;
+    juce::ComboBox ampBox, qcChannelBox, whChannelBox, pcBaseBox, testOutBox;
     juce::ToggleButton setlistToggle { "Send setlist (CC#32) with preset changes" };
     juce::TextButton advancedButton;
 
@@ -498,15 +544,15 @@ private:
 };
 } // namespace
 
-std::unique_ptr<juce::Component> makeWiringGuide()
+std::unique_ptr<juce::Component> makeWiringGuide (int ampUnit)
 {
-    return std::make_unique<WiringGuide>();
+    return std::make_unique<WiringGuide> (ampUnit);
 }
 
-void showWiringGuide()
+void showWiringGuide (int ampUnit)
 {
     juce::DialogWindow::LaunchOptions o;
-    o.content.setOwned (makeWiringGuide().release());
+    o.content.setOwned (makeWiringGuide (ampUnit).release());
     o.dialogTitle = "Wiring guide";
     o.dialogBackgroundColour = background;
     o.escapeKeyTriggersCloseButton = true;

@@ -39,6 +39,19 @@ component PedalCues.vst3      /Library/Audio/Plug-Ins/VST3        vst3
 # Make Logic and GarageBand notice the new AU without a restart.
 component PedalCues.component /Library/Audio/Plug-Ins/Components  au "killall -9 AudioComponentRegistrar 2>/dev/null"
 
+# Installer pages: a short welcome (quit your DAW first).
+mkdir -p "$work/resources"
+cat > "$work/resources/welcome.html" <<EOF
+<html><body style="font-family: -apple-system, Helvetica, sans-serif; font-size: 13px;">
+<p>This installs <b>PedalCues $version</b>: the app in <i>Applications</i>, and the VST3 and AU plugins in
+<i>/Library/Audio/Plug-Ins</i>. Click <b>Customize</b> to leave any of them out.</p>
+<p><b>Quit your DAW before installing.</b> Plugins it has already loaded keep running the old version until you restart it.
+If the PedalCues app is open, the installer asks you to quit it.</p>
+<p>Updating from the zip version (0.4.26 or older)? Delete the old copies in <i>~/Library/Audio/Plug-Ins</i>
+(VST3 and Components), so your DAW doesn't list PedalCues twice.</p>
+</body></html>
+EOF
+
 cat > "$work/distribution.xml" <<EOF
 <?xml version="1.0" encoding="utf-8"?>
 <installer-gui-script minSpecVersion="2">
@@ -46,6 +59,7 @@ cat > "$work/distribution.xml" <<EOF
     <options customize="allow" require-scripts="false" hostArchitectures="arm64,x86_64"/>
     <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
     <os-version min="11.0"/>
+    <welcome file="welcome.html" mime-type="text/html"/>
     <choices-outline>
         <line choice="app"/>
         <line choice="vst3"/>
@@ -61,10 +75,15 @@ cat > "$work/distribution.xml" <<EOF
         <pkg-ref id="com.athkost.pedalcues.au"/>
     </choice>
     <pkg-ref id="com.athkost.pedalcues.app" version="$version">app.pkg</pkg-ref>
+    <pkg-ref id="com.athkost.pedalcues.app">
+        <must-close>
+            <app id="com.athkost.pedalcues"/>
+        </must-close>
+    </pkg-ref>
     <pkg-ref id="com.athkost.pedalcues.vst3" version="$version">vst3.pkg</pkg-ref>
     <pkg-ref id="com.athkost.pedalcues.au" version="$version">au.pkg</pkg-ref>
 </installer-gui-script>
 EOF
 
-productbuild --distribution "$work/distribution.xml" --package-path "$work" "$out" > /dev/null
+productbuild --distribution "$work/distribution.xml" --resources "$work/resources" --package-path "$work" "$out" > /dev/null
 echo "wrote $out"

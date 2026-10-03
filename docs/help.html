@@ -18,7 +18,7 @@
   <p class="lead">Stuck on something, or found a bug? Here's the fastest way to sort it out.</p>
 
   <div class="options">
-    <a class="option" href="guide.html#9-troubleshooting">
+    <a class="option" href="guide.html#10-troubleshooting">
       <h3>Troubleshooting</h3>
       <p>Quick fixes for the most common problems: nothing on the pedal, Sync from QC, macOS warnings.</p>
       <span class="go">Read the fixes &rsaquo;</span>
@@ -49,8 +49,12 @@
       <p>Connect the QC's USB port (a MIDI cable isn't enough), switch it on, and quit Cortex Control, which keeps the USB
          connection to itself. On Linux, install the USB permission rule from the guide once.</p></details>
     <details><summary>The Whammy doesn't react</summary>
-      <p>If the QC is on USB and the Whammy hangs off the QC's Thru, that can't work: the QC doesn't forward USB MIDI.
+      <p>If the QC or Kemper is on USB and the Whammy hangs off its Thru, that can't work: neither forwards USB MIDI to its Thru,
+         and the Whammy itself has only a 5-pin MIDI In.
          Open the <b>Wiring guide</b> in the app for setups that work.</p></details>
+    <details><summary>The Kemper doesn't react</summary>
+      <p>Set the Kemper to a fixed MIDI channel (it's Omni out of the box) and the same number in <b>MIDI Setup &gt; Your pedals</b>,
+         and check that <b>Amp modeller</b> is your Kemper model. Put Kemper clips on the Kemper Cues track.</p></details>
     <details><summary>macOS says PedalCues "is damaged"</summary>
       <p>It isn't. macOS blocks apps Apple hasn't notarised. Use the installer (<code>PedalCues-macOS.pkg</code>): if macOS
          says it can't verify it, click <b>Done</b>, then <i>System Settings &gt; Privacy &amp; Security &gt; Open Anyway</i>.
@@ -63,7 +67,7 @@
 <footer>
   <div class="wrap">
     <span>&copy; 2026 Thanasis Kostopoulos &middot; MIT License &middot; Built with JUCE &middot; <a href="guide.html">User guide</a> &middot; <a href="changelog.html">What's new</a> &middot; <a href="help.html">Help</a> &middot; <a href="https://github.com/thankost/pedal-cues">GitHub</a></span>
-    <span>Not affiliated with Neural DSP or DigiTech. Quad Cortex and Whammy are trademarks of their owners.</span>
+    <span>Not affiliated with Neural DSP, Kemper or DigiTech. Quad Cortex, Kemper and Whammy are trademarks of their owners.</span>
   </div>
 </footer>
 </body>

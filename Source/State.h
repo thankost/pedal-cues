@@ -12,6 +12,10 @@ namespace IDs
     PEDALCUES_ID (Scene)
     PEDALCUES_ID (Stomp)
     PEDALCUES_ID (Whammy)
+    PEDALCUES_ID (Kemper)          // Kemper performances (Performance > KemperSlot) and effect names (KemperEffect)
+    PEDALCUES_ID (Performance)
+    PEDALCUES_ID (KemperSlot)
+    PEDALCUES_ID (KemperEffect)
     PEDALCUES_ID (Effect)
     PEDALCUES_ID (Drawings)
     PEDALCUES_ID (Drawing)
@@ -21,9 +25,23 @@ namespace IDs
     PEDALCUES_ID (setlist)
     PEDALCUES_ID (bank)
     PEDALCUES_ID (slot)
+    PEDALCUES_ID (number)          // Kemper performance number (1-125, Player 1-10)
     PEDALCUES_ID (points)
 
-    PEDALCUES_ID (qcChannel)
+    PEDALCUES_ID (ampUnit)         // first tab: 0 = Quad Cortex, 1 = Kemper Profiler, 2 = Kemper Player
+    PEDALCUES_ID (qcChannel)       // the amp unit's MIDI channel (Quad Cortex or Kemper)
+    PEDALCUES_ID (selectedPerformance)
+    PEDALCUES_ID (kemperSlotFirst) // Kemper "Load P1 first" for slot and effect tiles
+    PEDALCUES_ID (kemperEffectOn)
+    PEDALCUES_ID (kemperKeepTails)
+    PEDALCUES_ID (kemperPedalsView)
+    PEDALCUES_ID (kemperPedal)     // 0 wah, 1 pitch, 2 volume, 3 morph
+    PEDALCUES_ID (kpBeats)
+    PEDALCUES_ID (kpCurve)
+    PEDALCUES_ID (kpReset)
+    PEDALCUES_ID (kpDraw)
+    PEDALCUES_ID (kpDrawing)
+    PEDALCUES_ID (kpDrawingName)
     PEDALCUES_ID (whChannel)
     PEDALCUES_ID (whPcBase)
     PEDALCUES_ID (sendSetlist)
@@ -63,6 +81,7 @@ namespace state
 
     juce::ValueTree createDefault();
     juce::ValueTree createPreset (const juce::String& name, int setlist, int bank, int slot, juce::Colour);
+    juce::ValueTree createPerformance (const juce::String& name, int number, juce::Colour);   // with 5 Kemper slots
 
     // Fills in anything missing (older/partial state, hand-edited library files).
     void sanitise (juce::ValueTree& root);

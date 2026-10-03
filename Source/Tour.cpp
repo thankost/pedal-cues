@@ -10,7 +10,11 @@ const std::vector<TourStep>& tourSteps()
     static const std::vector<TourStep> steps {
         { 0, {}, "Welcome to PedalCues",
           "Pedal changes become drag and drop: every tile you see turns into a named MIDI clip when you drop it on "
-          "your timeline. This one-minute tour shows you around. Use the arrow keys or the buttons below." },
+          "your timeline. This one-minute tour shows you around. Use the arrow keys or the buttons below.", false, false, true },
+        { 0, { "hdr.tabs" }, "Quad Cortex or Kemper?",
+          "Click the arrow on the first tab to pick your amp modeller: Quad Cortex, Kemper Profiler (Head, Rack, Stage...) or "
+          "Kemper Player. The tab, its page and the MIDI it sends follow your choice (it's also in MIDI Setup). The next steps show the Quad Cortex page; the Kemper page works the same way, "
+          "with performances, slots and effects.", false, false, true },
         { 0, { "qc.presetList" }, "1. Add your presets",
           "Add each Quad Cortex preset (a whole rig, often one per song) with '+ Preset', or read them all from the pedal with "
           "'Sync from QC (USB)' (quit Cortex Control first). Click a preset to open it, double-click to edit, right-click to recolour or reorder." },
@@ -48,11 +52,11 @@ const std::vector<TourStep>& tourSteps()
           "Pick a length and curve, then drag a move. It becomes CC#11 automation that follows your project tempo: "
           "ramps, dives, trills, or a bend that lands exactly on the next bar. Or click Draw, sketch your own move and save it in My drawings." },
         { 2, { "set.pedals" }, "8. MIDI Setup: your pedals",
-          "Set each pedal's MIDI channel to match the pedal itself, and give the QC and the Whammy different channels. "
+          "Pick your amp modeller, then set each pedal's MIDI channel to match the pedal itself, and give the amp modeller and the Whammy different channels. "
           "Every cue is sent on these channels. You set them once." },
         { 2, { "set.tracks" }, "9. DAW tracks",
-          "Pick your wiring at the top (a daisy chain through the QC, or separate outputs), then make the two cue tracks, "
-          "QC Cues and Whammy Cues, as shown. Not sure how to cable the pedals? Click 'How should I wire my pedals?'." },
+          "Pick your wiring at the top (a daisy chain through the QC or Kemper, or separate outputs), then make the two cue tracks, "
+          "QC (or Kemper) Cues and Whammy Cues, as shown. Not sure how to cable the pedals? Click 'How should I wire my pedals?'." },
         { 2, { "hdr.help" }, "You are ready",
           "The menu button (top right) reopens this tour and the user guide, shows what's new, lets you report a problem, "
           "and saves your setup as the default for new projects. In the standalone app these are in the File and Help menus. Have a great show!" },
@@ -96,6 +100,7 @@ void TourOverlay::setStep (int index)
     if (s.page == 0)
         host.showQcExpression (s.qcExpression);
     host.showWhammyDt (s.whammyDt);
+    host.showQuadCortex (s.page == 0 && ! s.anyUnit);
     layoutCard();
     repaint();
 }

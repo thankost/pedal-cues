@@ -18,12 +18,16 @@ struct Page : public juce::Component
 };
 
 std::unique_ptr<Page> makeQcPage       (PedalCuesProcessor&);
+std::unique_ptr<Page> makeKemperPage   (PedalCuesProcessor&);
+std::unique_ptr<Page> makeAmpPage      (PedalCuesProcessor&);   // first tab: the Quad Cortex or Kemper page
+
+juce::String ampUnitName (int unit);   // "Quad Cortex", "Kemper Profiler", "Kemper Player"
 std::unique_ptr<Page> makeQcExpression (PedalCuesProcessor&);   // Quad Cortex page > Expression
 std::unique_ptr<Page> makeWhammyPage   (PedalCuesProcessor&);
 std::unique_ptr<Page> makeSettingsPage (PedalCuesProcessor&);
-void showWiringGuide();   // Help > Wiring guide
+void showWiringGuide (int ampUnit);   // Help > Wiring guide, for the Quad Cortex or a Kemper
 void showQcSyncDialog (juce::ValueTree state);   // Quad Cortex page > Sync from QC (USB)
-std::unique_ptr<juce::Component> makeWiringGuide();
+std::unique_ptr<juce::Component> makeWiringGuide (int ampUnit);
 
 inline const juce::String repoUrl { "https://github.com/thankost/pedal-cues" };
 inline const juce::String author { "Thanasis Kostopoulos" };

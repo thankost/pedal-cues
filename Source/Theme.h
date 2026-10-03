@@ -15,6 +15,7 @@ inline const juce::Colour accent     { 0xfff5a524 };
 inline const juce::Colour qcBlue     { 0xff5ac8fa };
 inline const juce::Colour whammyRed  { 0xffd7263d };
 inline const juce::Colour ledGreen   { 0xff3ddc84 };
+inline const juce::Colour kemperGreen { 0xff35c46a };   // the Kemper page's accent
 
 juce::FontOptions font (float height, bool bold = false);
 void drawCard (juce::Graphics&, juce::Rectangle<float>, juce::Colour fill, float radius = 12.0f);

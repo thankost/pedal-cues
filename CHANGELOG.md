@@ -2,6 +2,15 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.5.0 (2026-10-03)
+
+- **Kemper support (new):** the first tab now works with a **Quad Cortex**, a **Kemper Profiler** (Head, Rack, Stage and the other Profilers, in Performance mode) or a **Kemper Player**. Click the **▾** on the tab (or *MIDI Setup > Amp modeller*) to pick yours; the tab is named after it.
+- **Kemper page:** your performances with their five slots, like QC presets and scenes. Slot tiles load their performance first, or switch a slot of the performance already loaded. Effect tiles switch modules A–D, X, MOD, Delay and Reverb on or off (with or without tails), plus Tuner, Tap x4, Morph and Rotary tiles.
+- **Kemper pedal moves:** swells, fades, wah rhythms or your own drawing on the Kemper's Wah, Pitch, Volume or Morph pedal, tempo-synced. No physical pedal needed. Built from Kemper's MIDI documentation; if you try it on your Kemper, please tell us how it goes.
+- **Wiring guide follows your unit:** with a Kemper it shows the Kemper's cables. It also makes clear that the Whammy needs a MIDI cable from an interface (it has no USB MIDI), and that neither the QC nor the Kemper passes USB MIDI on to its MIDI Thru.
+- **macOS installer:** if the PedalCues app is open, the installer now asks you to quit it first, so it's never replaced while running. A short welcome page reminds you to quit your DAW too (plugins it has loaded keep the old version until it restarts) and to remove old zip installs.
+- Your amp modeller and the Kemper preferences are part of your setup (Save as default, Export / Import). The quick tour shows where to pick your unit.
+
 ## 0.4.29 (2026-10-03)
 
 - **Whammy DT support (new):** pick **Whammy V** or **Whammy DT** with the new switch on the Whammy page. On the DT, a **Drop Tune** view adds Shift Up and Shift Down tiles: 1 to 7 semitones, an octave, and octave + dry, on or bypassed, so you can drop or raise your tuning right where a song needs it. The Whammy modes and treadle moves work the same on both pedals. The tab is now called **Whammy V / DT**, and the quick tour has a step for the DT.

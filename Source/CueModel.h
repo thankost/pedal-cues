@@ -62,6 +62,12 @@ namespace qc
     juce::String expShapeDescription (ExpShape);
 
     Cue expressionMove  (int channel, int pedal, ExpShape, double lengthBeats, double curve, bool resetToHeel);
+
+    // The same moves on any controller; 'name' prefixes the clip name ("QC Exp 1 ", "Kemper Wah ").
+    Cue shapedMove (const juce::String& name, int channel, int controller, ExpShape, double lengthBeats, double curve,
+                    bool resetToHeel);
+    Cue drawnMove  (const juce::String& name, int channel, int controller, const std::vector<float>& points,
+                    double lengthBeats, bool resetToHeel);
     Cue expressionDrawn (int channel, int pedal, const std::vector<float>& points, double lengthBeats, bool resetToHeel,
                          const juce::String& name = {});
     Cue expressionSet   (int channel, int pedal, float position);   // 0 = heel, 1 = toe
@@ -69,6 +75,52 @@ namespace qc
     // The same cue, but it loads a preset first and starts 1/16 note later ("Load 1A first").
     Cue withPresetFirst (const Cue&, int channel, int setlist, int bank, int slot, bool sendSetlist,
                          const juce::String& presetName);
+}
+
+//==============================================================================
+// Kemper Profiler (Head, PowerHead, Toaster, Rack, PowerRack, Stage) and Profiler Player, in Performance Mode.
+// Source: Kemper "PROFILER MIDI Parameter Documentation" (OS 11) and the main manual. Switches are 1 = on / 0 = off.
+namespace kemper
+{
+    enum class Unit { profiler, player };
+
+    namespace cc
+    {
+        constexpr int wah = 1, pitch = 4, volume = 7, morphPedal = 11;   // continuous pedals
+        constexpr int bankLsb = 32;     // Performance Mode: bank select LSB (0-4) before the Program Change
+        constexpr int tap = 30, tuner = 31, rotary = 33, infinity = 34, freeze = 35;
+        constexpr int slot1 = 50;       // 50-54: load slot 1-5 of the current Performance
+        constexpr int morph = 80;       // 1: ramp to the morph sound, 0: back to the base sound
+    }
+
+    constexpr int slotsPerPerformance = 5;
+    int numPerformances (Unit);         // Profiler 125, Player 10 (its 50 slots in banks of five)
+
+    // Slot index across the unit (0-based): Performance 1 Slot 1 = 0 ... Performance 26 Slot 3 = 127.
+    int slotIndex (int performance, int slot);   // performance 1-based, slot 0-4
+    Cue slot (int channel, Unit, int performance, int slot, const juce::String& label);   // loads it from anywhere
+    Cue slotOfCurrent (int channel, int slot, const juce::String& label);                 // CC#50-54
+
+    // The eight effect modules: A, B, C, D, X, MOD, Delay, Reverb.
+    constexpr int numEffects = 8;
+    juce::String effectName (int index);
+    int effectController (int index, bool keepTails);   // Delay/Reverb: keep tails = CC#27/29, cut = CC#26/28
+    Cue effect (int channel, int index, bool on, bool keepTails, const juce::String& label);
+
+    Cue tuner    (int channel, bool on);
+    Cue morph    (int channel, bool on);
+    Cue rotary   (int channel, bool fast);
+    Cue infinity (int channel, bool on);
+    Cue freeze   (int channel, bool on);
+    Cue tapTempo (int channel, int taps);   // one tap per beat, so the delay follows the song
+
+    // The same cue, but it first loads a slot and starts 1/16 note later ("Load P1 first").
+    Cue withSlotFirst (const Cue&, int channel, Unit, int performance, int slot, const juce::String& performanceName);
+
+    // Pedals (continuous): wah, pitch, volume, morph.
+    constexpr int numPedals = 4;
+    juce::String pedalName (int pedal);
+    int pedalController (int pedal);
 }
 
 //==============================================================================

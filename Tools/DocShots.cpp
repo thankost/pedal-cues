@@ -62,6 +62,38 @@ void fillDemoState (juce::ValueTree root)
     root.setProperty (IDs::stompOn, true, nullptr);
     root.setProperty (IDs::sweepBeats, 4.0, nullptr);
 
+    // Kemper: a few performances with named, coloured slots.
+    {
+        auto kemper = root.getChildWithName (IDs::Kemper);
+        for (int i = kemper.getNumChildren(); --i >= 0;)
+            if (kemper.getChild (i).hasType (IDs::Performance))
+                kemper.removeChild (i, nullptr);
+        struct Perf { const char* name; int number, colour; const char* slots[5]; };
+        const Perf perfs[] = {
+            { "Opener",      1, 4, { "Clean",  "Crunch", "Lead",   "Ambient", "Heavy" } },
+            { "Midnight",    2, 1, { "Intro",  "Verse",  "Chorus", "Solo",    "Outro" } },
+            { "Big Riff",    3, 0, { "Riff",   "Verse",  "Drop",   "Lead",    "Clean" } },
+            { "Ballad",      4, 6, { "Clean",  "Swell",  "Chorus", "Solo",    "End" } },
+        };
+        const int slotColours[5] = { 4, 6, 1, 0, 9 };
+        for (int i = 0; i < (int) std::size (perfs); ++i)
+        {
+            auto p = state::createPerformance (perfs[i].name, perfs[i].number, ui::paletteColour (perfs[i].colour));
+            for (int s = 0; s < 5; ++s)
+            {
+                auto slot = ui::nthOfType (p, IDs::KemperSlot, s);
+                slot.setProperty (IDs::name, perfs[i].slots[s], nullptr);
+                slot.setProperty (IDs::colour, ui::paletteColour (slotColours[s]).toString(), nullptr);
+            }
+            kemper.addChild (p, i, nullptr);
+        }
+        const char* effects[8] = { "Green Scream", "Compressor", "Wah", "Chorus", "Boost", "Phaser", "Tap Delay", "Hall" };
+        int e = 0;
+        for (auto c : kemper)
+            if (c.hasType (IDs::KemperEffect) && e < 8)
+                c.setProperty (IDs::name, effects[e++], nullptr);
+    }
+
     // My drawings: the default drawing saved as "Big Bend" (loaded on the Whammy pad), plus a slow swell
     // loaded on the expression pad.
     state::useMyDrawingsFile (juce::File::createTempFile (".xml"));   // leave the user's own drawings alone
@@ -483,6 +515,17 @@ int main (int argc, char** argv)
         proc.state.setProperty (IDs::expDraw, false, nullptr);
         proc.state.setProperty (IDs::qcExpressionView, false, nullptr);
         editor.refreshNow();
+        // Kemper: the same first tab with Kemper Profiler picked in its dropdown.
+        proc.state.setProperty (IDs::ampUnit, 1, nullptr);
+        editor.refreshNow();
+        save (snapshot (editor), outDir.getChildFile ("kemper.png"));
+        proc.state.setProperty (IDs::kemperPedalsView, true, nullptr);
+        editor.refreshNow();
+        save (snapshot (editor), outDir.getChildFile ("kemper-pedals.png"));
+        proc.state.setProperty (IDs::kemperPedalsView, false, nullptr);
+        proc.state.setProperty (IDs::ampUnit, 0, nullptr);
+        editor.refreshNow();
+
         editor.showPage (1);
         save (snapshot (editor), outDir.getChildFile ("whammy.png"));
         proc.state.setProperty (IDs::sweepDraw, true, nullptr);
@@ -501,7 +544,7 @@ int main (int argc, char** argv)
         editor.refreshNow();
 
         const std::pair<int, const char*> tourShots[] = {
-            { 0, "tour-welcome.png" }, { 3, "tour-scenes.png" }, { 4, "tour-target.png" }, { 8, "tour-whammy.png" }, { 11, "tour-treadle.png" }
+            { 0, "tour-welcome.png" }, { 4, "tour-scenes.png" }, { 5, "tour-target.png" }, { 9, "tour-whammy.png" }, { 12, "tour-treadle.png" }
         };
         for (const auto& [step, name] : tourShots)
         {
@@ -527,8 +570,10 @@ int main (int argc, char** argv)
     }
 
     {
-        auto guide = ui::makeWiringGuide();
+        auto guide = ui::makeWiringGuide (0);
         save (guide->createComponentSnapshot (guide->getLocalBounds(), true, scale), outDir.getChildFile ("wiring-guide.png"));
+        auto kemperGuide = ui::makeWiringGuide (1);
+        save (kemperGuide->createComponentSnapshot (kemperGuide->getLocalBounds(), true, scale), outDir.getChildFile ("wiring-guide-kemper.png"));
     }
     {
         // The standalone app's MIDI Setup tab, with the "Test your pedals" card (demo port, after a Test QC click).

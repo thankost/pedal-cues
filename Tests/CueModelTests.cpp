@@ -199,6 +199,41 @@ int main (int argc, char** argv)
     CHECK (e.events.size() == 2 && isCC (e.events[0].second, 2, 11, 0));
     CHECK (e.events[1].second.getChannel() == 2 && e.events[1].second.getProgramChangeNumber() == 1);
 
+    // Kemper (MIDI Parameter Documentation OS 11 + main manual). Performance 1 Slot 1 = bank 0 + PC 0,
+    // Performance 26 Slot 3 = bank 0 + PC 127, Performance 26 Slot 4 = bank 1 + PC 0. Player: PC only, 50 slots.
+    {
+        using kemper::Unit;
+        auto first = kemper::slot (1, Unit::profiler, 1, 0, "Clean");
+        CHECK (first.name == "Kemper P1.1 - Clean" && first.events.size() == 2);
+        CHECK (isCC (first.events[0].second, 1, 32, 0) && first.events[1].second.getProgramChangeNumber() == 0);
+        auto p26s3 = kemper::slot (1, Unit::profiler, 26, 2, {});
+        CHECK (isCC (p26s3.events[0].second, 1, 32, 0) && p26s3.events[1].second.getProgramChangeNumber() == 127);
+        auto p26s4 = kemper::slot (1, Unit::profiler, 26, 3, {});
+        CHECK (isCC (p26s4.events[0].second, 1, 32, 1) && p26s4.events[1].second.getProgramChangeNumber() == 0);
+        auto last = kemper::slot (1, Unit::profiler, 125, 4, {});
+        CHECK (isCC (last.events[0].second, 1, 32, 4) && last.events[1].second.getProgramChangeNumber() == 624 - 512);
+        auto player = kemper::slot (3, Unit::player, 10, 4, {});
+        CHECK (player.events.size() == 1 && player.events[0].second.getChannel() == 3 && player.events[0].second.getProgramChangeNumber() == 49);
+
+        CHECK (isCC (kemper::slotOfCurrent (1, 2, {}).events[0].second, 1, 52, 1));
+        CHECK (isCC (kemper::effect (1, 0, true, false, {}).events[0].second, 1, 17, 1));
+        CHECK (isCC (kemper::effect (1, 4, false, false, {}).events[0].second, 1, 22, 0));
+        CHECK (kemper::effectController (6, false) == 26 && kemper::effectController (6, true) == 27);
+        CHECK (kemper::effectController (7, false) == 28 && kemper::effectController (7, true) == 29);
+        CHECK (isCC (kemper::tuner (1, true).events[0].second, 1, 31, 1) && isCC (kemper::morph (1, false).events[0].second, 1, 80, 0));
+        auto taps = kemper::tapTempo (1, 4);
+        CHECK (taps.events.size() == 4 && taps.events[3].first == 3.0 && isCC (taps.events[0].second, 1, 30, 0));
+        CHECK (kemper::pedalController (0) == 1 && kemper::pedalController (3) == 11);
+
+        auto chained = kemper::withSlotFirst (kemper::effect (1, 6, true, true, {}), 1, Unit::profiler, 2, 1, "Live");
+        CHECK (chained.name == "Kemper Live 2 > Delay On" && chained.events.size() == 3);
+        CHECK (chained.events[1].second.getProgramChangeNumber() == 6 && isCC (chained.events[2].second, 1, 27, 1));
+        CHECK (std::abs (chained.events[2].first - 0.25) < 1.0e-9);
+
+        auto wah = qc::shapedMove ("Kemper Wah ", 1, kemper::pedalController (0), qc::ExpShape::swellIn, 4.0, 1.0, false);
+        CHECK (wah.name == "Kemper Wah Swell In 1 bar" && isCC (wah.events.back().second, 1, 1, 127));
+    }
+
     // Whammy DT Drop Tune (manual page 13): Shift Up 1 = 43 ... Oct+Dry = 51, Shift Down 1 = 60 ... Oct+Dry = 52,
     // bypassed = +18. Sent 1-based minus the numbering base (Program Change 42 for "43" by default).
     CHECK (whammy::dropTuneProgram (true, 0, false) == 43 && whammy::dropTuneProgram (true, 8, false) == 51);

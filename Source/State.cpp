@@ -68,6 +68,36 @@ static void sanitisePreset (juce::ValueTree& p)
     }
 }
 
+static void sanitisePerformance (juce::ValueTree& p)
+{
+    setDefault (p, IDs::name, "New Performance");
+    setDefault (p, IDs::number, 1);
+    setDefault (p, IDs::colour, paletteColour (5).toString());
+
+    int slots = 0;
+    for (auto c : p)
+        if (c.hasType (IDs::KemperSlot))
+            ++slots;
+
+    for (int i = slots; i < cues::kemper::slotsPerPerformance; ++i)
+    {
+        juce::ValueTree s (IDs::KemperSlot);
+        s.setProperty (IDs::name, "Slot " + juce::String (i + 1), nullptr);
+        s.setProperty (IDs::colour, paletteColour (i).toString(), nullptr);
+        p.appendChild (s, nullptr);
+    }
+}
+
+juce::ValueTree createPerformance (const juce::String& name, int number, juce::Colour colour)
+{
+    juce::ValueTree p (IDs::Performance);
+    p.setProperty (IDs::name, name, nullptr);
+    p.setProperty (IDs::number, number, nullptr);
+    p.setProperty (IDs::colour, colour.toString(), nullptr);
+    sanitisePerformance (p);
+    return p;
+}
+
 juce::ValueTree createPreset (const juce::String& name, int setlist, int bank, int slot, juce::Colour colour)
 {
     juce::ValueTree p (IDs::Preset);
@@ -83,6 +113,19 @@ juce::ValueTree createPreset (const juce::String& name, int setlist, int bank, i
 void sanitise (juce::ValueTree& root)
 {
     setDefault (root, IDs::qcChannel, 1);
+    setDefault (root, IDs::ampUnit, 0);
+    setDefault (root, IDs::selectedPerformance, 0);
+    setDefault (root, IDs::kemperSlotFirst, true);
+    setDefault (root, IDs::kemperEffectOn, true);
+    setDefault (root, IDs::kemperKeepTails, true);
+    setDefault (root, IDs::kemperPedalsView, false);
+    setDefault (root, IDs::kemperPedal, 0);
+    setDefault (root, IDs::kpBeats, 4.0);
+    setDefault (root, IDs::kpCurve, 1.0);
+    setDefault (root, IDs::kpReset, false);
+    setDefault (root, IDs::kpDraw, false);
+    setDefault (root, IDs::kpDrawing, cues::whammy::encodeDrawing (cues::whammy::defaultDrawing()));
+    setDefault (root, IDs::kpDrawingName, juce::String());
     setDefault (root, IDs::whChannel, 2);
     setDefault (root, IDs::whPcBase, 1);
     setDefault (root, IDs::sendSetlist, false);
@@ -122,6 +165,27 @@ void sanitise (juce::ValueTree& root)
 
     for (auto p : qc)
         sanitisePreset (p);
+
+    // Kemper: performances with five slots each, and the names of its eight effect modules.
+    auto kemper = root.getOrCreateChildWithName (IDs::Kemper, nullptr);
+    for (int i = kemper.getNumChildren(); --i >= 0;)
+        if (! kemper.getChild (i).hasType (IDs::Performance) && ! kemper.getChild (i).hasType (IDs::KemperEffect))
+            kemper.removeChild (i, nullptr);
+    if (kemper.getChildWithName (IDs::Performance) == juce::ValueTree())
+        kemper.addChild (createPerformance ("Performance 1", 1, paletteColour (4)), 0, nullptr);
+    for (auto p : kemper)
+        if (p.hasType (IDs::Performance))
+            sanitisePerformance (p);
+    int effects = 0;
+    for (auto c : kemper)
+        if (c.hasType (IDs::KemperEffect))
+            ++effects;
+    for (int i = effects; i < cues::kemper::numEffects; ++i)
+    {
+        juce::ValueTree e (IDs::KemperEffect);
+        e.setProperty (IDs::name, cues::kemper::effectName (i), nullptr);
+        kemper.appendChild (e, nullptr);
+    }
 
     auto wh = root.getOrCreateChildWithName (IDs::Whammy, nullptr);
     for (int i = wh.getNumChildren(); i < cues::whammy::numEffects; ++i)
@@ -187,9 +251,10 @@ void setFlag (const juce::String& name, bool value)
 // What a setup carries besides the names: the MIDI settings and the playing preferences
 // (Whammy Chords / Load bypassed / Heel first, return to heel after moves, Expression's Load 1A first).
 // Length and curve change per song, so they stay in the project.
-static const std::array<const juce::Identifier*, 12>& setupProperties()
+static const std::array<const juce::Identifier*, 16>& setupProperties()
 {
-    static const std::array<const juce::Identifier*, 12> ids { &IDs::qcChannel, &IDs::whChannel, &IDs::whModel, &IDs::whPcBase,
+    static const std::array<const juce::Identifier*, 16> ids { &IDs::ampUnit, &IDs::kemperSlotFirst, &IDs::kemperKeepTails,
+                                                               &IDs::kpReset, &IDs::qcChannel, &IDs::whChannel, &IDs::whModel, &IDs::whPcBase,
                                                                &IDs::sendSetlist, &IDs::comboPresetScene,
                                                                &IDs::whChords, &IDs::whBypass, &IDs::whHeelFirst,
                                                                &IDs::sweepReset, &IDs::expReset, &IDs::expLoadFirst };
@@ -295,6 +360,7 @@ bool saveLibrary (const juce::ValueTree& root, const juce::File& file, const juc
     juce::ValueTree lib (IDs::PedalCues);
     lib.appendChild (root.getChildWithName (IDs::QC).createCopy(), nullptr);
     lib.appendChild (root.getChildWithName (IDs::Whammy).createCopy(), nullptr);
+    lib.appendChild (root.getChildWithName (IDs::Kemper).createCopy(), nullptr);
     if (drawings != nullptr)
         lib.appendChild (drawings->createCopy(), nullptr);
 
@@ -324,7 +390,7 @@ bool loadLibrary (juce::ValueTree& root, const juce::File& file, juce::ValueTree
     if (drawingsInto != nullptr)
         mergeDrawings (*drawingsInto, lib.getChildWithName (IDs::Drawings));
 
-    for (const auto* id : { &IDs::QC, &IDs::Whammy })
+    for (const auto* id : { &IDs::QC, &IDs::Whammy, &IDs::Kemper })
     {
         const auto src = lib.getChildWithName (*id);
         if (! src.isValid())
@@ -341,6 +407,7 @@ bool loadLibrary (juce::ValueTree& root, const juce::File& file, juce::ValueTree
         root.setProperty (IDs::setupViaQcChain, lib[IDs::setupViaQcChain], nullptr);   // the caller applies and removes it
 
     root.setProperty (IDs::selectedPreset, 0, nullptr);
+    root.setProperty (IDs::selectedPerformance, 0, nullptr);
     sanitise (root);
     return true;
 }

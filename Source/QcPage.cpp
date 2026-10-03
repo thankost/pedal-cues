@@ -437,4 +437,47 @@ std::unique_ptr<Page> makeQcPage (PedalCuesProcessor& p)
 {
     return std::make_unique<QcPage> (p);
 }
+
+juce::String ampUnitName (int unit)
+{
+    return unit == 1 ? "Kemper Profiler" : unit == 2 ? "Kemper Player" : "Quad Cortex";
+}
+
+namespace
+{
+// The first tab: the Quad Cortex or Kemper page, for the unit picked with the ▾ on the tab (or in MIDI Setup).
+class AmpPage final : public Page
+{
+public:
+    explicit AmpPage (PedalCuesProcessor& p) : state (p.state), qc (makeQcPage (p)), kemper (makeKemperPage (p))
+    {
+        addChildComponent (*qc);
+        addChildComponent (*kemper);
+        refresh();
+    }
+
+    void refresh() override
+    {
+        const auto unit = juce::jlimit (0, 2, (int) state[IDs::ampUnit]);
+        qc->setVisible (unit == 0);
+        kemper->setVisible (unit != 0);
+        (unit == 0 ? qc : kemper)->refresh();
+    }
+
+    void resized() override
+    {
+        qc->setBounds (getLocalBounds());
+        kemper->setBounds (getLocalBounds());
+    }
+
+private:
+    juce::ValueTree state;
+    std::unique_ptr<Page> qc, kemper;
+};
+} // namespace
+
+std::unique_ptr<Page> makeAmpPage (PedalCuesProcessor& p)
+{
+    return std::make_unique<AmpPage> (p);
+}
 } // namespace ui
