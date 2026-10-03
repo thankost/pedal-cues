@@ -2,7 +2,7 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
-## 0.6.0 (2026-10-03)
+## 0.6.1 (2026-10-03)
 
 - **Any MIDI device (beta, new):** not on a Quad Cortex or Kemper? Choose **New MIDI device...** under the **▾** on the first tab, and make your own tiles for a Fractal, a Helix, a Boss, a synth, a looper, or anything else that takes MIDI. Name your groups (presets, scenes, snapshots, switches...) and tiles; they drag onto the timeline like every other tile.
 - **Guided tile editor:** pick each message (Program Change, Control Change or bank select) and set its numbers with − / +, or start from **Preset**, **Bank + preset**, **Switch on/off** or **Set a value**. A line in plain words says what the tile sends, and **Test on the device** tries it before you save.

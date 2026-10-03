@@ -713,7 +713,7 @@ void PedalCuesEditor::showUnitMenu()
         m.addItem (u + 1, ui::ampUnitName (u), true, u == current);
 
     // Custom units (beta): any MIDI gear, with tiles you define.
-    constexpr int firstCustom = 100, newUnit = 10, importUnit = 11;
+    static constexpr int firstCustom = 100, newUnit = 10, importUnit = 11;   // static: usable in the lambda below on MSVC too
     m.addSectionHeader ("Custom MIDI devices (beta)");
     const auto units = state.getChildWithName (IDs::CustomUnits);
     for (int i = 0; i < units.getNumChildren(); ++i)

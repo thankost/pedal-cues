@@ -188,8 +188,8 @@ public:
             auto* b = startButtons.add (new juce::TextButton (st.label));
             b->setTooltip (juce::String (st.tip) + ". Then set the numbers from your device's MIDI chart.");
             b->setColour (juce::TextButton::buttonColourId, raised);
-            const auto text = juce::String (st.messages).replace ("#", juce::String (programBase));
-            b->onClick = [this, text] { setSteps (cues::custom::parse (text, programBase).steps); };
+            const auto start = juce::String (st.messages).replace ("#", juce::String (programBase));
+            b->onClick = [this, start] { setSteps (cues::custom::parse (start, programBase).steps); };
             addAndMakeVisible (b);
         }
 
@@ -305,7 +305,8 @@ private:
             row->onChange = [this] { updatePreview(); };
             row->removeButton.onClick = [this, row]
             {
-                juce::MessageManager::callAsync ([safe = juce::Component::SafePointer<TileEditor> (this), row]
+                juce::Component::SafePointer<TileEditor> safe (this);   // the row (and this button) go away in setSteps
+                juce::MessageManager::callAsync ([safe, row]
                 {
                     if (safe == nullptr)
                         return;
