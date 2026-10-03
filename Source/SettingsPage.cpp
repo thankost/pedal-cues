@@ -57,7 +57,7 @@ private:
             const Node nodes[] = { { "Cue tracks", "QC + Whammy", accent },
                                    { "Interface", "MIDI Out", juce::Colour (0xff9aa0ac) },
                                    { "Quad Cortex", "In + Thru", qcBlue },
-                                   { "Whammy V", "5-pin MIDI In", whammyRed } };
+                                   { "Whammy", "5-pin MIDI In", whammyRed } };
             const char* links[] = { "", "MIDI", "Thru" };   // the computer->interface hop needs no label
             paintChain (g, area.withSizeKeepingCentre (area.getWidth(), 66), nodes, links, 4);
             return;
@@ -69,7 +69,7 @@ private:
         const char* qcLinks[] = { "QC USB" };
         const Node wh[] = { { "Whammy Cues track", "PedalCues, Whammy tab", accent },
                             { "Audio interface", "MIDI Out 2", juce::Colour (0xff9aa0ac) },
-                            { "Whammy V", "5-pin MIDI In", whammyRed } };
+                            { "Whammy", "5-pin MIDI In", whammyRed } };
         const char* whLinks[] = { "", "MIDI" };
         auto top = area.removeFromTop (rowH);
         area.removeFromTop (8);
@@ -178,8 +178,8 @@ private:
 class SettingsPage final : public Page
 {
 public:
-    SettingsPage (PedalCuesProcessor& p, std::function<void()> tour)
-        : proc (p), state (p.state), startTour (std::move (tour))
+    explicit SettingsPage (PedalCuesProcessor& p)
+        : proc (p), state (p.state)
     {
         for (auto* c : std::initializer_list<juce::Component*> { &pedalsSection, &tracksSection })
             addAndMakeVisible (c);
@@ -187,7 +187,7 @@ public:
 
         // Your pedals: the channels every cue is sent on.
         styleCaption (qcChannelLabel, "Quad Cortex channel");
-        styleCaption (whChannelLabel, "Whammy V channel");
+        styleCaption (whChannelLabel, "Whammy channel");
         styleCaption (pcBaseLabel, "Whammy program numbering");
         styleHint (qcHint, "Must match the QC: Settings > MIDI Settings > MIDI Channel (not Omni).");
         styleHint (whHint, "Must match the Whammy's MIDI channel (see its manual). Use a different channel from the QC.");
@@ -279,14 +279,9 @@ public:
         for (auto* b : { &testQcButton, &testWhButton })
             b->setColour (juce::TextButton::buttonColourId, raised);
 
-        tourButton.setColour (juce::TextButton::buttonColourId, accent);
-        tourButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
-        tourButton.onClick = [this] { if (startTour) startTour(); };
-        guideButton.onClick = [] { juce::URL (guideUrl).launchInDefaultBrowser(); };
-
         for (auto* c : std::initializer_list<juce::Component*> { &qcChannelLabel, &whChannelLabel, &qcChannelBox, &whChannelBox,
                                                                  &qcHint, &whHint, &advancedButton, &tracksSteps, &viaQcButton,
-                                                                 &viaInterfaceButton, &wiringLabel, &wiringLink, &dawHint, &tourButton, &guideButton })
+                                                                 &viaInterfaceButton, &wiringLabel, &wiringLink, &dawHint })
             addAndMakeVisible (c);
         for (auto* c : std::initializer_list<juce::Component*> { &pcBaseLabel, &pcBaseBox, &setlistToggle,
                                                                  &testOutBox, &testQcButton, &testWhButton, &testHint })
@@ -322,12 +317,7 @@ public:
         auto left = r.removeFromLeft (juce::jmax (380, r.getWidth() * 2 / 5));
         r.removeFromLeft (12);
 
-        // Left: Your pedals, then (standalone) Test, then the tour/guide buttons at the bottom.
-        auto buttons = left.removeFromBottom (36);
-        tourButton.setBounds (buttons.removeFromLeft (buttons.getWidth() / 2 - 5));
-        buttons.removeFromLeft (10);
-        guideButton.setBounds (buttons);
-        left.removeFromBottom (12);
+        // Left: Your pedals, then (standalone) Test. The quick tour and the user guide are in the ☰ / Help menu.
 
         const auto pedalsH = Section::headerHeight + 2 * 84 + 34 + (showAdvanced ? 62 + 40 : 0) + 8;
         pedalsSection.setBounds (left.removeFromTop (pedalsH));
@@ -485,7 +475,6 @@ private:
 
     PedalCuesProcessor& proc;
     juce::ValueTree state;
-    std::function<void()> startTour;
     bool showAdvanced = false;
 
     Section pedalsSection { "set.pedals", "Your pedals", "set once, must match the pedals" };
@@ -506,8 +495,6 @@ private:
     juce::Array<juce::MidiDeviceInfo> testDevices;
     juce::TextButton testQcButton { "Test QC" }, testWhButton { "Test Whammy" };
 
-    juce::TextButton tourButton { "Show quick tour" };
-    juce::TextButton guideButton { "Open user guide" };
 };
 } // namespace
 
@@ -528,8 +515,8 @@ void showWiringGuide()
     o.launchAsync();
 }
 
-std::unique_ptr<Page> makeSettingsPage (PedalCuesProcessor& p, std::function<void()> startTour)
+std::unique_ptr<Page> makeSettingsPage (PedalCuesProcessor& p)
 {
-    return std::make_unique<SettingsPage> (p, std::move (startTour));
+    return std::make_unique<SettingsPage> (p);
 }
 } // namespace ui

@@ -68,6 +68,15 @@ body:
         - Only the Quad Cortex
         - Only the Whammy
         - Something else (describe above)
+  - type: dropdown
+    id: whammy
+    attributes:
+      label: Whammy
+      description: Which Whammy you use with PedalCues, if any.
+      options:
+        - Whammy V
+        - Whammy DT
+        - No Whammy
   - type: textarea
     id: extra
     attributes:

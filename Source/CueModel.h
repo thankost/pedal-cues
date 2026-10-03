@@ -72,7 +72,8 @@ namespace qc
 }
 
 //==============================================================================
-// DigiTech Whammy V (5th gen)
+// DigiTech Whammy V (5th gen) and Whammy DT. The DT's Whammy side uses the V's Classic numbers (1-42);
+// on the DT, 43-78 are its Drop Tune (Shift Up / Shift Down) effects, so the V's Chords range doesn't apply.
 namespace whammy
 {
     constexpr int numEffects = 21;
@@ -89,6 +90,14 @@ namespace whammy
 
     Cue effect (int channel, int effectIndex, const juce::String& name, bool chords, bool bypass,
                 int pcNumberBase, bool heelFirst);
+
+    // Whammy DT Drop Tune (Whammy DT manual, page 13). 'step' 0-6 = 1-7 semitones, 7 = Oct, 8 = Oct + Dry.
+    // Shift Up: 43-51 active / 61-69 bypassed. Shift Down: 60-52 active / 78-70 bypassed.
+    constexpr int numShifts = 9;
+    juce::String shiftName      (int step);              // "1" .. "7", "Oct", "Oct + Dry"
+    juce::String shiftDescription (bool up, int step);   // for tooltips
+    int          dropTuneProgram (bool up, int step, bool bypass);   // 1-based, as printed in the manual
+    Cue          dropTune (int channel, bool up, int step, bool bypass, int pcNumberBase);
 
     enum class Shape { rampUp, rampDown, swell, dive, trill, bendToBar, toe, heel };
     constexpr int numShapes = 8;

@@ -2,6 +2,12 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.4.29 (2026-10-03)
+
+- **Whammy DT support (new):** pick **Whammy V** or **Whammy DT** with the new switch on the Whammy page. On the DT, a **Drop Tune** view adds Shift Up and Shift Down tiles: 1 to 7 semitones, an octave, and octave + dry, on or bypassed, so you can drop or raise your tuning right where a song needs it. The Whammy modes and treadle moves work the same on both pedals. The tab is now called **Whammy V / DT**, and the quick tour has a step for the DT.
+- The Whammy model is part of your setup (Save as default, Export / Import).
+- MIDI Setup is only about setup now: the *Show quick tour* and *Open user guide* buttons are gone (they're in the ☰ menu, or the Help menu in the standalone app).
+
 ## 0.4.28 (2026-10-03)
 
 - **Fixed: setlists were one off.** With *Send setlist* on, PedalCues sent the setlist one lower than the QC expects (the QC counts the Factory Presets as 0). Setlist numbers are now exactly as the QC shows them, and Sync from QC numbers them that way. If you added 1 to your setlist numbers to work around it, set them back.

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include "EditorCommon.h"
@@ -26,6 +28,7 @@ public:
     // TourHost
     void showPage (int index) override;
     void showQcExpression (bool show) override;
+    void showWhammyDt (bool show) override;
     juce::Rectangle<int> targetBounds (const juce::StringArray& componentIds) override;
     void closeTour (bool finished) override;
 
@@ -113,6 +116,7 @@ private:
     UpdateBadge updateBadge;
     std::vector<std::unique_ptr<ui::Page>> pages;
     std::unique_ptr<ui::TourOverlay> tour;
+    std::optional<std::pair<juce::var, juce::var>> tourSavedWhammy;   // model and Drop Tune view, while the tour shows the DT
     int currentPage = 0;
     double shownBpm = 0.0;
     juce::Rectangle<float> tempoPill() const;

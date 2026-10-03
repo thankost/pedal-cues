@@ -41,7 +41,7 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     tabBar.setComponentID ("hdr.tabs");
     addAndMakeVisible (tabBar);
 
-    const char* names[] = { "Quad Cortex", "Whammy V", "MIDI Setup" };
+    const char* names[] = { "Quad Cortex", "Whammy V / DT", "MIDI Setup" };
     for (int i = 0; i < 3; ++i)
     {
         auto* b = tabButtons.add (new juce::TextButton (names[i]));
@@ -68,7 +68,7 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
 
     pages.push_back (ui::makeQcPage (p));
     pages.push_back (ui::makeWhammyPage (p));
-    pages.push_back (ui::makeSettingsPage (p, [this] { startTour (0); }));
+    pages.push_back (ui::makeSettingsPage (p));
     for (auto& page : pages)
         addChildComponent (*page);
 
@@ -120,6 +120,29 @@ void PedalCuesEditor::showQcExpression (bool show)
     refreshNow();   // lay out the view now, so the tour can find its targets
 }
 
+void PedalCuesEditor::showWhammyDt (bool show)
+{
+    // The tour's DT step switches the page to Whammy DT > Drop Tune and puts the player's own choice back afterwards.
+    if (show)
+    {
+        if (! tourSavedWhammy)
+            tourSavedWhammy = std::make_pair (state[IDs::whModel], state[IDs::whDropTuneView]);
+        state.setProperty (IDs::whModel, 1, nullptr);
+        state.setProperty (IDs::whDropTuneView, true, nullptr);
+    }
+    else if (tourSavedWhammy)
+    {
+        state.setProperty (IDs::whModel, tourSavedWhammy->first, nullptr);
+        state.setProperty (IDs::whDropTuneView, tourSavedWhammy->second, nullptr);
+        tourSavedWhammy.reset();
+    }
+    else
+    {
+        return;
+    }
+    refreshNow();
+}
+
 juce::Rectangle<int> PedalCuesEditor::targetBounds (const juce::StringArray& ids)
 {
     juce::Rectangle<int> result;
@@ -151,6 +174,7 @@ void PedalCuesEditor::closeTour (bool)
     {
         if (safe != nullptr)
         {
+            safe->showWhammyDt (false);   // closing on the DT step: put the player's Whammy choice back
             safe->tour.reset();
             safe->showPage (0);
         }

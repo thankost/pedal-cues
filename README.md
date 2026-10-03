@@ -1,6 +1,6 @@
 # PedalCues
 
-Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex / QC Mini** and the **DigiTech Whammy V**.
+Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex / QC Mini** and the **DigiTech Whammy V / Whammy DT**.
 A VST3 / AU / LV2 / Standalone plugin (JUCE) for Windows, macOS and Linux. Tested in Reaper; it should work in any DAW that accepts dragged MIDI files and can send a MIDI track to a hardware output (Ableton Live, Cubase, Bitwig, Studio One; in Logic the clips work on an External MIDI track).
 
 **[Download for Windows and macOS](https://thankost.github.io/pedal-cues/)**
@@ -12,7 +12,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 
 📖 **[User guide with pictures and step-by-step instructions](https://thankost.github.io/pedal-cues/guide.html)** · 📝 **[What's new](https://thankost.github.io/pedal-cues/changelog.html)** · 🛟 **[Help and problem reports](https://thankost.github.io/pedal-cues/help.html)**. A quick tour also starts the first time you open the plugin (open it again later from the **☰** menu).
 
-| Whammy V | MIDI Setup |
+| Whammy V / DT | MIDI Setup |
 |---|---|
 | ![Whammy page](docs/images/whammy.png) | ![MIDI Setup tab](docs/images/settings.png) |
 
@@ -30,8 +30,9 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
   Wah Rhythm, Rise to Bar, Toe, Heel, fixed positions (heel / 25% / half / 75% / toe), or draw your own; tempo-synced.
   Acts on the loaded preset, or optionally **loads the open preset first** (safe if a preset gets changed by accident)
 
-**Whammy V**
-- All 21 modes, Classic or Chords, engaged or bypassed (Program Change)
+**Whammy V / Whammy DT** (pick the model with the switch on the Whammy page)
+- All 21 modes, Classic or Chords (Chords on the V only), engaged or bypassed (Program Change)
+- **Whammy DT Drop Tune:** Shift Up and Shift Down tiles, 1–7 semitones, Oct and Oct + Dry, on or bypassed (Program Change 43–78)
 - Optional "heel before mode change" (`CC#11 = 0`)
 - Treadle moves on `CC#11`: Ramp Up, Ramp Down, Rise & Fall, Dive, Trill (1/16), Bend to Bar, Toe, Heel
 - Draw your own treadle move with the mouse, then drag it onto the timeline like any other move
@@ -108,7 +109,7 @@ Details and pictures: [guide, section 2](https://thankost.github.io/pedal-cues/g
 ## Verify with your pedals
 
 - **Whammy numbering:** the plugin uses the manual's 1-based numbers (Classic 1–21 on / 22–42 bypassed,
-  Chords 43–63 on / 64–84 bypassed). If every mode arrives one step off, change *MIDI Setup → Whammy program
+  Chords 43–63 on / 64–84 bypassed; on the Whammy DT, 43–78 are Drop Tune). If every mode arrives one step off, change *MIDI Setup → Whammy program
   numbering*. Mode names can be renamed if your chart differs.
 - **QC setlist:** `CC#32` = the setlist number as the QC shows it (0 = Factory Presets). Leave *Send setlist* off if all presets are in the active setlist.
 
@@ -121,7 +122,7 @@ Source/Tile.*            draggable tile (external file drag + click-to-send)
 Source/PluginProcessor.* MIDI passthrough, preview scheduling, host tempo, state
 Source/Theme.*           colour palette + custom LookAndFeel
 Source/PluginEditor.*    window, header tabs, first-run tour host
-Source/QcPage.cpp        Quad Cortex page    Source/WhammyPage.cpp  Whammy V page
+Source/QcPage.cpp        Quad Cortex page    Source/WhammyPage.cpp  Whammy V / DT page
 Source/SettingsPage.cpp  MIDI Setup tab (your pedals, DAW tracks, test) and the wiring guide
 Source/Tour.*            quick-tour overlay (steps + spotlight)
 Tools/DocShots.cpp       renders docs/images/*.png

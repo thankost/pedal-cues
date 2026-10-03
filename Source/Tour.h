@@ -12,6 +12,7 @@ struct TourHost
     virtual ~TourHost() = default;
     virtual void showPage (int index) = 0;
     virtual void showQcExpression (bool) = 0;
+    virtual void showWhammyDt (bool) = 0;
     virtual juce::Rectangle<int> targetBounds (const juce::StringArray& componentIds) = 0;
     virtual void closeTour (bool finished) = 0;
 };
@@ -22,6 +23,7 @@ struct TourStep
     juce::StringArray targets;
     juce::String title, body;
     bool qcExpression = false;   // Quad Cortex page: show the Expression view (else Scenes & Stomps)
+    bool whammyDt = false;       // Whammy page: show Whammy DT > Drop Tune for this step (the user's choice comes back after)
 };
 
 const std::vector<TourStep>& tourSteps();

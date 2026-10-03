@@ -491,8 +491,17 @@ int main (int argc, char** argv)
         proc.state.setProperty (IDs::sweepDraw, false, nullptr);
         editor.refreshNow();
 
+        // Whammy DT: the Drop Tune side of the Modes card.
+        proc.state.setProperty (IDs::whModel, 1, nullptr);
+        proc.state.setProperty (IDs::whDropTuneView, true, nullptr);
+        editor.refreshNow();
+        save (snapshot (editor), outDir.getChildFile ("whammy-dt-droptune.png"));
+        proc.state.setProperty (IDs::whModel, 0, nullptr);
+        proc.state.setProperty (IDs::whDropTuneView, false, nullptr);
+        editor.refreshNow();
+
         const std::pair<int, const char*> tourShots[] = {
-            { 0, "tour-welcome.png" }, { 3, "tour-scenes.png" }, { 4, "tour-target.png" }, { 8, "tour-whammy.png" }, { 10, "tour-treadle.png" }
+            { 0, "tour-welcome.png" }, { 3, "tour-scenes.png" }, { 4, "tour-target.png" }, { 8, "tour-whammy.png" }, { 11, "tour-treadle.png" }
         };
         for (const auto& [step, name] : tourShots)
         {

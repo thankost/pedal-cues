@@ -30,6 +30,8 @@ namespace IDs
     PEDALCUES_ID (selectedPreset)
     PEDALCUES_ID (comboPresetScene)
     PEDALCUES_ID (stompOn)
+    PEDALCUES_ID (whModel)        // 0 = Whammy V, 1 = Whammy DT
+    PEDALCUES_ID (whDropTuneView) // Whammy DT page: Drop Tune tiles instead of the Whammy modes
     PEDALCUES_ID (whChords)
     PEDALCUES_ID (whBypass)
     PEDALCUES_ID (whHeelFirst)

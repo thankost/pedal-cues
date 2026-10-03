@@ -199,6 +199,20 @@ int main (int argc, char** argv)
     CHECK (e.events.size() == 2 && isCC (e.events[0].second, 2, 11, 0));
     CHECK (e.events[1].second.getChannel() == 2 && e.events[1].second.getProgramChangeNumber() == 1);
 
+    // Whammy DT Drop Tune (manual page 13): Shift Up 1 = 43 ... Oct+Dry = 51, Shift Down 1 = 60 ... Oct+Dry = 52,
+    // bypassed = +18. Sent 1-based minus the numbering base (Program Change 42 for "43" by default).
+    CHECK (whammy::dropTuneProgram (true, 0, false) == 43 && whammy::dropTuneProgram (true, 8, false) == 51);
+    CHECK (whammy::dropTuneProgram (true, 0, true) == 61 && whammy::dropTuneProgram (true, 8, true) == 69);
+    CHECK (whammy::dropTuneProgram (false, 0, false) == 60 && whammy::dropTuneProgram (false, 8, false) == 52);
+    CHECK (whammy::dropTuneProgram (false, 0, true) == 78 && whammy::dropTuneProgram (false, 8, true) == 70);
+    {
+        auto d = whammy::dropTune (2, false, 1, false, 1);
+        CHECK (d.name == "Whammy DT Shift Down 2" && d.events.size() == 1);
+        CHECK (d.events[0].second.getChannel() == 2 && d.events[0].second.getProgramChangeNumber() == 58);
+        CHECK (whammy::dropTune (2, true, 8, true, 1).name == "Whammy DT Shift Up Oct + Dry (Bypass)");
+        CHECK (whammy::shiftName (7) == "Oct" && whammy::shiftName (2) == "3");
+    }
+
     // Sweeps
     auto up = whammy::sweep (2, whammy::Shape::rampUp, 4.0, 1.0, true);
     CHECK (isCC (up.events.front().second, 2, 11, 0));

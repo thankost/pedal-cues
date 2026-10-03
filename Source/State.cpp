@@ -89,6 +89,8 @@ void sanitise (juce::ValueTree& root)
     setDefault (root, IDs::selectedPreset, 0);
     setDefault (root, IDs::comboPresetScene, true);
     setDefault (root, IDs::stompOn, true);
+    setDefault (root, IDs::whModel, 0);
+    setDefault (root, IDs::whDropTuneView, false);
     setDefault (root, IDs::whChords, false);
     setDefault (root, IDs::whBypass, false);
     setDefault (root, IDs::whHeelFirst, true);
@@ -185,9 +187,9 @@ void setFlag (const juce::String& name, bool value)
 // What a setup carries besides the names: the MIDI settings and the playing preferences
 // (Whammy Chords / Load bypassed / Heel first, return to heel after moves, Expression's Load 1A first).
 // Length and curve change per song, so they stay in the project.
-static const std::array<const juce::Identifier*, 11>& setupProperties()
+static const std::array<const juce::Identifier*, 12>& setupProperties()
 {
-    static const std::array<const juce::Identifier*, 11> ids { &IDs::qcChannel, &IDs::whChannel, &IDs::whPcBase,
+    static const std::array<const juce::Identifier*, 12> ids { &IDs::qcChannel, &IDs::whChannel, &IDs::whModel, &IDs::whPcBase,
                                                                &IDs::sendSetlist, &IDs::comboPresetScene,
                                                                &IDs::whChords, &IDs::whBypass, &IDs::whHeelFirst,
                                                                &IDs::sweepReset, &IDs::expReset, &IDs::expLoadFirst };

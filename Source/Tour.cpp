@@ -33,11 +33,16 @@ const std::vector<TourStep>& tourSteps()
         { 0, { "qc.view", "qc.exp.sweeps" }, "5. Automate the QC's expression",
           "Switch to Expression to move anything you assign to Expression 1 or 2 on the QC: wah, volume, a delay mix, drive. "
           "Drag a swell, a fade or a wah rhythm (or draw your own) to where it should happen.", true },
-        { 1, { "wh.modes" }, "6. Whammy V modes",
+        { 1, { "wh.faceplate", "wh.modes" }, "6. Whammy modes",
           "The Whammy tab works the same way, laid out like the pedal: Whammy modes on top, Harmony below, Detune on its own row. Colours: "
-          "red Whammy, blue Detune, green Harmony. A dark LED means the mode loads bypassed." },
+          "red Whammy, blue Detune, green Harmony. A dark LED means the mode loads bypassed. The switch at the top picks your pedal: "
+          "Whammy V or Whammy DT." },
+        { 1, { "wh.faceplate", "wh.modes" }, "Got a Whammy DT?",
+          "Click Whammy DT at the top. The Modes card then gets a Drop Tune switch with Shift Up and Shift Down tiles: "
+          "drop or raise your tuning anywhere in a song, for example -2 for D standard. The Whammy modes and treadle moves "
+          "work the same on both pedals.", false, true },
         { 1, { "wh.options" }, "Chords, bypass, heel first",
-          "Chords uses the polyphonic program range. Load bypassed selects a mode without engaging it. Heel first "
+          "Chords (Whammy V only) uses the polyphonic program range. Load bypassed selects a mode without engaging it. Heel first "
           "parks the treadle at heel before switching so nothing jumps in pitch." },
         { 1, { "wh.sweepControls", "wh.sweeps" }, "7. Automate the treadle",
           "Pick a length and curve, then drag a move. It becomes CC#11 automation that follows your project tempo: "
@@ -90,6 +95,7 @@ void TourOverlay::setStep (int index)
     host.showPage (s.page);
     if (s.page == 0)
         host.showQcExpression (s.qcExpression);
+    host.showWhammyDt (s.whammyDt);
     layoutCard();
     repaint();
 }

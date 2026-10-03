@@ -358,6 +358,38 @@ namespace whammy
         return c;
     }
 
+    juce::String shiftName (int step)
+    {
+        step = juce::jlimit (0, numShifts - 1, step);
+        return step == 7 ? juce::String ("Oct") : step == 8 ? juce::String ("Oct + Dry") : juce::String (step + 1);
+    }
+
+    juce::String shiftDescription (bool up, int step)
+    {
+        step = juce::jlimit (0, numShifts - 1, step);
+        const juce::String way = up ? "up" : "down";
+        if (step == 7) return "Shifts everything " + way + " an octave";
+        if (step == 8) return "Shifts " + way + " an octave and adds the dry signal (12-string sound)";
+        const auto n = step + 1;
+        return "Shifts everything " + way + " " + juce::String (n) + (n == 1 ? " semitone" : " semitones")
+             + (n == 1 ? (up ? juce::String() : juce::String (" (Eb tuning)")) : n == 2 ? " (a whole step)" : juce::String());
+    }
+
+    int dropTuneProgram (bool up, int step, bool bypass)
+    {
+        step = juce::jlimit (0, numShifts - 1, step);
+        return (up ? 43 + step : 60 - step) + (bypass ? 18 : 0);
+    }
+
+    Cue dropTune (int channel, bool up, int step, bool bypass, int pcNumberBase)
+    {
+        Cue c;
+        c.name = "Whammy DT Shift " + juce::String (up ? "Up " : "Down ") + shiftName (step) + (bypass ? " (Bypass)" : "");
+        c.add (0.0, juce::MidiMessage::programChange (juce::jlimit (1, 16, channel),
+                                                      juce::jlimit (0, 127, dropTuneProgram (up, step, bypass) - pcNumberBase)));
+        return c;
+    }
+
     juce::String shapeName (Shape s)
     {
         switch (s)

@@ -11,11 +11,13 @@ namespace ui
 {
 namespace
 {
-// The red Whammy V faceplate banner.
+// The red Whammy faceplate banner ("WHAMMY V" or "WHAMMY DT").
 class Faceplate final : public juce::Component
 {
 public:
     Faceplate() { setInterceptsMouseClicks (false, false); }
+
+    juce::String model { "WHAMMY V" }, tagline { "MIDI MODE  +  TREADLE AUTOMATION" };
 
     void paint (juce::Graphics& g) override
     {
@@ -42,10 +44,10 @@ public:
         auto area = getLocalBounds().reduced (28, 10);
         auto logo = area.removeFromLeft (360).toFloat();
 
-        // Italic, heavy "WHAMMY V" logotype drawn as a skewed glyph run.
+        // Italic, heavy logotype drawn as a skewed glyph run.
         juce::GlyphArrangement ga;
         ga.addLineOfText (juce::Font (font (logo.getHeight() * 0.58f, true)).withHorizontalScale (1.1f),
-                          "WHAMMY V", logo.getX(), logo.getCentreY() + logo.getHeight() * 0.17f);
+                          model, logo.getX(), logo.getCentreY() + logo.getHeight() * 0.17f);
         juce::Path text;
         ga.createPath (text);
         text.applyTransform (juce::AffineTransform::shear (-0.22f, 0.0f)
@@ -60,7 +62,7 @@ public:
 
         g.setColour (juce::Colours::white.withAlpha (0.8f));
         g.setFont (font (11.0f, true));
-        g.drawText ("MIDI MODE  +  TREADLE AUTOMATION", juce::Rectangle<float> (tb.getX(), tb.getBottom() + 4.0f, 400.0f, 14.0f),
+        g.drawText (tagline, juce::Rectangle<float> (tb.getX(), tb.getBottom() + 4.0f, 460.0f, 14.0f),
                     juce::Justification::centredLeft);
     }
 };
@@ -88,6 +90,7 @@ public:
     {
         for (auto* c : std::initializer_list<juce::Component*> { &faceplate, &options, &modesSection, &moves })
             addAndMakeVisible (c);
+        faceplate.setComponentID ("wh.faceplate");   // the tour frames the whole red bar
 
         for (auto* t : { &chordsToggle, &bypassToggle, &heelToggle })
         {
@@ -103,13 +106,65 @@ public:
         bypassToggle.onClick = [this] { state.setProperty (IDs::whBypass, bypassToggle.getToggleState(), nullptr); };
         heelToggle.onClick   = [this] { state.setProperty (IDs::whHeelFirst, heelToggle.getToggleState(), nullptr); };
 
+        // Which Whammy (V or DT): picked right on the faceplate, where players look for their pedal.
+        for (auto* b : { &modelVButton, &modelDtButton })
+        {
+            b->setClickingTogglesState (true);
+            b->setRadioGroupId (4306);
+            b->setColour (juce::TextButton::buttonColourId, juce::Colours::black.withAlpha (0.35f));
+            b->setColour (juce::TextButton::buttonOnColourId, juce::Colours::white);
+            b->setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.75f));
+            b->setColour (juce::TextButton::textColourOnId, whammyRed.darker (0.3f));
+            options.addAndMakeVisible (b);
+        }
+        modelVButton.setConnectedEdges (juce::Button::ConnectedOnRight);
+        modelDtButton.setConnectedEdges (juce::Button::ConnectedOnLeft);
+        modelVButton.setComponentID ("wh.model");
+        modelVButton.setTooltip ("DigiTech Whammy V (5th generation)");
+        modelDtButton.setTooltip ("DigiTech Whammy DT: adds the Drop Tune (Shift Up / Shift Down) tiles");
+        modelVButton.onClick  = [this] { if (modelVButton.getToggleState())  state.setProperty (IDs::whModel, 0, nullptr); };
+        modelDtButton.onClick = [this] { if (modelDtButton.getToggleState()) state.setProperty (IDs::whModel, 1, nullptr); };
+
+        // Whammy DT: the Modes card switches between the Whammy side and the Drop Tune side of the pedal.
+        for (auto* b : { &whammyViewButton, &dropTuneViewButton })
+        {
+            b->setClickingTogglesState (true);
+            b->setRadioGroupId (4305);
+            b->setColour (juce::TextButton::buttonColourId, surface);
+            b->setColour (juce::TextButton::buttonOnColourId, whammyRed);
+            b->setColour (juce::TextButton::textColourOffId, dim);
+            b->setColour (juce::TextButton::textColourOnId, juce::Colours::white);
+            addChildComponent (b);
+        }
+        whammyViewButton.setConnectedEdges (juce::Button::ConnectedOnRight);
+        dropTuneViewButton.setConnectedEdges (juce::Button::ConnectedOnLeft);
+        dropTuneViewButton.setComponentID ("wh.dropTuneView");
+        whammyViewButton.setTooltip ("The Whammy, Harmony and Detune modes (the pedal's left knob)");
+        dropTuneViewButton.setTooltip ("Shift Up and Shift Down: drop or raise your tuning (the pedal's right knob)");
+        whammyViewButton.onClick   = [this] { if (whammyViewButton.getToggleState())   state.setProperty (IDs::whDropTuneView, false, nullptr); };
+        dropTuneViewButton.onClick = [this] { if (dropTuneViewButton.getToggleState()) state.setProperty (IDs::whDropTuneView, true, nullptr); };
+
         refresh();
     }
 
     void refresh() override
     {
-        const auto chords = (bool) state[IDs::whChords];
+        const auto dt = isDt();
+        const auto dropView = dt && (bool) state[IDs::whDropTuneView];
+        const auto chords = (bool) state[IDs::whChords] && ! dt;   // on the DT, the Chords numbers are Drop Tune
         const auto bypass = (bool) state[IDs::whBypass];
+
+        faceplate.model = dt ? "WHAMMY DT" : "WHAMMY V";
+        faceplate.tagline = dt ? "MIDI MODE  +  DROP TUNE  +  TREADLE AUTOMATION" : "MIDI MODE  +  TREADLE AUTOMATION";
+        faceplate.repaint();
+        chordsToggle.setVisible (! dt);
+        (dt ? modelDtButton : modelVButton).setToggleState (true, juce::dontSendNotification);
+        whammyViewButton.setVisible (dt);
+        dropTuneViewButton.setVisible (dt);
+        (dropView ? dropTuneViewButton : whammyViewButton).setToggleState (true, juce::dontSendNotification);
+        modesSection.hint = dropView ? juce::String ("Program Change - shifts everything you play; lit LED = on, dark = loads bypassed")
+                                     : juce::String ("Program Change - lit LED = engaged, dark = loads bypassed");
+        modesSection.repaint();
 
         chordsToggle.setToggleState (chords, juce::dontSendNotification);
         bypassToggle.setToggleState (bypass, juce::dontSendNotification);
@@ -130,13 +185,34 @@ public:
             t->makeCue = [this, i, node]
             {
                 return cues::whammy::effect ((int) state[IDs::whChannel], i, node[IDs::name].toString(),
-                                             (bool) state[IDs::whChords], (bool) state[IDs::whBypass],
+                                             (bool) state[IDs::whChords] && ! isDt(), (bool) state[IDs::whBypass],
                                              (int) state[IDs::whPcBase], (bool) state[IDs::whHeelFirst]);
             };
             t->onDoubleClick = [node] { renameNode (node, "Rename Whammy mode"); };
             t->onContextMenu = [this, node, i] { modeMenu (node, i); };
-            addAndMakeVisible (t);
+            addChildComponent (t);
+            t->setVisible (! dropView);
         }
+
+        // Whammy DT Drop Tune: Shift Up on top, Shift Down below, like the pedal's right knob.
+        dropTiles.clear();
+        for (const auto up : { true, false })
+            for (int step = 0; step < cues::whammy::numShifts; ++step)
+            {
+                auto* t = dropTiles.add (new Tile (proc, Tile::Look::whammyMode));
+                t->title = juce::String (up ? "+" : "-") + cues::whammy::shiftName (step);
+                t->subtitle = "PC " + juce::String (cues::whammy::dropTuneProgram (up, step, bypass));
+                t->colour = up ? shiftUpColour : shiftDownColour;
+                t->active = ! bypass;
+                t->setTooltip (cues::whammy::shiftDescription (up, step) + ". Drag onto the timeline where the new tuning starts.");
+                t->makeCue = [this, up, step]
+                {
+                    return cues::whammy::dropTune ((int) state[IDs::whChannel], up, step, (bool) state[IDs::whBypass],
+                                                   (int) state[IDs::whPcBase]);
+                };
+                addChildComponent (t);
+                t->setVisible (dropView);
+            }
 
         moves.refresh();
         resized();
@@ -152,6 +228,15 @@ public:
             g.setFont (font (11.0f, true));
             g.drawText (grp.name, grp.caption.withTrimmedLeft (12), juce::Justification::centredLeft);
         }
+
+        if (! dropNote.isEmpty())
+        {
+            g.setColour (dim);
+            g.setFont (font (12.5f));
+            g.drawFittedText ("Drop Tune can be combined with a Whammy, Harmony or Detune mode, like on the pedal: for example, "
+                              "tune down a semitone and still bend with the treadle.",
+                              dropNote, juce::Justification::topLeft, 2);
+        }
     }
 
     void resized() override
@@ -160,12 +245,19 @@ public:
 
         auto plate = r.removeFromTop (92);
         faceplate.setBounds (plate);
-        options.setBounds (plate.removeFromRight (juce::jmin (560, plate.getWidth() / 2)).reduced (14, 22));
+        options.setBounds (plate.removeFromRight (juce::jmin (760, plate.getWidth() - 440)).reduced (14, 22));
         {
             auto o = options.getLocalBounds().reduced (12, 0);
-            const auto w = o.getWidth() / 3;
-            chordsToggle.setBounds (o.removeFromLeft (w));
-            bypassToggle.setBounds (o.removeFromLeft (w));
+            auto model = o.removeFromLeft (230).withSizeKeepingCentre (230, 30);
+            modelVButton.setBounds (model.removeFromLeft (model.getWidth() / 2));
+            modelDtButton.setBounds (model);
+            o.removeFromLeft (18);
+            // Widths shared out by label length: Chords is short, "Load bypassed" the longest.
+            const auto total = (float) o.getWidth();
+            const auto share = isDt() ? std::array<float, 3> { 0.0f, 0.55f, 0.45f } : std::array<float, 3> { 0.27f, 0.40f, 0.33f };
+            if (! isDt())
+                chordsToggle.setBounds (o.removeFromLeft (juce::roundToInt (total * share[0])));
+            bypassToggle.setBounds (o.removeFromLeft (juce::roundToInt (total * share[1])));
             heelToggle.setBounds (o);
         }
         r.removeFromTop (12);
@@ -173,6 +265,11 @@ public:
         moves.setBounds (r.removeFromBottom (Section::headerHeight + MovesPanel::controlsHeight + 124));
         r.removeFromBottom (12);
         modesSection.setBounds (r);
+        {
+            auto hdr = modesSection.headerArea().withSizeKeepingCentre (modesSection.headerArea().getWidth(), 28);
+            dropTuneViewButton.setBounds (hdr.removeFromRight (100));
+            whammyViewButton.setBounds (hdr.removeFromRight (100));
+        }
 
         // Modes, as on the pedal panel (manual p.10): each Whammy mode sits above the Harmony mode on the
         // same panel row (2 Oct Up over Oct Down/Oct Up ... 2 Oct Down over 2nd Up/3rd Up), Dive Bomb has
@@ -201,6 +298,20 @@ public:
         place (10, 1, top3);                     // Deep Detune
 
         groups.clear();
+        dropNote = {};
+        if (isDt() && (bool) state[IDs::whDropTuneView])
+        {
+            // Two rows of Drop Tune tiles, as tall as the mode rows above would be.
+            const auto dropTop1 = top1;
+            const auto dropTop2 = dropTop1 + rowH + rowGap + captionH;
+            for (int i = 0; i < dropTiles.size(); ++i)
+                dropTiles[i]->setBounds (cell (i % cues::whammy::numShifts, i < cues::whammy::numShifts ? dropTop1 : dropTop2));
+            groups.push_back ({ "SHIFT UP  -  raise your tuning", shiftUpColour, caption (0, 9, dropTop1) });
+            groups.push_back ({ "SHIFT DOWN  -  drop your tuning", shiftDownColour, caption (0, 9, dropTop2) });
+            dropNote = juce::Rectangle<int> (m.getX() + 3, dropTop2 + rowH + rowGap + 8, m.getWidth() - 6, 40);
+            repaint();
+            return;
+        }
         groups.push_back ({ "WHAMMY", cues::whammy::colour (0), caption (0, 10, top1) });
         groups.push_back ({ "HARMONY", cues::whammy::colour (12), caption (0, 9, top2) });
         groups.push_back ({ "DETUNE", cues::whammy::colour (10), caption (0, 2, top3) });
@@ -209,6 +320,11 @@ public:
     }
 
 private:
+    bool isDt() const { return (int) state[IDs::whModel] == 1; }
+
+    const juce::Colour shiftUpColour { 0xfff5a623 }, shiftDownColour { 0xff8e7cf0 };
+    juce::Rectangle<int> dropNote;   // a short note under the Drop Tune rows
+
     void modeMenu (juce::ValueTree node, int index)
     {
         juce::PopupMenu m;
@@ -285,7 +401,9 @@ private:
     MovesPanel moves { proc, treadleMoves() };
 
     std::vector<Group> groups;
-    juce::OwnedArray<Tile> modeTiles;
+    juce::OwnedArray<Tile> modeTiles, dropTiles;
+    juce::TextButton whammyViewButton { "Whammy" }, dropTuneViewButton { "Drop Tune" };
+    juce::TextButton modelVButton { "Whammy V" }, modelDtButton { "Whammy DT" };
 };
 } // namespace
 

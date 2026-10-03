@@ -1,6 +1,6 @@
 # PedalCues user guide
 
-PedalCues turns pedal changes into **drag and drop**. Each tile in the plugin is a Quad Cortex preset, a scene, a footswitch, the tuner, a Whammy V mode, or a Whammy treadle move. Drag a tile onto your DAW timeline and it lands as a **named MIDI clip** at that bar. Press play, and your rig follows the song.
+PedalCues turns pedal changes into **drag and drop**. Each tile in the plugin is a Quad Cortex preset, a scene, a footswitch, the tuner, a Whammy V or Whammy DT mode, a Whammy DT Drop Tune shift, or a Whammy treadle move. Drag a tile onto your DAW timeline and it lands as a **named MIDI clip** at that bar. Press play, and your rig follows the song.
 
 ![PedalCues cues on a DAW timeline](images/timeline.png)
 
@@ -14,7 +14,7 @@ PedalCues turns pedal changes into **drag and drop**. Each tile in the plugin is
 4. [First launch: the quick tour](#4-first-launch-the-quick-tour)
 5. [Quad Cortex page](#5-quad-cortex-page)
 6. [Build a song, step by step](#6-build-a-song-step-by-step)
-7. [Whammy V page](#7-whammy-v-page)
+7. [Whammy V / DT page](#7-whammy-v--dt-page)
 8. [MIDI Setup and your setup](#8-midi-setup-and-your-setup)
 9. [Troubleshooting](#9-troubleshooting)
 
@@ -93,7 +93,7 @@ PedalCues sends MIDI from your DAW's tracks to your pedals. Use **two cue tracks
 
 **Pedal settings**
 - **Quad Cortex:** *Settings > MIDI Settings*. Set a fixed **MIDI Channel** (default 1, not *Omni*). For the daisy chain, turn **MIDI Thru** on.
-- **Whammy V:** set its MIDI channel (default 2) as described in the Whammy V manual.
+- **Whammy V or Whammy DT:** set its MIDI channel (default 2) as described in the pedal's manual.
 - Give the two pedals **different channels**, and set the same numbers in the plugin's **MIDI Setup** tab. That way both can share one cable without reacting to each other's cues.
 
 ---
@@ -139,7 +139,7 @@ The first time you open PedalCues, a quick tour walks you through every area. It
 ![Quick tour, welcome](images/tour-welcome.png)
 
 - Move through it with **Next / Back** or the **arrow keys**. **Esc** or *Skip tour* closes it.
-- Open it again any time from the **☰** menu in the top-right corner (the **Help** menu in the standalone app) or with **MIDI Setup > Show quick tour**.
+- Open it again any time from the **☰** menu in the top-right corner (the **Help** menu in the standalone app).
 
 ![Quick tour highlighting the scenes](images/tour-scenes.png)
 
@@ -280,22 +280,44 @@ This example covers a song with a clean verse, a crunchy chorus and a Whammy sol
 
 ---
 
-## 7. Whammy V page
+## 7. Whammy V / DT page
 
 ![Whammy V page](images/whammy.png)
 
+PedalCues works with the **DigiTech Whammy V** (5th generation) and the **Whammy DT**. Pick yours with the **Whammy V | Whammy DT** switch on the red faceplate. The faceplate then shows the pedal's name, and on the DT the [Drop Tune](#whammy-dt-drop-tune) tiles appear. Your choice is saved with your setup (*Save as default setup*, *Export setup*).
+
 ### Modes
 
-The 21 Whammy V modes are laid out like the pedal's panel:
+The 21 Whammy modes are laid out like the pedal's panel (the Whammy DT has the same modes on its left knob):
 - **Top row:** the **Whammy** modes, from 2 Oct Up to Dive Bomb.
 - **Middle row:** each **Harmony** mode sits right below the Whammy mode that shares its row on the pedal (Oct Up/Oct Down below 2 Oct Up, and so on).
 - **Bottom row:** **Detune** Shallow and Deep, on their own row as at the bottom of the pedal.
 
 Colours match the pedal: **Whammy** (red), **Harmony** (green), **Detune** (blue). Each tile shows its Program Change number from the DigiTech manual. Drag a mode tile to switch the Whammy.
 
-- **Chords:** uses the polyphonic *Chords* program range (43-84) instead of *Classic* (1-42).
+- **Chords** (Whammy V only): uses the polyphonic *Chords* program range (43-84) instead of *Classic* (1-42). The Whammy DT has no Chords mode, and on the DT those numbers select Drop Tune, so the switch is hidden there.
 - **Load bypassed:** selects the mode without engaging the effect. The tile LEDs go dark to show this.
 - **Heel first:** sends `CC#11 = 0` before switching, so the new mode starts from heel with no pitch jump.
+
+### Whammy DT: Drop Tune
+
+![Whammy DT Drop Tune](images/whammy-dt-droptune.png)
+
+On the Whammy DT, the Modes card has a **Whammy | Drop Tune** switch. **Drop Tune** shows the pedal's right knob as two rows of tiles:
+
+- **Shift Up** (raise your tuning): +1 to +7 semitones, +Oct, and +Oct + Dry (an octave up mixed with your dry signal, a 12-string sound).
+- **Shift Down** (drop your tuning): -1 to -7 semitones, -Oct and -Oct + Dry. For example, **-1** gives E-flat tuning and **-2** a whole step down.
+
+Drop one where the new tuning starts, for example **-2** at the start of a song in D standard. With *Load bypassed* on, a tile picks the shift but leaves it off (its LED goes dark), ready to switch on later. Drop Tune can be combined with a Whammy, Harmony or Detune mode, like on the pedal, so you can tune down and still bend with the treadle.
+
+| Drop Tune | 1 | 2 | 3 | 4 | 5 | 6 | 7 | Oct | Oct + Dry |
+|---|---|---|---|---|---|---|---|---|---|
+| Shift Up, on | 43 | 44 | 45 | 46 | 47 | 48 | 49 | 50 | 51 |
+| Shift Up, bypassed | 61 | 62 | 63 | 64 | 65 | 66 | 67 | 68 | 69 |
+| Shift Down, on | 60 | 59 | 58 | 57 | 56 | 55 | 54 | 53 | 52 |
+| Shift Down, bypassed | 78 | 77 | 76 | 75 | 74 | 73 | 72 | 71 | 70 |
+
+These are the Program Change numbers from the Whammy DT manual. The DT's **Momentary** footswitch has no MIDI message, so it can't be sent from a clip; drop a shift tile where it should start and the same tile with *Load bypassed* where it should stop.
 
 ### Treadle moves
 
@@ -350,7 +372,7 @@ My drawings are saved **on your computer**, not in one project, so every project
 
 The **MIDI Setup** tab has two cards in the plugin, and a third, **Test your pedals**, in the standalone app:
 
-- **Your pedals** (set once, required): the MIDI channel of the Quad Cortex and of the Whammy. They must match the pedals themselves and be different from each other. Every cue is sent on these channels, whatever your wiring. **Advanced** (folded away) has *Whammy program numbering*, only for when every mode lands one position off, and *Send setlist (CC#32)*, for presets in several setlists.
+- **Your pedals** (set once, required): the MIDI channel of the Quad Cortex and of the Whammy (V or DT: pick which on the Whammy page). They must match the pedals themselves and be different from each other. Every cue is sent on these channels, whatever your wiring. **Advanced** (folded away) has *Whammy program numbering*, only for when every mode lands one position off, and *Send setlist (CC#32)*, for presets in several setlists.
 - **DAW tracks:** pick **My wiring** at the top (**Daisy chain via QC** or **Separate outputs**), and the card shows the two cue tracks and their MIDI outputs for it. Not sure how to cable the pedals? **How should I wire my pedals?** opens the **Wiring guide** (also in the ☰ / **Help** menu), with the cables and signal flow for both setups and the one that doesn't work.
 - **Test your pedals** (standalone app only): the MIDI port the app sends to, with **Test QC** and **Test Whammy**. They send on the channels from *Your pedals*: Test QC turns the QC tuner on and, 1.5 s later, off again (CC#45), so it opens and closes (or just closes if it was open); Test Whammy steps through **Oct Up, 5th Up and 2 Oct Up** half a second apart (Program Changes), so you see the LED move whatever mode it was on. After each click the card tells you what it sent; check that the pedal reacted.
 
@@ -395,6 +417,8 @@ PedalCues asks GitHub for the latest release when it opens; nothing else is sent
 | Expression moves the wrong thing | It acts on the preset the QC has loaded. Put the move after the right preset or scene clip, or switch on **Load 1A first** in Expression. |
 | Whammy clips do nothing | Whammy clips must be on the **Whammy Cues** track, whose output leads to the Whammy. |
 | How do I update? | When the header says **Update available**, click it and choose **Download**. Close your DAW, then open the installer on macOS, or replace the plugin files the same way you [installed](#1-install) them on Windows and Linux. Your setup and projects are kept. |
+| Drop Tune tiles are missing | Pick **Whammy DT** with the switch on the Whammy page's faceplate, then click **Drop Tune** in the Modes header. |
+| A Whammy DT mode tile changed my tuning | The page is set to Whammy V with **Chords** on: on the DT those program numbers are Drop Tune. Switch the page to **Whammy DT**. |
 | Whammy mode is one off | *MIDI Setup > Whammy program numbering > Zero-based*. |
 | Clip lands between bars | Turn on snap to grid in your DAW before dropping. |
 | macOS says PedalCues "is damaged and can't be opened" | It isn't damaged; macOS blocks apps downloaded from the internet that Apple hasn't notarised. Use the installer (`PedalCues-macOS.pkg`), or run `xattr -cr /Applications/PedalCues.app` in Terminal. See [Install](#1-install). |
