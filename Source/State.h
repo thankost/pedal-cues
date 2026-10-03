@@ -17,6 +17,11 @@ namespace IDs
     PEDALCUES_ID (KemperSlot)
     PEDALCUES_ID (KemperEffect)
     PEDALCUES_ID (Effect)
+    PEDALCUES_ID (CustomUnits)     // custom units (beta): Unit > Group > CueTile
+    PEDALCUES_ID (Unit)
+    PEDALCUES_ID (Group)
+    PEDALCUES_ID (CueTile)
+    PEDALCUES_ID (PedalCuesUnit)   // root of an exported unit file
     PEDALCUES_ID (Drawings)
     PEDALCUES_ID (Drawing)
 
@@ -27,8 +32,13 @@ namespace IDs
     PEDALCUES_ID (slot)
     PEDALCUES_ID (number)          // Kemper performance number (1-125, Player 1-10)
     PEDALCUES_ID (points)
+    PEDALCUES_ID (notes)           // custom unit: why it's set up this way
+    PEDALCUES_ID (note)            // custom tile: a short note
+    PEDALCUES_ID (messages)        // custom tile: "PC 5, wait, CC 34=2"
+    PEDALCUES_ID (programBase)     // custom unit: its manual counts programs from 0 or 1
+    PEDALCUES_ID (selectedCustomUnit)
 
-    PEDALCUES_ID (ampUnit)         // first tab: 0 = Quad Cortex, 1 = Kemper Profiler, 2 = Kemper Player
+    PEDALCUES_ID (ampUnit)         // first tab: 0 = Quad Cortex, 1 = Kemper Profiler, 2 = Kemper Player, 3 = a custom unit
     PEDALCUES_ID (qcChannel)       // the amp unit's MIDI channel (Quad Cortex or Kemper)
     PEDALCUES_ID (selectedPerformance)
     PEDALCUES_ID (kemperSlotFirst) // Kemper "Load P1 first" for slot and effect tiles
@@ -82,6 +92,14 @@ namespace state
     juce::ValueTree createDefault();
     juce::ValueTree createPreset (const juce::String& name, int setlist, int bank, int slot, juce::Colour);
     juce::ValueTree createPerformance (const juce::String& name, int number, juce::Colour);   // with 5 Kemper slots
+
+    // Custom units (beta). A new unit comes with example groups and tiles to edit.
+    constexpr int customAmpUnit = 3;
+    juce::ValueTree createCustomUnit (const juce::String& name);
+    juce::ValueTree customUnit (const juce::ValueTree& root);   // the selected custom unit (invalid if there's none)
+    juce::ValueTree addCustomUnit (juce::ValueTree& root, juce::ValueTree unit);   // makes its name unique, selects it
+    bool saveUnit (const juce::ValueTree& unit, const juce::File&);   // Export unit: the unit with its notes
+    juce::ValueTree loadUnit (const juce::File&);                     // invalid if it isn't a unit file
 
     // Fills in anything missing (older/partial state, hand-edited library files).
     void sanitise (juce::ValueTree& root);

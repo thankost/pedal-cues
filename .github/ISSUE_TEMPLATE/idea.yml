@@ -1,5 +1,5 @@
 name: Suggest an idea
-description: A feature, a pedal you'd like supported, or something that could be easier.
+description: A feature, a pedal you'd like supported, a custom MIDI device file to share, or something that could be easier.
 title: "[Idea] "
 labels: ["enhancement"]
 body:
@@ -7,7 +7,7 @@ body:
     id: idea
     attributes:
       label: Your idea
-      description: What would you like PedalCues to do?
+      description: What would you like PedalCues to do? Sharing a custom MIDI device? Attach its .pedalcues-device file (zip it if GitHub refuses it) and say which gear it's for.
     validations:
       required: true
   - type: textarea

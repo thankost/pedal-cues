@@ -68,6 +68,115 @@ static void sanitisePreset (juce::ValueTree& p)
     }
 }
 
+static void sanitiseCustomUnit (juce::ValueTree& u)
+{
+    setDefault (u, IDs::name, "My device");
+    setDefault (u, IDs::colour, juce::Colour (0xff8e7cf0).toString());
+    setDefault (u, IDs::notes, juce::String());
+    setDefault (u, IDs::programBase, 0);
+    for (int i = u.getNumChildren(); --i >= 0;)
+        if (! u.getChild (i).hasType (IDs::Group))
+            u.removeChild (i, nullptr);
+    for (auto g : u)
+    {
+        setDefault (g, IDs::name, "Group");
+        for (int i = g.getNumChildren(); --i >= 0;)
+            if (! g.getChild (i).hasType (IDs::CueTile))
+                g.removeChild (i, nullptr);
+        for (auto t : g)
+        {
+            setDefault (t, IDs::name, "Tile");
+            setDefault (t, IDs::colour, paletteColour (5).toString());
+            setDefault (t, IDs::note, juce::String());
+            setDefault (t, IDs::messages, juce::String());
+        }
+    }
+}
+
+static juce::ValueTree customTile (const juce::String& name, const juce::String& messages, const juce::String& note, int colour)
+{
+    juce::ValueTree t (IDs::CueTile);
+    t.setProperty (IDs::name, name, nullptr);
+    t.setProperty (IDs::messages, messages, nullptr);
+    t.setProperty (IDs::note, note, nullptr);
+    t.setProperty (IDs::colour, paletteColour (colour).toString(), nullptr);
+    return t;
+}
+
+juce::ValueTree createCustomUnit (const juce::String& name)
+{
+    juce::ValueTree u (IDs::Unit);
+    u.setProperty (IDs::name, name, nullptr);
+    u.setProperty (IDs::notes, "Notes: which manual page the numbers come from, and why it's set up this way.", nullptr);
+
+    // Examples to edit: Program Changes work the same on every device; CC numbers are each device's own.
+    juce::ValueTree presets (IDs::Group);
+    presets.setProperty (IDs::name, "Presets", nullptr);
+    presets.appendChild (customTile ("Preset 1", "PC 0", "Example: the first preset. Check how your manual counts presets.", 5), nullptr);
+    presets.appendChild (customTile ("Preset 2", "PC 1", {}, 4), nullptr);
+    u.appendChild (presets, nullptr);
+
+    juce::ValueTree effects (IDs::Group);
+    effects.setProperty (IDs::name, "Switches", nullptr);
+    effects.appendChild (customTile ("Switch on", "CC 50=127", "Example: set the CC number and value from your device's MIDI chart.", 0), nullptr);
+    effects.appendChild (customTile ("Switch off", "CC 50=0", {}, 9), nullptr);
+    u.appendChild (effects, nullptr);
+
+    sanitiseCustomUnit (u);
+    return u;
+}
+
+juce::ValueTree customUnit (const juce::ValueTree& root)
+{
+    const auto units = root.getChildWithName (IDs::CustomUnits);
+    if (units.getNumChildren() == 0)
+        return {};
+    return units.getChild (juce::jlimit (0, units.getNumChildren() - 1, (int) root[IDs::selectedCustomUnit]));
+}
+
+juce::ValueTree addCustomUnit (juce::ValueTree& root, juce::ValueTree unit)
+{
+    auto units = root.getOrCreateChildWithName (IDs::CustomUnits, nullptr);
+    const auto base = unit[IDs::name].toString().trim().isNotEmpty() ? unit[IDs::name].toString().trim() : juce::String ("My device");
+    auto name = base;
+    for (int n = 2;; ++n)
+    {
+        bool taken = false;
+        for (auto u : units)
+            taken = taken || u[IDs::name].toString() == name;
+        if (! taken)
+            break;
+        name = base + " (" + juce::String (n) + ")";
+    }
+    unit.setProperty (IDs::name, name, nullptr);
+    sanitiseCustomUnit (unit);
+    units.appendChild (unit, nullptr);
+    root.setProperty (IDs::selectedCustomUnit, units.getNumChildren() - 1, nullptr);
+    return unit;
+}
+
+bool saveUnit (const juce::ValueTree& unit, const juce::File& file)
+{
+    juce::ValueTree doc (IDs::PedalCuesUnit);
+    doc.setProperty ("format", 1, nullptr);
+    doc.appendChild (unit.createCopy(), nullptr);
+    if (auto xml = doc.createXml())
+        return file.getParentDirectory().createDirectory() && xml->writeTo (file);
+    return false;
+}
+
+juce::ValueTree loadUnit (const juce::File& file)
+{
+    const auto xml = juce::XmlDocument::parse (file);
+    if (xml == nullptr)
+        return {};
+    const auto doc = juce::ValueTree::fromXml (*xml);
+    auto unit = doc.hasType (IDs::PedalCuesUnit) ? doc.getChildWithName (IDs::Unit).createCopy() : juce::ValueTree();
+    if (unit.isValid())
+        sanitiseCustomUnit (unit);
+    return unit;
+}
+
 static void sanitisePerformance (juce::ValueTree& p)
 {
     setDefault (p, IDs::name, "New Performance");
@@ -114,6 +223,7 @@ void sanitise (juce::ValueTree& root)
 {
     setDefault (root, IDs::qcChannel, 1);
     setDefault (root, IDs::ampUnit, 0);
+    setDefault (root, IDs::selectedCustomUnit, 0);
     setDefault (root, IDs::selectedPerformance, 0);
     setDefault (root, IDs::kemperSlotFirst, true);
     setDefault (root, IDs::kemperEffectOn, true);
@@ -187,6 +297,16 @@ void sanitise (juce::ValueTree& root)
         kemper.appendChild (e, nullptr);
     }
 
+    // Custom units (beta). Picking "custom" with none left falls back to the Quad Cortex.
+    auto units = root.getOrCreateChildWithName (IDs::CustomUnits, nullptr);
+    for (int i = units.getNumChildren(); --i >= 0;)
+        if (! units.getChild (i).hasType (IDs::Unit))
+            units.removeChild (i, nullptr);
+    for (auto u : units)
+        sanitiseCustomUnit (u);
+    if ((int) root[IDs::ampUnit] == customAmpUnit && units.getNumChildren() == 0)
+        root.setProperty (IDs::ampUnit, 0, nullptr);
+
     auto wh = root.getOrCreateChildWithName (IDs::Whammy, nullptr);
     for (int i = wh.getNumChildren(); i < cues::whammy::numEffects; ++i)
     {
@@ -251,9 +371,9 @@ void setFlag (const juce::String& name, bool value)
 // What a setup carries besides the names: the MIDI settings and the playing preferences
 // (Whammy Chords / Load bypassed / Heel first, return to heel after moves, Expression's Load 1A first).
 // Length and curve change per song, so they stay in the project.
-static const std::array<const juce::Identifier*, 16>& setupProperties()
+static const std::array<const juce::Identifier*, 17>& setupProperties()
 {
-    static const std::array<const juce::Identifier*, 16> ids { &IDs::ampUnit, &IDs::kemperSlotFirst, &IDs::kemperKeepTails,
+    static const std::array<const juce::Identifier*, 17> ids { &IDs::ampUnit, &IDs::selectedCustomUnit, &IDs::kemperSlotFirst, &IDs::kemperKeepTails,
                                                                &IDs::kpReset, &IDs::qcChannel, &IDs::whChannel, &IDs::whModel, &IDs::whPcBase,
                                                                &IDs::sendSetlist, &IDs::comboPresetScene,
                                                                &IDs::whChords, &IDs::whBypass, &IDs::whHeelFirst,
@@ -361,6 +481,7 @@ bool saveLibrary (const juce::ValueTree& root, const juce::File& file, const juc
     lib.appendChild (root.getChildWithName (IDs::QC).createCopy(), nullptr);
     lib.appendChild (root.getChildWithName (IDs::Whammy).createCopy(), nullptr);
     lib.appendChild (root.getChildWithName (IDs::Kemper).createCopy(), nullptr);
+    lib.appendChild (root.getChildWithName (IDs::CustomUnits).createCopy(), nullptr);
     if (drawings != nullptr)
         lib.appendChild (drawings->createCopy(), nullptr);
 
@@ -390,7 +511,7 @@ bool loadLibrary (juce::ValueTree& root, const juce::File& file, juce::ValueTree
     if (drawingsInto != nullptr)
         mergeDrawings (*drawingsInto, lib.getChildWithName (IDs::Drawings));
 
-    for (const auto* id : { &IDs::QC, &IDs::Whammy, &IDs::Kemper })
+    for (const auto* id : { &IDs::QC, &IDs::Whammy, &IDs::Kemper, &IDs::CustomUnits })
     {
         const auto src = lib.getChildWithName (*id);
         if (! src.isValid())

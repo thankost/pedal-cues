@@ -1,7 +1,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: User guide and troubleshooting
-    url: https://thankost.github.io/pedal-cues/guide.html#10-troubleshooting
+    url: https://thankost.github.io/pedal-cues/guide.html#11-troubleshooting
     about: Answers to the most common questions (nothing happens on the pedal, Sync from QC, macOS "is damaged"...).
   - name: Help page
     url: https://thankost.github.io/pedal-cues/help.html

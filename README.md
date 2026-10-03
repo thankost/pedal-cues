@@ -1,6 +1,6 @@
 # PedalCues
 
-Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex / QC Mini**, the **Kemper Profiler / Kemper Player** and the **DigiTech Whammy V / Whammy DT**.
+Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex / QC Mini**, the **Kemper Profiler / Kemper Player** and the **DigiTech Whammy V / Whammy DT**, plus **any other MIDI device** with tiles you make yourself (beta).
 A VST3 / AU / LV2 / Standalone plugin (JUCE) for Windows, macOS and Linux. Tested in Reaper; it should work in any DAW that accepts dragged MIDI files and can send a MIDI track to a hardware output (Ableton Live, Cubase, Bitwig, Studio One; in Logic the clips work on an External MIDI track).
 
 **[Download for Windows and macOS](https://thankost.github.io/pedal-cues/)**
@@ -37,6 +37,11 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - Tuner (`CC#31`), Tap x4 (`CC#30`), Morph (`CC#80`), Rotary fast/slow (`CC#33`)
 - **Pedal moves** on Wah (`CC#1`), Pitch (`CC#4`), Volume (`CC#7`) or Morph (`CC#11`): the same shapes, Set to tiles and Draw as QC expression
 - Built from Kemper's MIDI documentation; not tested on a real Kemper yet
+
+**Custom MIDI devices (beta)**: any device that takes MIDI (Fractal, Helix, Boss, a synth, a looper...)
+- Groups and tiles you name yourself; each tile is one or more standard messages (Program Change, Control Change, bank select), set up in a guided editor with ready-made starting points and a Test button
+- Programs counted from 0 or 1, as the device's manual does; notes on the device and on each tile
+- **Export / Import device** as a `.pedalcues-device` file, so one person sets up a device and everyone with the same gear imports it
 
 **Whammy V / Whammy DT** (pick the model with the switch on the Whammy page)
 - All 21 modes, Classic or Chords (Chords on the V only), engaged or bypassed (Program Change)
@@ -102,7 +107,7 @@ cmake --build build --target PedalCuesTests
 
 ## DAW setup (Reaper as the example)
 
-1. Connect the pedals one of three ways (the plugin's **MIDI Setup** tab shows the steps; with a Kemper, put it where the QC is):
+1. Connect your devices one of three ways (**Help > Wiring Guide** in the app shows each; one device needs no chain at all). The examples use a QC and a Whammy; a Kemper or a custom device goes where the QC is, and any second device where the Whammy is:
    - **Daisy chain:** interface **MIDI Out → QC MIDI In**, QC **MIDI Thru → Whammy MIDI In** (MIDI Thru on). Both cue tracks output to that interface MIDI Out.
    - **Separate MIDI cables:** interface **MIDI Out 1 → QC**, **MIDI Out 2 → Whammy**. QC Cues → MIDI Out 1, Whammy Cues → MIDI Out 2.
    - **QC over USB + interface:** QC on USB, interface **MIDI Out → Whammy MIDI In**. QC Cues → Quad Cortex, Whammy Cues → interface MIDI Out.
@@ -130,7 +135,8 @@ Source/Tile.*            draggable tile (external file drag + click-to-send)
 Source/PluginProcessor.* MIDI passthrough, preview scheduling, host tempo, state
 Source/Theme.*           colour palette + custom LookAndFeel
 Source/PluginEditor.*    window, header tabs, first-run tour host
-Source/QcPage.cpp        Quad Cortex page    Source/KemperPage.cpp  Kemper page    Source/WhammyPage.cpp  Whammy V / DT page
+Source/QcPage.cpp        Quad Cortex page    Source/KemperPage.cpp  Kemper page    Source/CustomPage.cpp  custom MIDI devices (beta)
+Source/WhammyPage.cpp    Whammy V / DT page
 Source/SettingsPage.cpp  MIDI Setup tab (your pedals, DAW tracks, test) and the wiring guide
 Source/Tour.*            quick-tour overlay (steps + spotlight)
 Tools/DocShots.cpp       renders docs/images/*.png

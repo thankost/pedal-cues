@@ -105,6 +105,38 @@ void fillDemoState (juce::ValueTree root)
     root.setProperty (IDs::sweepDrawingName, "Big Bend", nullptr);
     root.setProperty (IDs::expDrawingName, "Slow Swell", nullptr);
     root.setProperty (IDs::expDrawing, cues::whammy::encodeDrawing (swell), nullptr);
+    // A custom unit (beta): a made-up rig with example values, as a user would set it up.
+    {
+        auto unit = state::createCustomUnit ("My Rig");
+        unit.removeAllChildren (nullptr);
+        unit.setProperty (IDs::notes, "Example values, not a real device's chart.\n\nScenes: my device switches scenes with CC 34 "
+                                      "(value 0 = scene 1). On the timeline, drop the preset first and the scene just after it.\n\n"
+                                      "Effects use CC 50-53, 127 = on, 0 = off.", nullptr);
+        struct T { const char* name; const char* messages; const char* note; int colour; };
+        const std::pair<const char*, std::vector<T>> groups[] = {
+            { "Presets", { { "Clean", "PC 0", "", 4 }, { "Crunch", "PC 1", "", 1 }, { "Lead", "PC 2", "", 0 }, { "Ambient", "PC 3", "", 6 } } },
+            { "Scenes",  { { "Verse", "CC 34=0", "Scene 1 of the loaded preset", 5 }, { "Chorus", "CC 34=1", "", 1 },
+                           { "Bridge", "CC 34=2", "", 6 }, { "Solo", "CC 34=3", "", 0 } } },
+            { "Effects", { { "Drive on", "CC 50=127", "", 0 }, { "Drive off", "CC 50=0", "", 9 }, { "Delay on", "CC 51=127", "", 5 },
+                           { "Tuner", "CC 53=127", "", 3 } } },
+        };
+        for (const auto& [groupName, items] : groups)
+        {
+            juce::ValueTree g (IDs::Group);
+            g.setProperty (IDs::name, groupName, nullptr);
+            for (const auto& t : items)
+            {
+                juce::ValueTree tile (IDs::CueTile);
+                tile.setProperty (IDs::name, t.name, nullptr);
+                tile.setProperty (IDs::messages, t.messages, nullptr);
+                tile.setProperty (IDs::note, t.note, nullptr);
+                tile.setProperty (IDs::colour, ui::paletteColour (t.colour).toString(), nullptr);
+                g.appendChild (tile, nullptr);
+            }
+            unit.appendChild (g, nullptr);
+        }
+        state::addCustomUnit (root, unit);
+    }
 }
 
 juce::Image snapshot (juce::Component& c)
@@ -535,6 +567,16 @@ int main (int argc, char** argv)
         editor.refreshNow();
         save (snapshot (editor), outDir.getChildFile ("kemper-pedals.png"));
         proc.state.setProperty (IDs::kemperPedalsView, false, nullptr);
+
+        // A custom unit (beta), with example values.
+        proc.state.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
+        editor.refreshNow();
+        save (snapshot (editor), outDir.getChildFile ("custom-device.png"));
+        {
+            const auto scene = state::customUnit (proc.state).getChild (0).getChild (2);   // Presets > Lead
+            auto tileEditor = ui::makeTileEditor (proc, scene, false);
+            save (tileEditor->createComponentSnapshot (tileEditor->getLocalBounds(), true, 2.0f), outDir.getChildFile ("custom-tile-editor.png"));
+        }
         proc.state.setProperty (IDs::ampUnit, 0, nullptr);
         editor.refreshNow();
 
@@ -584,9 +626,17 @@ int main (int argc, char** argv)
     }
 
     {
-        auto guide = ui::makeWiringGuide (0);
+        auto guide = ui::makeWiringGuide (ui::ampInfo (proc.state), 1);
         save (guide->createComponentSnapshot (guide->getLocalBounds(), true, scale), outDir.getChildFile ("wiring-guide.png"));
-        auto kemperGuide = ui::makeWiringGuide (1);
+        const std::pair<int, const char*> views[] = { { 0, "wiring-one-device.png" }, { 2, "wiring-separate.png" } };
+        for (const auto& [view, name] : views)
+        {
+            auto v = ui::makeWiringGuide (ui::ampInfo (proc.state), view);
+            save (v->createComponentSnapshot (v->getLocalBounds(), true, scale), outDir.getChildFile (name));
+        }
+        auto kemperState = proc.state.createCopy();
+        kemperState.setProperty (IDs::ampUnit, 1, nullptr);
+        auto kemperGuide = ui::makeWiringGuide (ui::ampInfo (kemperState), 1);
         save (kemperGuide->createComponentSnapshot (kemperGuide->getLocalBounds(), true, scale), outDir.getChildFile ("wiring-guide-kemper.png"));
     }
     {

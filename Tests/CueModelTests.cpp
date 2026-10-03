@@ -75,6 +75,25 @@ int main (int argc, char** argv)
     CHECK (isCC (qc::gigMode (1, 1).events[0].second, 1, 47, 2)); // scene
     CHECK (isCC (qc::gigView (1, true).events[0].second, 1, 46, 127) && isCC (qc::gigView (3, false).events[0].second, 3, 46, 0));
     CHECK (qc::gigView (1, true).name == "QC Gig View On");
+
+    // Custom units (beta): typed message lists.
+    {
+        auto pr = custom::parse ("PC 5, CC 34=2; bank 1\nCC#11 127, program 3", 0);
+        CHECK (pr.ok() && pr.steps.size() == 5);
+        CHECK (custom::describe (pr, 0) == "PC 5, CC#34 = 2, bank 1, CC#11 = 127, PC 3");
+        CHECK (custom::parse (custom::describe (pr, 0), 0).steps.size() == 5);   // what the editor saves reads back
+        auto c = custom::cue (3, "Rig Verse", "bank 1, PC 5, CC 34=2", 0);
+        CHECK (c.name == "Rig Verse" && c.events.size() == 3);
+        CHECK (isCC (c.events[0].second, 3, 0, 1) && c.events[0].first == 0.0);
+        CHECK (c.events[1].second.isProgramChange() && c.events[1].second.getProgramChangeNumber() == 5);
+        CHECK (isCC (c.events[2].second, 3, 34, 2) && c.events[2].first == 0.0);
+        // Counting from 1: PC 1 is program 0, and PC 0 is out of range.
+        CHECK (custom::cue (1, "x", "PC 1", 1).events[0].second.getProgramChangeNumber() == 0);
+        CHECK (custom::describe (custom::parse ("PC 1", 1), 1) == "PC 1");
+        CHECK (! custom::parse ("PC 0", 1).ok() && custom::parse ("PC 0", 1).error.contains ("1 to 128"));
+        CHECK (! custom::parse ("CC 128=1", 0).ok() && ! custom::parse ("hello", 0).ok() && ! custom::parse ("", 0).ok());
+        CHECK (! custom::parse ("CC 34", 0).ok() && ! custom::parse ("wait", 0).ok());
+    }
     CHECK (isCC (qc::gigMode (1, 2).events[0].second, 1, 47, 1)); // stomp
 
     // Whammy V program numbers (manual, 1-based)
@@ -97,6 +116,40 @@ int main (int argc, char** argv)
         CHECK (state::loadLibrary (fresh, file));
         CHECK ((int) fresh[IDs::qcChannel] == 5 && (int) fresh[IDs::whChannel] == 7 && (bool) fresh[IDs::sendSetlist]);
         file.deleteFile();
+    }
+
+    // Custom units (beta): kept in the setup, exported and imported as their own file, names kept unique.
+    {
+        auto root = state::createDefault();
+        CHECK (! state::customUnit (root).isValid());
+        root.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
+        state::sanitise (root);
+        CHECK ((int) root[IDs::ampUnit] == 0);   // custom with no unit falls back to the Quad Cortex
+
+        auto unit = state::addCustomUnit (root, state::createCustomUnit ("Axe-Fx II"));
+        unit.setProperty (IDs::notes, "Scenes use CC 34 on my unit.", nullptr);
+        unit.getChild (0).getChild (0).setProperty (IDs::messages, "bank 1, PC 7", nullptr);
+        root.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
+        CHECK (state::customUnit (root) == unit && unit.getNumChildren() == 2);
+
+        const auto again = state::addCustomUnit (root, state::createCustomUnit ("Axe-Fx II"));
+        CHECK (again[IDs::name].toString() == "Axe-Fx II (2)" && (int) root[IDs::selectedCustomUnit] == 1);
+        root.setProperty (IDs::selectedCustomUnit, 0, nullptr);
+
+        const auto file = juce::File::createTempFile (".xml");
+        CHECK (state::saveLibrary (root, file));
+        auto fresh = state::createDefault();
+        CHECK (state::loadLibrary (fresh, file));
+        CHECK ((int) fresh[IDs::ampUnit] == state::customAmpUnit && state::customUnit (fresh)[IDs::notes].toString() == "Scenes use CC 34 on my unit.");
+        file.deleteFile();
+
+        const auto unitFile = juce::File::createTempFile (".pedalcues-unit");
+        CHECK (state::saveUnit (unit, unitFile));
+        const auto loaded = state::loadUnit (unitFile);
+        CHECK (loaded.isValid() && loaded[IDs::name].toString() == "Axe-Fx II"
+               && loaded.getChild (0).getChild (0)[IDs::messages].toString() == "bank 1, PC 7");
+        CHECK (! state::loadUnit (juce::File::createTempFile (".xml")).isValid());
+        unitFile.deleteFile();
     }
 
     // Quad Cortex USB (read-only sync): framing and decoding, checked against real captures.

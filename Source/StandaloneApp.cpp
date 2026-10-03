@@ -141,7 +141,7 @@ private:
             case loadDefault:   if (e != nullptr) e->loadDefaultSetup(); break;
             case exportSetup:   if (e != nullptr) e->exportSetup(); break;
             case importSetup:   if (e != nullptr) e->importSetup(); break;
-            case wiringGuide:   ui::showWiringGuide (processor() != nullptr ? (int) processor()->state[IDs::ampUnit] : 0); break;
+            case wiringGuide:   if (processor() != nullptr) ui::showWiringGuide (processor()->state); break;
             case whatsNew:      juce::URL (ui::changelogUrl).launchInDefaultBrowser(); break;
             case reportProblem: ui::problemReportUrl().launchInDefaultBrowser(); break;
             default: break;

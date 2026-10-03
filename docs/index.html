@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PedalCues - drag-and-drop MIDI cues for Quad Cortex, Kemper and Whammy V / DT</title>
-  <meta name="description" content="Free VST3/AU plugin: drag Quad Cortex presets and scenes, Kemper performances and slots, and Whammy V / DT moves onto your DAW timeline as named MIDI clips. Windows and macOS.">
+  <title>PedalCues - drag-and-drop MIDI cues for Quad Cortex, Kemper, Whammy V / DT and any MIDI device</title>
+  <meta name="description" content="Free VST3/AU plugin: drag Quad Cortex presets and scenes, Kemper performances and slots, Whammy V / DT moves and tiles for any MIDI device onto your DAW timeline as named MIDI clips. Windows and macOS.">
   <link rel="icon" type="image/png" href="images/icon.png">
   <meta property="og:title" content="PedalCues">
   <meta property="og:description" content="Drag-and-drop MIDI cues for Neural DSP Quad Cortex, Kemper Profiler / Player and DigiTech Whammy V / DT.">
@@ -12,7 +12,7 @@
   <style>
     :root {
       --bg: #0f1115; --surface: #181b21; --raised: #20242c; --outline: #2c313a;
-      --text: #eceef2; --dim: #9aa1ad; --amber: #f5a623; --qc: #4cc3ff; --km: #35c46a; --wh: #e5304a;
+      --text: #eceef2; --dim: #9aa1ad; --amber: #f5a623; --qc: #4cc3ff; --km: #35c46a; --cu: #8e7cf0; --wh: #e5304a;
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -198,6 +198,8 @@
         <p>Volume swells, fades, wah rhythms or a delay mix that opens into the chorus: anything you assign to Expression 1 or 2 on the QC, tempo-synced. No pedal needed.</p></div>
       <div class="card"><h3><span class="dot" style="background:var(--km)"></span>Kemper Profiler &amp; Player</h3>
         <p>Pick Kemper on the first tab: performances with their five slots, effect modules A&ndash;D, X, MOD, delay and reverb (with tails), tuner, tap tempo, morph and rotary, plus wah, pitch, volume and morph pedal moves. No physical pedal needed.</p></div>
+      <div class="card"><h3><span class="dot" style="background:var(--cu)"></span>Any MIDI device (beta)</h3>
+        <p>Fractal, Helix, Boss, a synth or a looper: make your own tiles in a guided editor (Program Change, Control Change, bank select), add notes, and share the device as a file so others with the same gear just import it.</p></div>
       <div class="card"><h3><span class="dot" style="background:var(--wh)"></span>All 21 Whammy modes, plus DT Drop Tune</h3>
         <p>Whammy V or Whammy DT, laid out like the pedal's panel, engaged or bypassed, with heel-first switching. On the DT, Shift Up and Shift Down tiles drop or raise your tuning.</p></div>
       <div class="card"><h3><span class="dot" style="background:var(--wh)"></span>Treadle moves</h3>
@@ -205,7 +207,7 @@
       <div class="card"><h3><span class="dot" style="background:var(--amber)"></span>Named MIDI clips</h3>
         <p>Every drop is a clip called "Chorus" or "Whammy Dive 1 bar", so you read your show at a glance.</p></div>
       <div class="card"><h3><span class="dot" style="background:var(--amber)"></span>Guided setup</h3>
-        <p>A quick first-run tour and step-by-step DAW setup (Reaper as the example) for three ways of connecting your pedals. Note: the Quad Cortex's and the Kemper's MIDI Thru don't pass on USB MIDI, and the Whammy only has a 5-pin MIDI In, so it needs a MIDI path from an interface.</p></div>
+        <p>A quick first-run tour and step-by-step DAW setup (Reaper as the example) for three ways of connecting your pedals. Note: the Quad Cortex's and the Kemper's MIDI Thru don't pass on USB MIDI, and the Whammy only has a 5-pin MIDI In, so it needs a MIDI path from an interface. One device on its own needs no chain at all.</p></div>
     </div>
   </div>
 </section>
@@ -219,15 +221,16 @@
       <figure><img src="images/qc-expression.png" alt="Quad Cortex expression moves" loading="lazy"><figcaption>Quad Cortex expression: swells, fades and wah</figcaption></figure>
       <figure><img src="images/kemper.png" alt="Kemper page" loading="lazy"><figcaption>Kemper performances, slots, effects and utilities</figcaption></figure>
       <figure><img src="images/kemper-pedals.png" alt="Kemper pedal moves" loading="lazy"><figcaption>Kemper pedals: wah, pitch, volume and morph moves</figcaption></figure>
+      <figure><img src="images/custom-device.png" alt="A custom MIDI device" loading="lazy"><figcaption>Any MIDI device (beta): your own groups and tiles</figcaption></figure>
+      <figure><img src="images/custom-tile-editor.png" alt="Custom tile editor" loading="lazy"><figcaption>The tile editor: pick the messages, test, save</figcaption></figure>
       <figure><img src="images/whammy.png" alt="Whammy V page" loading="lazy"><figcaption>Whammy V / DT modes and treadle moves</figcaption></figure>
       <figure><img src="images/whammy-dt-droptune.png" alt="Whammy DT Drop Tune" loading="lazy"><figcaption>Whammy DT: Shift Up and Shift Down</figcaption></figure>
       <figure><img src="images/whammy-draw.png" alt="Draw a treadle move" loading="lazy"><figcaption>Draw your own treadle move</figcaption></figure>
       <figure><img src="images/timeline.png" alt="Cues on a DAW timeline" loading="lazy"><figcaption>Named cues on the timeline</figcaption></figure>
       <figure><img src="images/preset-target.png" alt="Which preset scenes act on" loading="lazy"><figcaption>Scenes load their preset first, or use the current one</figcaption></figure>
-      <figure><img src="images/routing.png" alt="Routing options" loading="lazy"><figcaption>Three ways to connect your rig, and one that doesn't work</figcaption></figure>
       <figure><img src="images/settings.png" alt="MIDI Setup tab" loading="lazy"><figcaption>Plugin: MIDI Setup with your pedals and the DAW tracks</figcaption></figure>
       <figure><img src="images/settings-standalone.png" alt="MIDI Setup in the standalone app" loading="lazy"><figcaption>Standalone app: test your pedals without a DAW</figcaption></figure>
-      <figure><img src="images/wiring-guide.png" alt="Wiring guide" loading="lazy"><figcaption>Wiring guide: cables for both setups</figcaption></figure>
+      <figure><img src="images/wiring-guide.png" alt="Wiring guide" loading="lazy"><figcaption>Wiring guide: one device, a daisy chain or separate outputs</figcaption></figure>
       <figure><img src="images/wiring-guide-kemper.png" alt="Wiring guide for the Kemper" loading="lazy"><figcaption>The wiring guide follows your unit: here for a Kemper</figcaption></figure>
       <figure><img src="images/tour-welcome.png" alt="Quick tour" loading="lazy"><figcaption>A quick tour on first launch</figcaption></figure>
       <figure><img src="images/tour-target.png" alt="Quick tour step" loading="lazy"><figcaption>The tour explains every area</figcaption></figure>
@@ -277,7 +280,7 @@
 </section>
 
 <!-- Fallback numbers, shown until fresh ones arrive (updated at each release; see the release skill). -->
-<section id="downloads-section" data-downloads="178" data-version="0.5.1" data-released="2026-10-03">
+<section id="downloads-section" data-downloads="185" data-version="0.6.0" data-released="2026-10-03">
   <div class="wrap">
     <div class="stats-band">
       <div class="stat">
@@ -317,7 +320,7 @@
 <footer>
   <div class="wrap">
     <span>&copy; 2026 Thanasis Kostopoulos &middot; MIT License &middot; Built with JUCE &middot; <a href="guide.html">User guide</a> &middot; <a href="changelog.html">What's new</a> &middot; <a href="help.html">Help</a> &middot; <a href="https://github.com/thankost/pedal-cues">GitHub</a></span>
-    <span>Not affiliated with Neural DSP, Kemper or DigiTech. Quad Cortex, Kemper and Whammy are trademarks of their owners.</span>
+    <span>Not affiliated with Neural DSP, Kemper, DigiTech or any other device maker. Quad Cortex, Kemper and Whammy are trademarks of their owners.</span>
   </div>
 </footer>
 

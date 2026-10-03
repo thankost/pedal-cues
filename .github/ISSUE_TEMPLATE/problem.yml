@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time! Many problems are answered in the [Troubleshooting](https://thankost.github.io/pedal-cues/guide.html#10-troubleshooting) section of the guide, so have a quick look there first.
+        Thanks for taking the time! Many problems are answered in the [Troubleshooting](https://thankost.github.io/pedal-cues/guide.html#11-troubleshooting) section of the guide, so have a quick look there first.
         Opening this form from the app (**☰ > Report a problem**, or **Help > Report a Problem**) fills in your version and system for you.
   - type: textarea
     id: what-happened
@@ -62,22 +62,22 @@ body:
       label: Wiring
       description: How your pedals are connected (see the Wiring guide in the app).
       options:
-        - Daisy chain (interface MIDI Out > QC / Kemper > Thru > Whammy)
-        - Separate outputs (one MIDI Out per pedal)
-        - QC / Kemper over USB plus an interface for the Whammy
-        - Only the amp modeller (QC or Kemper)
+        - One device (USB or one MIDI Out)
+        - Daisy chain (interface MIDI Out > first device > Thru > second device)
+        - Separate outputs (one MIDI Out or USB per device)
         - Only the Whammy
         - Something else (describe above)
   - type: dropdown
     id: amp
     attributes:
-      label: Amp modeller
+      label: Amp modeller or MIDI device
       description: Which unit you use with PedalCues, if any.
       options:
         - Quad Cortex
         - QC Mini
         - Kemper Profiler (Head, Rack, Stage, ...)
         - Kemper Player
+        - Custom MIDI device (beta), name it above
         - None
   - type: dropdown
     id: whammy

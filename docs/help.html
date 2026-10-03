@@ -18,7 +18,7 @@
   <p class="lead">Stuck on something, or found a bug? Here's the fastest way to sort it out.</p>
 
   <div class="options">
-    <a class="option" href="guide.html#10-troubleshooting">
+    <a class="option" href="guide.html#11-troubleshooting">
       <h3>Troubleshooting</h3>
       <p>Quick fixes for the most common problems: nothing on the pedal, Sync from QC, macOS warnings.</p>
       <span class="go">Read the fixes &rsaquo;</span>
@@ -55,6 +55,10 @@
     <details><summary>The Kemper doesn't react</summary>
       <p>Set the Kemper to a fixed MIDI channel (it's Omni out of the box) and the same number in <b>MIDI Setup &gt; Your pedals</b>,
          and check that <b>Amp modeller</b> is your Kemper model. Put Kemper clips on the Kemper Cues track.</p></details>
+    <details><summary>A custom MIDI device doesn't react</summary>
+      <p>Check its MIDI channel (the same in MIDI Setup and on the device) and the CC numbers and values in its MIDI chart, which
+         differ for every device. Use <b>Test on the device</b> in the tile editor. If it loads the preset next to the one you wanted,
+         switch <b>Programs count from 0 / 1</b> on the device card.</p></details>
     <details><summary>macOS says PedalCues "is damaged"</summary>
       <p>It isn't. macOS blocks apps Apple hasn't notarised. Use the installer (<code>PedalCues-macOS.pkg</code>): if macOS
          says it can't verify it, click <b>Done</b>, then <i>System Settings &gt; Privacy &amp; Security &gt; Open Anyway</i>.
@@ -67,7 +71,7 @@
 <footer>
   <div class="wrap">
     <span>&copy; 2026 Thanasis Kostopoulos &middot; MIT License &middot; Built with JUCE &middot; <a href="guide.html">User guide</a> &middot; <a href="changelog.html">What's new</a> &middot; <a href="help.html">Help</a> &middot; <a href="https://github.com/thankost/pedal-cues">GitHub</a></span>
-    <span>Not affiliated with Neural DSP, Kemper or DigiTech. Quad Cortex, Kemper and Whammy are trademarks of their owners.</span>
+    <span>Not affiliated with Neural DSP, Kemper, DigiTech or any other device maker. Quad Cortex, Kemper and Whammy are trademarks of their owners.</span>
   </div>
 </footer>
 </body>

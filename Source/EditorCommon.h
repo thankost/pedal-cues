@@ -25,12 +25,32 @@ std::unique_ptr<Page> makeKemperPage   (PedalCuesProcessor&);
 std::unique_ptr<Page> makeAmpPage      (PedalCuesProcessor&);   // first tab: the Quad Cortex or Kemper page
 
 juce::String ampUnitName (int unit);   // "Quad Cortex", "Kemper Profiler", "Kemper Player"
+
+// The amp unit on the first tab, for labels and the wiring guide: a Quad Cortex, a Kemper or a custom unit (beta).
+struct AmpInfo
+{
+    enum class Kind { quadCortex, kemper, custom };
+    Kind kind = Kind::quadCortex;
+    juce::String name { "Quad Cortex" };   // the tab: "Quad Cortex", "Kemper Profiler", "Axe-Fx II"
+    juce::String box { "Quad Cortex" };    // a wiring box: "Quad Cortex", "Kemper", "Axe-Fx II"
+    juce::String shortName { "QC" };       // in sentences and track names: "QC", "Kemper", "Axe-Fx II"
+    juce::Colour colour { theme::qcBlue };
+    bool isKemper() const { return kind == Kind::kemper; }
+    bool isCustom() const { return kind == Kind::custom; }
+};
+AmpInfo ampInfo (const juce::ValueTree& state);
+
+std::unique_ptr<Page> makeCustomPage (PedalCuesProcessor&);   // a custom unit (beta)
+void newCustomUnit (juce::ValueTree state);      // adds one with example tiles, shows it and asks for its name
+void importCustomUnit (juce::ValueTree state);   // Import unit: a .pedalcues-unit file
+void exportCustomUnit (juce::ValueTree unit);
+std::unique_ptr<juce::Component> makeTileEditor (PedalCuesProcessor&, juce::ValueTree tile, bool isNew);   // custom tile: guided MIDI editor
 std::unique_ptr<Page> makeQcExpression (PedalCuesProcessor&);   // Quad Cortex page > Expression
 std::unique_ptr<Page> makeWhammyPage   (PedalCuesProcessor&);
 std::unique_ptr<Page> makeSettingsPage (PedalCuesProcessor&);
-void showWiringGuide (int ampUnit);   // Help > Wiring guide, for the Quad Cortex or a Kemper
+void showWiringGuide (const juce::ValueTree& state);   // Help > Wiring guide, for the unit on the first tab
 void showQcSyncDialog (juce::ValueTree state);   // Quad Cortex page > Sync from QC (USB)
-std::unique_ptr<juce::Component> makeWiringGuide (int ampUnit);
+std::unique_ptr<juce::Component> makeWiringGuide (const AmpInfo&, int view = -1);   // view: 0 one device, 1 daisy chain, 2 separate
 
 inline const juce::String repoUrl { "https://github.com/thankost/pedal-cues" };
 inline const juce::String author { "Thanasis Kostopoulos" };

@@ -174,4 +174,31 @@ namespace whammy
     std::vector<float> decodeDrawing (const juce::String&);   // always drawPoints values
 }
 
+//==============================================================================
+// Custom units (beta): any MIDI gear. A tile is a short list of messages the user types, for example
+// "bank 1, PC 5" or "CC 50=127": Program Changes, Control Changes and bank select, sent together in this order.
+namespace custom
+{
+    struct Step
+    {
+        enum class Kind { program, controller };
+        Kind kind = Kind::program;
+        int number = 0;      // program (0-127 as sent) or controller number
+        int value = 0;       // controller value
+        bool bank = false;   // written as "bank n" (CC#0)
+    };
+
+    struct Parsed
+    {
+        std::vector<Step> steps;
+        juce::String error;   // empty when the whole text was understood
+        bool ok() const { return error.isEmpty() && ! steps.empty(); }
+    };
+
+    // 'programBase' is how the unit's manual counts programs: 0 (PC 0 = the first) or 1 (PC 1 = the first).
+    Parsed       parse    (const juce::String& text, int programBase);
+    juce::String describe (const Parsed&, int programBase);   // "bank 1, PC 5, CC#34 = 2"
+    Cue          cue      (int channel, const juce::String& name, const juce::String& text, int programBase);
+}
+
 } // namespace cues

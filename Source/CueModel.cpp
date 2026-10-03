@@ -639,4 +639,127 @@ namespace whammy
     }
 }
 
+//==============================================================================
+namespace custom
+{
+    namespace
+    {
+        // "34=2", "34 = 2", "34 2": two numbers; returns false if it isn't exactly that.
+        bool twoNumbers (juce::String t, int& a, int& b)
+        {
+            const auto parts = juce::StringArray::fromTokens (t.replaceCharacter ('=', ' '), " ", {});
+            juce::StringArray nums;
+            for (const auto& x : parts)
+                if (x.isNotEmpty())
+                    nums.add (x);
+            if (nums.size() != 2 || ! nums[0].containsOnly ("0123456789") || ! nums[1].containsOnly ("0123456789"))
+                return false;
+            a = nums[0].getIntValue();
+            b = nums[1].getIntValue();
+            return true;
+        }
+
+        bool oneNumber (const juce::String& t, int& n)
+        {
+            const auto x = t.trim();
+            if (x.isEmpty() || ! x.containsOnly ("0123456789"))
+                return false;
+            n = x.getIntValue();
+            return true;
+        }
+
+        juce::String usage()
+        {
+            return "Write messages like PC 5, CC 34=127 or bank 1, separated by commas.";
+        }
+    }
+
+    Parsed parse (const juce::String& text, int programBase)
+    {
+        Parsed r;
+        const auto base = programBase == 1 ? 1 : 0;
+        const auto items = juce::StringArray::fromTokens (text.replace (";", ",").replace ("\n", ","), ",", {});
+
+        for (const auto& item : items)
+        {
+            const auto original = item.trim();
+            if (original.isEmpty())
+                continue;
+            const auto t = original.toLowerCase().removeCharacters ("#");
+            Step st;
+            int a = 0, b = 0;
+
+            if (t.startsWith ("bank"))
+            {
+                if (! oneNumber (t.fromFirstOccurrenceOf ("bank", false, false), a) || a > 127)
+                    return { {}, "\"" + original + "\": bank takes a number from 0 to 127, for example bank 1." };
+                st.kind = Step::Kind::controller;
+                st.number = 0;
+                st.value = a;
+                st.bank = true;
+            }
+            else if (t.startsWith ("cc"))
+            {
+                if (! twoNumbers (t.substring (2), a, b))
+                    return { {}, "\"" + original + "\": write a CC as CC number=value, for example CC 34=127." };
+                if (a > 127 || b > 127)
+                    return { {}, "\"" + original + "\": CC numbers and values go from 0 to 127." };
+                st.kind = Step::Kind::controller;
+                st.number = a;
+                st.value = b;
+            }
+            else if (t.startsWith ("pc") || t.startsWith ("program"))
+            {
+                const auto rest = t.startsWith ("pc") ? t.substring (2) : t.fromFirstOccurrenceOf ("program", false, false);
+                if (! oneNumber (rest, a) || a < base || a > 127 + base)
+                    return { {}, "\"" + original + "\": PC takes a number from " + juce::String (base) + " to "
+                                 + juce::String (127 + base) + ", for example PC " + juce::String (base + 4) + "." };
+                st.kind = Step::Kind::program;
+                st.number = a - base;
+            }
+            else
+            {
+                return { {}, "Can't read \"" + original + "\". " + usage() };
+            }
+            r.steps.push_back (st);
+        }
+
+        if (r.steps.empty())
+            r.error = "No MIDI messages yet. " + usage();
+        return r;
+    }
+
+    juce::String describe (const Parsed& p, int programBase)
+    {
+        if (! p.error.isEmpty())
+            return p.error;
+        juce::StringArray parts;
+        for (const auto& st : p.steps)
+        {
+            if (st.kind == Step::Kind::program)
+                parts.add ("PC " + juce::String (st.number + (programBase == 1 ? 1 : 0)));
+            else if (st.bank)
+                parts.add ("bank " + juce::String (st.value));
+            else
+                parts.add ("CC#" + juce::String (st.number) + " = " + juce::String (st.value));
+        }
+        return parts.joinIntoString (", ");
+    }
+
+    Cue cue (int channel, const juce::String& name, const juce::String& text, int programBase)
+    {
+        Cue c;
+        c.name = name;
+        const auto ch = juce::jlimit (1, 16, channel);
+        for (const auto& st : parse (text, programBase).steps)
+        {
+            if (st.kind == Step::Kind::program)
+                c.add (0.0, juce::MidiMessage::programChange (ch, st.number));
+            else
+                c.add (0.0, juce::MidiMessage::controllerEvent (ch, st.number, st.value));
+        }
+        return c;
+    }
+}
+
 } // namespace cues

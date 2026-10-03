@@ -445,36 +445,62 @@ juce::String ampUnitName (int unit)
     return unit == 1 ? "Kemper Profiler" : unit == 2 ? "Kemper Player" : "Quad Cortex";
 }
 
+AmpInfo ampInfo (const juce::ValueTree& state)
+{
+    AmpInfo a;
+    const auto unit = (int) state[IDs::ampUnit];
+    if (unit == state::customAmpUnit)
+    {
+        if (const auto u = state::customUnit (state); u.isValid())
+        {
+            a.kind = AmpInfo::Kind::custom;
+            a.name = a.box = a.shortName = u[IDs::name].toString();
+            a.colour = state::colourOf (u, juce::Colour (0xff8e7cf0));
+        }
+    }
+    else if (unit == 1 || unit == 2)
+    {
+        a.kind = AmpInfo::Kind::kemper;
+        a.name = ampUnitName (unit);
+        a.box = a.shortName = "Kemper";
+        a.colour = theme::kemperGreen;
+    }
+    return a;
+}
+
 namespace
 {
 // The first tab: the Quad Cortex or Kemper page, for the unit picked with the ▾ on the tab (or in MIDI Setup).
 class AmpPage final : public Page
 {
 public:
-    explicit AmpPage (PedalCuesProcessor& p) : state (p.state), qc (makeQcPage (p)), kemper (makeKemperPage (p))
+    explicit AmpPage (PedalCuesProcessor& p)
+        : state (p.state), qc (makeQcPage (p)), kemper (makeKemperPage (p)), custom (makeCustomPage (p))
     {
         addChildComponent (*qc);
         addChildComponent (*kemper);
+        addChildComponent (*custom);
         refresh();
     }
 
     void refresh() override
     {
-        const auto unit = juce::jlimit (0, 2, (int) state[IDs::ampUnit]);
-        qc->setVisible (unit == 0);
-        kemper->setVisible (unit != 0);
-        (unit == 0 ? qc : kemper)->refresh();
+        const auto kind = ampInfo (state).kind;
+        auto* shown = kind == AmpInfo::Kind::custom ? custom.get() : kind == AmpInfo::Kind::kemper ? kemper.get() : qc.get();
+        for (auto* page : { qc.get(), kemper.get(), custom.get() })
+            page->setVisible (page == shown);
+        shown->refresh();
     }
 
     void resized() override
     {
-        qc->setBounds (getLocalBounds());
-        kemper->setBounds (getLocalBounds());
+        for (auto* page : { qc.get(), kemper.get(), custom.get() })
+            page->setBounds (getLocalBounds());
     }
 
 private:
     juce::ValueTree state;
-    std::unique_ptr<Page> qc, kemper;
+    std::unique_ptr<Page> qc, kemper, custom;
 };
 } // namespace
 

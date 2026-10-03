@@ -2,6 +2,13 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.6.0 (2026-10-03)
+
+- **Any MIDI device (beta, new):** not on a Quad Cortex or Kemper? Choose **New MIDI device...** under the **▾** on the first tab, and make your own tiles for a Fractal, a Helix, a Boss, a synth, a looper, or anything else that takes MIDI. Name your groups (presets, scenes, snapshots, switches...) and tiles; they drag onto the timeline like every other tile.
+- **Guided tile editor:** pick each message (Program Change, Control Change or bank select) and set its numbers with − / +, or start from **Preset**, **Bank + preset**, **Switch on/off** or **Set a value**. A line in plain words says what the tile sends, and **Test on the device** tries it before you save.
+- **Notes and sharing:** write down why a device is set up the way it is, on the device and on each tile. **Export device** saves it all as a file, so one person sets it up and everyone with the same gear imports it.
+- **Wiring guide for any setup:** it now shows three setups: one device on its own, a daisy chain with a second device on its MIDI Thru (for example a Whammy), and separate outputs. The user guide explains wiring the same general way.
+
 ## 0.5.1 (2026-10-03)
 
 - **Gig View On / Off (new):** two Quad Cortex tiles in Utilities open and close the QC's Gig View screen (CC#46). The Preset, Scene and Stomp Mode tiles are still there for the footswitch mode.

@@ -41,7 +41,7 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     tabBar.setComponentID ("hdr.tabs");
     addAndMakeVisible (tabBar);
 
-    const juce::String names[] = { ui::ampUnitName ((int) state[IDs::ampUnit]), "Whammy V / DT", "MIDI Setup" };
+    const juce::String names[] = { ui::ampInfo (state).name, "Whammy V / DT", "MIDI Setup" };
     for (int i = 0; i < 3; ++i)
     {
         auto* b = tabButtons.add (new juce::TextButton (names[i]));
@@ -139,7 +139,7 @@ void PedalCuesEditor::showQcExpression (bool show)
 
 juce::Colour PedalCuesEditor::tabColour (int tab) const
 {
-    return tab == 0 && (int) state[IDs::ampUnit] != 0 ? theme::kemperGreen : tabColours[juce::jlimit (0, 2, tab)];
+    return tab == 0 ? ui::ampInfo (state).colour : tabColours[juce::jlimit (0, 2, tab)];
 }
 
 void PedalCuesEditor::showQuadCortex (bool show)
@@ -365,7 +365,7 @@ void PedalCuesEditor::showHelpMenu (juce::Component* target, const juce::String&
             case 11: safe->loadDefaultSetup(); break;
             case 12: safe->exportSetup(); break;
             case 13: safe->importSetup(); break;
-            case 14: ui::showWiringGuide ((int) safe->state[IDs::ampUnit]); break;
+            case 14: ui::showWiringGuide (safe->state); break;
             case 15: juce::URL (ui::changelogUrl).launchInDefaultBrowser(); break;
             case 16: ui::problemReportUrl().launchInDefaultBrowser(); break;
             default: break;
@@ -712,12 +712,32 @@ void PedalCuesEditor::showUnitMenu()
     for (int u = 0; u < 3; ++u)
         m.addItem (u + 1, ui::ampUnitName (u), true, u == current);
 
+    // Custom units (beta): any MIDI gear, with tiles you define.
+    constexpr int firstCustom = 100, newUnit = 10, importUnit = 11;
+    m.addSectionHeader ("Custom MIDI devices (beta)");
+    const auto units = state.getChildWithName (IDs::CustomUnits);
+    for (int i = 0; i < units.getNumChildren(); ++i)
+        m.addItem (firstCustom + i, units.getChild (i)[IDs::name].toString(), true,
+                   current == state::customAmpUnit && i == (int) state[IDs::selectedCustomUnit]);
+    m.addItem (newUnit, "New MIDI device...");
+    m.addItem (importUnit, "Import MIDI device...");
+
     juce::Component::SafePointer<PedalCuesEditor> safe (this);
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (tabButtons[0]), [safe] (int result)
     {
         if (safe == nullptr || result == 0)
             return;
-        safe->state.setProperty (IDs::ampUnit, result - 1, nullptr);
+        if (result == newUnit)
+            ui::newCustomUnit (safe->state);
+        else if (result == importUnit)
+            ui::importCustomUnit (safe->state);
+        else if (result >= firstCustom)
+        {
+            safe->state.setProperty (IDs::selectedCustomUnit, result - firstCustom, nullptr);
+            safe->state.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
+        }
+        else
+            safe->state.setProperty (IDs::ampUnit, result - 1, nullptr);
         safe->showPage (0);
     });
 }
@@ -727,7 +747,7 @@ void PedalCuesEditor::handleAsyncUpdate()
     // The first tab is named after the amp unit picked on it (Quad Cortex, Kemper Profiler, Kemper Player).
     if (auto* b = tabButtons[0])
     {
-        b->setButtonText (ui::ampUnitName ((int) state[IDs::ampUnit]));
+        b->setButtonText (ui::ampInfo (state).name);
         b->setColour (juce::TextButton::buttonOnColourId, tabColour (0));
     }
     unitMenuButton.arrowColour = currentPage == 0 ? juce::Colours::black : dim;
