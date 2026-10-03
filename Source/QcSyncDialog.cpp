@@ -47,7 +47,7 @@ public:
         addChildComponent (numbersNote);
 
         sendSetlistToggle.setButtonText ("Send the setlist with every preset change (CC#32), so the QC switches setlist too");
-        sendSetlistToggle.setTooltip ("The same switch as Send setlist in MIDI Setup > Your pedals. Without it, a preset tile loads that "
+        sendSetlistToggle.setTooltip ("The same switch as \"Switch to the preset's setlist\" in MIDI Setup > Your pedals. Without it, a preset tile loads that "
                                       "bank and slot in whatever setlist the QC is on.");
         sendSetlistToggle.setToggleState (true, juce::dontSendNotification);
         addChildComponent (sendSetlistToggle);

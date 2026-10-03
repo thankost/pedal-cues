@@ -5,7 +5,7 @@ Download the latest version from the [PedalCues website](https://thankost.github
 ## 0.6.3 (2026-10-03)
 
 - **Search your presets (new):** type in the box above the preset list to find one fast. It's forgiving: letters in order (`drpc` finds *Drop C Heavy*), one typo (`hevy`), several words, or a location like `SL2` or `3B`. Return opens the best match, Esc clears. The Kemper's performance list and custom MIDI devices have the same search.
-- **Send setlist is easier to find:** it moved out of Advanced to **MIDI Setup > Your pedals**, right under the Quad Cortex channel.
+- **Send setlist is easier to find, and clearer:** it's now called **Switch to the preset's setlist** and sits in **MIDI Setup > Your pedals**, right under the Quad Cortex channel (it was in Advanced).
 - The window keeps the keyboard until you click into a search box, so your DAW's keys (like the space bar) keep working.
 
 ## 0.6.2 (2026-10-03)

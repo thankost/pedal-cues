@@ -311,6 +311,7 @@ public:
         whChannelBox.onChange = [this] { state.setProperty (IDs::whChannel, whChannelBox.getSelectedId(), nullptr); };
         pcBaseBox.onChange    = [this] { state.setProperty (IDs::whPcBase, pcBaseBox.getSelectedId() == 1 ? 1 : 0, nullptr); };
         setlistToggle.onClick = [this] { state.setProperty (IDs::sendSetlist, setlistToggle.getToggleState(), nullptr); };
+        styleHint (setlistHint, "Turn on if your presets are in more than one setlist: each preset tile also selects its setlist (CC#32).");
         pcBaseBox.setTooltip ("Only change this if every Whammy mode lands one position off.");
         setlistToggle.setTooltip ("Send the setlist (CC#32) before each preset change, so the QC switches to the preset's setlist even when "
                                   "it's on another one. Needed when your presets are in more than one setlist. Clips keep what they were "
@@ -413,7 +414,7 @@ public:
                                                                  &qcHint, &whHint, &confirmButton, &confirmHint, &advancedButton, &tracksSteps, &viaQcButton,
                                                                  &viaInterfaceButton, &wiringLabel, &wiringLink, &dawHint })
             addAndMakeVisible (c);
-        for (auto* c : std::initializer_list<juce::Component*> { &pcBaseLabel, &pcBaseBox, &setlistToggle,
+        for (auto* c : std::initializer_list<juce::Component*> { &pcBaseLabel, &pcBaseBox, &setlistToggle, &setlistHint,
                                                                  &testOutBox, &testQcButton, &testWhButton, &testHint })
             addChildComponent (c);
 
@@ -491,7 +492,8 @@ public:
 
         const auto isQc = ampInfo (state).kind == AmpInfo::Kind::quadCortex;
         setlistToggle.setVisible (isQc);   // a Quad Cortex setting: next to its channel
-        const auto pedalsH = Section::headerHeight + 62 + 2 * 84 + 34 + 70 + (isQc ? 32 : 0) + (showAdvanced ? 62 : 0) + 8;
+        setlistHint.setVisible (isQc);
+        const auto pedalsH = Section::headerHeight + 62 + 2 * 84 + 34 + 70 + (isQc ? 54 : 0) + (showAdvanced ? 62 : 0) + 8;
         pedalsSection.setBounds (left.removeFromTop (pedalsH));
         {
             auto m = pedalsSection.contentArea().reduced (6, 2);
@@ -506,7 +508,10 @@ public:
             field (ampLabel, ampBox, nullptr);
             field (qcChannelLabel, qcChannelBox, &qcHint);
             if (isQc)
-                setlistToggle.setBounds (m.removeFromTop (32).translated (0, -6));
+            {
+                setlistToggle.setBounds (m.removeFromTop (30).translated (0, -6));
+                setlistHint.setBounds (m.removeFromTop (24).translated (0, -8));
+            }
             field (whChannelLabel, whChannelBox, &whHint);
             confirmButton.setBounds (m.removeFromTop (34).withWidth (260));
             confirmHint.setBounds (m.removeFromTop (34).withTrimmedTop (2));
@@ -658,7 +663,8 @@ private:
 
     juce::Label ampLabel, qcChannelLabel, whChannelLabel, pcBaseLabel, qcHint, whHint, testHint;
     juce::ComboBox ampBox, qcChannelBox, whChannelBox, pcBaseBox, testOutBox;
-    juce::ToggleButton setlistToggle { "Send setlist (CC#32) with preset changes" };   // shown for the Quad Cortex
+    juce::ToggleButton setlistToggle { "Switch to the preset's setlist" };   // shown for the Quad Cortex
+    juce::Label setlistHint;
     juce::TextButton advancedButton, confirmButton;
     juce::Label confirmHint;
 

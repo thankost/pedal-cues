@@ -33,7 +33,7 @@ public:
         setlistWarning.setColour (juce::TextButton::buttonColourId, accent.withAlpha (0.18f));
         setlistWarning.setColour (juce::TextButton::textColourOffId, accent);
         setlistWarning.setTooltip ("Your presets are in more than one setlist, but Send setlist (CC#32) is off, so a preset tile loads its "
-                                   "bank and slot in whatever setlist the QC is on. Click to turn it on (it's also in MIDI Setup > Your pedals), then drag "
+                                   "bank and slot in whatever setlist the QC is on. Click to turn it on (it's \"Switch to the preset's setlist\" in MIDI Setup > Your pedals), then drag "
                                    "preset clips you made before into your DAW again.");
         setlistWarning.onClick = [this] { state.setProperty (IDs::sendSetlist, true, nullptr); };
         addChildComponent (setlistWarning);
