@@ -58,7 +58,7 @@ cat > "$work/distribution.xml" <<EOF
     <title>PedalCues $version</title>
     <options customize="allow" require-scripts="false" hostArchitectures="arm64,x86_64"/>
     <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
-    <os-version min="11.0"/>
+    <os-version min="10.13"/>
     <welcome file="welcome.html" mime-type="text/html"/>
     <choices-outline>
         <line choice="app"/>

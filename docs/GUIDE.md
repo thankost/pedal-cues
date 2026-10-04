@@ -30,7 +30,7 @@ You don't need the source code. Download the latest version from the [PedalCues 
 | System | Download | Put it here |
 |---|---|---|
 | Windows (10 / 11, 64-bit) | `PedalCues-Windows-Setup.exe` (installer) | Run it: the VST3 goes to `C:\Program Files\Common Files\VST3\`, the app to *Program Files* |
-| macOS (Apple Silicon or Intel) | `PedalCues-macOS.pkg` (installer) | Open it and click **Install**: the app goes to *Applications*, the plugins to `/Library/Audio/Plug-Ins/` |
+| macOS (Apple Silicon: macOS 11+; Intel: 10.13 High Sierra+) | `PedalCues-macOS.pkg` (installer) | Open it and click **Install**: the app goes to *Applications*, the plugins to `/Library/Audio/Plug-Ins/` |
 | Linux (x86-64) | `PedalCues-Linux.zip` | Unzip and run `./install.sh`: the VST3 to `~/.vst3/`, the LV2 to `~/.lv2/`, the app to `~/.local/bin/` |
 
 On **Windows**, double-click `PedalCues-Windows-Setup.exe`:

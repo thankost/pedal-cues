@@ -87,7 +87,7 @@ Download the installer or zip for your system from the [website](https://thankos
 
 Prefer copying by hand? `PedalCues-Windows.zip` has the same files: copy `PedalCues.vst3` to `C:\Program Files\Common Files\VST3\`.
 
-**macOS** (Apple Silicon and Intel, macOS 11 or later)
+**macOS** (Apple Silicon: macOS 11 or later; Intel: macOS 10.13 High Sierra or later)
 1. Open `PedalCues-macOS.pkg`. It isn't notarised by Apple, so the first time macOS says it can't verify it:
    click **Done**, then *System Settings > Privacy & Security > Open Anyway*.
 2. Click **Install**. The app goes to *Applications*, the VST3 and AU to `/Library/Audio/Plug-Ins/`.

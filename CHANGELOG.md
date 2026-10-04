@@ -2,6 +2,10 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.8.4 (2026-10-04)
+
+- **Older Macs:** PedalCues now runs on Intel Macs from **macOS 10.13 High Sierra** (it needed macOS 11 before). Apple Silicon Macs need macOS 11, as before, and nothing changes for them. Not tested on an older Mac yet: please tell us how it goes.
+
 ## 0.8.3 (2026-10-04)
 
 - **A Windows installer (new):** download `PedalCues-Windows-Setup.exe` and run it. The VST3 goes to the standard plugin folder, the app to *Program Files* with a Start menu entry, and a newer installer replaces the older version (it asks you to close PedalCues or your DAW if they're open). Uninstall it from *Settings > Apps*. The zip is still there if you prefer copying by hand.
