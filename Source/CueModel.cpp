@@ -645,6 +645,46 @@ namespace whammy
         return v;
     }
 
+    juce::String waveName (Wave w)
+    {
+        static const char* names[] = { "Sine", "Triangle", "Square", "Saw up", "Saw down" };
+        return names[juce::jlimit (0, numWaves - 1, (int) w)];
+    }
+
+    std::vector<float> waveDrawing (Wave w, double cycles, double phaseDegrees, double shape, double low, double high,
+                                    double grow, double speed)
+    {
+        const auto peak = juce::jlimit (0.02, 0.98, 0.5 + 0.5 * juce::jlimit (-1.0, 1.0, shape));   // where the wave tops out
+        const auto g = juce::jlimit (-1.0, 1.0, grow);
+        const auto warp = std::pow (3.0, juce::jlimit (-1.0, 1.0, speed));   // > 1: slow start, waves bunch up at the end
+        const auto lo = juce::jlimit (0.0, 1.0, low), hi = juce::jlimit (0.0, 1.0, high);
+        std::vector<float> v ((size_t) drawPoints);
+        for (int i = 0; i < drawPoints; ++i)
+        {
+            const auto t = (double) i / (drawPoints - 1);
+            auto x = std::pow (t, warp) * juce::jmax (0.0, cycles) + phaseDegrees / 360.0;
+            x -= std::floor (x);                                     // 0..1 within the current cycle
+            double y = 0.0;
+            switch (w)
+            {
+                case Wave::triangle: y = x < peak ? x / peak : (1.0 - x) / (1.0 - peak); break;
+                case Wave::square:   y = x < peak ? 1.0 : 0.0; break;
+                case Wave::sawUp:    y = x; break;
+                case Wave::sawDown:  y = 1.0 - x; break;
+                case Wave::sine:
+                {
+                    // Starts at the low point; skew moves the top earlier or later in the cycle.
+                    const auto warped = x < peak ? 0.5 * x / peak : 0.5 + 0.5 * (x - peak) / (1.0 - peak);
+                    y = 0.5 - 0.5 * std::cos (juce::MathConstants<double>::twoPi * warped);
+                    break;
+                }
+            }
+            const auto envelope = g >= 0.0 ? 1.0 - g + g * t : 1.0 + g * t;   // grow: from low up to full; < 0: dies away
+            v[(size_t) i] = (float) (lo + (hi - lo) * juce::jlimit (0.0, 1.0, y) * envelope);
+        }
+        return v;
+    }
+
     juce::String encodeDrawing (const std::vector<float>& points)
     {
         juce::StringArray parts;

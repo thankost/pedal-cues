@@ -177,7 +177,7 @@ namespace whammy
 
     // Freehand treadle move. 'points' are evenly spaced treadle positions (0 = heel, 1 = toe)
     // spread across the length; values in between are interpolated.
-    constexpr int drawPoints = 64;
+    constexpr int drawPoints = 128;   // 64 before v0.8.5: older saved drawings are resampled when loaded
     // 'name' is the saved drawing's name, if any ("Whammy Big Bend 1 bar"; otherwise "Whammy Drawn 1 bar").
     Cue drawn (int channel, const std::vector<float>& points, double lengthBeats, bool resetToHeel,
                const juce::String& name = {});
@@ -185,6 +185,17 @@ namespace whammy
     std::vector<float> defaultDrawing();
     juce::String       encodeDrawing (const std::vector<float>&);
     std::vector<float> decodeDrawing (const juce::String&);   // always drawPoints values
+
+    // Draw > Wave: a generated line (like Reaper's CC LFO). 'cycles' waves across the move, starting 'phase' degrees in;
+    // 'shape' (-1..1) moves the peak (triangle -> saw), leans a sine, or sets a square's pulse width (saws ignore it);
+    // the wave runs between 'low' and 'high' (0 = heel, 1 = toe). 'grow' (-1..1) makes it build up from 'low' (> 0)
+    // or die away (< 0) across the move, like Reaper's amp skew; 'speed' (-1..1) makes the waves speed up (> 0) or
+    // slow down (< 0), like its frequency skew.
+    enum class Wave { sine, triangle, square, sawUp, sawDown };
+    constexpr int numWaves = 5;
+    juce::String waveName (Wave);
+    std::vector<float> waveDrawing (Wave, double cycles, double phaseDegrees, double shape, double low, double high,
+                                    double grow = 0.0, double speed = 0.0);
 }
 
 //==============================================================================

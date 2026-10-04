@@ -5,6 +5,7 @@
 #include "../Source/PluginProcessor.h"
 #include "../Source/DeviceTemplates.h"
 #include "../Source/Modellers.h"
+#include "../Source/MovesPanel.h"
 
 using namespace theme;
 
@@ -706,6 +707,21 @@ int main (int argc, char** argv)
         proc.state.setProperty (IDs::sweepDraw, true, nullptr);
         editor.refreshNow();
         save (snapshot (editor), outDir.getChildFile ("whammy-draw.png"));
+        // Draw > Wave...: a generated wave in the pad, and the Wave panel.
+        {
+            const auto saved = proc.state[IDs::sweepDrawing];
+            const auto savedName = proc.state[IDs::sweepDrawingName];
+            proc.state.setProperty (IDs::sweepDrawingName, juce::String(), nullptr);
+            proc.state.setProperty (IDs::sweepDrawing, cues::whammy::encodeDrawing (cues::whammy::waveDrawing (cues::whammy::Wave::sine, 8.0, 0.0, 0.0, 0.0, 1.0, 0.9, 0.0)), nullptr);
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("whammy-wave.png"));
+            ui::MovesPanel::WaveSettings w;
+            w.type = (int) cues::whammy::Wave::sine; w.cycles = 8.0; w.grow = 0.9;
+            auto panel = ui::MovesPanel::makeWaveEditor (w, theme::whammyRed);
+            save (panel->createComponentSnapshot (panel->getLocalBounds(), true, 2.0f), outDir.getChildFile ("wave-editor.png"));
+            proc.state.setProperty (IDs::sweepDrawing, saved, nullptr);
+            proc.state.setProperty (IDs::sweepDrawingName, savedName, nullptr);
+        }
         proc.state.setProperty (IDs::sweepDraw, false, nullptr);
         editor.refreshNow();
 

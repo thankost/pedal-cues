@@ -150,6 +150,116 @@ private:
 };
 
 //==============================================================================
+// Draw > Wave...: a sine, triangle, square or saw (like Reaper's CC LFO) written into the drawing as you set it.
+class MovesPanel::WaveEditor final : public juce::Component
+{
+public:
+    WaveEditor (WaveSettings start, juce::Colour colour, std::function<void (const WaveSettings&)> changed)
+        : settings (start), onChange (std::move (changed))
+    {
+        for (int w = 0; w < cues::whammy::numWaves; ++w)
+            typeBox.addItem (cues::whammy::waveName ((cues::whammy::Wave) w), w + 1);
+        typeBox.setSelectedId (settings.type + 1, juce::dontSendNotification);
+        typeBox.onChange = [this] { settings.type = typeBox.getSelectedId() - 1; update(); };
+        addAndMakeVisible (typeBox);
+
+        auto setup = [this, colour] (juce::Slider& s, juce::Label& l, const juce::String& name, const juce::String& tip,
+                                     double lo, double hi, double step, double value, const juce::String& suffix)
+        {
+            styleCaption (l, name);
+            l.setTooltip (tip);
+            addAndMakeVisible (l);
+            s.setSliderStyle (juce::Slider::LinearHorizontal);
+            s.setTextBoxStyle (juce::Slider::TextBoxRight, false, 56, 20);
+            s.setRange (lo, hi, step);
+            s.setTextValueSuffix (suffix);
+            s.setValue (value, juce::dontSendNotification);
+            s.setColour (juce::Slider::trackColourId, colour);
+            s.setTooltip (tip);
+            s.onValueChange = [this] { read(); };
+            addAndMakeVisible (s);
+        };
+        setup (cyclesSlider, cyclesLabel, "WAVES", "How many waves across the move's length (it follows Length, so it's in time)",
+               0.5, 8.0, 0.5, settings.cycles, "");
+        setup (phaseSlider, phaseLabel, "PHASE", "Where the wave starts: 0 = its low point, 180 = its high point", 0.0, 360.0, 15.0, settings.phase, " deg");
+        setup (skewSlider, skewLabel, "SHAPE", "Tilts each wave: a triangle leans towards a saw, a sine rises fast and falls slowly "
+               "(or the other way round), a square gets a shorter or longer high part. Saws don't use it.", -100.0, 100.0, 5.0, settings.shape * 100.0, " %");
+        setup (lowSlider, lowLabel, "LOW", "The wave's lowest point (0 = heel)", 0.0, 100.0, 5.0, settings.low * 100.0, " %");
+        setup (highSlider, highLabel, "HIGH", "The wave's highest point (100 = toe)", 0.0, 100.0, 5.0, settings.high * 100.0, " %");
+        setup (growSlider, growLabel, "GROW", "Above 0: the waves build up from Low to full across the move. Below 0: they die away "
+               "(Reaper calls it amp skew)", -100.0, 100.0, 5.0, settings.grow * 100.0, " %");
+        setup (speedSlider, speedLabel, "SPEED", "Above 0: the waves speed up across the move. Below 0: they slow down "
+               "(Reaper calls it frequency skew)", -100.0, 100.0, 5.0, settings.speed * 100.0, " %");
+
+        styleCaption (typeLabel, "TYPE");
+        addAndMakeVisible (typeLabel);
+        hint.setText ("Changes replace the drawing. Fix it by hand after, or save it in My drawings.", juce::dontSendNotification);
+        hint.setFont (font (11.5f));
+        hint.setColour (juce::Label::textColourId, dim);
+        hint.setJustificationType (juce::Justification::topLeft);
+        addAndMakeVisible (hint);
+        updateSkew();
+        setSize (340, 330);
+    }
+
+    void paint (juce::Graphics& g) override { g.fillAll (background); }
+
+    void resized() override
+    {
+        auto r = getLocalBounds().reduced (12);
+        auto rowOf = [&r] (juce::Label& l, juce::Component& c)
+        {
+            auto row = r.removeFromTop (30);
+            l.setBounds (row.removeFromLeft (64));
+            c.setBounds (row.reduced (0, 2));
+            r.removeFromTop (4);
+        };
+        rowOf (typeLabel, typeBox);
+        rowOf (cyclesLabel, cyclesSlider);
+        rowOf (phaseLabel, phaseSlider);
+        rowOf (skewLabel, skewSlider);
+        rowOf (lowLabel, lowSlider);
+        rowOf (highLabel, highSlider);
+        rowOf (growLabel, growSlider);
+        rowOf (speedLabel, speedSlider);
+        hint.setBounds (r);
+    }
+
+private:
+    void read()
+    {
+        settings.cycles = cyclesSlider.getValue();
+        settings.phase = phaseSlider.getValue();
+        settings.shape = skewSlider.getValue() / 100.0;
+        settings.grow = growSlider.getValue() / 100.0;
+        settings.speed = speedSlider.getValue() / 100.0;
+        settings.low = lowSlider.getValue() / 100.0;
+        settings.high = highSlider.getValue() / 100.0;
+        update();
+    }
+
+    void update()
+    {
+        updateSkew();
+        if (onChange)
+            onChange (settings);
+    }
+
+    void updateSkew()
+    {
+        const auto saw = settings.type == (int) cues::whammy::Wave::sawUp || settings.type == (int) cues::whammy::Wave::sawDown;
+        skewSlider.setEnabled (! saw);
+        skewLabel.setAlpha (saw ? 0.4f : 1.0f);
+    }
+
+    WaveSettings settings;
+    std::function<void (const WaveSettings&)> onChange;
+    juce::ComboBox typeBox;
+    juce::Slider cyclesSlider, phaseSlider, skewSlider, lowSlider, highSlider, growSlider, speedSlider;
+    juce::Label typeLabel, cyclesLabel, phaseLabel, skewLabel, lowLabel, highLabel, growLabel, speedLabel, hint;
+};
+
+//==============================================================================
 MovesPanel::MovesPanel (PedalCuesProcessor& p, MovesConfig c)
     : proc (p), state (p.state), config (std::move (c)),
       section (config.idPrefix + ".sweeps", config.title, config.hint, config.colour)
@@ -193,6 +303,15 @@ MovesPanel::MovesPanel (PedalCuesProcessor& p, MovesConfig c)
 
     for (auto* comp : std::initializer_list<juce::Component*> { &lengthLabel, &lengthBox, &curveLabel, &curveSlider, &resetToggle })
         addAndMakeVisible (comp);
+
+    // Draw mode: Wave... takes Curve's place (Curve only shapes the ready-made moves).
+    waveButton.setComponentID (config.idPrefix + ".wave");
+    waveButton.setColour (juce::TextButton::buttonColourId, surface);
+    waveButton.setColour (juce::TextButton::textColourOffId, text);
+    waveButton.setTooltip ("Make a wave: sine, triangle, square or saw, with how many waves, phase, shape, range, grow and speed "
+                           "(like Reaper's CC LFO)");
+    waveButton.onClick = [this] { showWaveEditor(); };
+    addChildComponent (waveButton);
 
     // Shapes / Draw switch in the card header.
     const auto onText = config.colour.getPerceivedBrightness() > 0.6f ? juce::Colours::black : juce::Colours::white;
@@ -283,9 +402,9 @@ void MovesPanel::refresh()
     lengthBox.setSelectedItemIndex (bestLength, juce::dontSendNotification);
 
     (drawMode ? drawButton : shapesButton).setToggleState (true, juce::dontSendNotification);
-    curveSlider.setEnabled (! drawMode);
-    curveLabel.setAlpha (drawMode ? 0.4f : 1.0f);
-    curveSlider.setAlpha (drawMode ? 0.4f : 1.0f);
+    curveLabel.setVisible (! drawMode);
+    curveSlider.setVisible (! drawMode);
+    waveButton.setVisible (drawMode);
 
     pad->points = cues::whammy::decodeDrawing (state[config.drawingId].toString());
     pad->beats = beats;
@@ -348,8 +467,12 @@ void MovesPanel::resized()
     lengthLabel.setBounds (controlsRow.removeFromLeft (58));
     lengthBox.setBounds (controlsRow.removeFromLeft (110).reduced (0, 3));
     controlsRow.removeFromLeft (24);
-    curveLabel.setBounds (controlsRow.removeFromLeft (52));
-    curveSlider.setBounds (controlsRow.removeFromLeft (220));
+    {
+        auto curveArea = controlsRow.removeFromLeft (272);
+        waveButton.setBounds (curveArea.withWidth (130).reduced (0, 3));
+        curveLabel.setBounds (curveArea.removeFromLeft (52));
+        curveSlider.setBounds (curveArea);
+    }
     controlsRow.removeFromLeft (24);
     resetToggle.setBounds (controlsRow.removeFromLeft (260));
 
@@ -400,6 +523,32 @@ void MovesPanel::updateDrawTile()
     drawTile->repaint();
 }
 
+std::unique_ptr<juce::Component> MovesPanel::makeWaveEditor (WaveSettings s, juce::Colour colour)
+{
+    return std::make_unique<WaveEditor> (s, colour, nullptr);
+}
+
+void MovesPanel::showWaveEditor()
+{
+    juce::Component::SafePointer<MovesPanel> safe (this);
+    auto editor = std::make_unique<WaveEditor> (wave, config.colour, [safe] (const WaveSettings& s)
+    {
+        if (safe != nullptr)
+        {
+            safe->wave = s;
+            safe->applyWave();
+        }
+    });
+    juce::CallOutBox::launchAsynchronously (std::move (editor), waveButton.getScreenBounds(), nullptr);
+}
+
+void MovesPanel::applyWave()
+{
+    pad->points = cues::whammy::waveDrawing ((cues::whammy::Wave) wave.type, wave.cycles, wave.phase, wave.shape, wave.low, wave.high,
+                                             wave.grow, wave.speed);
+    commitDrawing();
+}
+
 void MovesPanel::commitDrawing()
 {
     pad->repaint();
@@ -417,7 +566,9 @@ juce::String MovesPanel::drawingName() const
 bool MovesPanel::drawingEdited() const
 {
     const auto saved = state::findDrawing (drawings, drawingName());
-    return saved.isValid() && saved[IDs::points].toString() != cues::whammy::encodeDrawing (pad->points);
+    // Compare at today's resolution: drawings saved before v0.8.5 have 64 points.
+    return saved.isValid() && cues::whammy::encodeDrawing (cues::whammy::decodeDrawing (saved[IDs::points].toString()))
+                                  != cues::whammy::encodeDrawing (pad->points);
 }
 
 void MovesPanel::loadDrawing (int itemId)

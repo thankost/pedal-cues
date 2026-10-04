@@ -568,7 +568,25 @@ When no ready-made shape fits, click **Draw** in the *Treadle moves* header.
 3. **Clear** resets the pad to heel. **Smooth** rounds off sharp edges; click it again for a softer curve.
 4. **Drag the *Drawn move* tile** onto the timeline where the move should start, or click its play button to try it on the pedal.
 
-The drawing stretches to whatever *Length* you pick. *Return to heel after move* works here too; *Curve* only applies to the shapes. Click **Shapes** to go back to the ready-made moves.
+The drawing stretches to whatever *Length* you pick. *Return to heel after move* works here too; *Curve* only applies to the shapes, so in Draw mode its place holds **Wave...**. Click **Shapes** to go back to the ready-made moves.
+
+#### Wave...: generate a wobble, a trill or a build-up
+
+| Generated wave | The Wave panel |
+|---|---|
+| ![A growing sine in the drawing pad](images/whammy-wave.png) | ![Wave settings](images/wave-editor.png) |
+
+**Wave...** (in Draw mode, next to Length) writes a wave into the pad as you set it, like the CC LFO in Reaper's MIDI editor:
+
+- **Type:** Sine, Triangle, Square, Saw up or Saw down.
+- **Waves:** how many across the move (½ to 8). The move follows *Length*, so 4 waves over 1 bar is a steady quarter-note wobble.
+- **Phase:** where the wave starts: 0° at its low point, 180° at its high point.
+- **Shape:** tilts each wave: a triangle leans towards a saw, a sine rises fast and falls slowly (or the other way round), a square gets a shorter or longer high part.
+- **Low / High:** the range the wave moves in (0 % = heel, 100 % = toe), for example a gentle wah between 30 % and 70 %.
+- **Grow:** above 0 the waves build up from *Low* to full across the move; below 0 they die away (Reaper's *amp skew*).
+- **Speed:** above 0 the waves speed up across the move; below 0 they slow down (Reaper's *frequency skew*).
+
+Each change replaces the drawing. Fix it by hand afterwards, Smooth it, or **Save** it in My drawings. Wave... is in every Draw mode: the Whammy treadle, the Quad Cortex and Kemper expression, the Fractal, Line 6 and HeadRush pedals, and custom devices.
 
 #### My drawings: save and reuse your moves
 

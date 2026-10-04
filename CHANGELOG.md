@@ -2,6 +2,11 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.8.5 (2026-10-04)
+
+- **Wave... in Draw (new):** generate a sine, triangle, square or saw instead of drawing by hand, like Reaper's CC LFO. Set how many waves, the phase, the shape, the range (low / high), and let it **grow** (build up or die away) or **speed up / slow down** across the move. The wave lands in the drawing pad, so you can still fix it by hand or save it in My drawings. On the Whammy treadle and every expression pedal (Quad Cortex, Kemper, Fractal, Line 6, HeadRush, custom devices). Thanks for the idea!
+- Drawings are smoother: twice as many points. Your saved drawings convert by themselves.
+
 ## 0.8.4 (2026-10-04)
 
 - **Older Macs:** PedalCues now runs on Intel Macs from **macOS 10.13 High Sierra** (it needed macOS 11 before). Apple Silicon Macs need macOS 11, as before, and nothing changes for them. Not tested on an older Mac yet: please tell us how it goes.

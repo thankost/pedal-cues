@@ -557,6 +557,31 @@ int main (int argc, char** argv)
         CHECK ((int) whammy::decodeDrawing ("0,1000").size() == whammy::drawPoints);
         CHECK (whammy::decodeDrawing ("0,1000").back() == 1.0f);
         CHECK ((int) whammy::decodeDrawing ("garbage").size() == whammy::drawPoints);
+
+        // Draw > Wave: shapes, cycles, phase, skew and range.
+        {
+            using whammy::Wave;
+            const auto n = whammy::drawPoints;
+            auto sine = whammy::waveDrawing (Wave::sine, 1.0, 0.0, 0.0, 0.0, 1.0);
+            CHECK ((int) sine.size() == n && sine.front() < 0.01f && sine.back() < 0.01f && sine[(size_t) n / 2] > 0.99f);
+            auto shifted = whammy::waveDrawing (Wave::sine, 1.0, 180.0, 0.0, 0.0, 1.0);
+            CHECK (shifted.front() > 0.99f);                                                      // phase 180 starts at the top
+            auto two = whammy::waveDrawing (Wave::triangle, 2.0, 0.0, 0.0, 0.0, 1.0);
+            CHECK (two[(size_t) n / 4] > 0.95f && two[(size_t) n / 2] < 0.05f);                    // two peaks
+            auto saw = whammy::waveDrawing (Wave::triangle, 1.0, 0.0, 1.0, 0.0, 1.0);
+            CHECK (saw[(size_t) (n * 9 / 10)] > 0.85f && saw[(size_t) n / 2] < 0.6f);                      // full skew: rises nearly all the way
+            auto pulse = whammy::waveDrawing (Wave::square, 1.0, 0.0, -0.5, 0.2, 0.6);
+            CHECK (std::abs (pulse.front() - 0.6f) < 0.001f && std::abs (pulse[(size_t) n / 2] - 0.2f) < 0.001f);   // range, short pulse
+            auto grows = whammy::waveDrawing (Wave::triangle, 4.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0);
+            CHECK (grows[(size_t) n / 8] < 0.2f && grows[(size_t) (n * 7 / 8)] > 0.8f);         // grow: small peaks first, full at the end
+            auto faster = whammy::waveDrawing (Wave::sine, 4.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0);
+            int crossings = 0;
+            for (int i = 1; i < n / 2; ++i)
+                crossings += (faster[(size_t) i - 1] < 0.5f) != (faster[(size_t) i] < 0.5f) ? 1 : 0;
+            CHECK (crossings <= 2);                                                               // speed up: few waves in the first half
+            auto old64 = whammy::decodeDrawing (juce::String ("0,") + juce::String::repeatedString ("500,", 62) + "1000");
+            CHECK ((int) old64.size() == n && old64.back() == 1.0f);                              // drawings saved at 64 points
+        }
     }
 
     // QC expression pedals (CC#1 / CC#2)

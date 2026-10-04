@@ -42,12 +42,22 @@ class MovesPanel final : public juce::Component,
                          private juce::AsyncUpdater
 {
 public:
+    // Draw > Wave: the generated line's settings (kept while the panel lives).
+    struct WaveSettings
+    {
+        int type = 0;                       // cues::whammy::Wave
+        double cycles = 2.0, phase = 0.0, shape = 0.0, low = 0.0, high = 1.0, grow = 0.0, speed = 0.0;
+    };
+
     MovesPanel (PedalCuesProcessor&, MovesConfig);
     ~MovesPanel() override;
 
     void refresh();
     void resized() override;
     void setHint (const juce::String& hint)   { section.hint = hint; section.repaint(); }
+
+    // The Draw > Wave... panel on its own (DocShots).
+    static std::unique_ptr<juce::Component> makeWaveEditor (WaveSettings, juce::Colour);
 
     juce::Component& extraHeader()  { return header; }
     juce::Component& extraRow()     { return row; }
@@ -58,6 +68,9 @@ public:
 
 private:
     class DrawPad;
+    class WaveEditor;
+    void showWaveEditor();
+    void applyWave();
 
     void updateDrawTile();
     void handleAsyncUpdate() override  { refresh(); }
@@ -86,6 +99,8 @@ private:
     juce::ToggleButton resetToggle;
     juce::TextButton shapesButton { "Shapes" }, drawButton { "Draw" };
     juce::TextButton clearButton { "Clear" }, smoothButton { "Smooth" };
+    juce::TextButton waveButton { "Wave..." };
+    WaveSettings wave;
     juce::ComboBox libraryBox;             // My drawings
     juce::TextButton saveButton { "Save" }, moreButton { "..." };
     std::unique_ptr<DrawPad> pad;
