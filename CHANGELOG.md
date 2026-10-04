@@ -2,6 +2,11 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.8.2 (2026-10-04)
+
+- **The device list is in a clearer order:** Neural DSP, Kemper, Fractal Audio, Line 6, HeadRush, Boss, then your own MIDI devices.
+- The quick tour's first step after the welcome is now **Choose your device**: it shows where to pick what you play through, from a Quad Cortex to any MIDI device.
+
 ## 0.8.1 (2026-10-04)
 
 - **Boss GT-1000 / GT-1000CORE template (new, beta):** pick it in the device list. Preset tiles follow the GT-1000's PROGRAM MAP (BANK1 PC#1, PC#2...), the Expression view starts on CC#11, and switch tiles send CC#80-83 on / off. **About this unit** says what to set on the GT-1000: MAP SELECT, the PROGRAM MAP and an ASSIGN for each CC.

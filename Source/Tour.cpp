@@ -11,11 +11,12 @@ const std::vector<TourStep>& tourSteps()
         { 0, {}, "Welcome to PedalCues",
           "Pedal changes become drag and drop: every tile you see turns into a named MIDI clip when you drop it on "
           "your timeline. This one-minute tour shows you around. Use the arrow keys or the buttons below.", false, false, true },
-        { 0, { "hdr.tabs" }, "Quad Cortex or Kemper?",
-          "Click the arrow on the first tab to pick your amp modeller: Quad Cortex (or Mini), Kemper Profiler (Head, Rack, Stage...) or "
-          "Kemper Player, a Fractal, HeadRush or Line 6 unit (ready-made from their manuals, beta), or any other MIDI device: start from a template (Axe-Fx III, Boss GT-1000...) or make your own tiles. Type in the list to search. The tab, its page and the MIDI it sends "
-          "follow your choice (it's also in MIDI Setup). The next steps show the Quad Cortex page; the Kemper page works the same way, "
-          "with performances, slots and effects.", false, false, true },
+        { 0, { "hdr.tabs" }, "Choose your device",
+          "First, pick what you play through: click the arrow on the first tab and choose your device. Quad Cortex (or Mini), "
+          "Kemper Profiler or Player, a Fractal, Line 6 or HeadRush unit (ready-made from their manuals, beta), or any other MIDI device: "
+          "start from a template (Axe-Fx III, Boss GT-1000...) or make your own tiles. Type in the list to search. The tab, its page and "
+          "the MIDI it sends follow your choice (it's also in MIDI Setup). The next steps show the Quad Cortex page; the other pages work "
+          "the same way.", false, false, true },
         { 0, { "qc.presetList" }, "1. Add your presets",
           "Add each Quad Cortex preset (a whole rig, often one per song) with '+ Preset', or read them all from the pedal with "
           "'Sync from QC (USB)' (quit Cortex Control first). Click a preset to open it, double-click to edit, right-click to recolour or reorder. Type in the search box to find one fast." },

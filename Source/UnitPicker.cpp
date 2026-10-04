@@ -102,8 +102,8 @@ private:
         const auto units = state.getChildWithName (IDs::CustomUnits);
         const auto selected = (int) state[IDs::selectedCustomUnit];
 
-        // Grouped by brand. "beta" marks units built from the manuals and not tested on hardware; "editable" the
-        // Fractal units without default CCs, which come as editable devices.
+        // Grouped by brand: Neural DSP, Kemper, Fractal Audio, Line 6, HeadRush, Boss, then your own devices. "beta" marks
+        // units built from the manuals and not tested on hardware; "template" the units whose MIDI you assign yourself.
         entries.push_back ({ Kind::header, "Neural DSP", {}, {} });
         entries.push_back ({ Kind::builtin, ampUnitName (0), {}, "neural dsp qc amp modeller", 0, {}, ampUnit == 0 });
         entries.push_back ({ Kind::builtin, ampUnitName (state::qcMiniAmpUnit), {}, "neural dsp qc mini amp modeller",
@@ -113,7 +113,7 @@ private:
             entries.push_back ({ Kind::builtin, ampUnitName (u), {}, "kemper amp modeller", u, {}, ampUnit == u });
 
         const auto currentModel = ampUnit == state::modellerAmpUnit ? state[IDs::modellerProfile].toString() : juce::String();
-        for (const auto* brand : { "Boss", "Fractal Audio", "HeadRush", "Line 6" })
+        for (const auto* brand : { "Fractal Audio", "Line 6", "HeadRush", "Boss" })
         {
             entries.push_back ({ Kind::header, brand, {}, {} });
             for (const auto& m : modellers::all())

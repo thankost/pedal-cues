@@ -156,7 +156,7 @@ The first time you open PedalCues, a quick tour walks you through every area. It
 
 ![Quick tour highlighting the scenes](images/tour-scenes.png)
 
-An early step shows where to pick your amp modeller (**Quad Cortex or Kemper?**), and one explains the **Load 1A first** switch:
+An early step, **Choose your device**, shows where to pick what you play through (the **▾** on the first tab), and one explains the **Load 1A first** switch:
 
 ![Quick tour: which preset scenes act on](images/tour-target.png)
 
@@ -166,7 +166,7 @@ An early step shows where to pick your amp modeller (**Quad Cortex or Kemper?**)
 
 ![Quad Cortex page](images/quad-cortex.png)
 
-The first tab is named after your amp modeller. Click the **▾** on it (or use **MIDI Setup > Your pedals > Amp modeller or MIDI device**) to open the device list: **Quad Cortex**, [**Quad Cortex Mini**](#quad-cortex-mini), **Kemper Profiler**, **Kemper Player**, [Fractal, Line 6 and HeadRush units](#7-fractal-audio-line-6-and-headrush-beta) and your own [MIDI devices](#8-custom-midi-devices-beta). Type to search it. With a Kemper, the tab turns green and shows the [Kemper page](#6-kemper-page) instead. Your QC presets stay in the project, so you can switch back any time.
+The first tab is named after your amp modeller. Click the **▾** on it (or use **MIDI Setup > Your pedals > Amp modeller or MIDI device**) to open the device list: **Quad Cortex**, [**Quad Cortex Mini**](#quad-cortex-mini), **Kemper Profiler**, **Kemper Player**, [Fractal, Line 6 and HeadRush units](#7-fractal-audio-line-6-and-headrush-beta), [templates](#templates-axe-fx-iii-fm9-fm3-vp4-and-boss-gt-1000-beta) such as the Boss GT-1000, and your own [MIDI devices](#8-custom-midi-devices-beta), in that order. Type to search it. With a Kemper, the tab turns green and shows the [Kemper page](#6-kemper-page) instead. Your QC presets stay in the project, so you can switch back any time.
 
 **Presets vs scenes:** a *preset* is a whole rig on the QC (often one per song), such as *Clean Rig* or *Drop C Heavy*. *Scenes* are the parts of the song inside that preset, such as *Intro*, *Verse* and *Chorus*. Load the preset once where the song starts, then switch scenes as the song moves on.
 
