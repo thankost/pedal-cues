@@ -29,9 +29,23 @@ You don't need the source code. Download the latest version from the [PedalCues 
 
 | System | Download | Put it here |
 |---|---|---|
-| Windows | `PedalCues-Windows.zip` | Copy `PedalCues.vst3` to `C:\Program Files\Common Files\VST3\` |
+| Windows (10 / 11, 64-bit) | `PedalCues-Windows-Setup.exe` (installer) | Run it: the VST3 goes to `C:\Program Files\Common Files\VST3\`, the app to *Program Files* |
 | macOS (Apple Silicon or Intel) | `PedalCues-macOS.pkg` (installer) | Open it and click **Install**: the app goes to *Applications*, the plugins to `/Library/Audio/Plug-Ins/` |
-| Linux (x86-64) | `PedalCues-Linux.zip` | `PedalCues.vst3` to `~/.vst3/`, `PedalCues.lv2` to `~/.lv2/`, and the `PedalCues` standalone app anywhere you like |
+| Linux (x86-64) | `PedalCues-Linux.zip` | Unzip and run `./install.sh`: the VST3 to `~/.vst3/`, the LV2 to `~/.lv2/`, the app to `~/.local/bin/` |
+
+On **Windows**, double-click `PedalCues-Windows-Setup.exe`:
+
+1. PedalCues isn't code-signed, so the first time Windows says *"Windows protected your PC"*. Click **More info**, then **Run anyway**.
+2. Quit your DAW first (a DAW that has PedalCues loaded keeps using the old version until it restarts). Click through the installer; *Choose* lets you leave out the plugin or the app. If PedalCues or your DAW is still open, the installer asks to close it.
+3. Done: the VST3 is in `C:\Program Files\Common Files\VST3\`, the app in *Program Files\PedalCues* (Start menu: **PedalCues**). Uninstall it from *Settings > Apps* like any other program.
+
+To update, run the newer installer: it replaces the old version. Your projects and settings are kept.
+
+> **Installed from the zip before (v0.8.2 or older)?** The installer puts the plugin in the same folder, so it replaces it. If you kept `PedalCues.exe` somewhere else (Downloads, Desktop), delete that old copy and use the one in the Start menu.
+
+#### Windows without the installer (zip)
+
+`PedalCues-Windows.zip` has the same files: copy `PedalCues.vst3` to `C:\Program Files\Common Files\VST3\` and run `PedalCues.exe` from anywhere. To update, quit your DAW and copy the new files over the old ones.
 
 On **macOS**, double-click `PedalCues-macOS.pkg`:
 
@@ -59,9 +73,10 @@ On **Linux** (built for Ubuntu 22.04 and newer, Debian 12, Fedora and similar; n
 
 ```bash
 unzip PedalCues-Linux.zip && cd PedalCues-Linux
-mkdir -p ~/.vst3 ~/.lv2 && cp -r PedalCues.vst3 ~/.vst3/ && cp -r PedalCues.lv2 ~/.lv2/
-./PedalCues        # the standalone app
+./install.sh       # VST3 to ~/.vst3, LV2 to ~/.lv2, the app to ~/.local/bin (and your applications menu)
 ```
+
+To update, quit your DAW and run `./install.sh` from the newer zip: it replaces the old version and keeps your projects and settings. `./install.sh --uninstall` removes PedalCues. Prefer doing it by hand? Copy `PedalCues.vst3` to `~/.vst3/` and `PedalCues.lv2` to `~/.lv2/`, and run `./PedalCues` from anywhere.
 
 For **Sync from QC** over USB, Linux needs a one-time permission rule (MIDI cues work without it):
 
@@ -592,7 +607,7 @@ Settings that belong to one computer stay there and aren't exported: the standal
 
 ### Updates
 
-Under the title, PedalCues shows your version and whether it's **Up to date**. When a newer release is out, it says **Update to vX.Y.Z**: click it to see what's new and download it. It says **Couldn't check** when you're offline. The round arrows next to it check again.
+Under the title, PedalCues shows your version and whether it's **Up to date**. When a newer release is out, it says **Update to vX.Y.Z**: click it to see what's new and download it: the installer on macOS and Windows (quit your DAW, run it, and it replaces the old version), the zip with `install.sh` on Linux. It says **Couldn't check** when you're offline. The round arrows next to it check again.
 
 PedalCues asks GitHub for the latest release when it opens; nothing else is sent. To turn that off, untick **Check for updates automatically** in the **☰** menu (in the standalone app: the **PedalCues** menu on macOS, **Help** on Windows). See what changed in each version on the [What's new](https://thankost.github.io/pedal-cues/changelog.html) page (**☰ > What's new** in the plugin, **Help > What's New** in the standalone app).
 

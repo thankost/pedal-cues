@@ -690,8 +690,10 @@ void PedalCuesEditor::showUpdateDialog (const update::Info& info)
                                      + (notes.isNotEmpty() ? "What's new:\n" + notes + "\n\n" : juce::String())
                                     #if JUCE_MAC
                                      + "Download the installer, close your DAW, then open it and click Install.",
+                                    #elif JUCE_LINUX
+                                     + "Download the zip, close your DAW, unzip it and run ./install.sh in the PedalCues-Linux folder.",
                                     #else
-                                     + "Download the zip, close your DAW, then replace the plugin files the same way you installed them.",
+                                     + "Download the installer, close your DAW, then run it: it replaces the older version.",
                                     #endif
                                      juce::MessageBoxIconType::NoIcon);
     w->addButton ("Download", 1);

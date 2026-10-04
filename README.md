@@ -80,9 +80,12 @@ Preset and scene names are entered in the plugin (double-click to rename, right-
 
 Download the installer or zip for your system from the [website](https://thankost.github.io/pedal-cues/) or the [Releases page](https://github.com/thankost/pedal-cues/releases/latest).
 
-**Windows**
-1. Unzip, copy `PedalCues.vst3` to `C:\Program Files\Common Files\VST3\`.
-2. Re-scan plug-ins in your DAW (Reaper: *Options > Preferences > Plug-ins > VST > Re-scan*). `PedalCues.exe` is the standalone version.
+**Windows** (10 / 11, 64-bit)
+1. Run `PedalCues-Windows-Setup.exe`. It isn't code-signed, so the first time Windows says *"Windows protected your PC"*: click **More info > Run anyway**.
+2. Click through the installer. The VST3 goes to `C:\Program Files\Common Files\VST3\`, the standalone app to *Program Files* (Start menu: PedalCues). A newer installer replaces the older version; it asks you to close PedalCues or your DAW if they're open.
+3. Re-scan plug-ins in your DAW (Reaper: *Options > Preferences > Plug-ins > VST > Re-scan*).
+
+Prefer copying by hand? `PedalCues-Windows.zip` has the same files: copy `PedalCues.vst3` to `C:\Program Files\Common Files\VST3\`.
 
 **macOS** (Apple Silicon and Intel, macOS 11 or later)
 1. Open `PedalCues-macOS.pkg`. It isn't notarised by Apple, so the first time macOS says it can't verify it:
@@ -94,7 +97,7 @@ Prefer copying by hand? `PedalCues-macOS.zip` has the same files; see the [guide
 (it needs a one-time `xattr -cr` in Terminal). Coming from a zip install? Delete the old copies in `~/Library/Audio/Plug-Ins/`.
 
 **Linux** (x86-64, Ubuntu 22.04+ / Debian 12 / Fedora and similar)
-1. Unzip `PedalCues-Linux.zip`. Copy `PedalCues.vst3` to `~/.vst3/` and `PedalCues.lv2` to `~/.lv2/`; run `./PedalCues` for the standalone app.
+1. Unzip `PedalCues-Linux.zip` and run `./install.sh` in the `PedalCues-Linux` folder: the VST3 goes to `~/.vst3/`, the LV2 to `~/.lv2/`, the app to `~/.local/bin/` (and your applications menu). Run it again with a newer zip to update; `./install.sh --uninstall` removes it.
 2. For *Sync from QC* over USB, add the one-time permission rule:
    `echo 'KERNEL=="hidraw*", ATTRS{idVendor}=="152a", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/70-quad-cortex.rules && sudo udevadm control --reload-rules && sudo udevadm trigger`
    then replug the QC. Details: [guide, Install](https://thankost.github.io/pedal-cues/guide.html#1-install).

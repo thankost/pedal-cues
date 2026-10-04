@@ -12,9 +12,9 @@ juce::String assetName()
    #if JUCE_MAC
     return "PedalCues-macOS.pkg";   // the installer (a zip is published too, for manual installs)
    #elif JUCE_LINUX
-    return "PedalCues-Linux.zip";
+    return "PedalCues-Linux.zip";              // with install.sh, which replaces the older version
    #else
-    return "PedalCues-Windows.zip";
+    return "PedalCues-Windows-Setup.exe";      // the installer (the zip is published too, for manual installs)
    #endif
 }
 

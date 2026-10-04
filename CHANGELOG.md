@@ -2,6 +2,12 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.8.3 (2026-10-04)
+
+- **A Windows installer (new):** download `PedalCues-Windows-Setup.exe` and run it. The VST3 goes to the standard plugin folder, the app to *Program Files* with a Start menu entry, and a newer installer replaces the older version (it asks you to close PedalCues or your DAW if they're open). Uninstall it from *Settings > Apps*. The zip is still there if you prefer copying by hand.
+- **Linux: one-command install:** the zip now has `install.sh`. Run `./install.sh` to install or update (VST3, LV2 and the app, with a menu entry), or `./install.sh --uninstall` to remove it.
+- The app's **Update** button now downloads the installer on Windows, and explains the `install.sh` step on Linux.
+
 ## 0.8.2 (2026-10-04)
 
 - **The device list is in a clearer order:** Neural DSP, Kemper, Fractal Audio, Line 6, HeadRush, Boss, then your own MIDI devices.
