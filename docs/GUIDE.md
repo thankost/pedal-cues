@@ -353,7 +353,7 @@ These units have their MIDI numbers defined, by Line 6 and HeadRush or as Fracta
 |---|---|---|
 | Helix Floor, Helix LT, Helix Rack (+ Control), HX Stomp, HX Stomp XL, HX Effects, POD Go / POD Go Wireless, Helix Stadium / Stadium XL | Axe-Fx II / XL / XL+, AX8, FX8 (Mark I / II) | Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5 ([details](#headrush-beta)) |
 
-The Axe-Fx III, FM9, FM3 and VP4 have no default MIDI numbers, so they're [editable devices](#axe-fx-iii-fm9-fm3-and-vp4-beta) instead.
+The Axe-Fx III, FM9, FM3 and VP4 have no default MIDI numbers, so they come as [templates](#templates-axe-fx-iii-fm9-fm3-vp4-and-boss-gt-1000-beta) instead.
 
 > **Built from the manuals, not tested on hardware.** Every number on these pages comes from the manufacturer's manual (Line 6 firmware 3.80, POD Go 2.50 and Stadium manuals; Fractal owner's manuals). The page says so next to the view switch, and **About this unit** gives the manual, what to check and the unit's connection facts. Please [tell us](https://github.com/thankost/pedal-cues/issues/new?template=problem.yml) what works on your unit.
 
@@ -400,9 +400,14 @@ HeadRush publishes one fixed MIDI map, so each unit gets a page. It works a litt
 
 ![A custom MIDI device](images/custom-device.png)
 
-Not on a Quad Cortex, Kemper or one of the [Fractal and Line 6 pages](#7-fractal-audio-line-6-and-headrush-beta)? Any device that takes MIDI works: a Boss, a synth, a looper, a lighting controller. You make the tiles yourself, once, from the device's MIDI chart.
+Not on a Quad Cortex, Kemper or one of the [Fractal, Line 6 and HeadRush pages](#7-fractal-audio-line-6-and-headrush-beta)? **Any device that takes MIDI works**, including units where you set up the MIDI mapping yourself:
 
-**Make one:** click the **▾** on the first tab (or *MIDI Setup > Amp modeller or MIDI device*) and choose an [Axe-Fx III, FM9, FM3 or VP4](#axe-fx-iii-fm9-fm3-and-vp4-beta) to start from its manual, or click **+ New MIDI device** under the list and give it a name: it starts with example tiles to edit, and the tab takes its name. **Import device...** next to it adds one from a file.
+- **Templates** give you a head start for units with their own MIDI mapping: the [Axe-Fx III, FM9, FM3, VP4 and Boss GT-1000](#templates-axe-fx-iii-fm9-fm3-vp4-and-boss-gt-1000-beta) come with tiles from their manuals and notes on what to set on the unit.
+- **Anything else** (another Boss, a synth, a looper, a lighting controller): make the tiles yourself, once, from the device's MIDI chart.
+
+Either way it's an ordinary MIDI device you can edit, give [expression moves](#expression-moves-on-any-device) and share.
+
+**Make one:** click the **▾** on the first tab (or *MIDI Setup > Amp modeller or MIDI device*) and choose a template (an [Axe-Fx III, FM9, FM3, VP4 or Boss GT-1000](#templates-axe-fx-iii-fm9-fm3-vp4-and-boss-gt-1000-beta)) to start from its manual, or click **+ New MIDI device** under the list and give it a name: it starts with example tiles to edit, and the tab takes its name. **Import device...** next to it adds one from a file.
 
 **The device card (left):**
 - **Name:** double-click to rename. The **...** menu has rename, colour, duplicate, delete and **New MIDI device**.
@@ -437,7 +442,9 @@ Switch the right side from **Tiles** to **Expression** for pedal moves on your d
 
 **A preset, then a scene:** drop the preset tile first and the scene tile just after it on the timeline, so the device has loaded the preset before the scene arrives.
 
-### Axe-Fx III, FM9, FM3 and VP4 (beta)
+### Templates: Axe-Fx III, FM9, FM3, VP4 and Boss GT-1000 (beta)
+
+Some units have no fixed MIDI numbers: you set up the mapping on the unit, so the numbers differ from player to player. For those, PedalCues has **templates**: pick one in the device list (marked *template*) and you get an ordinary MIDI device filled with tiles from the manual, plus **About this unit** with what to set on the unit. Adjust the tiles to your numbers, add your own, and share it.
 
 ![An Axe-Fx III device](images/template-axe-fx-3.png)
 
@@ -445,6 +452,14 @@ These four Fractal units have **no default MIDI CCs**: you assign scene select, 
 
 - **FM3:** it can't be controlled over USB MIDI (Fractal: "unpredictable behavior"). Use a 5-pin MIDI cable.
 - **VP4:** 104 presets (A1-Z4), 4 scenes (the tiles use CC#17, the manual's example). MIDI is on 3.5 mm TRS jacks: you need a Type A adapter.
+
+![A Boss GT-1000 device](images/template-boss-gt-1000.png)
+
+**Boss GT-1000 / GT-1000CORE:** it has no fixed MIDI CCs either: it reacts to a CC only through an **ASSIGN** that uses it as its source (CC#1-31 or CC#64-95), and which patch a Program Change loads is set in its **PROGRAM MAP**. The template is set up for that:
+- **Presets:** on the GT-1000, set *MENU > MIDI > MAP SELECT* to **PROG** and fill *PROGRAM MAP BANK1* (PC#1, PC#2... = the patches you want). The tiles **BANK1 PC#1**, **PC#2**... load those (bank select CC#0 and CC#32 = 0, then the Program Change, counted from 1 like the GT-1000). Rename them after your patches.
+- **Expression:** switch the device to [Expression](#expression-moves-on-any-device); it starts on **CC#11**. On the GT-1000, make an ASSIGN with *SOURCE* = CC#11 and the *TARGET* you want to move (foot volume, a wah, a delay level...), ACT LOW 0, ACT HIGH 127.
+- **Switches:** *Switch 1-4 on / off* send CC#80-83 = 127 / 0. Make an ASSIGN for each with *SOURCE* = that CC, *MODE* = MOMENT, and the target (an effect's on/off).
+- Set *RX CHANNEL* (MENU > MIDI > MIDI SETTING) to the channel in PedalCues' MIDI Setup.
 - The device card says in amber that the numbers come from the manual, not tested on hardware. **About this unit (from the manual)** shows what to set and check; it's kept by PedalCues (updates keep it current), while **Your notes** below it are yours to write.
 
 > Custom MIDI devices are a **beta**: tell us what your device needs, or share a device file, in a [GitHub issue](https://github.com/thankost/pedal-cues/issues/new?template=idea.yml).
@@ -630,4 +645,4 @@ Enjoying PedalCues? It's free; if you'd like to support it, you can donate via [
 
 ---
 
-PedalCues is free software by **Thanasis Kostopoulos**, released under the [MIT License](../LICENSE). Source: [github.com/thankost/pedal-cues](https://github.com/thankost/pedal-cues). In the plugin, open **☰ > About PedalCues**. Not affiliated with Neural DSP, Kemper, DigiTech or any other device maker.
+PedalCues is free software by **Thanasis Kostopoulos**, released under the [MIT License](../LICENSE). Source: [github.com/thankost/pedal-cues](https://github.com/thankost/pedal-cues). In the plugin, open **☰ > About PedalCues**. Not affiliated with any device maker. All product and company names are trademarks of their respective owners.

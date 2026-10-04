@@ -45,10 +45,12 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 
 **Fractal Audio, Line 6 and HeadRush (beta)**, built from the manuals, not tested on hardware yet (pick them from the searchable device list, the ▾ on the first tab):
 - **Pages like the Quad Cortex** for units with defined MIDI numbers: Helix Floor / LT / Rack, HX Stomp, HX Stomp XL, HX Effects, POD Go, Helix Stadium (Line 6) and Axe-Fx II / XL / XL+, AX8, FX8 (Fractal factory defaults). Presets with setlists or banks as the unit shows them, scenes / snapshots named per preset (load the preset first, or not), footswitches or blocks, utilities, looper and expression moves
-- **Editable devices** for the Axe-Fx III, FM9, FM3 and VP4, which have no default MIDI CCs: preset tiles plus scene, tuner and looper tiles with suggested numbers to set on the unit
+- **Templates** for the Axe-Fx III, FM9, FM3 and VP4, which have no default MIDI CCs: preset tiles plus scene, tuner and looper tiles with suggested numbers to set on the unit (see *Any MIDI device* below)
 - **HeadRush pages**: Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5. Presets by each rig's MIDI PROG number, scenes (Core 10, Prime 8, Flex Prime 6, CC#21 and up), block toggles (CC#75 and up), tuner, tap, rig and footswitch modes, looper and expression. HeadRush documents MIDI cables only (no MIDI over USB from a computer)
 
-**Custom MIDI devices (beta)**: any device that takes MIDI (Boss, a synth, a looper...)
+**Any MIDI device (beta)**: anything that takes MIDI, including units where you set up the MIDI mapping yourself
+- **Templates** for units with their own MIDI mapping: Axe-Fx III, FM9, FM3, VP4 and **Boss GT-1000 / GT-1000CORE**. Ready-made tiles from the manual plus what to set on the unit; adjust them to your numbers
+- **Your own device** for anything else (another Boss, a synth, a looper...), from its MIDI chart
 - Groups and tiles you name yourself; each tile is one or more standard messages (Program Change, Control Change, bank select), set up in a guided editor with ready-made starting points and a Test button
 - Programs counted from 0 or 1, as the device's manual does; notes on the device and on each tile
 - **Expression moves** on any device: swells, fades, wah, Set to tiles and drawn moves on the CC you pick (CC#11 by default, the MIDI standard Expression), saved with the device
@@ -146,7 +148,7 @@ Source/Theme.*           colour palette + custom LookAndFeel
 Source/PluginEditor.*    window, header tabs, first-run tour host
 Source/QcPage.cpp        Quad Cortex page (+ QcExpression.cpp)    Source/KemperPage.cpp  Kemper page
 Source/Modellers.*       Fractal / Line 6 / HeadRush profiles (from the manuals)    Source/ModellerPage.cpp  their pages
-Source/DeviceTemplates.* Axe-Fx III / FM9 / FM3 / VP4 editable devices    Source/CustomPage.cpp  custom MIDI devices + tile editor
+Source/DeviceTemplates.* templates: Axe-Fx III / FM9 / FM3 / VP4, Boss GT-1000    Source/CustomPage.cpp  custom MIDI devices + tile editor
 Source/UnitPicker.cpp    searchable device list    Source/Fuzzy.h  fuzzy search    Source/MovesPanel.*  expression / treadle moves
 Source/QcUsb.*, QcSyncDialog.cpp  Sync from QC (USB, read-only)
 Source/WhammyPage.cpp    Whammy V / DT page
@@ -173,4 +175,4 @@ PedalCues is free. If it helps your show and you'd like to say thanks, you can d
 
 Free and open source under the [MIT License](LICENSE). Copyright (c) 2026 **Thanasis Kostopoulos**. [github.com/thankost/pedal-cues](https://github.com/thankost/pedal-cues)
 
-Built with [JUCE](https://juce.com), which is licensed separately (AGPLv3 / JUCE licence), and [hidapi](https://github.com/libusb/hidapi) (BSD licence option). The USB sync follows the protocol documented by [pyquadcortex](https://github.com/stokes-audio/pyquadcortex) (MIT). Quad Cortex is a trademark of Neural DSP Technologies, Kemper and Profiler are trademarks of Kemper GmbH, Axe-Fx is a trademark of Fractal Audio Systems, Helix and POD are trademarks of Line 6 / Yamaha Guitar Group, and Whammy is a trademark of DigiTech. This project is not affiliated with any of these companies.
+Built with [JUCE](https://juce.com), which is licensed separately (AGPLv3 / JUCE licence), and [hidapi](https://github.com/libusb/hidapi) (BSD licence option). The USB sync follows the protocol documented by [pyquadcortex](https://github.com/stokes-audio/pyquadcortex) (MIT). All product and company names (Neural DSP, Quad Cortex, Kemper, Fractal Audio, Axe-Fx, Line 6, Helix, POD, HeadRush, Boss, DigiTech, Whammy and others) are trademarks of their respective owners. This project is not affiliated with any of them.

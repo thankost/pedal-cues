@@ -5,7 +5,8 @@
 
 #include <vector>
 
-// Ready-made custom MIDI devices (beta) for Fractal Audio and Line 6 units, built from each manufacturer's manual.
+// Ready-made custom MIDI devices (beta) for units whose MIDI numbers you assign yourself (Fractal Axe-Fx III / FM9 / FM3 /
+// VP4, Boss GT-1000), built from each manufacturer's manual.
 // Picking one creates an ordinary custom device the player can edit and share. Nothing here is tested on hardware:
 // every template says so (disclaimer), and its notes give the manual and what to check on the unit.
 namespace templates
@@ -30,6 +31,8 @@ struct Template
     juce::String aliases;     // extra search words: "axe fx 3 iii"
     juce::Colour colour;
     juce::String notes;       // About this unit (read-only, always from the app): manual, what to set on the unit, connection facts
+    int programBase = 0;      // how the unit numbers Program Changes (Boss: PC#1-128); the tiles' "PC n" use it
+    int expCc = 11;           // the CC its Expression view starts on
     std::vector<GroupDef> groups;
 };
 

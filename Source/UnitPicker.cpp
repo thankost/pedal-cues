@@ -45,8 +45,8 @@ public:
         addAndMakeVisible (newButton);
         addAndMakeVisible (importButton);
 
-        key.setText ("beta: built from the manual, not tested on hardware yet. editable: also from the manual, as tiles you "
-                     "adjust (these units have no default MIDI numbers).", juce::dontSendNotification);
+        key.setText ("beta: built from the manual, not tested on hardware yet. template: for units whose MIDI you assign yourself, "
+                     "ready-made tiles to adjust. Any other device: + New MIDI device.", juce::dontSendNotification);
         key.setFont (font (11.5f));
         key.setColour (juce::Label::textColourId, dim);
         key.setJustificationType (juce::Justification::topLeft);
@@ -113,7 +113,7 @@ private:
             entries.push_back ({ Kind::builtin, ampUnitName (u), {}, "kemper amp modeller", u, {}, ampUnit == u });
 
         const auto currentModel = ampUnit == state::modellerAmpUnit ? state[IDs::modellerProfile].toString() : juce::String();
-        for (const auto* brand : { "Fractal Audio", "HeadRush", "Line 6" })
+        for (const auto* brand : { "Boss", "Fractal Audio", "HeadRush", "Line 6" })
         {
             entries.push_back ({ Kind::header, brand, {}, {} });
             for (const auto& m : modellers::all())
@@ -127,7 +127,7 @@ private:
                 for (int i = 0; i < units.getNumChildren(); ++i)
                     if (units.getChild (i)[IDs::templateId].toString() == t.id)
                         existing = i;
-                entries.push_back ({ Kind::templ, t.model, existing >= 0 ? juce::String ("added, editable") : juce::String ("editable"),
+                entries.push_back ({ Kind::templ, t.model, existing >= 0 ? juce::String ("added, template") : juce::String ("template"),
                                      t.brand + " " + t.aliases, existing, t.id,
                                      ampUnit == state::customAmpUnit && existing >= 0 && existing == selected });
             }

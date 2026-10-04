@@ -80,6 +80,7 @@ body:
         - Line 6 (Helix, HX Stomp, HX Effects, POD Go, Stadium), name the model above
         - Fractal Audio (Axe-Fx, FM9, FM3, AX8, FX8, VP4), name the model above
         - HeadRush (Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5), name the model above
+        - Boss GT-1000 / GT-1000CORE (template)
         - Custom MIDI device (beta), name it above
         - None
   - type: dropdown

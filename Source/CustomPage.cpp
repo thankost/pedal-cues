@@ -635,6 +635,8 @@ public:
         notesEditor.setTextToShowWhenEmpty (fromTemplate != nullptr ? "What you set on your unit, what you changed..."
                                                                     : "Why it's set up this way: manual pages, parameters, values...", dim);
         programBox.setSelectedId (base == 1 ? 2 : 1, juce::dontSendNotification);
+        for (auto* b : viewButtons)
+            b->setColour (juce::TextButton::buttonOnColourId, unitSection.accentColour);   // the device's colour, like its tab
         const auto showExpression = (bool) state[IDs::cuExpressionView];
         viewButtons[showExpression ? 1 : 0]->setToggleState (true, juce::dontSendNotification);
         expression.setVisible (showExpression);

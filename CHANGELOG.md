@@ -2,6 +2,12 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.8.1 (2026-10-04)
+
+- **Boss GT-1000 / GT-1000CORE template (new, beta):** pick it in the device list. Preset tiles follow the GT-1000's PROGRAM MAP (BANK1 PC#1, PC#2...), the Expression view starts on CC#11, and switch tiles send CC#80-83 on / off. **About this unit** says what to set on the GT-1000: MAP SELECT, the PROGRAM MAP and an ASSIGN for each CC.
+- **Any device with its own MIDI mapping:** units where you set up the MIDI yourself are now marked **template** in the device list (Axe-Fx III, FM9, FM3, VP4, Boss GT-1000), and the guide and website explain how templates and your own devices cover any MIDI gear.
+- About and the website now say that all product and company names are trademarks of their respective owners.
+
 ## 0.8.0 (2026-10-04)
 
 - **HeadRush (new, beta):** pick your unit from the device list. **Core, Prime and Flex Prime** get a page with your rigs (by their MIDI PROG number), scenes, block on/off toggles, tuner, tap, rig and footswitch modes, looper and expression moves. **Pedalboard, Gigboard and MX5** get rigs, blocks, tap and looper. Built from HeadRush's user guides and not tested on hardware yet: **About this unit** tells you what to set on the unit.

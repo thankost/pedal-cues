@@ -152,7 +152,7 @@ def page(title: str, description: str, current: str, main: str, source: str) -> 
 <footer>
   <div class="wrap">
     <span>&copy; 2026 Thanasis Kostopoulos &middot; MIT License &middot; Built with JUCE &middot; <a href="guide.html">User guide</a> &middot; <a href="changelog.html">What's new</a> &middot; <a href="help.html">Help</a> &middot; <a href="https://github.com/thankost/pedal-cues">GitHub</a></span>
-    <span>Not affiliated with Neural DSP or DigiTech. Quad Cortex and Whammy are trademarks of their owners.</span>
+    <span>Not affiliated with any device maker. All product and company names are trademarks of their respective owners.</span>
   </div>
 </footer>
 <script>

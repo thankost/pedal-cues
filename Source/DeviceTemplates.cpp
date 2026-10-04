@@ -4,13 +4,15 @@
 #include <functional>
 
 // Every number below comes from the manufacturer's manual named in the template's notes (Line 6 Owner's Manuals for
-// firmware 3.80, POD Go 2.50, the Helix Stadium online manual Rev D; Fractal Audio Owner's Manuals). Message text uses
-// the custom-device syntax (cues::custom::parse): "PC n", "CC n=v", "bank n" (CC#0). Programs count from 0, as sent.
+// firmware 3.80, POD Go 2.50, the Helix Stadium online manual Rev D; Fractal Audio Owner's Manuals; Boss GT-1000 MIDI
+// Implementation 1.20 and GT-1000CORE Parameter Guide). Message text uses the custom-device syntax (cues::custom::parse):
+// "PC n", "CC n=v", "bank n" (CC#0). Programs count from the template's programBase (0, or 1 for Boss).
 namespace templates
 {
 namespace
 {
 const juce::Colour fractalColour { 0xff4e9bd8 };
+const juce::Colour bossColour { 0xffe8c547 };
 
 using Tiles = std::vector<TileDef>;
 
@@ -96,6 +98,44 @@ Template vp4()
     };
     return t;
 }
+
+//==============================================================================
+// Boss GT-1000 / GT-1000CORE: Program Changes load what the unit's PROGRAM MAP says, and CCs only do what an ASSIGN uses
+// them for (sources CC#1-31, CC#64-95). Bank select is CC#0 (then CC#32 = 0), as the MIDI Implementation shows.
+Template bossGt1000()
+{
+    Template t;
+    t.id = "boss.gt-1000";
+    t.brand = "Boss";
+    t.model = "GT-1000 / GT-1000CORE";
+    t.aliases = "boss roland gt1000 gt 1000 core gt-1000core";
+    t.colour = bossColour;
+    t.programBase = 1;   // the PROGRAM MAP counts PC#1-128
+    t.expCc = 11;
+    const juce::String assign ("Set this on the GT-1000: MENU > CONTROL ASSIGN > ASSIGN SETTING, an ASSIGN with SOURCE = the CC in this tile "
+                               "(CC#1-31 or CC#64-95), MODE = MOMENT, and the TARGET you want (for example an effect's on/off). Or change the "
+                               "tile to the CC you already use.");
+    t.notes = "Why this is a template and not a page: the GT-1000 has no fixed MIDI CCs. It only reacts to a CC that an ASSIGN uses as its "
+              "source, and which patch a Program Change loads is up to its PROGRAM MAP. So you set those on the unit, and these tiles follow.\n\n"
+              "Built from the Boss GT-1000 MIDI Implementation and the GT-1000CORE Parameter Guide. Not tested on hardware: check on your unit.\n\n"
+              "1. MIDI channel: MENU > MIDI > MIDI SETTING > RX CHANNEL, the same as in PedalCues' MIDI Setup.\n\n"
+              "2. Presets: set MENU > MIDI > MAP SELECT to PROG, then in PROGRAM MAP BANK1 set PC#1, PC#2... to the patches you want "
+              "(U001-U250, P001-P250). The preset tiles send bank select (CC#0, then CC#32 = 0) and the Program Change: BANK1 = bank 0, "
+              "BANK2 = bank 1. Rename the tiles after your patches.\n\n"
+              "3. Expression (the Expression view): make an ASSIGN with SOURCE = CC#11 (or the CC you pick there) and the TARGET you want to "
+              "move, for example foot volume, a wah or a delay level. Keep ACT LOW 0 and ACT HIGH 127.\n\n"
+              "4. Switches: each switch tile needs an ASSIGN with SOURCE = its CC and MODE = MOMENT, so 127 = on and 0 = off.\n\n"
+              "Connection: MIDI IN / OUT (5-pin) and USB. To pass MIDI on to a second device, set MIDI THRU (for MIDI IN) or USB THRU "
+              "(for USB) in MENU > MIDI > MIDI SETTING to MIDI OUT.";
+    t.groups = {
+        { "Presets", range (8, [] (int i) { return TileDef { "BANK1 PC#" + n (i + 1), "bank 0, CC 32=0, PC " + n (i + 1),
+                                                             "Loads what PROGRAM MAP BANK1 PC#" + n (i + 1) + " is set to on the GT-1000.", 4 + i % 6 }; })
+                         + Tiles { { "BANK2 PC#1", "bank 1, CC 32=0, PC 1", "Loads what PROGRAM MAP BANK2 PC#1 is set to on the GT-1000.", 0 } } },
+        { "Switches (assign on the unit)", range (4, [&] (int i) { return TileDef { "Switch " + n (i + 1) + " on", "CC " + n (80 + i) + "=127", assign, i % 10 }; })
+                                           + range (4, [&] (int i) { return TileDef { "Switch " + n (i + 1) + " off", "CC " + n (80 + i) + "=0", assign, 9 }; }) },
+    };
+    return t;
+}
 }
 
 //==============================================================================
@@ -112,6 +152,7 @@ const std::vector<Template>& all()
                        "Connection: IMPORTANT: the FM3 can't be controlled over USB MIDI (Fractal: \"unpredictable behavior\"). Use a 5-pin MIDI "
                        "cable from your interface's MIDI Out."),
         vp4(),
+        bossGt1000(),
     };
     return list;
 }
@@ -136,7 +177,8 @@ juce::ValueTree createUnit (const Template& t)
     unit.removeAllChildren (nullptr);
     unit.setProperty (IDs::templateId, t.id, nullptr);
     unit.setProperty (IDs::colour, t.colour.toString(), nullptr);
-    unit.setProperty (IDs::programBase, 0, nullptr);
+    unit.setProperty (IDs::programBase, t.programBase, nullptr);
+    unit.setProperty (IDs::expCc, t.expCc, nullptr);
     unit.setProperty (IDs::notes, juce::String(), nullptr);   // the manual's notes stay read-only (About this unit); these are the player's own
     const auto& palette = state::palette();
     for (const auto& g : t.groups)

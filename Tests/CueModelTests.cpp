@@ -307,7 +307,7 @@ int main (int argc, char** argv)
     // Device templates (Fractal, Line 6): every tile's messages read back, names are unique in each group,
     // and a few numbers straight from the manuals.
     {
-        CHECK (templates::all().size() == 4);   // Axe-Fx III, FM9, FM3, VP4: no default CCs, so editable devices
+        CHECK (templates::all().size() == 5);   // Axe-Fx III, FM9, FM3, VP4, Boss GT-1000: no default CCs, so templates
         juce::StringArray ids;
         for (const auto& t : templates::all())
         {
@@ -320,7 +320,7 @@ int main (int argc, char** argv)
                 juce::StringArray names;
                 for (auto tile : g)
                 {
-                    const auto parsed = custom::parse (tile[IDs::messages].toString(), 0);
+                    const auto parsed = custom::parse (tile[IDs::messages].toString(), t.programBase);
                     if (! parsed.ok())
                         std::printf ("  %s / %s: %s\n", t.id.toRawUTF8(), tile[IDs::name].toString().toRawUTF8(), parsed.error.toRawUTF8());
                     CHECK (parsed.ok() && ! names.contains (tile[IDs::name].toString()));
@@ -343,6 +343,16 @@ int main (int argc, char** argv)
         CHECK (tileOf ("fractal.vp4", "Presets", "A1").events.size() == 1);                                 // VP4: no bank select
         CHECK (templates::find ("fractal.fm3")->notes.contains ("can't be controlled over USB"));
         CHECK (templates::find ("fractal.axe-fx-3")->notes.startsWith ("Why this is an editable device"));
+        // Boss GT-1000: PC#1 (the PROGRAM MAP's numbering) = Program Change 0, after bank select CC#0 and CC#32 = 0.
+        {
+            const auto& gt = *templates::find ("boss.gt-1000");
+            const auto unit = templates::createUnit (gt);
+            CHECK ((int) unit[IDs::programBase] == 1 && (int) unit[IDs::expCc] == 11 && gt.notes.startsWith ("Why this is a template"));
+            const auto tile = unit.getChild (0).getChild (0);
+            const auto c = custom::cue (1, "x", tile[IDs::messages].toString(), 1);
+            CHECK (c.events.size() == 3 && isCC (c.events[0].second, 1, 0, 0) && isCC (c.events[1].second, 1, 32, 0)
+                   && c.events[2].second.getProgramChangeNumber() == 0);
+        }
 
         // The template id survives export and import, so the disclaimer follows the device.
         const auto file = juce::File::createTempFile (".pedalcues-device");

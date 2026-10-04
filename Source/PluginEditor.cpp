@@ -245,10 +245,10 @@ void PedalCuesEditor::setHelpInMenuBar (bool inMenuBar)
 void PedalCuesEditor::showAboutDialog()
 {
     juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "PedalCues " JucePlugin_VersionString,
-                                            "Drag-and-drop MIDI cues for the Quad Cortex and Whammy V.\n\n"
+                                            "Drag-and-drop MIDI cues for your pedals and any MIDI device.\n\n"
                                             "Created by " + ui::author + "\n" + ui::repoUrl + "\n\n"
                                             "Free software under the MIT License. Built with JUCE.\n"
-                                            "Not affiliated with Neural DSP or DigiTech.");
+                                            "Not affiliated with any device maker. All product and company names are trademarks of their respective owners.");
 }
 
 void PedalCuesEditor::MenuButton::paintButton (juce::Graphics& g, bool over, bool down)

@@ -611,6 +611,9 @@ int main (int argc, char** argv)
             state::addCustomUnit (root, templates::createUnit (*templates::find ("fractal.axe-fx-3")));
             editor.refreshNow();
             save (snapshot (editor), outDir.getChildFile ("template-axe-fx-3.png"));
+            state::addCustomUnit (root, templates::createUnit (*templates::find ("boss.gt-1000")));
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("template-boss-gt-1000.png"));
         }
 
         // Fractal / Line 6 pages with demo presets.
