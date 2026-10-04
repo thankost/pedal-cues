@@ -582,6 +582,10 @@ int main (int argc, char** argv)
         proc.state.setProperty (IDs::expDraw, false, nullptr);
         proc.state.setProperty (IDs::qcExpressionView, false, nullptr);
         editor.refreshNow();
+        // QC Mini: the same page, footswitches and scenes on Pages I and II, plus the page tiles.
+        proc.state.setProperty (IDs::ampUnit, state::qcMiniAmpUnit, nullptr);
+        editor.refreshNow();
+        save (snapshot (editor), outDir.getChildFile ("qc-mini.png"));
         // Kemper: the same first tab with Kemper Profiler picked in its dropdown.
         proc.state.setProperty (IDs::ampUnit, 1, nullptr);
         editor.refreshNow();
@@ -595,6 +599,11 @@ int main (int argc, char** argv)
         proc.state.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
         editor.refreshNow();
         save (snapshot (editor), outDir.getChildFile ("custom-device.png"));
+        proc.state.setProperty (IDs::cuExpressionView, true, nullptr);
+        editor.refreshNow();
+        save (snapshot (editor), outDir.getChildFile ("custom-expression.png"));
+        proc.state.setProperty (IDs::cuExpressionView, false, nullptr);
+        editor.refreshNow();
 
         // Devices made from the Fractal and Line 6 templates, and the unit picker.
         {
@@ -648,6 +657,25 @@ int main (int argc, char** argv)
             fill ("line6.hx-stomp", { { "Stomp Clean", -1, 0, 4, { "Verse", "Chorus", "Solo" } }, { "Stomp Drive", -1, 1, 1, {} } });
             editor.refreshNow();
             save (snapshot (editor), outDir.getChildFile ("hx-stomp.png"));
+            fill ("headrush.core", { { "Worship Clean", -1, 0, 4, { "Intro", "Verse", "Pre", "Chorus", "Bridge", "Solo", "Tag", "Swell", "Big", "Outro" } },
+                                     { "Crunch", -1, 1, 1, {} }, { "Lead", -1, 2, 0, {} }, { "Ambient", -1, 9, 6, {} } });
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("headrush-core.png"));
+            if (outDir.getFileName() != "images")   // check by eye: the smallest window, with the channel reminder
+            {
+                const auto size = editor.getBounds();
+                state::setFlag (ui::channelsConfirmedFlag, false);
+                editor.setSize (980, 680);
+                editor.showPage (0);
+                save (snapshot (editor), outDir.getChildFile ("check-headrush-small.png"));
+                state::setFlag (ui::channelsConfirmedFlag, true);
+                editor.showPage (0);
+                editor.setBounds (size);
+                editor.refreshNow();
+            }
+            fill ("headrush.pedalboard", { { "Clean", -1, 0, 4, {} }, { "Rhythm", -1, 1, 1, {} }, { "Lead", -1, 2, 0, {} } });
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("headrush-pedalboard.png"));
             proc.state.setProperty (IDs::ampUnit, 0, nullptr);
             editor.refreshNow();
         }
@@ -728,6 +756,21 @@ int main (int argc, char** argv)
         kemperState.setProperty (IDs::ampUnit, 1, nullptr);
         auto kemperGuide = ui::makeWiringGuide (ui::ampInfo (kemperState), 1);
         save (kemperGuide->createComponentSnapshot (kemperGuide->getLocalBounds(), true, scale), outDir.getChildFile ("wiring-guide-kemper.png"));
+        if (outDir.getFileName() != "images")   // a scratch folder: extra shots to check by eye
+        {
+            // Checks only (not in the docs): a unit without USB MIDI, and the QC Mini's TRS jacks.
+            auto extra = proc.state.createCopy();
+            extra.setProperty (IDs::ampUnit, state::modellerAmpUnit, nullptr);
+            extra.setProperty (IDs::modellerProfile, "headrush.flex-prime", nullptr);
+            for (int view = 0; view < 3; ++view)
+            {
+                auto g = ui::makeWiringGuide (ui::ampInfo (extra), view);
+                save (g->createComponentSnapshot (g->getLocalBounds(), true, 1.0f), outDir.getChildFile ("check-headrush-" + juce::String (view) + ".png"));
+            }
+            extra.setProperty (IDs::ampUnit, state::qcMiniAmpUnit, nullptr);
+            auto g = ui::makeWiringGuide (ui::ampInfo (extra), 1);
+            save (g->createComponentSnapshot (g->getLocalBounds(), true, 1.0f), outDir.getChildFile ("check-qc-mini-1.png"));
+        }
     }
     {
         // The standalone app's MIDI Setup tab, with the "Test your pedals" card (demo port, after a Test QC click).

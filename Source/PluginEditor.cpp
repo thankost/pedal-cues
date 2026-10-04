@@ -159,7 +159,8 @@ void PedalCuesEditor::showQuadCortex (bool show)
     // The tour's Quad Cortex steps show the QC page, then put a Kemper player's own unit back.
     if (show)
     {
-        if (! tourSavedUnit && (int) state[IDs::ampUnit] != 0)
+        const auto unit = (int) state[IDs::ampUnit];
+        if (! tourSavedUnit && unit != 0 && unit != state::qcMiniAmpUnit)   // the tour shows the Quad Cortex page (the Mini's is the same)
         {
             tourSavedUnit = state[IDs::ampUnit];
             state.setProperty (IDs::ampUnit, 0, nullptr);
@@ -453,6 +454,7 @@ void PedalCuesEditor::showSupportDialog()
     w->addButton ("Buy Me a Coffee", 3);
     w->addButton ("PayPal", 1);
     w->addButton ("Revolut", 2);
+    w->addButton ("GitHub Sponsors", 4);   // last, as on the website
     w->initialise();
 
     // Each service in its own brand colour.
@@ -460,6 +462,7 @@ void PedalCuesEditor::showSupportDialog()
         { "Buy Me a Coffee", { 0xffffdd00, 0xff000000 } },
         { "PayPal",          { 0xff0070ba, 0xffffffff } },
         { "Revolut",         { 0xffffffff, 0xff191c1f } },
+        { "GitHub Sponsors", { 0xff24292f, 0xffdb61a2 } },
     };
     for (const auto& [name, colours] : brandColours)
         if (auto* b = w->getButton (name))
@@ -476,6 +479,8 @@ void PedalCuesEditor::showSupportDialog()
             juce::URL (ui::revolutUrl).launchInDefaultBrowser();
         else if (result == 3)
             juce::URL (ui::coffeeUrl).launchInDefaultBrowser();
+        else if (result == 4)
+            juce::URL (ui::sponsorsUrl).launchInDefaultBrowser();
     }), true);
 }
 
@@ -911,8 +916,8 @@ void PedalCuesEditor::resized()
     helpButton.setBounds (header.removeFromRight (38).withSizeKeepingCentre (34, 34));
     updateBadge.setBounds (18 + 40 + 10, 36, 270, 20);
 
-    // The amp tab is wider: it holds names like "Kemper Profiler" plus its ▾ unit menu.
-    const int tabWidths[] = { 172, 130, 130 };
+    // The amp tab is wider: it holds names like "HeadRush Pedalboard" plus its ▾ unit menu.
+    const int tabWidths[] = { 188, 122, 122 };
     const auto tabsWidth = tabWidths[0] + tabWidths[1] + tabWidths[2] + 8;
     tabBar.setBounds (juce::Rectangle<int> (tabsWidth, 38).withCentre ({ getWidth() / 2, header.getCentreY() }));
     auto t = tabBar.getLocalBounds().reduced (4);

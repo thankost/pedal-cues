@@ -67,8 +67,13 @@ private:
             const char* usbLinks[] = { "USB" };
             const Node din[] = { { amp.shortName + " Cues track", "PedalCues, " + amp.box + " tab", accent },
                                  { "MIDI interface", "MIDI Out", grey },
-                                 { amp.box, "5-pin MIDI In", amp.colour } };
+                                 { amp.box, amp.midiIn, amp.colour } };
             const char* dinLinks[] = { "USB", "MIDI cable" };
+            if (! amp.usbMidi)   // no MIDI over USB from a computer (HeadRush): the MIDI cable only
+            {
+                paintChain (g, area.withSizeKeepingCentre (area.getWidth(), 66), din, dinLinks, 3);
+                return;
+            }
             auto top = area.removeFromTop (rowH);
             area.removeFromTop (8);
             paintChain (g, top.removeFromLeft ((top.getWidth() * 2 - 56) / 3), usb, usbLinks, 2);
@@ -100,7 +105,15 @@ private:
         const char* otherLinks[] = { "USB", "MIDI cable" };
         auto top = area.removeFromTop (rowH);
         area.removeFromTop (8);
-        paintChain (g, top.removeFromLeft ((top.getWidth() * 2 - 56) / 3), ampRow, ampLinks, 2);   // same box width as the 3-box row
+        if (! amp.usbMidi)
+        {
+            const Node cableRow[] = { { amp.shortName + " Cues track", "PedalCues, " + amp.box + " tab", accent },
+                                      { "MIDI interface", "MIDI Out 1", grey },
+                                      { amp.box, amp.midiIn, amp.colour } };
+            paintChain (g, top, cableRow, otherLinks, 3);
+        }
+        else
+            paintChain (g, top.removeFromLeft ((top.getWidth() * 2 - 56) / 3), ampRow, ampLinks, 2);   // same box width as the 3-box row
         paintChain (g, area, other, otherLinks, 3);
     }
 
@@ -146,19 +159,25 @@ public:
     explicit WiringGuide (const AmpInfo& a) : amp (a)
     {
         const auto d = amp.box;
+        const auto trsNote = amp.isTrs() ? " Its MIDI jacks are 3.5 mm TRS (Type A): use a TRS MIDI cable or a 5-pin to TRS adapter."
+                                         : juce::String();
         oneDevice.oneDevice = true;
         oneDevice.steps = { "USB from the " + d + " to the computer" + (amp.isCustom() ? juce::String (", if it has USB MIDI.") : juce::String (".")),
-                            "Or a MIDI cable from your interface's MIDI Out to the " + d + "'s MIDI In.",
+                            "Or a MIDI cable from your interface's MIDI Out to the " + d + "'s MIDI In." + trsNote,
                             "Set the " + d + "'s MIDI channel in MIDI Setup, the same as on the device (not Omni)." };
         if (! amp.hasDin)
             oneDevice.steps = { "USB from the " + d + " to the computer. It has no 5-pin MIDI, so USB is the only way.",
+                                "Set the " + d + "'s MIDI channel in MIDI Setup, the same as on the device (not Omni)." };
+        else if (! amp.usbMidi)
+            oneDevice.steps = { "A MIDI cable from your interface's MIDI Out to the " + d + "'s MIDI In." + trsNote
+                                    + " Its manual doesn't mention MIDI over USB from a computer, so use a MIDI cable.",
                                 "Set the " + d + "'s MIDI channel in MIDI Setup, the same as on the device (not Omni)." };
 
         const auto thruNote = amp.kind == AmpInfo::Kind::quadCortex ? juce::String (" Turn MIDI Thru on in the QC.")
                             : amp.isKemper() ? juce::String (" If your Kemper shares one jack for MIDI Out and Thru, set it to Thru.")
                             : amp.isModeller() ? juce::String (" Turn MIDI Thru on in its MIDI settings.")
                                              : juce::String (" See its manual for the Thru setting.");
-        daisy.steps = { "A MIDI cable from your interface's MIDI Out to the " + d + "'s MIDI In.",
+        daisy.steps = { "A MIDI cable from your interface's MIDI Out to the " + d + "'s MIDI In." + trsNote,
                         "A MIDI cable from the " + d + "'s MIDI Thru to the second device's MIDI In (for example a Whammy)." + thruNote,
                         "Give the two devices different MIDI channels, so each only reacts to its own cues." };
         if (! amp.hasDin)
@@ -169,7 +188,8 @@ public:
         }
 
         separate.viaInterface = true;
-        separate.steps = { d + ": USB to the computer" + (amp.isCustom() ? juce::String (" (if it has USB MIDI)") : juce::String())
+        separate.steps = { ! amp.usbMidi ? d + ": a MIDI cable from MIDI Out 1 to its MIDI In." + trsNote
+                           : d + ": USB to the computer" + (amp.isCustom() ? juce::String (" (if it has USB MIDI)") : juce::String())
                              + (amp.hasDin ? ", or a MIDI cable from MIDI Out 1 to its MIDI In." : " (it has no 5-pin MIDI)."),
                            "Second device (for example a Whammy): a MIDI cable from MIDI Out 2 to its MIDI In. "
                            "The Whammy has no USB MIDI, so it always needs a MIDI cable.",
@@ -219,7 +239,7 @@ public:
         const juce::String titles[] = { "ONE DEVICE: " + amp.box.toUpperCase(),
                                         "DAISY CHAIN VIA " + amp.box.toUpperCase(),
                                         "SEPARATE OUTPUTS" };
-        const juce::String subs[] = { "Just your " + amp.box + ": one cue track, sent over USB or a MIDI cable.",
+        const juce::String subs[] = { "Just your " + amp.box + ": one cue track, sent over " + (amp.usbMidi ? "USB or " : "") + "a MIDI cable.",
                                       "A second device on the " + amp.box + "'s MIDI Thru. Both tracks send to the same interface MIDI Out.",
                                       "Each device on its own output. Each DAW track sends to the output its device is on." };
         auto r = title;
@@ -236,12 +256,14 @@ public:
         juce::String warn;
         if (! amp.hasDin)
             warn = "The " + amp.box + " has no 5-pin MIDI: it can't pass MIDI on to a second device. Give the second device its own MIDI output.";
+        else if (! amp.usbMidi)
+            warn = {};   // MIDI cables only (HeadRush): the steps say so, and its Thru passes on its MIDI In
         else if (amp.usbToThru == 2)
             warn = "On USB only, a second device on the " + amp.box + "'s Thru gets MIDI only with " + amp.usbThruSetting
-                 + " on (see the manual). Without it, use the 5-pin MIDI In.";
+                 + " on (see the manual). Without it, use the " + amp.midiIn + ".";
         else if (amp.usbToThru == 3)
             warn = "Usually doesn't work: the " + amp.box + " on USB only, with a second device on its MIDI Thru. Its manual doesn't say whether "
-                   "USB MIDI is passed on, so send to its 5-pin MIDI In to be safe.";
+                   "USB MIDI is passed on, so send to its " + amp.midiIn + " to be safe.";
         else
             warn = "Doesn't work: the " + amp.box + " on USB only, with a second device on its MIDI Thru. A MIDI Thru only passes on MIDI from the "
                    "5-pin MIDI In. "
@@ -319,7 +341,7 @@ public:
         styleCaption (qcChannelLabel, "Quad Cortex channel");
         styleCaption (whChannelLabel, "Whammy channel");
         styleCaption (ampLabel, "Amp modeller or MIDI device");
-        ampBox.setTooltip ("Quad Cortex, Kemper, a Fractal or Line 6 unit, or your own MIDI device: the first tab and the channel below "
+        ampBox.setTooltip ("Quad Cortex, Kemper, a Fractal, HeadRush or Line 6 unit, or your own MIDI device: the first tab and the channel below "
                            "follow it. Opens the same searchable list as the arrow on the first tab.");
         ampBox.onClick = [this] { showUnitPicker (state, ampBox, {}); };
         styleHint (qcHint, "Must match the QC: Settings > MIDI Settings > MIDI Channel (not Omni).");
@@ -398,7 +420,16 @@ public:
                     proc.preview (c);
                 return;
             }
-            if (const auto* model = ampInfo (state).isModeller() ? modellers::find (state[IDs::modellerProfile].toString()) : nullptr)
+            const auto* model = ampInfo (state).isModeller() ? modellers::find (state[IDs::modellerProfile].toString()) : nullptr;
+            if (model != nullptr && model->tunerOn.isEmpty() && ! model->utilities.empty())
+            {
+                // No tuner over MIDI (older HeadRush units): one tap instead.
+                proc.preview (modellers::action (*model, ch, model->utilities.front()));
+                setTestStatus ("Sent " + model->utilities.front().name + " to " + currentPortName() + " on channel " + juce::String (ch) + ". Did the "
+                               + ampShort() + " react (its tempo LED)? If not, check the cable direction, its channel (" + model->channelHint + ") and MIDI Thru.");
+                return;
+            }
+            if (model != nullptr)
             {
                 // The unit's tuner on, then off ~1.5 s later (Line 6: the same toggle twice).
                 for (const auto& [text, beat] : { std::pair<juce::String, double> { model->tunerOn, 0.0 }, { model->tunerOff, proc.getHostBpm() / 40.0 } })
@@ -636,10 +667,11 @@ private:
         else
             viaInterface = true;   // USB only (POD Go): no daisy chain, and the saved choice stays for other units
         viaQcButton.setEnabled (amp.hasDin);
-        viaQcButton.setTooltip (amp.hasDin ? "Interface MIDI Out > " + amp.box + " 5-pin MIDI In > its MIDI Thru > the second device (e.g. a Whammy). "
-                                             "A MIDI Thru only passes on MIDI from the 5-pin MIDI In, so this needs a 5-pin MIDI Out."
+        viaQcButton.setTooltip (amp.hasDin ? "Interface MIDI Out > " + amp.box + " " + amp.midiIn + " > its MIDI Thru > the second device (e.g. a Whammy). "
+                                             "A MIDI Thru only passes on MIDI from the MIDI In jack, so this needs an interface MIDI Out."
                                            : "The " + amp.box + " has no 5-pin MIDI, so it can't be in a daisy chain.");
-        viaInterfaceButton.setTooltip ("Each device on its own output: the " + amp.box + " over USB" + (amp.hasDin ? juce::String (" (or MIDI Out 1)") : juce::String())
+        viaInterfaceButton.setTooltip ("Each device on its own output: the " + amp.box + (! amp.usbMidi ? juce::String (" on MIDI Out 1")
+                                       : " over USB" + (amp.hasDin ? juce::String (" (or MIDI Out 1)") : juce::String()))
                                        + ", the second device (e.g. a Whammy) on a MIDI Out");
         (viaInterface ? viaInterfaceButton : viaQcButton).setToggleState (true, juce::dontSendNotification);
 
@@ -648,7 +680,8 @@ private:
             tracksSteps.steps = {
                 "In your DAW, enable the MIDI outputs your pedals are on.",
                 "Track '" + ampShort() + " Cues': insert PedalCues and set its MIDI output to the " + amp.box
-                    + (amp.hasDin ? juce::String (" (USB) or MIDI Out 1.") : juce::String (" (USB): it has no 5-pin MIDI.")),
+                    + (! amp.usbMidi ? juce::String (" on MIDI Out 1.")
+                       : amp.hasDin ? juce::String (" (USB) or MIDI Out 1.") : juce::String (" (USB): it has no 5-pin MIDI.")),
                 "Track 'Whammy Cues': insert PedalCues and set its MIDI output to MIDI Out 2.",
                 "Keep the original MIDI channels. Drag " + ampShort() + " tiles onto " + ampShort() + " Cues and Whammy tiles onto Whammy Cues."
             };

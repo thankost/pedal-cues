@@ -25,7 +25,7 @@ std::unique_ptr<Page> makeQcPage       (PedalCuesProcessor&);
 std::unique_ptr<Page> makeKemperPage   (PedalCuesProcessor&);
 std::unique_ptr<Page> makeAmpPage      (PedalCuesProcessor&);   // first tab: the Quad Cortex or Kemper page
 
-juce::String ampUnitName (int unit);   // "Quad Cortex", "Kemper Profiler", "Kemper Player"
+juce::String ampUnitName (int unit);   // "Quad Cortex", "Kemper Profiler", "Kemper Player", "Quad Cortex Mini"
 
 // The amp unit on the first tab, for labels and the wiring guide: a Quad Cortex, a Kemper or a custom unit (beta).
 struct AmpInfo
@@ -37,13 +37,16 @@ struct AmpInfo
     juce::String shortName { "QC" };       // in sentences and track names: "QC", "Kemper", "Axe-Fx II"
     juce::Colour colour { theme::qcBlue };
     // Connection facts for the wiring guide.
-    bool hasDin = true;                    // 5-pin MIDI (POD Go: USB only)
+    bool hasDin = true;                    // a MIDI In jack, 5-pin or TRS (POD Go: USB only)
+    juce::String midiIn { "5-pin MIDI In" }; // QC Mini, Flex Prime, MX5: "TRS MIDI In"
+    bool usbMidi = true;                   // MIDI over USB from the computer (HeadRush: not in its manuals)
     int usbToThru = 0;                     // 0 never (QC, Kemper), 1 yes, 2 only with a setting, 3 not documented
     juce::String usbThruSetting;
     juce::String channelHint;
     bool isKemper() const { return kind == Kind::kemper; }
     bool isModeller() const { return kind == Kind::modeller; }
     bool isCustom() const { return kind == Kind::custom; }
+    bool isTrs() const { return midiIn.startsWith ("TRS"); }
 };
 AmpInfo ampInfo (const juce::ValueTree& state);
 
@@ -81,6 +84,7 @@ inline const juce::String helpUrl { "https://thankost.github.io/pedal-cues/help.
 inline const juce::String coffeeUrl { "https://buymeacoffee.com/athkost" };
 inline const juce::String paypalUrl { "https://paypal.me/athkost" };
 inline const juce::String revolutUrl { "https://revolut.me/athkost" };
+inline const juce::String sponsorsUrl { "https://github.com/sponsors/thankost" };
 
 // The "Report a problem" form on GitHub, with this version, the computer and the host filled in.
 inline juce::URL problemReportUrl()

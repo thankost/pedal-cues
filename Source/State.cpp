@@ -75,6 +75,7 @@ static void sanitiseCustomUnit (juce::ValueTree& u)
     setDefault (u, IDs::colour, juce::Colour (0xff8e7cf0).toString());
     setDefault (u, IDs::notes, juce::String());
     setDefault (u, IDs::programBase, 0);
+    setDefault (u, IDs::expCc, 11);
     for (int i = u.getNumChildren(); --i >= 0;)
         if (! u.getChild (i).hasType (IDs::Group))
             u.removeChild (i, nullptr);
@@ -309,6 +310,13 @@ void sanitise (juce::ValueTree& root)
     setDefault (root, IDs::mdDraw, false);
     setDefault (root, IDs::mdDrawing, cues::whammy::encodeDrawing (cues::whammy::defaultDrawing()));
     setDefault (root, IDs::mdDrawingName, juce::String());
+    setDefault (root, IDs::cuExpressionView, false);
+    setDefault (root, IDs::cuBeats, 4.0);
+    setDefault (root, IDs::cuCurve, 1.0);
+    setDefault (root, IDs::cuReset, false);
+    setDefault (root, IDs::cuDraw, false);
+    setDefault (root, IDs::cuDrawing, cues::whammy::encodeDrawing (cues::whammy::defaultDrawing()));
+    setDefault (root, IDs::cuDrawingName, juce::String());
     setDefault (root, IDs::selectedPerformance, 0);
     setDefault (root, IDs::kemperSlotFirst, true);
     setDefault (root, IDs::kemperEffectOn, true);
@@ -392,7 +400,7 @@ void sanitise (juce::ValueTree& root)
     if ((int) root[IDs::ampUnit] == customAmpUnit && units.getNumChildren() == 0)
         root.setProperty (IDs::ampUnit, 0, nullptr);
 
-    // Fractal / Line 6 pages: one subtree per model, so switching units keeps each one's presets.
+    // Fractal / Line 6 / HeadRush pages: one subtree per model, so switching units keeps each one's presets.
     auto mods = root.getOrCreateChildWithName (IDs::Modellers, nullptr);
     for (int i = mods.getNumChildren(); --i >= 0;)
     {
@@ -410,6 +418,8 @@ void sanitise (juce::ValueTree& root)
         else
             modeller (root, root[IDs::modellerProfile].toString());
     }
+    if (! juce::isPositiveAndNotGreaterThan ((int) root[IDs::ampUnit], qcMiniAmpUnit))
+        root.setProperty (IDs::ampUnit, 0, nullptr);   // from a newer PedalCues: show the Quad Cortex
 
     auto wh = root.getOrCreateChildWithName (IDs::Whammy, nullptr);
     for (int i = wh.getNumChildren(); i < cues::whammy::numEffects; ++i)
@@ -475,10 +485,10 @@ void setFlag (const juce::String& name, bool value)
 // What a setup carries besides the names: the MIDI settings and the playing preferences
 // (Whammy Chords / Load bypassed / Heel first, return to heel after moves, Expression's Load 1A first).
 // Length and curve change per song, so they stay in the project.
-static const std::array<const juce::Identifier*, 21>& setupProperties()
+static const std::array<const juce::Identifier*, 22>& setupProperties()
 {
-    static const std::array<const juce::Identifier*, 21> ids { &IDs::ampUnit, &IDs::selectedCustomUnit, &IDs::modellerProfile,
-                                                               &IDs::mdLoadFirst, &IDs::mdSendSetlist, &IDs::mdReset, &IDs::kemperSlotFirst, &IDs::kemperKeepTails,
+    static const std::array<const juce::Identifier*, 22> ids { &IDs::ampUnit, &IDs::selectedCustomUnit, &IDs::modellerProfile,
+                                                               &IDs::mdLoadFirst, &IDs::mdSendSetlist, &IDs::mdReset, &IDs::cuReset, &IDs::kemperSlotFirst, &IDs::kemperKeepTails,
                                                                &IDs::kpReset, &IDs::qcChannel, &IDs::whChannel, &IDs::whModel, &IDs::whPcBase,
                                                                &IDs::sendSetlist, &IDs::comboPresetScene,
                                                                &IDs::whChords, &IDs::whBypass, &IDs::whHeelFirst,

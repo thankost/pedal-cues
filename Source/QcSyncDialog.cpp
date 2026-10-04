@@ -186,7 +186,8 @@ private:
                         + juce::String (result.isMini ? "QC Mini" : "Quad Cortex") + " (CorOS " + result.corosVersion + "). "
                         "Tick the ones to import."
                         + (result.current ? " The loaded preset (" + result.current->name + ") comes with its scenes, colours and stomps."
-                                          : juce::String()),
+                                          : juce::String())
+                        + unitHint (result.isMini),
                         juce::dontSendNotification);
 
         setlistRows.clear();
@@ -394,6 +395,17 @@ private:
     static constexpr int factoryId = 100;   // the setlist combo's "Factory (0)" item (ids must be non-zero)
     static constexpr int maxSetlist = 32;
     static inline const juce::String numbersSetting { "qcSetlistNumbers" };
+
+    // Synced from a Mini while the first tab shows the Quad Cortex, or the other way round: say which to pick.
+    juce::String unitHint (bool isMini) const
+    {
+        const auto onMini = (int) state[IDs::ampUnit] == state::qcMiniAmpUnit;
+        if (isMini && ! onMini)
+            return " Tip: pick Quad Cortex Mini in the device list (the arrow on the first tab) to see its footswitch pages.";
+        if (! isMini && onMini)
+            return " Tip: pick Quad Cortex in the device list (the arrow on the first tab) to see footswitches A-H.";
+        return {};
+    }
 
     juce::ValueTree state;
     std::shared_ptr<std::atomic<bool>> cancel = std::make_shared<std::atomic<bool>> (false);

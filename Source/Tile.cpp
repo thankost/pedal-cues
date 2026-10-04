@@ -129,7 +129,7 @@ void Tile::paintScreen (juce::Graphics& g, juce::Rectangle<float> b, bool hover)
             g.fillRoundedRectangle (c, 5.0f);
             g.setColour (readableOn (chips[i]).withAlpha (0.8f));
             g.setFont (font (10.5f, true));
-            g.drawText (numberedChips ? juce::String ((int) i + 1) : cues::qc::letter ((int) i), c, juce::Justification::centred);
+            g.drawText (numberedChips ? juce::String ((int) i + 1) : cues::qc::letter ((int) i % juce::jmax (1, chipLetters)), c, juce::Justification::centred);
         }
         area.removeFromRight (16.0f);
     }
@@ -169,7 +169,8 @@ void Tile::paintFootswitch (juce::Graphics& g, juce::Rectangle<float> b, bool ho
     g.drawRoundedRectangle (b.reduced (0.5f), 12.0f, hover ? 1.5f : 1.0f);
 
     // Scene colour bar with soft glow.
-    const juce::Rectangle<float> bar (b.getX() + 14.0f, b.getY() + 12.0f, b.getWidth() - 28.0f, 5.0f);
+    const auto tiny = b.getHeight() < 64.0f;   // the smallest window on a busy page: a thinner bar, closer to the top
+    const juce::Rectangle<float> bar (b.getX() + 14.0f, b.getY() + (tiny ? 7.0f : 12.0f), b.getWidth() - (tiny ? 44.0f : 28.0f), tiny ? 3.0f : 5.0f);
     g.setColour (colour.withAlpha (0.18f));
     g.fillRoundedRectangle (bar.expanded (4.0f, 3.0f), 5.0f);
     g.setColour (colour);
@@ -178,7 +179,7 @@ void Tile::paintFootswitch (juce::Graphics& g, juce::Rectangle<float> b, bool ho
     // Short tiles (small windows, busy pages): the footswitch on the left and the name beside it, so the name never disappears.
     if (b.getHeight() < 110.0f)
     {
-        auto body = b.withTrimmedTop (bar.getBottom() - b.getY() + 4.0f).reduced (12.0f, 6.0f);
+        auto body = b.withTrimmedTop (bar.getBottom() - b.getY() + (tiny ? 1.0f : 4.0f)).reduced (12.0f, tiny ? 3.0f : 6.0f);
         const auto d = juce::jlimit (22.0f, 36.0f, body.getHeight() - 4.0f);
         const auto sw = body.removeFromLeft (d).withSizeKeepingCentre (d, d);
         g.setColour (colour.withAlpha (hover ? 0.35f : 0.2f));

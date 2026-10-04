@@ -106,12 +106,14 @@ private:
         // Fractal units without default CCs, which come as editable devices.
         entries.push_back ({ Kind::header, "Neural DSP", {}, {} });
         entries.push_back ({ Kind::builtin, ampUnitName (0), {}, "neural dsp qc amp modeller", 0, {}, ampUnit == 0 });
+        entries.push_back ({ Kind::builtin, ampUnitName (state::qcMiniAmpUnit), {}, "neural dsp qc mini amp modeller",
+                             state::qcMiniAmpUnit, {}, ampUnit == state::qcMiniAmpUnit });
         entries.push_back ({ Kind::header, "Kemper", {}, {} });
         for (int u = 1; u < 3; ++u)
             entries.push_back ({ Kind::builtin, ampUnitName (u), {}, "kemper amp modeller", u, {}, ampUnit == u });
 
         const auto currentModel = ampUnit == state::modellerAmpUnit ? state[IDs::modellerProfile].toString() : juce::String();
-        for (const auto* brand : { "Fractal Audio", "Line 6" })
+        for (const auto* brand : { "Fractal Audio", "HeadRush", "Line 6" })
         {
             entries.push_back ({ Kind::header, brand, {}, {} });
             for (const auto& m : modellers::all())

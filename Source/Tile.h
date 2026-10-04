@@ -28,6 +28,7 @@ public:
     juce::String screenHeading { "LOADED PRESET" }, chipsHeading { "SCENES" };   // screen labels (Kemper: performance, slots)
     juce::String screenHint { "Drag this onto the timeline to load the preset" };
     bool numberedChips = false;              // screen: chips labelled 1, 2, 3 instead of A, B, C
+    int chipLetters = 8;                     // screen: letters before they repeat (QC Mini: A-D on Page I, A-D on Page II)
 
     std::function<cues::Cue()> makeCue;
     std::function<void()> onClick;

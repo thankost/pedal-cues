@@ -54,10 +54,18 @@ namespace IDs
     PEDALCUES_ID (mdDraw)
     PEDALCUES_ID (mdDrawing)
     PEDALCUES_ID (mdDrawingName)
+    PEDALCUES_ID (expCc)           // a custom device's expression pedal CC (11 = the MIDI standard Expression controller)
+    PEDALCUES_ID (cuExpressionView) // custom device page: tiles (false) or expression moves (true)
+    PEDALCUES_ID (cuBeats)
+    PEDALCUES_ID (cuCurve)
+    PEDALCUES_ID (cuReset)
+    PEDALCUES_ID (cuDraw)
+    PEDALCUES_ID (cuDrawing)
+    PEDALCUES_ID (cuDrawingName)
     PEDALCUES_ID (templateId)      // custom unit made from a device template (DeviceTemplates.h): "line6.helix-floor"
     PEDALCUES_ID (selectedCustomUnit)
 
-    PEDALCUES_ID (ampUnit)         // first tab: 0 = Quad Cortex, 1 = Kemper Profiler, 2 = Kemper Player, 3 = a custom unit, 4 = a Fractal / Line 6 page
+    PEDALCUES_ID (ampUnit)         // first tab: 0 = Quad Cortex, 1 = Kemper Profiler, 2 = Kemper Player, 3 = a custom unit, 4 = a Fractal / Line 6 page, 5 = QC Mini
     PEDALCUES_ID (qcChannel)       // the amp unit's MIDI channel (Quad Cortex or Kemper)
     PEDALCUES_ID (selectedPerformance)
     PEDALCUES_ID (kemperSlotFirst) // Kemper "Load P1 first" for slot and effect tiles
@@ -116,6 +124,8 @@ namespace state
     constexpr int customAmpUnit = 3;
     // Fractal / Line 6 pages (Modellers.h): ampUnit 4 shows the one named by modellerProfile.
     constexpr int modellerAmpUnit = 4;
+    // The QC Mini: the Quad Cortex page and data (same MIDI), its four footswitches on Pages I and II.
+    constexpr int qcMiniAmpUnit = 5;
     juce::ValueTree modeller (juce::ValueTree& root, const juce::String& profileId);   // its data, created on first use
     juce::ValueTree createModPreset (const juce::String& profileId, const juce::String& name, int setlist, int index, juce::Colour);
     juce::ValueTree createCustomUnit (const juce::String& name);

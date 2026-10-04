@@ -16,6 +16,8 @@ static constexpr int ticksPerQuarter = 960;
 juce::MidiMessage lengthPadding (const Cue& cue)
 {
     const auto& last = cue.events.back().second;
+    if (cue.toggles)
+        return juce::MidiMessage::controllerEvent (last.getChannel(), 0, 0);
     if (! last.isProgramChange())
         return last;
     for (auto it = cue.events.rbegin(); it != cue.events.rend(); ++it)
@@ -37,8 +39,8 @@ juce::File writeMidiFile (const Cue& cue, double bpm)
         seq.addEvent (msg, beat * ticksPerQuarter);
 
     // Ableton Live sizes a dropped clip by its last event and refuses a file whose events all sit on the first
-    // tick (a single scene change, the tuner...). Repeat the last message 1/16 later: the same scene, tuner
-    // state or footswitch value again changes nothing on the pedal, and the clip gets a length.
+    // tick (a single scene change, the tuner...). Add a message 1/16 later that changes nothing on the pedal
+    // (lengthPadding), so the clip gets a length.
     const auto allAtStart = ! cue.events.empty()
                          && std::all_of (cue.events.begin(), cue.events.end(), [] (const auto& e) { return e.first <= 0.0; });
     if (allAtStart)
@@ -151,6 +153,12 @@ namespace qc
         return juce::String::charToString ((juce::juce_wchar) ('A' + juce::jlimit (0, 7, i)));
     }
 
+    juce::String miniLabel (int i)
+    {
+        const auto index = juce::jlimit (0, 7, i);
+        return letter (index % 4) + (index < 4 ? " (I)" : " (II)");
+    }
+
     juce::String location (int setlist, int bank, int slot)
     {
         return (setlist <= 0 ? juce::String ("Factory") : "SL" + juce::String (setlist)) + " | " + juce::String (bank) + letter (slot);
@@ -174,10 +182,10 @@ namespace qc
         c.add (beat, juce::MidiMessage::programChange (ch, index % 128));
     }
 
-    Cue scene (int channel, int sceneIndex, const juce::String& label)
+    Cue scene (int channel, int sceneIndex, const juce::String& label, bool mini)
     {
         Cue c;
-        c.name = "QC Scene " + letter (sceneIndex) + (label.isNotEmpty() ? " - " + label : juce::String());
+        c.name = "QC Scene " + (mini ? miniLabel (sceneIndex) : letter (sceneIndex)) + (label.isNotEmpty() ? " - " + label : juce::String());
         addScene (c, channel, sceneIndex, 0.0);
         return c;
     }
@@ -198,13 +206,21 @@ namespace qc
         return c;
     }
 
-    Cue stomp (int channel, int footswitch, bool on, const juce::String& label)
+    Cue stomp (int channel, int footswitch, bool on, const juce::String& label, bool mini)
     {
         Cue c;
-        c.name = "QC " + (label.isNotEmpty() ? label : "Stomp " + letter (footswitch)) + (on ? " On" : " Off");
+        c.name = "QC " + (label.isNotEmpty() ? label : "Stomp " + (mini ? miniLabel (footswitch) : letter (footswitch))) + (on ? " On" : " Off");
         c.add (0.0, juce::MidiMessage::controllerEvent (clampChannel (channel),
                                                         cc::stompA + juce::jlimit (0, 7, footswitch),
                                                         on ? 127 : 0));
+        return c;
+    }
+
+    Cue footswitchPage (int channel, int page)
+    {
+        Cue c;
+        c.name = page == 2 ? "QC Mini Page II" : "QC Mini Page I";
+        c.add (0.0, juce::MidiMessage::controllerEvent (clampChannel (channel), cc::page, page == 2 ? 127 : 0));
         return c;
     }
 
@@ -212,6 +228,7 @@ namespace qc
     {
         Cue c;
         c.name = "QC Tap";
+        c.toggles = true;
         c.add (0.0, juce::MidiMessage::controllerEvent (clampChannel (channel), cc::tap, 127));
         return c;
     }
@@ -781,6 +798,9 @@ namespace custom
             else
                 c.add (0.0, juce::MidiMessage::controllerEvent (ch, st.number, st.value));
         }
+        // A CC-only tile may be a press or a toggle (a Boss CC, a block toggle): never send it twice when the clip
+        // is padded for Ableton. Tiles with a Program Change keep repeating their bank CC (lengthPadding).
+        c.toggles = std::none_of (c.events.begin(), c.events.end(), [] (const auto& e) { return e.second.isProgramChange(); });
         return c;
     }
 }

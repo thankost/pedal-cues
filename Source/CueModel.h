@@ -15,6 +15,7 @@ struct Cue
     juce::String name;
     double lengthBeats = 1.0;
     std::vector<std::pair<double, juce::MidiMessage>> events;
+    bool toggles = false;   // a press or toggle (tap, a Line 6 footswitch, a HeadRush block): sending it twice would undo it
 
     void add (double beat, const juce::MidiMessage& m) { events.emplace_back (beat, m); }
 };
@@ -23,8 +24,9 @@ struct Cue
 // ready to be dragged onto a DAW timeline.
 juce::File writeMidiFile (const Cue& cue, double bpm);
 
-// What writeMidiFile repeats 1/16 later when every event sits on the first tick (Ableton needs a clip length):
-// never a second Program Change, which could reload the preset.
+// What writeMidiFile adds 1/16 later when every event sits on the first tick (Ableton needs a clip length):
+// the last message again when that changes nothing, never a second Program Change (it could reload the preset),
+// and for toggles a bank select of 0 (CC#0 = 0, which waits for a Program Change) instead of a second press.
 juce::MidiMessage lengthPadding (const Cue& cue);
 
 juce::String formatBeats (double beats);
@@ -45,21 +47,26 @@ namespace qc
         constexpr int gigMode = 47; // 0 preset, 1 stomp, 2 scene (tested on a QC)
         constexpr int exp1    = 1;  // expression pedal 1, 0-127 (heel to toe)
         constexpr int exp2    = 2;  // expression pedal 2
+        constexpr int page    = 64; // QC Mini only: footswitch page, 0-63 Page I / 64-127 Page II (Mini manual)
     }
 
+    // The QC Mini has four footswitches on two pages: scenes and footswitches 0-3 are A-D on Page I, 4-7 are A-D on
+    // Page II (the QC's E-H, same MIDI). 'letter' gives the QC's A-H, 'miniLabel' the Mini's "A (I)" .. "D (II)".
     juce::String letter (int zeroBasedIndex);
+    juce::String miniLabel (int zeroBasedIndex);
     juce::String location (int setlist, int bank, int slot); // e.g. "SL1 | 3B"; setlist 0 = "Factory | 3B"
 
     void addScene      (Cue&, int channel, int scene, double beat);
     void addPresetLoad (Cue&, int channel, int setlist, int bank, int slot, bool sendSetlist, double beat);
 
-    Cue scene   (int channel, int scene, const juce::String& label);
+    Cue scene   (int channel, int scene, const juce::String& label, bool mini = false);
     Cue preset  (int channel, int setlist, int bank, int slot, bool sendSetlist, const juce::String& label);
     Cue tuner   (int channel, bool on);
-    Cue stomp   (int channel, int footswitch, bool on, const juce::String& label);
+    Cue stomp   (int channel, int footswitch, bool on, const juce::String& label, bool mini = false);
     Cue gigMode (int channel, int mode);
     Cue gigView (int channel, bool open);   // open or close the Gig View screen
     Cue tap (int channel);                  // one Tap Tempo press
+    Cue footswitchPage (int channel, int page);   // QC Mini: 1 = Page I, 2 = Page II
 
     // Expression pedal automation (CC#1 / CC#2). Moves whatever is assigned to Expression 1 or 2 on the QC.
     // 'pedal' is 1 or 2. 'curve' is an exponent (1 = linear).

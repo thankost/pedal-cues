@@ -15,6 +15,18 @@ public:
         for (auto* c : std::initializer_list<juce::Component*> { &presetsSection, &scenesSection, &stompsSection, &utilsSection })
             addAndMakeVisible (c);
 
+        // QC Mini: each row of scenes, and each half of the stomps, is one footswitch page.
+        for (int i = 0; i < 4; ++i)
+        {
+            auto& l = pageLabels[i];
+            l.setText (i % 2 == 0 ? "PAGE\nI" : "PAGE\nII", juce::dontSendNotification);
+            l.setFont (font (11.5f, true));
+            l.setColour (juce::Label::textColourId, dim);
+            l.setJustificationType (juce::Justification::centred);
+            l.setTooltip (i % 2 == 0 ? "Footswitch Page I on the QC Mini" : "Footswitch Page II on the QC Mini (the Quad Cortex's E-H)");
+            addChildComponent (l);
+        }
+
         addButton.setComponentID ("qc.addPreset");
         addButton.setTooltip ("Add a preset (double-click or right-click a preset to edit, recolour, reorder)");
         addButton.setColour (juce::TextButton::buttonColourId, accent);
@@ -139,6 +151,8 @@ public:
         screen = std::make_unique<Tile> (proc, Tile::Look::screen);
         screen->setComponentID ("qc.screen");
         describePreset (*screen, sel);
+        screen->chipLetters = mini() ? 4 : 8;
+        screen->chipsHeading = mini() ? "SCENES  PAGE I / II" : "SCENES";
         for (int s = 0; s < 8; ++s)
             screen->chips.push_back (state::colourOf (nthOfType (preset, IDs::Scene, s)));
         screen->onDoubleClick = [this, sel] { editPresetDialog (qcTree().getChild (sel)); };
@@ -150,10 +164,10 @@ public:
         {
             const auto scene = nthOfType (preset, IDs::Scene, s);
             auto* t = sceneTiles.add (new Tile (proc, Tile::Look::footswitch));
-            t->title = scene[IDs::name].toString();
-            t->badge = cues::qc::letter (s);
-            t->subtitle = combo ? shortLocation (preset) + " > Scene " + cues::qc::letter (s)
-                                : "Scene " + cues::qc::letter (s) + " - current preset";
+            t->title = nodeName (scene, "Scene ", s);
+            t->badge = cues::qc::letter (mini() ? s % 4 : s);
+            t->subtitle = combo ? shortLocation (preset) + " > Scene " + cues::qc::letter (mini() ? s % 4 : s)
+                                : "Scene " + cues::qc::letter (mini() ? s % 4 : s) + " - current preset";   // the Mini's page is the row label
             t->colour = state::colourOf (scene);
             t->setTooltip ("Drag onto the timeline to switch to this scene. Double-click to rename, right-click for colour.");
             t->makeCue = [this, sel, s] { return sceneCue (sel, s); };
@@ -167,10 +181,10 @@ public:
         {
             const auto stomp = nthOfType (preset, IDs::Stomp, f);
             auto* t = stompTiles.add (new Tile (proc, Tile::Look::stomp));
-            t->title = stomp[IDs::name].toString();
-            t->subtitle = "FS " + cues::qc::letter (f) + (stompOn ? "  ON" : "  OFF");
+            t->title = nodeName (stomp, "Stomp ", f);
+            t->subtitle = "FS " + cues::qc::letter (mini() ? f % 4 : f) + (stompOn ? "  ON" : "  OFF");
             t->active = stompOn;
-            t->setTooltip ("Drag to switch footswitch " + cues::qc::letter (f) + (stompOn ? " on" : " off")
+            t->setTooltip ("Drag to switch footswitch " + label (f) + (stompOn ? " on" : " off")
                            + (combo ? " (loads " + presetLocation (preset) + " first)" : juce::String()) + ". Double-click to rename.");
             t->makeCue = [this, sel, f] { return stompCue (sel, f); };
             t->onDoubleClick = [stomp] { renameNode (stomp, "Rename footswitch"); };
@@ -202,6 +216,16 @@ public:
         addUtil ("Preset Mode", "", "CC#47 = 0",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 0); });
         addUtil ("Stomp Mode", "", "CC#47 = 1",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 2); });
         addUtil ("Scene Mode", "", "CC#47 = 2",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 1); });
+        if (mini())
+        {
+            // The Mini's four footswitches have two pages (Page II = the QC's E-H).
+            addUtil ("Page I", "", "CC#64 = 0",     juce::Colour (0xff5b8def), [this] { return cues::qc::footswitchPage (qcChannel(), 1); });
+            utilTiles.getLast()->setTooltip ("Show footswitch Page I on the QC Mini (CC#64): scenes and stomps A-D");
+            addUtil ("Page II", "", "CC#64 = 127",  juce::Colour (0xff5b8def), [this] { return cues::qc::footswitchPage (qcChannel(), 2); });
+            utilTiles.getLast()->setTooltip ("Show footswitch Page II on the QC Mini (CC#64): the second set of scenes and stomps A-D");
+        }
+        utilsSection.hint = mini() ? "tuner, tap, gig view, footswitch mode, page" : "tuner, tap, gig view, footswitch mode";
+        utilsSection.repaint();
 
         const auto showExpression = (bool) state[IDs::qcExpressionView];
         (showExpression ? expressionViewButton : scenesViewButton).setToggleState (true, juce::dontSendNotification);
@@ -209,6 +233,7 @@ public:
             c->setVisible (! showExpression);
         for (auto* t : sceneTiles) t->setVisible (! showExpression);
         for (auto* t : stompTiles) t->setVisible (! showExpression);
+        for (auto& l : pageLabels) l.setVisible (mini() && ! showExpression);
         expression->setVisible (showExpression);
         expression->refresh();
 
@@ -252,7 +277,7 @@ public:
         }
         r.removeFromTop (10);
 
-        utilsSection.setBounds (r.removeFromBottom (Section::headerHeight + 2 * 60 + 6));   // eight utilities: two rows of four
+        utilsSection.setBounds (r.removeFromBottom (Section::headerHeight + 2 * 60 + 6));   // two rows: of four, or five on the Mini
         r.removeFromBottom (12);
         expression->setBounds (r);
         stompsSection.setBounds (r.removeFromBottom (Section::headerHeight + 64));
@@ -265,8 +290,14 @@ public:
         }
         stompOnToggle.setBounds (stompsSection.headerArea().removeFromRight (160));
 
-        // QC display layout: scenes A-D on the top row, E-H on the bottom row.
+        // QC display layout: scenes A-D on the top row, E-H on the bottom row (the Mini: Page I, Page II, labelled).
         auto grid = scenesSection.contentArea().expanded (3);
+        if (mini())
+        {
+            auto labels = grid.removeFromLeft (pageLabelWidth);
+            pageLabels[0].setBounds (labels.removeFromTop (grid.getHeight() / 2));
+            pageLabels[1].setBounds (labels);
+        }
         const auto rowH = grid.getHeight() / 2;
         const auto cellW = grid.getWidth() / 4;
         for (int s = 0; s < sceneTiles.size(); ++s)
@@ -275,8 +306,21 @@ public:
             sceneTiles[s]->setBounds (grid.getX() + (s % 4) * cellW, grid.getY() + row * rowH, cellW, rowH);
         }
 
-        layoutStrip (stompTiles, stompsSection.contentArea().expanded (3));
-        layoutGrid (utilTiles, utilsSection.contentArea().expanded (3), 4, 6);
+        if (mini() && stompTiles.size() == 8)
+        {
+            // Page I and Page II halves, each with its label.
+            auto strip = stompsSection.contentArea().expanded (3);
+            const auto cellW = (strip.getWidth() - 2 * pageLabelWidth) / 8;
+            for (int half = 0; half < 2; ++half)
+            {
+                pageLabels[2 + half].setBounds (strip.removeFromLeft (pageLabelWidth));
+                for (int f = half * 4; f < half * 4 + 4; ++f)
+                    stompTiles[f]->setBounds (strip.removeFromLeft (cellW));
+            }
+        }
+        else
+            layoutStrip (stompTiles, stompsSection.contentArea().expanded (3));
+        layoutGrid (utilTiles, utilsSection.contentArea().expanded (3), utilTiles.size() > 8 ? 5 : 4, 6);
     }
 
 private:
@@ -287,6 +331,17 @@ private:
 
     juce::ValueTree qcTree() const { return state.getChildWithName (IDs::QC); }
     int qcChannel() const          { return (int) state[IDs::qcChannel]; }
+    bool mini() const              { return (int) state[IDs::ampUnit] == state::qcMiniAmpUnit; }
+
+    // Scene / footswitch 0-7 as the unit shows it: A-H on the Quad Cortex, "A (I)" .. "D (II)" on the Mini.
+    juce::String label (int index) const { return mini() ? cues::qc::miniLabel (index) : cues::qc::letter (index); }
+
+    // A scene or stomp name, with the default "Scene E" shown as "Scene A (II)" on the Mini.
+    juce::String nodeName (const juce::ValueTree& node, const juce::String& prefix, int index) const
+    {
+        const auto name = node[IDs::name].toString();
+        return mini() && name == prefix + cues::qc::letter (index) ? prefix + label (index) : name;
+    }
 
     int selectedIndex() const
     {
@@ -324,13 +379,13 @@ private:
     cues::Cue sceneCue (int presetIndex, int sceneIndex) const
     {
         const auto p = qcTree().getChild (presetIndex);
-        const auto sceneName = nthOfType (p, IDs::Scene, sceneIndex)[IDs::name].toString();
+        const auto sceneName = nodeName (nthOfType (p, IDs::Scene, sceneIndex), "Scene ", sceneIndex);
 
         if (! (bool) state[IDs::comboPresetScene])
-            return cues::qc::scene (qcChannel(), sceneIndex, sceneName);
+            return cues::qc::scene (qcChannel(), sceneIndex, sceneName, mini());
 
         cues::Cue c;
-        c.name = "QC " + p[IDs::name].toString() + " > " + cues::qc::letter (sceneIndex) + " - " + sceneName;
+        c.name = "QC " + p[IDs::name].toString() + " > " + label (sceneIndex) + " - " + sceneName;
         cues::qc::addPresetLoad (c, qcChannel(), (int) p[IDs::setlist], (int) p[IDs::bank], (int) p[IDs::slot],
                                  (bool) state[IDs::sendSetlist], 0.0);
         cues::qc::addScene (c, qcChannel(), sceneIndex, 0.25);
@@ -340,9 +395,9 @@ private:
     cues::Cue stompCue (int presetIndex, int footswitch) const
     {
         const auto p = qcTree().getChild (presetIndex);
-        const auto stompName = nthOfType (p, IDs::Stomp, footswitch)[IDs::name].toString();
+        const auto stompName = nodeName (nthOfType (p, IDs::Stomp, footswitch), "Stomp ", footswitch);
         const auto on = (bool) state[IDs::stompOn];
-        auto c = cues::qc::stomp (qcChannel(), footswitch, on, stompName);
+        auto c = cues::qc::stomp (qcChannel(), footswitch, on, stompName, mini());
 
         if (! (bool) state[IDs::comboPresetScene])
             return c;
@@ -481,6 +536,8 @@ private:
     std::unique_ptr<Page> expression { makeQcExpression (proc) };
 
     juce::OwnedArray<Tile> presetTiles, sceneTiles, stompTiles, utilTiles;
+    juce::Label pageLabels[4];   // QC Mini: scenes Page I / II, stomps Page I / II
+    static constexpr int pageLabelWidth = 52;
     std::unique_ptr<Tile> screen;
 };
 } // namespace
@@ -492,7 +549,7 @@ std::unique_ptr<Page> makeQcPage (PedalCuesProcessor& p)
 
 juce::String ampUnitName (int unit)
 {
-    return unit == 1 ? "Kemper Profiler" : unit == 2 ? "Kemper Player" : "Quad Cortex";
+    return unit == 1 ? "Kemper Profiler" : unit == 2 ? "Kemper Player" : unit == state::qcMiniAmpUnit ? "Quad Cortex Mini" : "Quad Cortex";
 }
 
 AmpInfo ampInfo (const juce::ValueTree& state)
@@ -507,6 +564,8 @@ AmpInfo ampInfo (const juce::ValueTree& state)
             a.name = a.box = a.shortName = p->shortName;
             a.colour = p->colour;
             a.hasDin = p->hasDin;
+            a.midiIn = p->midiIn;
+            a.usbMidi = p->usbMidi;
             a.usbToThru = p->usbToThru;
             a.usbThruSetting = p->usbThruSetting;
             a.channelHint = p->channelHint;
@@ -520,6 +579,15 @@ AmpInfo ampInfo (const juce::ValueTree& state)
             a.name = a.box = a.shortName = u[IDs::name].toString();
             a.colour = state::colourOf (u, juce::Colour (0xff8e7cf0));
         }
+    }
+    else if (unit == state::qcMiniAmpUnit)
+    {
+        // Same page and MIDI as the Quad Cortex. Its MIDI In and Out / Thru are 3.5 mm TRS jacks (Type A), and its
+        // manual doesn't say whether USB MIDI reaches the Thru.
+        a.name = ampUnitName (unit);
+        a.box = "QC Mini";
+        a.midiIn = "TRS MIDI In";
+        a.usbToThru = 3;
     }
     else if (unit == 1 || unit == 2)
     {

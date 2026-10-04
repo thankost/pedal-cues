@@ -1,14 +1,18 @@
 #include "Modellers.h"
 
+#include <tuple>
+
 // Numbers from: Line 6 Owner's Manuals for firmware 3.80 (Helix, Helix LT, Helix Rack/Control, HX Stomp, HX Stomp XL,
 // HX Effects; MIDI chapters), the POD Go Owner's Manual 2.50, the Helix Stadium online manual (Rev D, v1.3), and the
-// Fractal Audio Owner's Manuals (Axe-Fx II Doc Q7.0 default CC table p.194; AX8 pp.99-100; FX8 default CC table).
+// Fractal Audio Owner's Manuals (Axe-Fx II Doc Q7.0 default CC table p.194; AX8 pp.99-100; FX8 default CC table), and the
+// HeadRush User Guides (Core, Prime, Flex Prime v5.1.0 "External MIDI Control"; Pedalboard and Gigboard v2.1.2, MX5 v1.5).
 namespace modellers
 {
 namespace
 {
 const juce::Colour line6Colour   { 0xffd9534f };
 const juce::Colour fractalColour { 0xff4e9bd8 };
+const juce::Colour headrushColour { 0xfff28c28 };
 
 juce::String n (int v) { return juce::String (v); }
 
@@ -98,6 +102,42 @@ Profile hxBase (const juce::String& id, const juce::String& model, const juce::S
     p.usbToThru = 3;
     p.notes = "No setlists. " + line6Buffered + "\n\nMIDI Thru passes on what arrives at the 5-pin MIDI In; Line 6 doesn't say whether USB MIDI "
               "is passed on too. It listens on MIDI channel 1 out of the box.";
+    return p;
+}
+
+// HeadRush: every CC acts on any value, except the expression pedals. Blocks toggle; there are no on / off values.
+std::vector<Control> headrushBlocks (int count)
+{
+    return numbered ("Block ", 1, count, 75);
+}
+
+std::vector<Action> headrushLooper (bool openClose)
+{
+    std::vector<Action> a { { "Record", "CC 70=127", toggle, 0 }, { "Start/Stop", "CC 69=127", toggle, 3 }, { "Insert", "CC 71=127", {}, 1 },
+                            { "Peel", "CC 72=127", "Removes the last overdub.", 6 }, { "Mute", "CC 73=127", toggle, 9 },
+                            { "Reverse", "CC 74=127", toggle, 5 }, { "1/2 speed", "CC 65=127", {}, 7 }, { "2x speed", "CC 66=127", {}, 7 },
+                            { "1/2 loop", "CC 67=127", {}, 4 }, { "2x loop", "CC 68=127", {}, 4 } };
+    if (openClose)
+        a.push_back ({ "Looper screen", "CC 91=127", "Opens or closes the looper. " + toggle, 8 });
+    return a;
+}
+
+const juce::String headrushBlocksNote ("Block 1-14 as numbered in the rig (CC#75 and up). Each clip toggles the block: on if it was off, off if it "
+                                       "was on. Rename the tiles after your blocks.");
+
+Profile headrushBase (const juce::String& id, const juce::String& model, const juce::String& aliases, const juce::String& manual, Scheme scheme)
+{
+    Profile p;
+    p.id = id; p.brand = "HeadRush"; p.model = model; p.shortName = "HeadRush " + model; p.aliases = "headrush head rush " + aliases;
+    p.colour = headrushColour; p.manual = manual; p.scheme = scheme;
+    p.sceneWord = "Scene"; p.sceneCount = 0; p.sceneCc = 21; p.scenePerCc = true;
+    p.sceneNote = "Scene 1 is CC#21, scene 2 CC#22 and so on (any value). With Load preset first, the scene follows the rig 1/16 later.";
+    p.switchesTitle = "Blocks";
+    p.switchesNote = headrushBlocksNote;
+    p.utilities = { { "Tap", "CC 64=127", oneTap, 1 } };
+    p.channelHint = "Must match the unit: Global Settings > MIDI > MIDI Channel (or Omni). Prog Change Recv must be on.";
+    p.usbMidi = false;
+    p.usbToThru = 0;
     return p;
 }
 
@@ -197,6 +237,84 @@ const std::vector<Profile>& all()
             v.push_back (p);
         }
 
+        // HeadRush (fixed CC maps)
+        {
+            auto p = headrushBase ("headrush.core", "Core", "core", "HeadRush Core User Guide v5.1.0", Scheme::headrush);
+            p.sceneCount = 10;
+            p.switches = headrushBlocks (14);
+            p.utilities = { { "Tuner", "CC 92=127", "Opens or closes the tuner. " + toggle, 5 }, { "Tap", "CC 64=127", oneTap, 1 },
+                            { "Next rig", "CC 17=127", {}, 9 }, { "Previous rig", "CC 16=127", {}, 9 },
+                            { "Rig mode", "CC 97=127", "Footswitches load rigs.", 8 }, { "Stomp mode", "CC 94=127", "Footswitches switch blocks.", 8 } };
+            p.looper = headrushLooper (true);
+            p.pedals = { { "Expression", 1 } };
+            p.pedalNote = "The external expression pedal (CC#1): moves what the rig assigns to it, like a real pedal.";
+            p.tunerOn = "CC 92=127"; p.tunerOff = "CC 92=127";
+            p.notes = "Presets: each rig has a MIDI PROG number (Rig settings, shown 1-128 = Program Change 0-127). Set it on the rig, then enter the "
+                      "same number here. HeadRush doesn't use bank select or setlists over MIDI.\n\nScenes: 10 per rig, CC#21-30.\n\n"
+                      + headrushBlocksNote + "\n\nThe footswitch CCs (CC#49-53) aren't tiles: they do what each footswitch does in the current "
+                      "mode, and need a press and a release.\n\nConnection: 5-pin MIDI In and MIDI Out / Thru. The manual doesn't mention MIDI over USB "
+                      "from a computer, so use a MIDI cable from your interface. MIDI Thru passes on what arrives at the MIDI In.";
+            v.push_back (p);
+        }
+        {
+            auto p = headrushBase ("headrush.prime", "Prime", "prime", "HeadRush Prime User Guide v5.1.0", Scheme::headrush);
+            p.sceneCount = 8;
+            p.switches = headrushBlocks (14);
+            p.utilities = { { "Tuner", "CC 92=127", "Opens or closes the tuner. " + toggle, 5 }, { "Tap", "CC 64=127", oneTap, 1 },
+                            { "Next rig", "CC 17=127", {}, 9 }, { "Previous rig", "CC 16=127", {}, 9 },
+                            { "Rig mode", "CC 97=127", "Footswitches load rigs.", 8 }, { "Stomp mode", "CC 94=127", "Footswitches switch blocks.", 8 } };
+            p.looper = headrushLooper (true);
+            p.pedals = { { "Built-in pedal", 1 }, { "External pedal", 2 } };
+            p.pedalNote = "Moves what the rig assigns to this expression pedal (CC#1 built-in, CC#2 external), like a real pedal.";
+            p.tunerOn = "CC 92=127"; p.tunerOff = "CC 92=127";
+            p.notes = "Presets: each rig has a MIDI PROG number (Rig settings, shown 1-128 = Program Change 0-127). Set it on the rig, then enter the "
+                      "same number here. HeadRush doesn't use bank select or setlists over MIDI.\n\nScenes: 8 per rig, CC#21-28.\n\n"
+                      + headrushBlocksNote + "\n\nThe footswitch CCs (CC#49-60) aren't tiles: they do what each footswitch does in the current "
+                      "mode, and need a press and a release.\n\nConnection: 5-pin MIDI In and MIDI Out / Thru. The manual doesn't mention MIDI over USB "
+                      "from a computer, so use a MIDI cable from your interface. MIDI Thru passes on what arrives at the MIDI In.";
+            v.push_back (p);
+        }
+        {
+            auto p = headrushBase ("headrush.flex-prime", "Flex Prime", "flex prime", "HeadRush Flex Prime User Guide v5.1.0", Scheme::headrush);
+            p.sceneCount = 6;
+            p.switches = headrushBlocks (14);
+            p.utilities = { { "Tuner", "CC 92=127", "Opens or closes the tuner. " + toggle, 5 }, { "Tap", "CC 64=127", oneTap, 1 },
+                            { "Next rig", "CC 17=127", {}, 9 }, { "Previous rig", "CC 16=127", {}, 9 },
+                            { "Rig mode", "CC 97=127", "Footswitches load rigs.", 8 }, { "Stomp mode", "CC 94=127", "Footswitches switch blocks.", 8 } };
+            p.looper = headrushLooper (true);
+            p.pedals = { { "Built-in pedal", 1 }, { "External pedal", 2 } };
+            p.pedalNote = "Moves what the rig assigns to this expression pedal (CC#1 built-in, CC#2 external), like a real pedal.";
+            p.tunerOn = "CC 92=127"; p.tunerOff = "CC 92=127";
+            p.midiIn = "TRS MIDI In";
+            p.notes = "Presets: each rig has a MIDI PROG number (Rig settings, shown 1-128 = Program Change 0-127). Set it on the rig, then enter the "
+                      "same number here. HeadRush doesn't use bank select or setlists over MIDI.\n\nScenes: 6 per rig, CC#21-26.\n\n"
+                      + headrushBlocksNote + "\n\nThe footswitch CCs (CC#49-51) aren't tiles: they do what each footswitch does in the current "
+                      "mode, and need a press and a release.\n\nConnection: 3.5 mm TRS MIDI In and MIDI Out / Thru (Type A): use a TRS MIDI cable or a "
+                      "5-pin to TRS adapter. The manual doesn't clearly cover MIDI over USB from a computer, so use a MIDI cable from your interface.";
+            v.push_back (p);
+        }
+        for (const auto& [id, model, aliases, manual, blocks, trs, fsCcs] : {
+                 std::tuple<const char*, const char*, const char*, const char*, int, bool, const char*>
+                 { "headrush.pedalboard", "Pedalboard", "pedalboard", "HeadRush Pedalboard User Guide v2.1.2", 11, false, "CC#49-60" },
+                 { "headrush.gigboard", "Gigboard", "gigboard", "HeadRush Gigboard User Guide v2.1.2", 11, false, "CC#50-53" },
+                 { "headrush.mx5", "MX5", "mx5 mx 5", "HeadRush MX5 User Guide v1.5", 11, true, "CC#50-52" } })
+        {
+            auto p = headrushBase (id, model, aliases, manual, Scheme::headrushOld);
+            p.switches = headrushBlocks (blocks);
+            p.switchesNote = juce::String ("Block 1-11 as numbered in the rig (CC#75-85). Each clip toggles the block: on if it was off, off if it was "
+                                           "on. Rename the tiles after your blocks.");
+            p.looper = headrushLooper (false);
+            if (trs)
+                p.midiIn = "TRS MIDI In";
+            p.notes = "Presets: each rig has a MIDI Prog number (0-127 = Program Change 0-127). Set it on the rig, then enter the same number here. "
+                      "No bank select, setlists or scenes over MIDI, and no tuner CC.\n\n" + p.switchesNote + "\n\nThe footswitch CCs ("
+                      + juce::String (fsCcs) + ") aren't tiles: they do what each footswitch does in the current mode.\n\n"
+                      + (trs ? "Connection: 3.5 mm TRS MIDI In (Type A): use a TRS MIDI cable or a 5-pin to TRS adapter."
+                             : "Connection: 5-pin MIDI In and MIDI Out / Thru.")
+                      + " The manual doesn't mention MIDI over USB from a computer, so use a MIDI cable from your interface.";
+            v.push_back (p);
+        }
+
         // Fractal Audio (factory default CCs)
         {
             auto p = fractalBase ("fractal.axe-fx-2", "Axe-Fx II / XL / XL+", "Axe-Fx II", "axe fx axefx 2 ii xl plus",
@@ -274,7 +392,8 @@ juce::StringArray setlistNames (const Profile& p)
                 s.add ("Your setlist " + n (i));
             return s;
         }
-        case Scheme::hxStomp: case Scheme::hxFour: case Scheme::axeFx2: case Scheme::ax8: case Scheme::fx8: break;
+        case Scheme::hxStomp: case Scheme::hxFour: case Scheme::axeFx2: case Scheme::ax8: case Scheme::fx8:
+        case Scheme::headrush: case Scheme::headrushOld: break;
     }
     return {};
 }
@@ -284,7 +403,7 @@ int slotsPerBank (const Profile& p)
     switch (p.scheme)
     {
         case Scheme::hxStomp: return 3;
-        case Scheme::axeFx2:  return 128;
+        case Scheme::axeFx2: case Scheme::headrush: case Scheme::headrushOld: return 128;
         case Scheme::ax8: case Scheme::fx8: return 8;
         case Scheme::helix: case Scheme::podGo: case Scheme::stadium: case Scheme::hxFour: break;
     }
@@ -298,7 +417,8 @@ int presetsPerSetlist (const Profile& p, int)
         case Scheme::hxStomp: return 126;
         case Scheme::axeFx2:  return 768;
         case Scheme::ax8:     return 512;
-        case Scheme::helix: case Scheme::podGo: case Scheme::stadium: case Scheme::hxFour: case Scheme::fx8: break;
+        case Scheme::helix: case Scheme::podGo: case Scheme::stadium: case Scheme::hxFour: case Scheme::fx8:
+        case Scheme::headrush: case Scheme::headrushOld: break;
     }
     return 128;
 }
@@ -306,6 +426,8 @@ int presetsPerSetlist (const Profile& p, int)
 juce::StringArray bankNames (const Profile& p, int setlist)
 {
     juce::StringArray b;
+    if (p.scheme == Scheme::headrush || p.scheme == Scheme::headrushOld)
+        return { "MIDI PROG" };   // one list, no banks
     const auto banks = presetsPerSetlist (p, setlist) / slotsPerBank (p);
     const auto letters = p.scheme == Scheme::axeFx2 || p.scheme == Scheme::fx8;
     // Stadium's USER PRESETS groups continue the bank numbers: group 2 is 33A-64D.
@@ -320,7 +442,8 @@ juce::StringArray slotNames (const Profile& p)
     juce::StringArray s;
     const auto count = slotsPerBank (p);
     for (int i = 0; i < count; ++i)
-        s.add (p.scheme == Scheme::axeFx2 ? juce::String (i).paddedLeft ('0', 3)
+        s.add (p.scheme == Scheme::headrush ? n (i + 1) : p.scheme == Scheme::headrushOld ? n (i)
+               : p.scheme == Scheme::axeFx2 ? juce::String (i).paddedLeft ('0', 3)
                : (p.scheme == Scheme::ax8 || p.scheme == Scheme::fx8) ? n (i + 1)
                : juce::String::charToString ((juce::juce_wchar) ('A' + i)));
     return s;
@@ -328,10 +451,31 @@ juce::StringArray slotNames (const Profile& p)
 
 juce::String presetLabel (const Profile& p, int setlist, int index)
 {
+    if (p.scheme == Scheme::headrush || p.scheme == Scheme::headrushOld)
+        return "Prog " + slotNames (p)[juce::jlimit (0, 127, index)];
     const auto per = slotsPerBank (p);
     const auto banks = bankNames (p, setlist);
     const auto bank = juce::jlimit (0, juce::jmax (0, banks.size() - 1), index / per);
     return banks[bank] + (p.scheme == Scheme::ax8 ? ":" : "") + slotNames (p)[index % per];
+}
+
+juce::String slotTitle (const Profile& p)
+{
+    return p.scheme == Scheme::headrush || p.scheme == Scheme::headrushOld ? "MIDI PROG (as set on the rig)" : "Preset";
+}
+
+juce::String sceneCcs (const Profile& p)
+{
+    if (p.scenePerCc && p.sceneCount > 1)
+        return "CC#" + n (p.sceneCc) + "-" + n (p.sceneCc + p.sceneCount - 1);
+    return "CC#" + n (p.sceneCc);
+}
+
+static juce::MidiMessage sceneMessage (const Profile& p, int channel, int sceneIndex)
+{
+    const auto s = juce::jlimit (0, juce::jmax (0, p.sceneCount - 1), sceneIndex);
+    return p.scenePerCc ? juce::MidiMessage::controllerEvent (juce::jlimit (1, 16, channel), p.sceneCc + s, 127)
+                        : juce::MidiMessage::controllerEvent (juce::jlimit (1, 16, channel), p.sceneCc, s);
 }
 
 juce::String setlistLabel (const Profile& p, int setlist)
@@ -370,7 +514,7 @@ cues::Cue scene (const Profile& p, int channel, int sceneIndex, const juce::Stri
 {
     cues::Cue c;
     c.name = p.shortName + " " + p.sceneWord + " " + n (sceneIndex + 1) + (name.isNotEmpty() ? " - " + name : juce::String());
-    c.add (0.0, juce::MidiMessage::controllerEvent (channelOf (channel), p.sceneCc, juce::jlimit (0, p.sceneCount - 1, sceneIndex)));
+    c.add (0.0, sceneMessage (p, channel, sceneIndex));
     return c;
 }
 
@@ -380,8 +524,7 @@ cues::Cue sceneAfterPreset (const Profile& p, int channel, int setlist, int inde
     cues::Cue c;
     c.name = p.shortName + " " + presetName + " > " + n (sceneIndex + 1) + (sceneName.isNotEmpty() ? " - " + sceneName : juce::String());
     addPresetLoad (c, p, channel, setlist, index, sendSetlist, 0.0);
-    c.add (p.sceneBuffered ? 0.0 : fractalGap,
-           juce::MidiMessage::controllerEvent (channelOf (channel), p.sceneCc, juce::jlimit (0, p.sceneCount - 1, sceneIndex)));
+    c.add (p.sceneBuffered ? 0.0 : fractalGap, sceneMessage (p, channel, sceneIndex));
     return c;
 }
 
@@ -392,6 +535,7 @@ cues::Cue switchCue (const Profile& p, int channel, int switchIndex, bool on, co
     const auto label = name.isNotEmpty() ? name : s.name;
     c.name = p.shortName + " " + label + (p.switchesOnOff ? (on ? " On" : " Off") : juce::String());
     c.add (0.0, juce::MidiMessage::controllerEvent (channelOf (channel), s.cc, p.switchesOnOff ? (on ? 127 : 0) : s.value));
+    c.toggles = ! p.switchesOnOff;   // a press or a toggle
     return c;
 }
 
@@ -408,6 +552,9 @@ cues::Cue switchAfterPreset (const Profile& p, int channel, int setlist, int ind
 
 cues::Cue action (const Profile& p, int channel, const Action& a)
 {
-    return cues::custom::cue (channel, p.shortName + " " + a.name, a.messages, 0);
+    // Tuner, tap, next scene, looper...: most are presses or toggles, so never pad the clip with a second one.
+    auto c = cues::custom::cue (channel, p.shortName + " " + a.name, a.messages, 0);
+    c.toggles = true;
+    return c;
 }
 }

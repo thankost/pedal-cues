@@ -14,7 +14,7 @@ PedalCues turns pedal changes into **drag and drop**. Each tile in the plugin is
 4. [First launch: the quick tour](#4-first-launch-the-quick-tour)
 5. [Quad Cortex page](#5-quad-cortex-page)
 6. [Kemper page](#6-kemper-page)
-7. [Fractal Audio and Line 6 (beta)](#7-fractal-audio-and-line-6-beta)
+7. [Fractal Audio, Line 6 and HeadRush (beta)](#7-fractal-audio-line-6-and-headrush-beta)
 8. [Custom MIDI devices (beta)](#8-custom-midi-devices-beta)
 9. [Build a song, step by step](#9-build-a-song-step-by-step)
 10. [Whammy V / DT page](#10-whammy-v--dt-page)
@@ -94,10 +94,11 @@ PedalCues sends MIDI from your DAW's tracks to your devices: one **cue track** p
 
 > **A MIDI Thru only passes on MIDI that arrives at the 5-pin MIDI In.** MIDI sent to a device over **USB** is not forwarded to its Thru, so a second device on that Thru never changes. This is confirmed for the **Quad Cortex** and the **Kemper** (Kemper: "USB MIDI has no MIDI Thru") and true for most devices. The **Whammy V / DT** only has a 5-pin MIDI In, so it always needs a MIDI cable from an interface or another device's Thru. The **Kemper Player** connects over USB, so give a second device its own output.
 
-**QC Mini:** it runs the same CorOS and responds to the same MIDI messages, so presets, scenes, the tuner and gig view should work the same way. It hasn't been tested on a Mini yet, and the stomp tiles for footswitches E-H may behave differently there, since the Mini has four physical footswitches. If you try it, please tell us how it goes in a [GitHub issue](https://github.com/thankost/pedal-cues/issues).
+**QC Mini:** pick **Quad Cortex Mini** in the device list. Its MIDI In and MIDI Out / Thru are small 3.5 mm TRS jacks (Type A): use a TRS MIDI cable, or a 5-pin to TRS adapter. Its manual doesn't say whether USB MIDI reaches its Thru, so for a daisy chain send to its TRS MIDI In. See [Quad Cortex Mini](#quad-cortex-mini).
 
 **Device settings**
 - **Quad Cortex:** *Settings > MIDI Settings*. Set a fixed **MIDI Channel** (default 1, not *Omni*). For the daisy chain, turn **MIDI Thru** on.
+- **QC Mini:** *Settings > Device > MIDI*: the same **MIDI Channel** and **MIDI Thru** settings.
 - **Kemper:** in the Kemper's *System Settings*, set the **MIDI channel** to a fixed number (it's *Omni* out of the box). For the daisy chain, use its MIDI Thru (on models where one jack is MIDI Out and Thru, set it to Thru; see the Kemper manual).
 - **Whammy V or Whammy DT:** set its MIDI channel (default 2) as described in the pedal's manual.
 - **A custom MIDI device:** set its MIDI channel as its manual describes.
@@ -165,7 +166,7 @@ An early step shows where to pick your amp modeller (**Quad Cortex or Kemper?**)
 
 ![Quad Cortex page](images/quad-cortex.png)
 
-The first tab is named after your amp modeller. Click the **▾** on it (or use **MIDI Setup > Your pedals > Amp modeller or MIDI device**) to open the device list: **Quad Cortex**, **Kemper Profiler**, **Kemper Player**, [Fractal and Line 6 units](#7-fractal-audio-and-line-6-beta) and your own [MIDI devices](#8-custom-midi-devices-beta). Type to search it. With a Kemper, the tab turns green and shows the [Kemper page](#6-kemper-page) instead. Your QC presets stay in the project, so you can switch back any time.
+The first tab is named after your amp modeller. Click the **▾** on it (or use **MIDI Setup > Your pedals > Amp modeller or MIDI device**) to open the device list: **Quad Cortex**, [**Quad Cortex Mini**](#quad-cortex-mini), **Kemper Profiler**, **Kemper Player**, [Fractal, Line 6 and HeadRush units](#7-fractal-audio-line-6-and-headrush-beta) and your own [MIDI devices](#8-custom-midi-devices-beta). Type to search it. With a Kemper, the tab turns green and shows the [Kemper page](#6-kemper-page) instead. Your QC presets stay in the project, so you can switch back any time.
 
 **Presets vs scenes:** a *preset* is a whole rig on the QC (often one per song), such as *Clean Rig* or *Drop C Heavy*. *Scenes* are the parts of the song inside that preset, such as *Intro*, *Verse* and *Chorus*. Load the preset once where the song starts, then switch scenes as the song moves on.
 
@@ -284,6 +285,20 @@ Expression clips go on the **QC Cues** track, like your other QC cues, and are n
 3. Click the preset in the list, then double-click each scene to give it the same name as on your QC.
 4. Right-click a scene to give it the same colour you use on the pedal.
 
+### Quad Cortex Mini
+
+![Quad Cortex Mini page](images/qc-mini.png)
+
+The QC Mini has four footswitches, A-D, on two **footswitch pages**. Each preset still has 8 scenes and 8 stomp assignments: Page II holds what the Quad Cortex has on E-H, so presets and MIDI are the same on both. Pick **Quad Cortex Mini** in the device list and the page shows them by page:
+
+| Area | On the Mini | MIDI sent |
+|---|---|---|
+| **Scenes** | Two rows, labelled **Page I** and **Page II**, each with scenes A-D. A scene tile switches to its scene whatever page the Mini is showing. Clip names say the page, e.g. *QC Scene B (II)*. | `CC#43` = 0-3 (Page I), 4-7 (Page II) |
+| **Stomps** | Footswitches A-D of **Page I**, then A-D of **Page II**. | `CC#35-38` (Page I), `CC#39-42` (Page II) |
+| **Page I / Page II** (Utilities) | Shows that footswitch page on the Mini, like holding B. | `CC#64` = 0 / 127 |
+
+Everything else (presets, setlists, Load 1A first, Expression, tuner, tap, Gig View, footswitch mode, Sync from QC) works as on the Quad Cortex. The Mini has one EXP jack; Expression 2 works over MIDI only. The numbers come from Neural DSP's QC Mini manual, which lists the same MIDI as the Quad Cortex's.
+
 ---
 
 ## 6. Kemper page
@@ -324,19 +339,19 @@ Type the performance and slot names in PedalCues, as they're shown on the Kemper
 
 ---
 
-## 7. Fractal Audio and Line 6 (beta)
+## 7. Fractal Audio, Line 6 and HeadRush (beta)
 
 | Helix Floor | Axe-Fx II |
 |---|---|
 | ![Helix Floor page](images/helix.png) | ![Axe-Fx II page](images/axe-fx-2.png) |
 
-These units have their MIDI numbers defined, by Line 6 or as Fractal's factory defaults, so each gets a page like the Quad Cortex: your presets in a list, scenes or snapshots named per preset, and the unit's own footswitches or blocks, utilities, looper and expression. Pick yours from the device list (the **▾** on the first tab; type to search).
+These units have their MIDI numbers defined, by Line 6 and HeadRush or as Fractal's factory defaults, so each gets a page like the Quad Cortex: your presets in a list, scenes or snapshots named per preset, and the unit's own footswitches or blocks, utilities, looper and expression. Pick yours from the device list (the **▾** on the first tab; type to search).
 
 ![The device list, searching for Helix](images/unit-picker-search.png)
 
-| Line 6 | Fractal Audio |
-|---|---|
-| Helix Floor, Helix LT, Helix Rack (+ Control), HX Stomp, HX Stomp XL, HX Effects, POD Go / POD Go Wireless, Helix Stadium / Stadium XL | Axe-Fx II / XL / XL+, AX8, FX8 (Mark I / II) |
+| Line 6 | Fractal Audio | HeadRush |
+|---|---|---|
+| Helix Floor, Helix LT, Helix Rack (+ Control), HX Stomp, HX Stomp XL, HX Effects, POD Go / POD Go Wireless, Helix Stadium / Stadium XL | Axe-Fx II / XL / XL+, AX8, FX8 (Mark I / II) | Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5 ([details](#headrush-beta)) |
 
 The Axe-Fx III, FM9, FM3 and VP4 have no default MIDI numbers, so they're [editable devices](#axe-fx-iii-fm9-fm3-and-vp4-beta) instead.
 
@@ -363,13 +378,29 @@ The Axe-Fx III, FM9, FM3 and VP4 have no default MIDI numbers, so they're [edita
 - **Helix Stadium** uses a different MIDI map from older Helix units, and a second MIDI channel for block bypass that this page doesn't cover. With MIDI Over USB C on, its MIDI Thru also passes on USB MIDI.
 - **Fractal** pages use the **factory default** CCs. If you changed them on your unit, use a [custom MIDI device](#8-custom-midi-devices-beta) instead. On the Axe-Fx II, "Ignore Redundant PC" is off by default, so loading the preset that's already loaded reloads it. MIDI over USB reaches the 5-pin MIDI Out only with USB Adapter Mode on.
 
+### HeadRush (beta)
+
+![HeadRush Core page](images/headrush-core.png)
+
+HeadRush publishes one fixed MIDI map, so each unit gets a page. It works a little differently from the others:
+
+- **Presets are your rigs' MIDI PROG numbers.** HeadRush has no bank select or setlists over MIDI: each rig has a **MIDI PROG** number that you set in the rig's settings. Set it on the rig, then enter the same number in PedalCues (**+ Preset**). Core, Prime and Flex Prime show it as 1-128, Pedalboard, Gigboard and MX5 as 0-127; the page uses the numbers your unit shows. Turn **Prog Change Recv** on in the unit's Global Settings > MIDI.
+- **Scenes** (Core 10, Prime 8, Flex Prime 6): each scene has its own CC, from CC#21. With **Load (preset) first** on, the scene follows the rig 1/16 later. Pedalboard, Gigboard and MX5 have no scenes over MIDI, so their page shows blocks only.
+- **Blocks:** Block 1-14 (11 on Pedalboard, Gigboard and MX5), CC#75 and up, as numbered in the rig. HeadRush only **toggles** a block: each clip turns it on if it was off and off if it was on. Rename the tiles after your blocks.
+- **Utilities and looper:** tuner (CC#92, toggles; not on Pedalboard, Gigboard or MX5), tap, next / previous rig, Rig and Stomp footswitch modes; looper record, start/stop, insert, peel, mute, reverse, speed and length.
+- **Expression:** Core CC#1 (external pedal); Prime and Flex Prime CC#1 (built-in) and CC#2 (external).
+- The **footswitch CCs** aren't tiles: they do whatever each footswitch does in the current mode, and need a press and a release.
+- **Connection:** use a MIDI cable from your interface. The manuals don't mention MIDI over USB from a computer, so the wiring guide shows MIDI cables only. Flex Prime and MX5 have 3.5 mm TRS MIDI jacks (Type A): use a TRS MIDI cable or a 5-pin to TRS adapter.
+
+![HeadRush Pedalboard page: blocks only](images/headrush-pedalboard.png)
+
 ---
 
 ## 8. Custom MIDI devices (beta)
 
 ![A custom MIDI device](images/custom-device.png)
 
-Not on a Quad Cortex, Kemper or one of the [Fractal and Line 6 pages](#7-fractal-audio-and-line-6-beta)? Any device that takes MIDI works: a Boss, a synth, a looper, a lighting controller. You make the tiles yourself, once, from the device's MIDI chart.
+Not on a Quad Cortex, Kemper or one of the [Fractal and Line 6 pages](#7-fractal-audio-line-6-and-headrush-beta)? Any device that takes MIDI works: a Boss, a synth, a looper, a lighting controller. You make the tiles yourself, once, from the device's MIDI chart.
 
 **Make one:** click the **▾** on the first tab (or *MIDI Setup > Amp modeller or MIDI device*) and choose an [Axe-Fx III, FM9, FM3 or VP4](#axe-fx-iii-fm9-fm3-and-vp4-beta) to start from its manual, or click **+ New MIDI device** under the list and give it a name: it starts with example tiles to edit, and the tab takes its name. **Import device...** next to it adds one from a file.
 
@@ -377,11 +408,20 @@ Not on a Quad Cortex, Kemper or one of the [Fractal and Line 6 pages](#7-fractal
 - **Name:** double-click to rename. The **...** menu has rename, colour, duplicate, delete and **New MIDI device**.
 - **Programs count from 0 / 1:** how the device's manual numbers presets. Some count the first preset as 0, others as 1; Program Change tiles use the same counting.
 - **Notes:** anything worth remembering: which manual page the numbers come from, and why it's set up this way. Notes travel with the device when you share it.
-- **Export device... / Import device...:** save the device (groups, tiles and notes) as a `.pedalcues-device` file, to back it up or share it. One person sets up a device and everyone with the same gear imports it.
+- **Export device... / Import device...:** save the device (groups, tiles, notes and its expression CC) as a `.pedalcues-device` file, to back it up or share it. One person sets up a device and everyone with the same gear imports it.
 
 **Search tiles** (above the groups) finds a tile by its name, messages, note or group; groups without a match are hidden while you search.
 
 **Groups and tiles (right):** name groups however your device works, for example *Presets*, *Scenes*, *Snapshots* or *Switches*. **+ Group** adds one, **+ Tile** adds a tile to a group, and each group's **...** renames, moves or deletes it. Tiles drag, play and right-click like every other tile; a clip is named after the device and the tile, for example `My Rig Verse`.
+
+### Expression moves on any device
+
+![A custom device's Expression view](images/custom-expression.png)
+
+Switch the right side from **Tiles** to **Expression** for pedal moves on your device: the same swells, fades, rise & fall, wah rhythm and drawn moves as on the Quad Cortex page, plus **Set to** tiles (heel, 25%, half, 75%, toe). They're tempo-synced Control Change curves, so they work with anything that takes a CC.
+
+- **Pick the CC** in the box at the top: the one your device's expression pedal listens to, or the one you assigned to a parameter on the device (its manual says how; on many units it's an "assign" with a MIDI CC as the source). **CC#11** is the MIDI standard Expression controller and the default. The CC is saved with the device, so it travels when you share it.
+- **Length**, **curve** and **Back to heel after move** work as on the other pages, and **Draw** saves your own moves to [My drawings](#my-drawings-save-and-reuse-your-moves), shared by every page.
 
 ### The tile editor
 
@@ -401,7 +441,7 @@ Not on a Quad Cortex, Kemper or one of the [Fractal and Line 6 pages](#7-fractal
 
 ![An Axe-Fx III device](images/template-axe-fx-3.png)
 
-These four Fractal units have **no default MIDI CCs**: you assign scene select, tuner and the rest on the unit (*SETUP > MIDI/Remote*), so the numbers differ from player to player. That's why they come as **editable MIDI devices** rather than a page like the [Axe-Fx II](#7-fractal-audio-and-line-6-beta). Pick one from the device list and it arrives filled with tiles from its manual: presets (CC#0 bank + Program Change, ready to use) and scenes, tuner and looper with *suggested* numbers (the Axe-Fx II's old defaults: Scene Select 34, Tuner 15, looper 28-32). Set the same numbers on the unit, or change the tiles to yours.
+These four Fractal units have **no default MIDI CCs**: you assign scene select, tuner and the rest on the unit (*SETUP > MIDI/Remote*), so the numbers differ from player to player. That's why they come as **editable MIDI devices** rather than a page like the [Axe-Fx II](#7-fractal-audio-line-6-and-headrush-beta). Pick one from the device list and it arrives filled with tiles from its manual: presets (CC#0 bank + Program Change, ready to use) and scenes, tuner and looper with *suggested* numbers (the Axe-Fx II's old defaults: Scene Select 34, Tuner 15, looper 28-32). Set the same numbers on the unit, or change the tiles to yours.
 
 - **FM3:** it can't be controlled over USB MIDI (Fractal: "unpredictable behavior"). Use a 5-pin MIDI cable.
 - **VP4:** 104 presets (A1-Z4), 4 scenes (the tiles use CC#17, the manual's example). MIDI is on 3.5 mm TRS jacks: you need a Type A adapter.
@@ -521,7 +561,7 @@ My drawings are saved **on your computer**, not in one project, so every project
 
 The **MIDI Setup** tab has two cards in the plugin, and a third, **Test your pedals**, in the standalone app:
 
-- **Your pedals** (set once, required): your **Amp modeller or MIDI device** (Quad Cortex, Kemper Profiler, Kemper Player, a [Fractal or Line 6 unit](#7-fractal-audio-and-line-6-beta) or a [custom MIDI device](#8-custom-midi-devices-beta); clicking it opens the same searchable device list as the ▾ on the first tab), then the MIDI channel of the amp modeller and of the Whammy (V or DT: pick which on the Whammy page). They must match the pedals themselves and be different from each other. Every cue is sent on these channels, whatever your wiring, and each clip keeps the channel it was dragged with. When they match your pedals, click **My pedals use these channels** (this hides the reminder on the other pages; click again to undo it).
+- **Your pedals** (set once, required): your **Amp modeller or MIDI device** (Quad Cortex, Kemper Profiler, Kemper Player, a [Fractal or Line 6 unit](#7-fractal-audio-line-6-and-headrush-beta) or a [custom MIDI device](#8-custom-midi-devices-beta); clicking it opens the same searchable device list as the ▾ on the first tab), then the MIDI channel of the amp modeller and of the Whammy (V or DT: pick which on the Whammy page). They must match the pedals themselves and be different from each other. Every cue is sent on these channels, whatever your wiring, and each clip keeps the channel it was dragged with. When they match your pedals, click **My pedals use these channels** (this hides the reminder on the other pages; click again to undo it).
 - **DAW tracks:** pick **My wiring** at the top (**Daisy chain via QC / Kemper** or **Separate outputs**), and the card shows the two cue tracks and their MIDI outputs for it. Not sure how to cable the pedals? **How should I wire my pedals?** opens the **Wiring guide** (also in the ☰ / **Help** menu): one device, a daisy chain or separate outputs, with the cables and signal flow for each and the setup that doesn't work.
 - **Test your pedals** (standalone app only): the MIDI port the app sends to, with **Test QC** and **Test Whammy**. They send on the channels from *Your pedals*: Test QC (Test Kemper) turns the tuner on and, 1.5 s later, off again (CC#45 on the QC, CC#31 on the Kemper); with a custom MIDI device, its Test button sends your first tile, so it opens and closes (or just closes if it was open); Test Whammy steps through **Oct Up, 5th Up and 2 Oct Up** half a second apart (Program Changes), so you see the LED move whatever mode it was on. After each click the card tells you what it sent; check that the pedal reacted.
 

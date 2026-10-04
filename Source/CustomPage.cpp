@@ -1,5 +1,6 @@
 #include "EditorCommon.h"
 #include "DeviceTemplates.h"
+#include "MovesPanel.h"
 
 using namespace theme;
 
@@ -383,6 +384,128 @@ void showTileEditor (PedalCuesProcessor& proc, juce::ValueTree tile, bool isNew)
 }
 
 //==============================================================================
+// Expression moves for a custom device: the same shapes, Set to tiles and Draw as the other pages, on the CC the
+// device's expression pedal (or whatever it assigns) listens to. The CC is part of the device (exported with it).
+class CustomExpression final : public Page
+{
+public:
+    explicit CustomExpression (PedalCuesProcessor& p) : proc (p), state (p.state)
+    {
+        addAndMakeVisible (moves);
+        for (int cc = 1; cc < 128; ++cc)
+            ccBox.addItem ("CC#" + juce::String (cc), cc);   // plain numbers: what a CC does is up to the device
+        ccBox.setTooltip ("The CC this device listens to for the move: the one you assigned on the device (see its manual). "
+                          "CC#11 is the default because it's the MIDI standard for expression, but any CC works.");
+        ccBox.onChange = [this]
+        {
+            auto u = state::customUnit (state);
+            if (u.isValid() && ccBox.getSelectedId() > 0)
+                u.setProperty (IDs::expCc, ccBox.getSelectedId(), nullptr);
+        };
+        moves.extraHeader().addAndMakeVisible (ccBox);
+        styleCaption (setLabel, "SET TO");
+        moves.extraRow().addAndMakeVisible (setLabel);
+        refresh();
+    }
+
+    void refresh() override
+    {
+        ccBox.setSelectedId (controller(), juce::dontSendNotification);
+        moves.setHint ("CC#" + juce::String (controller()) + "  -  what the device assigns to it");
+
+        setTiles.clear();
+        static const std::pair<float, const char*> positions[] = { { 0.0f, "Heel" }, { 0.25f, "25%" }, { 0.5f, "Half" }, { 0.75f, "75%" }, { 1.0f, "Toe" } };
+        for (const auto& [pos, label] : positions)
+        {
+            const auto value = juce::roundToInt (pos * 127.0f);
+            auto* t = setTiles.add (new Tile (proc, Tile::Look::utility));
+            t->title = label;
+            t->subtitle = "CC#" + juce::String (controller()) + " = " + juce::String (value);
+            t->colour = customViolet.interpolatedWith (raised, 0.6f - 0.6f * pos);
+            t->setTooltip ("Puts the pedal at " + juce::String (label).toLowerCase() + ".");
+            const auto text = juce::String (label);
+            t->makeCue = [this, value, text]
+            {
+                cues::Cue c;
+                c.name = prefix() + text;
+                c.add (0.0, juce::MidiMessage::controllerEvent (juce::jlimit (1, 16, (int) state[IDs::qcChannel]), controller(), value));
+                return c;
+            };
+            moves.extraRow().addAndMakeVisible (t);
+        }
+        moves.refresh();
+        resized();
+    }
+
+    void resized() override
+    {
+        moves.setBounds (getLocalBounds());
+        auto h = moves.extraHeader().getLocalBounds();
+        ccBox.setBounds (h.removeFromLeft (190).reduced (0, 2));
+        auto row = moves.extraRow().getLocalBounds();
+        setLabel.setBounds (row.removeFromLeft (64));
+        layoutGrid (setTiles, row.expanded (3, 0), setTiles.size(), 0);
+    }
+
+private:
+    int controller() const
+    {
+        const auto u = state::customUnit (state);
+        return u.isValid() ? juce::jlimit (1, 127, (int) u.getProperty (IDs::expCc, 11)) : 11;
+    }
+
+    juce::String prefix() const
+    {
+        const auto u = state::customUnit (state);
+        return (u.isValid() ? u[IDs::name].toString() : juce::String ("Device")) + " Exp ";
+    }
+
+    MovesConfig config()
+    {
+        MovesConfig c;
+        c.idPrefix = "cu.exp";
+        c.title = "Expression";
+        c.hint = "CC#11";
+        c.colour = customViolet;
+        c.line = customViolet.brighter (0.3f);
+        c.beatsId = IDs::cuBeats;  c.curveId = IDs::cuCurve;  c.resetId = IDs::cuReset;
+        c.drawId = IDs::cuDraw;    c.drawingId = IDs::cuDrawing;  c.drawingNameId = IDs::cuDrawingName;
+        c.resetText = "Back to heel after move";
+        c.resetTooltip = "After a move, put the pedal back to heel (0). Leave it off for a swell that should stay up.";
+        c.padHint = "Drag here to draw a pedal move";
+        c.padTooltip = "Drag to draw the pedal move: bottom = heel, top = toe. Hold Shift to snap to quarter steps.";
+        c.drawnTooltip = "Your drawn pedal move. Drag onto the timeline where the move should start.";
+        c.shapesTooltip = "Ready-made pedal moves";
+        c.drawTooltip = "Draw your own pedal move with the mouse";
+        c.tileNote = " It moves what the device assigns to this CC.";
+        c.numShapes = cues::qc::numExpShapes;
+        c.shapeRows = 2;
+        c.extraHeaderWidth = 200;
+        c.extraRowHeight = 44;
+        c.shapeName        = [] (int s) { return cues::qc::expShapeName ((cues::qc::ExpShape) s); };
+        c.shapeDescription = [] (int s) { return cues::qc::expShapeDescription ((cues::qc::ExpShape) s); };
+        c.shapeHolds       = [] (int s) { return s == (int) cues::qc::ExpShape::toe || s == (int) cues::qc::ExpShape::heel; };
+        c.makeShape = [this] (int s)
+        {
+            return cues::qc::shapedMove (prefix(), (int) state[IDs::qcChannel], controller(), (cues::qc::ExpShape) s,
+                                         (double) state[IDs::cuBeats], (double) state[IDs::cuCurve], (bool) state[IDs::cuReset]);
+        };
+        c.makeDrawn = [this] (const std::vector<float>& points, const juce::String& name)
+        {
+            return cues::qc::drawnMove (prefix() + (name.isNotEmpty() ? name : juce::String ("Drawn")), (int) state[IDs::qcChannel], controller(),
+                                        points, (double) state[IDs::cuBeats], (bool) state[IDs::cuReset]);
+        };
+        return c;
+    }
+
+    PedalCuesProcessor& proc;
+    juce::ValueTree state;
+    juce::ComboBox ccBox;
+    juce::Label setLabel;
+    juce::OwnedArray<Tile> setTiles;
+    MovesPanel moves { proc, config() };
+};
+
 // A custom unit (beta): your own groups of tiles, each a short list of MIDI messages, plus notes.
 class CustomPage final : public Page
 {
@@ -468,6 +591,25 @@ public:
         addGroupButton.onClick = [this] { addGroup(); };
         groupsContent.addAndMakeVisible (addGroupButton);
 
+        // Tiles or Expression on the right.
+        const char* views[] = { "Tiles", "Expression" };
+        for (int i = 0; i < 2; ++i)
+        {
+            auto* b = viewButtons.add (new juce::TextButton (views[i]));
+            b->setComponentID (i == 0 ? "cu.viewTiles" : "cu.viewExpression");
+            b->setClickingTogglesState (true);
+            b->setRadioGroupId (4501);
+            b->setColour (juce::TextButton::buttonColourId, surface);
+            b->setColour (juce::TextButton::buttonOnColourId, customViolet);
+            b->setColour (juce::TextButton::textColourOffId, dim);
+            b->setColour (juce::TextButton::textColourOnId, juce::Colours::black);
+            b->setConnectedEdges (i == 0 ? juce::Button::ConnectedOnRight : juce::Button::ConnectedOnLeft);
+            b->onClick = [this, i, b] { if (b->getToggleState()) state.setProperty (IDs::cuExpressionView, i == 1, nullptr); };
+            addAndMakeVisible (b);
+        }
+        viewButtons[1]->setTooltip ("Pedal moves for this device: swells, fades, wah, Set to tiles, or draw your own, on the CC you pick");
+        addChildComponent (expression);
+
         refresh();
     }
 
@@ -493,6 +635,13 @@ public:
         notesEditor.setTextToShowWhenEmpty (fromTemplate != nullptr ? "What you set on your unit, what you changed..."
                                                                     : "Why it's set up this way: manual pages, parameters, values...", dim);
         programBox.setSelectedId (base == 1 ? 2 : 1, juce::dontSendNotification);
+        const auto showExpression = (bool) state[IDs::cuExpressionView];
+        viewButtons[showExpression ? 1 : 0]->setToggleState (true, juce::dontSendNotification);
+        expression.setVisible (showExpression);
+        search.setVisible (! showExpression);
+        groupsView.setVisible (! showExpression);
+        if (showExpression)
+            expression.refresh();
         if (! notesEditor.hasKeyboardFocus (true) && notesEditor.getText() != u[IDs::notes].toString())
             notesEditor.setText (u[IDs::notes].toString(), false);
 
@@ -588,8 +737,16 @@ public:
 
         // Right: a search, then the groups, stacked and scrollable. While searching, only matching tiles show,
         // and groups with none are hidden.
-        search.setBounds (r.removeFromTop (32).withWidth (juce::jmin (r.getWidth(), 360)));
+        {
+            auto top = r.removeFromTop (32);
+            auto views = top.removeFromLeft (240);
+            viewButtons[0]->setBounds (views.removeFromLeft (120));
+            viewButtons[1]->setBounds (views);
+            top.removeFromLeft (12);
+            search.setBounds (top.withWidth (juce::jmin (top.getWidth(), 360)));
+        }
         r.removeFromTop (10);
+        expression.setBounds (r);
         groupsView.setBounds (r);
         const auto query = search.getText().trim();
         for (int ti = 0; ti < tiles.size(); ++ti)
@@ -806,6 +963,8 @@ private:
     juce::Array<int> tileGroup;                        // which group each tile belongs to
     juce::StringArray tileText, tileExact;             // what the search looks in: the name (fuzzy); messages, note, group (plain)
     SearchBox search { "Search tiles" };
+    juce::OwnedArray<juce::TextButton> viewButtons;   // Tiles | Expression
+    CustomExpression expression { proc };
 };
 } // namespace
 

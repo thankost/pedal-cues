@@ -27,7 +27,10 @@ public:
         const auto* p = profile();
         pedalBox.clear (juce::dontSendNotification);
         if (p == nullptr || p->pedals.empty())
+        {
+            setTiles.clear();
             return;
+        }
         for (int i = 0; i < (int) p->pedals.size(); ++i)
             pedalBox.addItem (p->pedals[(size_t) i].name + " (CC#" + juce::String (p->pedals[(size_t) i].cc) + ")", i + 1);
         pedalBox.setSelectedId (pedalIndex() + 1, juce::dontSendNotification);
@@ -48,7 +51,7 @@ public:
             t->makeCue = [this, value, text]
             {
                 cues::Cue c;
-                c.name = profile()->shortName + " " + profile()->pedals[(size_t) pedalIndex()].name + " " + text;
+                c.name = pedalLabel() + " " + text;
                 c.add (0.0, juce::MidiMessage::controllerEvent (juce::jlimit (1, 16, (int) state[IDs::qcChannel]), controller(), value));
                 return c;
             };
@@ -80,6 +83,13 @@ private:
         return p == nullptr || p->pedals.empty() ? 1 : p->pedals[(size_t) pedalIndex()].cc;
     }
 
+    // "Helix Floor EXP 1"; units without pedals (older HeadRush) never show this panel.
+    juce::String pedalLabel() const
+    {
+        const auto* p = profile();
+        return p != nullptr && ! p->pedals.empty() ? p->shortName + " " + p->pedals[(size_t) pedalIndex()].name : juce::String ("Pedal");
+    }
+
     MovesConfig config()
     {
         MovesConfig c;
@@ -108,14 +118,14 @@ private:
         c.makeShape = [this] (int s)
         {
             const auto* p = profile();
-            return cues::qc::shapedMove ((p != nullptr ? p->shortName + " " + p->pedals[(size_t) pedalIndex()].name : juce::String ("Pedal")) + " ",
+            return cues::qc::shapedMove (pedalLabel() + " ",
                                          (int) state[IDs::qcChannel], controller(), (cues::qc::ExpShape) s,
                                          (double) state[IDs::mdBeats], (double) state[IDs::mdCurve], (bool) state[IDs::mdReset]);
         };
         c.makeDrawn = [this] (const std::vector<float>& points, const juce::String& name)
         {
             const auto* p = profile();
-            return cues::qc::drawnMove ((p != nullptr ? p->shortName + " " + p->pedals[(size_t) pedalIndex()].name : juce::String ("Pedal")) + " "
+            return cues::qc::drawnMove (pedalLabel() + " "
                                             + (name.isNotEmpty() ? name : juce::String ("Drawn")),
                                         (int) state[IDs::qcChannel], controller(), points, (double) state[IDs::mdBeats], (bool) state[IDs::mdReset]);
         };
@@ -131,7 +141,7 @@ private:
 };
 
 //==============================================================================
-// A Fractal or Line 6 unit with defined MIDI numbers: presets, scenes / snapshots, footswitches or blocks, utilities,
+// A Fractal, Line 6 or HeadRush unit with defined MIDI numbers: presets, scenes / snapshots, footswitches or blocks, utilities,
 // looper and expression, laid out like the Quad Cortex page and driven by its modellers::Profile.
 class ModellerPage final : public Page
 {
@@ -239,7 +249,7 @@ public:
         presetsSection.accentColour = p->colour;
         scenesSection.title = p->sceneWord + "s";
         scenesSection.accentColour = p->colour;
-        scenesSection.hint = "CC#" + juce::String (p->sceneCc) + "  -  "
+        scenesSection.hint = modellers::sceneCcs (*p) + "  -  "
                            + (loadFirst ? p->sceneWord.toLowerCase() + "s load " + label + " first" : "on the loaded preset");
         loadFirstToggle.setButtonText ("Load " + label + " first");
         loadFirstToggle.setToggleState (loadFirst, juce::dontSendNotification);
@@ -339,8 +349,9 @@ public:
         makeActions (looperTiles, p->looper);
 
         const auto scenesView = view == 0, looperView = view == 1, pedalView = view == 2 && ! p->pedals.empty();
+        const auto hasScenes = p->sceneCount > 0;   // HeadRush Pedalboard, Gigboard, MX5: no scenes over MIDI
         for (auto* c : std::initializer_list<juce::Component*> { &scenesSection, &switchesSection, &loadFirstToggle })
-            c->setVisible (scenesView);
+            c->setVisible (scenesView && (hasScenes || c == &switchesSection));
         utilsSection.setVisible (scenesView || looperView);
         switchesSection.setVisible (scenesView && ! p->switches.empty());
         switchOnToggle.setVisible (scenesView && p->switchesOnOff);
@@ -417,7 +428,7 @@ public:
 
         // Up to six utilities in a row; more wrap into two rows so the names stay readable.
         const auto utilCount = (int) p->utilities.size();
-        const auto utilColumns = utilCount <= 6 ? juce::jmax (1, utilCount) : (utilCount + 1) / 2;
+        const auto utilColumns = utilCount <= 6 ? juce::jmax (4, utilCount) : (utilCount + 1) / 2;   // at least four wide: one Tap isn't a banner
         const auto utilRows = (utilCount + utilColumns - 1) / utilColumns;
         utilsSection.setBounds (r.removeFromBottom (Section::headerHeight + 60 * utilRows));
         r.removeFromBottom (12);
@@ -432,10 +443,20 @@ public:
 
         if (! p->switches.empty())
         {
-            const auto switchRows = (int) (p->switches.size() + 4) / 5;
-            switchesSection.setBounds (r.removeFromBottom (Section::headerHeight + 64 * switchRows));
+            // Five switches a row; in a short window (the channel reminder, 14 HeadRush blocks) seven a row, then
+            // lower rows, so the scenes keep room for their names.
+            const auto count = (int) p->switches.size();
+            const auto sceneRows = p->sceneCount > 6 ? 2 : p->sceneCount > 0 ? 1 : 0;
+            const auto sceneRoom = sceneRows > 0 ? Section::headerHeight + sceneRows * 62 : 0;
+            int columns = juce::jmin (5, count), rowHeight = 64;
+            auto height = [&] { return Section::headerHeight + rowHeight * ((count + columns - 1) / columns); };
+            if (r.getHeight() - height() - 12 < sceneRoom)
+                columns = juce::jmin (7, count);
+            if (r.getHeight() - height() - 12 < sceneRoom)
+                rowHeight = 52;
+            switchesSection.setBounds (p->sceneCount > 0 ? r.removeFromBottom (height()) : r.removeFromTop (height()));
             r.removeFromBottom (12);
-            layoutGrid (switchTiles, switchesSection.contentArea().expanded (3), juce::jmin (5, (int) p->switches.size()), 6);
+            layoutGrid (switchTiles, switchesSection.contentArea().expanded (3), columns, 6);
             if (switchOnToggle.isVisible())
                 switchOnToggle.setBounds (switchesSection.headerArea().removeFromRight (160));
         }
@@ -444,8 +465,8 @@ public:
             auto hdr = scenesSection.headerArea().withSizeKeepingCentre (scenesSection.headerArea().getWidth(), 28);
             loadFirstToggle.setBounds (hdr.removeFromRight (190));
         }
-        // 8 scenes in two rows of four (like the units' displays), fewer in one row.
-        const auto columns = p->sceneCount == 8 ? 4 : p->sceneCount;
+        // Up to six scenes in one row; more in two (8 as two rows of four, like the units' displays).
+        const auto columns = p->sceneCount > 6 ? (p->sceneCount + 1) / 2 : p->sceneCount;
         layoutGrid (sceneTiles, scenesSection.contentArea().expanded (3), juce::jmax (1, columns), 0);
     }
 
@@ -558,9 +579,12 @@ private:
             w->addComboBox ("setlist", modellers::setlistNames (p), "Setlist");
             w->getComboBoxComponent ("setlist")->setSelectedItemIndex (setlist, juce::dontSendNotification);
         }
-        w->addComboBox ("bank", modellers::bankNames (p, setlist), "Bank");
-        w->getComboBoxComponent ("bank")->setSelectedItemIndex ((int) preset[IDs::presetIndex] / per, juce::dontSendNotification);
-        w->addComboBox ("slot", modellers::slotNames (p), "Preset");
+        if (modellers::bankNames (p, setlist).size() > 1)   // HeadRush: one list of MIDI PROG numbers
+        {
+            w->addComboBox ("bank", modellers::bankNames (p, setlist), "Bank");
+            w->getComboBoxComponent ("bank")->setSelectedItemIndex ((int) preset[IDs::presetIndex] / per, juce::dontSendNotification);
+        }
+        w->addComboBox ("slot", modellers::slotNames (p), modellers::slotTitle (p));
         w->getComboBoxComponent ("slot")->setSelectedItemIndex ((int) preset[IDs::presetIndex] % per, juce::dontSendNotification);
         w->addButton ("OK", 1, juce::KeyPress (juce::KeyPress::returnKey));
         w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
@@ -576,7 +600,8 @@ private:
             auto newSetlist = (int) preset[IDs::setlist];
             if (auto* s = w->getComboBoxComponent ("setlist"))
                 newSetlist = juce::jmax (0, s->getSelectedItemIndex());
-            const auto index = juce::jmax (0, w->getComboBoxComponent ("bank")->getSelectedItemIndex()) * per
+            const auto* bank = w->getComboBoxComponent ("bank");
+            const auto index = (bank != nullptr ? juce::jmax (0, bank->getSelectedItemIndex()) : 0) * per
                              + juce::jmax (0, w->getComboBoxComponent ("slot")->getSelectedItemIndex());
             preset.setProperty (IDs::setlist, newSetlist, nullptr);
             preset.setProperty (IDs::presetIndex, juce::jlimit (0, modellers::presetsPerSetlist (*prof, newSetlist) - 1, index), nullptr);
@@ -590,7 +615,8 @@ private:
         juce::PopupMenu m;
         m.addItem (1, "Edit name / location...");
         m.addSubMenu ("Colour", colourMenu (state::colourOf (preset), 100));
-        m.addItem (7, "Apply colour to all its " + profile()->sceneWord.toLowerCase() + "s");
+        if (profile()->sceneCount > 0)
+            m.addItem (7, "Apply colour to all its " + profile()->sceneWord.toLowerCase() + "s");
         m.addSeparator();
         m.addItem (2, "Duplicate");
         m.addItem (3, "Move up", index > 0);

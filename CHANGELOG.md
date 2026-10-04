@@ -2,6 +2,15 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.8.0 (2026-10-04)
+
+- **HeadRush (new, beta):** pick your unit from the device list. **Core, Prime and Flex Prime** get a page with your rigs (by their MIDI PROG number), scenes, block on/off toggles, tuner, tap, rig and footswitch modes, looper and expression moves. **Pedalboard, Gigboard and MX5** get rigs, blocks, tap and looper. Built from HeadRush's user guides and not tested on hardware yet: **About this unit** tells you what to set on the unit.
+- **Quad Cortex Mini (new):** pick **Quad Cortex Mini** in the device list. Its scenes and footswitches show as A-D on **Page I** and **Page II**, like on the Mini (Page II is the big QC's E-H, the same MIDI), plus **Page I / Page II** tiles. The wiring guide mentions its small TRS MIDI jacks.
+- **Expression moves for any MIDI device (new):** on a custom MIDI device, switch from **Tiles** to **Expression** for swells, fades, wah, Set to tiles and your own drawn moves on the CC you pick (CC#11, the MIDI standard Expression, by default). Great for a Boss GT-1000 or anything with an assignable expression CC. The CC is saved with the device when you share it.
+- **Fixed: some single-message clips were sent twice.** To give a clip a length for Ableton, PedalCues repeated its message 1/16 later. For messages that toggle, that undid them: a **Tap** clip tapped twice, **Line 6 footswitch** and **tuner** clips pressed twice, **Fractal Next / Previous scene** skipped two scenes, and custom CC tiles were sent twice. These clips now end with a harmless bank select instead. Drag those clips into your DAW again.
+- **Fixed:** with the MIDI channel reminder showing in a small window, scene tiles could get too short to show their names.
+- **GitHub Sponsors** is now in the app's **Support PedalCues** window, next to the other (optional) ways to support it.
+
 ## 0.7.0 (2026-10-04)
 
 - **Fractal Audio and Line 6 (new, beta):** pick your unit from the device list. **Helix Floor, LT and Rack, HX Stomp, HX Stomp XL, HX Effects, POD Go, Helix Stadium, Axe-Fx II / XL / XL+, AX8 and FX8** each get a page like the Quad Cortex: your presets (with setlists or banks as the unit shows them), scenes or snapshots named per preset, footswitches or blocks, tuner, tap, looper and expression moves. Everything is built from the manufacturers' manuals and not tested on hardware yet: each page says so, and **About this unit** tells you what to check.

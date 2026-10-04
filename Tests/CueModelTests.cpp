@@ -100,12 +100,24 @@ int main (int argc, char** argv)
     CHECK (qc::gigView (1, true).name == "QC Gig View On");
     CHECK (isCC (qc::tap (2).events[0].second, 2, 44, 127));
 
+    // QC Mini (its manual): footswitches and scenes 0-3 = A-D on Page I, 4-7 = A-D on Page II, the QC's E-H; CC#64 = page.
+    CHECK (qc::miniLabel (0) == "A (I)" && qc::miniLabel (4) == "A (II)" && qc::miniLabel (7) == "D (II)");
+    CHECK (isCC (qc::scene (1, 5, {}, true).events[0].second, 1, 43, 5) && qc::scene (1, 5, {}, true).name == "QC Scene B (II)");
+    CHECK (isCC (qc::stomp (1, 6, true, {}, true).events[0].second, 1, 41, 127) && qc::stomp (1, 6, true, {}, true).name == "QC Stomp C (II) On");
+    CHECK (isCC (qc::footswitchPage (2, 1).events[0].second, 2, 64, 0) && isCC (qc::footswitchPage (2, 2).events[0].second, 2, 64, 127));
+
     // Clips with every event on the first tick are padded for Ableton, never with a second Program Change.
     {
         CHECK (isCC (lengthPadding (qc::scene (1, 2, {})), 1, 43, 2));                                  // a CC is repeated as is
         CHECK (isCC (lengthPadding (qc::preset (1, 3, 2, 1, true, {})), 1, 32, 3));                    // QC preset: its setlist CC
         CHECK (isCC (lengthPadding (qc::preset (1, 3, 2, 1, false, {})), 1, 0, 0));                    // ... or its bank CC
         CHECK (isCC (lengthPadding (custom::cue (2, "x", "PC 5", 0)), 2, 0, 0));                       // PC only: a bank select of 0
+        CHECK (isCC (lengthPadding (qc::tap (3)), 3, 0, 0));                                             // a toggle is never sent twice
+        CHECK (isCC (lengthPadding (custom::cue (2, "x", "CC#80 = 127", 0)), 2, 0, 0));                 // ... nor a custom CC tile
+        CHECK (isCC (lengthPadding (custom::cue (2, "x", "bank 1, PC 5", 0)), 2, 0, 1));                // a PC tile repeats its bank
+        const auto* helix = modellers::find ("line6.helix-floor");
+        CHECK (isCC (lengthPadding (modellers::switchCue (*helix, 1, 0, true, {})), 1, 0, 0));            // a Line 6 footswitch press
+        CHECK (isCC (lengthPadding (modellers::action (*helix, 1, helix->utilities.front())), 1, 0, 0)); // the Helix tuner toggle
     }
 
     // Fuzzy search for preset lists.
@@ -177,6 +189,8 @@ int main (int argc, char** argv)
 
         auto unit = state::addCustomUnit (root, state::createCustomUnit ("Axe-Fx II"));
         unit.setProperty (IDs::notes, "Scenes use CC 34 on my unit.", nullptr);
+        CHECK ((int) unit[IDs::expCc] == 11);   // expression moves default to CC#11, the MIDI standard Expression controller
+        unit.setProperty (IDs::expCc, 7, nullptr);
         unit.getChild (0).getChild (0).setProperty (IDs::messages, "bank 1, PC 7", nullptr);
         root.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
         CHECK (state::customUnit (root) == unit && unit.getNumChildren() == 2);
@@ -196,21 +210,22 @@ int main (int argc, char** argv)
         CHECK (state::saveUnit (unit, unitFile));
         const auto loaded = state::loadUnit (unitFile);
         CHECK (loaded.isValid() && loaded[IDs::name].toString() == "Axe-Fx II"
-               && loaded.getChild (0).getChild (0)[IDs::messages].toString() == "bank 1, PC 7");
+               && loaded.getChild (0).getChild (0)[IDs::messages].toString() == "bank 1, PC 7" && (int) loaded[IDs::expCc] == 7);   // shared with the device
         CHECK (! state::loadUnit (juce::File::createTempFile (".xml")).isValid());
         unitFile.deleteFile();
     }
 
-    // Fractal / Line 6 pages: preset numbering, timing and numbers from the manuals.
+    // Fractal / Line 6 / HeadRush pages: preset numbering, timing and numbers from the manuals.
     {
         using namespace modellers;
-        CHECK (all().size() == 11);
+        CHECK (all().size() == 17);
         for (const auto& p : all())
         {
             for (const auto& list : { p.utilities, p.looper })
                 for (const auto& a : list)
                     CHECK (custom::parse (a.messages, 0).ok());
-            CHECK (custom::parse (p.tunerOn, 0).ok() && custom::parse (p.tunerOff, 0).ok() && ! p.notes.isEmpty() && find (p.id) == &p);
+            CHECK ((p.tunerOn.isEmpty() || (custom::parse (p.tunerOn, 0).ok() && custom::parse (p.tunerOff, 0).ok()))   // HeadRush Pedalboard...: no tuner CC
+                   && ! p.notes.isEmpty() && find (p.id) == &p);
             const auto last = presetsPerSetlist (p, defaultSetlist (p)) - 1;
             const auto c = preset (p, 1, defaultSetlist (p), last, true, {});
             CHECK (c.events.back().second.isProgramChange());
@@ -236,6 +251,18 @@ int main (int argc, char** argv)
         CHECK (a.events.size() == 3 && isCC (a.events[0].second, 3, 0, 1) && a.events[1].second.getProgramChangeNumber() == 2
                && isCC (a.events[2].second, 3, 34, 2) && a.events[2].first == fractalGap);              // Fractal: 1/16 later
         CHECK (isCC (switchCue (axe, 1, 0, false, {}).events[0].second, 1, 37, 0) && switchCue (axe, 1, 0, true, {}).name == "Axe-Fx II Amp 1 On");
+        // HeadRush: the rig's MIDI PROG (1-128 = PC 0-127, older units 0-127), no bank select; scene N = its own CC; blocks toggle.
+        const auto& core = *find ("headrush.core");
+        CHECK (presetLabel (core, -1, 0) == "Prog 1" && presetLabel (core, -1, 127) == "Prog 128" && ! hasSetlists (core));
+        CHECK (presetLabel (*find ("headrush.pedalboard"), -1, 0) == "Prog 0" && find ("headrush.pedalboard")->sceneCount == 0);
+        auto hr = preset (core, 2, -1, 11, true, {});
+        CHECK (hr.events.size() == 1 && hr.events[0].second.getProgramChangeNumber() == 11 && hr.name == "HeadRush Core Prog 12");
+        CHECK (core.sceneCount == 10 && isCC (scene (core, 2, 9, {}).events[0].second, 2, 30, 127) && sceneCcs (core) == "CC#21-30");
+        auto hrs = sceneAfterPreset (core, 1, -1, 0, false, "Clean", 2, {});
+        CHECK (hrs.events.size() == 2 && isCC (hrs.events[1].second, 1, 23, 127) && hrs.events[1].first == fractalGap);
+        CHECK (isCC (switchCue (core, 1, 13, true, {}).events[0].second, 1, 88, 127) && switchCue (core, 1, 0, true, {}).toggles);
+        CHECK (find ("headrush.prime")->sceneCount == 8 && find ("headrush.flex-prime")->sceneCount == 6);
+        CHECK (! core.usbMidi && find ("headrush.flex-prime")->midiIn == "TRS MIDI In" && find ("headrush.mx5")->switches.size() == 11);
         const auto& ax8 = *find ("fractal.ax8");
         CHECK (presetLabel (ax8, -1, 128) == "17:1" && isCC (preset (ax8, 1, -1, 128, false, {}).events[0].second, 1, 0, 1));
         const auto& fx8 = *find ("fractal.fx8");
@@ -267,6 +294,12 @@ int main (int argc, char** argv)
                && state::modeller (fresh, "line6.helix-floor").getChildWithName (IDs::ModPreset).getChildWithName (IDs::Scene)[IDs::name].toString() == "Verse");
         file.deleteFile();
         fresh.setProperty (IDs::modellerProfile, "gone.model", nullptr);
+        state::sanitise (fresh);
+        CHECK ((int) fresh[IDs::ampUnit] == 0);
+        fresh.setProperty (IDs::ampUnit, state::qcMiniAmpUnit, nullptr);   // the QC Mini stays picked
+        state::sanitise (fresh);
+        CHECK ((int) fresh[IDs::ampUnit] == state::qcMiniAmpUnit);
+        fresh.setProperty (IDs::ampUnit, 42, nullptr);                     // a unit from a newer version: the Quad Cortex
         state::sanitise (fresh);
         CHECK ((int) fresh[IDs::ampUnit] == 0);
     }
