@@ -166,7 +166,7 @@
       and it lands as a named MIDI clip at that bar. Press play, and your rig follows the song.</p>
 
     <div class="downloads">
-      <a id="dl-win" class="btn primary" href="https://github.com/thankost/pedal-cues/releases/latest/download/PedalCues-Windows.zip">
+      <a id="dl-win" class="btn primary" href="https://github.com/thankost/pedal-cues/releases/latest/download/PedalCues-Windows-Setup.exe">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.4v7.1H3V5.5Zm0 13 7.5 1.1v-7H3v5.9Zm8.4 1.2L21 21v-8.4h-9.6v7.1Zm0-15.4v7.2H21V3l-9.6 1.3Z"/></svg>
         <span>Download for Windows<small>VST3 + Standalone &middot; Windows 10/11</small></span>
       </a>
@@ -251,10 +251,11 @@
       <div class="card os" id="card-win">
         <div class="os-head"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.4v7.1H3V5.5Zm0 13 7.5 1.1v-7H3v5.9Zm8.4 1.2L21 21v-8.4h-9.6v7.1Zm0-15.4v7.2H21V3l-9.6 1.3Z"/></svg><div><h3>Windows</h3><small>VST3 + Standalone &middot; Windows 10/11</small></div></div>
         <ol class="steps">
-          <li><b>Download</b> <a class="mini" href="https://github.com/thankost/pedal-cues/releases/latest/download/PedalCues-Windows.zip">PedalCues-Windows.zip</a> and unzip it.</li>
-          <li><b>Plugin:</b> copy <code>PedalCues.vst3</code> to <code>C:\Program Files\Common Files\VST3\</code></li>
-          <li><b>Standalone:</b> run <code>PedalCues.exe</code> to test tiles without a DAW (pick the MIDI port in its MIDI Setup tab). If you see "Windows protected your PC", click <b>More info &gt; Run anyway</b>.</li>
-          <li><b>Your DAW:</b> re-scan plug-ins (Reaper: <i>Options &gt; Preferences &gt; Plug-ins &gt; VST &gt; Re-scan</i>).</li>
+          <li><b>Download</b> <a class="mini" href="https://github.com/thankost/pedal-cues/releases/latest/download/PedalCues-Windows-Setup.exe">PedalCues-Windows-Setup.exe</a> and run it.</li>
+          <li><b>First time only:</b> PedalCues isn't code-signed, so Windows says "Windows protected your PC". Click <b>More info &gt; Run anyway</b>.</li>
+          <li><b>Install:</b> the VST3 goes to <code>C:\Program Files\Common Files\VST3\</code>, the app to <i>Program Files</i> (Start menu: PedalCues). A newer installer replaces the old version.</li>
+          <li><b>Your DAW:</b> re-scan plug-ins (Reaper: <i>Options &gt; Preferences &gt; Plug-ins &gt; VST &gt; Re-scan</i>).
+            <span class="note">Prefer copying by hand? Get the <a href="https://github.com/thankost/pedal-cues/releases/latest/download/PedalCues-Windows.zip">zip</a> (see the <a href="guide.html#1-install">guide</a>).</span></li>
         </ol>
       </div>
       <div class="card os" id="card-mac">
@@ -274,8 +275,7 @@
         <div class="os-head"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-2.2 0-3.6 1.9-3.6 4.6 0 1.4.3 2.4-.6 3.9-1 1.6-2.6 3.4-2.6 6 0 .9.2 1.6.6 2.2-.9.4-1.6 1-1.6 1.8 0 1.2 1.6 1.5 3.4 1.5 1.2 0 2.2-.4 2.9-.9.6.2 1.4.3 2.1.3s1.5-.1 2.1-.3c.7.5 1.7.9 2.9.9 1.8 0 3.4-.3 3.4-1.5 0-.8-.7-1.4-1.6-1.8.4-.6.6-1.3.6-2.2 0-2.6-1.6-4.4-2.6-6-.9-1.5-.6-2.5-.6-3.9C15.6 3.9 14.2 2 12 2Zm-1.6 4.2c.5 0 .8.6.8 1.2s-.3 1.1-.8 1.1-.8-.5-.8-1.1.3-1.2.8-1.2Zm3.2 0c.5 0 .8.6.8 1.2s-.3 1.1-.8 1.1-.8-.5-.8-1.1.3-1.2.8-1.2ZM12 9.4c.9 0 2 .5 2 1s-1.1 1.2-2 1.2-2-.7-2-1.2 1.1-1 2-1Z"/></svg><div><h3>Linux</h3><small>VST3 + LV2 + Standalone &middot; x86-64 &middot; Ubuntu 22.04+, Debian 12, Fedora</small></div></div>
         <ol class="steps">
           <li><b>Download</b> <a class="mini" href="https://github.com/thankost/pedal-cues/releases/latest/download/PedalCues-Linux.zip">PedalCues-Linux.zip</a> and unzip it.</li>
-          <li><b>Plugins:</b> copy <code>PedalCues.vst3</code> to <code>~/.vst3/</code> and <code>PedalCues.lv2</code> to <code>~/.lv2/</code>.</li>
-          <li><b>Standalone:</b> run <code>./PedalCues</code>.</li>
+          <li><b>Install:</b> run <code>./install.sh</code> in the <code>PedalCues-Linux</code> folder: the VST3 to <code>~/.vst3/</code>, the LV2 to <code>~/.lv2/</code>, the app to <code>~/.local/bin/</code> and your applications menu. Run it again with a newer zip to update.</li>
           <li><b>Sync from QC over USB</b> needs a one-time permission rule, then replug the QC:
             <pre><code>echo 'KERNEL==&quot;hidraw*&quot;, ATTRS{idVendor}==&quot;152a&quot;, TAG+=&quot;uaccess&quot;' | sudo tee /etc/udev/rules.d/70-quad-cortex.rules &amp;&amp; sudo udevadm control --reload-rules &amp;&amp; sudo udevadm trigger</code><button class="copy" type="button">Copy</button></pre></li>
         </ol>
