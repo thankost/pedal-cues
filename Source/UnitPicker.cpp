@@ -141,7 +141,6 @@ private:
         {
             // The pedals tab (second tab): the Whammy first, then your own MIDI devices (not the one on the first tab).
             const auto fx = (int) state[IDs::fxUnit];
-            entries.push_back ({ Kind::builtin, "No pedal", {}, "none empty nothing", state::fxNone, {}, fx == state::fxNone });
             entries.push_back ({ Kind::header, "DigiTech", {}, {} });
             // Two devices with one page: the DT adds Drop Tune and has no Chords (whModel).
             const auto dt = (int) state[IDs::whModel] == 1;
@@ -259,6 +258,15 @@ private:
             g.fillRoundedRectangle (r.toFloat().reduced (2.0f, 1.0f), 6.0f);
         }
         r = r.reduced (12, 0);
+        if (e.kind == Kind::device)
+        {
+            // Your own devices can be deleted: an x on the right (asks first).
+            const auto x = r.removeFromRight (deleteWidth - 12).toFloat().withSizeKeepingCentre (10.0f, 10.0f);
+            g.setColour (selected ? text : dim.withAlpha (0.7f));
+            g.drawLine (x.getX(), x.getY(), x.getRight(), x.getBottom(), 1.6f);
+            g.drawLine (x.getRight(), x.getY(), x.getX(), x.getBottom(), 1.6f);
+            r.removeFromRight (6);
+        }
         g.setColour (e.current ? accent : text);
         g.setFont (font (14.0f, e.current));
         const auto check = e.current ? juce::String (juce::CharPointer_UTF8 ("\xe2\x9c\x93  ")) : juce::String();
@@ -269,7 +277,55 @@ private:
         g.drawText (e.sub, subArea, juce::Justification::centredRight, true);
     }
 
-    void listBoxItemClicked (int row, const juce::MouseEvent&) override { pick (row); }
+    void listBoxItemClicked (int row, const juce::MouseEvent& m) override
+    {
+        if (! juce::isPositiveAndBelow (row, (int) shown.size()))
+            return;
+        const auto& e = entries[(size_t) shown[(size_t) row]];
+        if (e.kind == Kind::device && (m.mods.isPopupMenu() || m.x >= list.getVisibleRowWidth() - deleteWidth))
+        {
+            if (m.mods.isPopupMenu())
+            {
+                juce::PopupMenu menu;
+                menu.addItem (1, "Delete \"" + e.label + "\"...");
+                juce::Component::SafePointer<UnitPicker> safe (this);
+                const auto index = e.value;
+                menu.showMenuAsync ({}, [safe, index] (int r) { if (safe != nullptr && r == 1) safe->confirmDelete (index); });
+            }
+            else
+                confirmDelete (e.value);
+            return;
+        }
+        pick (row);
+    }
+
+    // Deleting one of your devices: asks first; the tab it was on falls back to its default device.
+    void confirmDelete (int unitIndex)
+    {
+        const auto unit = state.getChildWithName (IDs::CustomUnits).getChild (unitIndex);
+        if (! unit.isValid())
+            return;
+        juce::Component::SafePointer<UnitPicker> safe (this);
+        juce::AlertWindow::showAsync (juce::MessageBoxOptions()
+                                          .withIconType (juce::MessageBoxIconType::QuestionIcon)
+                                          .withTitle ("Delete \"" + unit[IDs::name].toString() + "\"?")
+                                          .withMessage ("Its tiles and notes are removed from PedalCues (Export device first to keep a copy). "
+                                                        "Clips already in your songs keep working.")
+                                          .withButton ("Delete")
+                                          .withButton ("Cancel"),
+                                      [safe, unit] (int result)
+                                      {
+                                          if (safe == nullptr || result != 1)
+                                              return;
+                                          auto root = safe->state;
+                                          state::removeCustomUnit (root, unit);
+                                          safe->entries.clear();
+                                          safe->build();
+                                          safe->filter();
+                                      });
+    }
+
+    static constexpr int deleteWidth = 40;
     void returnKeyPressed (int row) override                           { pick (row); }
 
     void pick (int row)

@@ -260,6 +260,7 @@ public:
         viewButtons[2]->setEnabled (! p->pedals.empty());
         viewButtons[0]->setButtonText (p->mainTitle);       // DL4 MkII: "Controls"
         viewButtons[3]->setVisible (! p->models.empty());   // DL4 MkII: delay and reverb models
+        viewButtons[0]->setVisible (hasControls (*p));       // a pedal with only a looper / expression: no empty Controls view
         {
             int shownButtons = 0;
             for (auto* b : viewButtons)
@@ -299,7 +300,7 @@ public:
         loadFirstToggle.setTooltip ("On: " + p->sceneWord.toLowerCase() + " tiles load this preset first" + (p->switchesOnOff ? " (and so do block tiles)" : "")
                                     + ", so they work whatever preset the unit is on. Off: they act on the preset that's loaded. " + p->sceneNote);
         switchesSection.title = p->switchesTitle;
-        switchesSection.hint = switchesHint (*p, loadFirst, label);
+        switchesSection.hint = switchesHint (*p, loadFirst && p->sceneCount > 0, label);
         switchOnToggle.setToggleState (switchOn, juce::dontSendNotification);
         switchOnToggle.setButtonText (switchOn ? "Tiles switch ON" : "Tiles switch OFF");
         switchOnToggle.setTooltip ("Whether block tiles switch the block on or off");
@@ -513,13 +514,29 @@ public:
             return;
         }
 
-        // Up to six utilities in a row; more wrap into two rows so the names stay readable.
+        // Up to six utilities in a row; more wrap into rows of at most eight, so the names stay readable (Chase Bliss: 20+).
         const auto utilCount = (int) p->utilities.size();
-        const auto utilColumns = utilCount <= 6 ? juce::jmax (4, utilCount) : (utilCount + 1) / 2;   // at least four wide: one Tap isn't a banner
-        const auto utilRows = (utilCount + utilColumns - 1) / utilColumns;
-        utilsSection.setBounds (r.removeFromBottom (Section::headerHeight + 60 * utilRows));
-        r.removeFromBottom (12);
+        const auto utilRows = utilCount <= 6 ? 1 : (utilCount + 7) / 8 + (utilCount > 8 && utilCount <= 16 ? 0 : 0);
+        const auto utilColumns = utilCount <= 6 ? juce::jmax (4, utilCount) : (utilCount + juce::jmax (2, utilRows) - 1) / juce::jmax (2, utilRows);   // at least four wide
+        const auto rowsUsed = (utilCount + utilColumns - 1) / juce::jmax (1, utilColumns);
+        // Pages without scenes (effect pedals, Nano Cortex): utilities right under the switches, not at the bottom of an empty page.
+        const auto utilsOnTop = p->sceneCount == 0 && view == 0;
+        if (utilsOnTop && ! p->switches.empty())
+        {
+            const auto count = (int) p->switches.size();
+            const auto columns = juce::jmin (6, count);
+            switchesSection.setBounds (r.removeFromTop (Section::headerHeight + 64 * ((count + columns - 1) / columns)));
+            r.removeFromTop (12);
+            layoutGrid (switchTiles, switchesSection.contentArea().expanded (3), columns, 6);
+            if (switchOnToggle.isVisible())
+                switchOnToggle.setBounds (switchesSection.headerArea().removeFromRight (160));
+        }
+        utilsSection.setBounds (utilsOnTop ? r.removeFromTop (Section::headerHeight + 60 * rowsUsed) : r.removeFromBottom (Section::headerHeight + 60 * rowsUsed));
+        if (! utilsOnTop)
+            r.removeFromBottom (12);
         layoutGrid (utilTiles, utilsSection.contentArea().expanded (3), utilColumns, 6);
+        if (utilsOnTop)
+            return;
 
         if (view == 1)
         {
@@ -561,11 +578,19 @@ private:
     const modellers::Profile* profile() const { return slot.profile (state); }
     int channel() const { return slot.channel (state); }
 
-    // The saved view, or Scenes & Switches when the unit has no looper / pedals / models for it.
+    static bool hasControls (const modellers::Profile& p) { return p.sceneCount > 0 || ! p.switches.empty() || ! p.utilities.empty(); }
+
+    // The saved view, or the first one with tiles when the unit has nothing for it.
     int viewFor (const modellers::Profile& p) const
     {
+        const auto has = [&p] (int v) { return v == 0 ? hasControls (p) : v == 1 ? ! p.looper.empty() : v == 2 ? ! p.pedals.empty() : ! p.models.empty(); };
         const auto view = juce::jlimit (0, 3, (int) state[slot.viewId()]);
-        return (view == 1 && p.looper.empty()) || (view == 2 && p.pedals.empty()) || (view == 3 && p.models.empty()) ? 0 : view;
+        if (has (view))
+            return view;
+        for (int v = 0; v < 4; ++v)   // the first view with tiles (a pedal with nothing for Controls opens on its next one)
+            if (has (v))
+                return v;
+        return 0;
     }
 
     juce::ValueTree data() const
@@ -630,7 +655,8 @@ private:
         const auto& prof = *profile();
         const auto name = nthOfType (data(), IDs::ModSwitch, s)[IDs::name].toString();
         const auto on = (bool) state[IDs::mdSwitchOn];
-        if (! prof.switchesOnOff || ! (bool) state[IDs::mdLoadFirst])
+        // No scenes (pedals, Nano Cortex): the Load preset first toggle isn't shown, so switches act on the loaded preset.
+        if (! prof.switchesOnOff || prof.sceneCount == 0 || ! (bool) state[IDs::mdLoadFirst])
             return modellers::switchCue (prof, channel(), s, on, name);
         const auto p = modPreset (presetIndex);
         return modellers::switchAfterPreset (prof, channel(), (int) p[IDs::setlist], (int) p[IDs::presetIndex],

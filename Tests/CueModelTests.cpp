@@ -256,7 +256,7 @@ int main (int argc, char** argv)
             state::removeCustomUnit (r, amp);   // the looper moves up one; the first tab goes back to the Quad Cortex
             CHECK ((int) r[IDs::ampUnit] == 0 && state::fxCustomUnit (r) == looper && (int) r[IDs::fxCustomUnit] == 0);
             state::removeCustomUnit (r, looper);
-            CHECK ((int) r[IDs::fxUnit] == state::fxNone && ! state::fxCustomUnit (r).isValid());
+            CHECK ((int) r[IDs::fxUnit] == state::fxWhammy && ! state::fxCustomUnit (r).isValid());
             {
                 // A device moved to the other tab takes its category and leaves the tab it was on; a device shown on the pedals
                 // tab with an old "amp" category (from before v0.8.8) is fixed by sanitise.
@@ -267,7 +267,7 @@ int main (int argc, char** argv)
                 state::showCustomUnitOn (t, index, true);
                 CHECK ((int) t[IDs::ampUnit] == 0 && state::fxCustomUnit (t).isValid() && state::isPedal (state::fxCustomUnit (t)));
                 state::showCustomUnitOn (t, index, false);
-                CHECK ((int) t[IDs::fxUnit] == state::fxNone && (int) t[IDs::ampUnit] == state::customAmpUnit && ! state::isPedal (state::customUnit (t)));
+                CHECK ((int) t[IDs::fxUnit] == state::fxWhammy && (int) t[IDs::ampUnit] == state::customAmpUnit && ! state::isPedal (state::customUnit (t)));
                 state::showCustomUnitOn (t, index, true);
                 state::fxCustomUnit (t).setProperty (IDs::category, "amp", nullptr);
                 state::sanitise (t);
@@ -290,7 +290,7 @@ int main (int argc, char** argv)
     // Fractal / Line 6 / HeadRush pages: preset numbering, timing and numbers from the manuals.
     {
         using namespace modellers;
-        CHECK (all().size() >= 23);   // the exact count is checked once the pedal files are in
+        CHECK (all().size() == 77);   // 23 units + 54 effect pedals (Strymon 21, Boss 3, Meris / Chase Bliss / Walrus / Source Audio / EHX 30)
         for (const auto& p : all())
         {
             for (const auto& list : { p.utilities, p.looper })
@@ -442,7 +442,7 @@ int main (int argc, char** argv)
     // Device templates (Fractal, Line 6): every tile's messages read back, names are unique in each group,
     // and a few numbers straight from the manuals.
     {
-        CHECK (templates::all().size() >= 6);   // Axe-Fx III, FM9, FM3, VP4, Boss GT-1000, Microtubes Infinity
+        CHECK (templates::all().size() == 10);  // Axe-Fx III, FM9, FM3, VP4, GT-1000, Microtubes Infinity, H9, H90, RC-500, RC-600
         juce::StringArray ids;
         for (const auto& t : templates::all())
         {

@@ -561,13 +561,13 @@ This example covers a song with a clean verse, a crunchy chorus and a Whammy sol
 
 ## 10. Effects & Pedals: Whammy V / DT, DL4 MkII, HX One and your devices
 
-The first tab, **Amps & Modellers**, is for your amp modeller; the second, **Effects & Pedals**, for a pedal next to it. New setups start with **No pedal** there; click the **▾** on the tab (or the tab itself again) to pick yours:
+The first tab, **Amps & Modellers**, is for your amp modeller; the second, **Effects & Pedals**, for an effect or pedal. New setups start with **No pedal** there; click the **▾** on the tab (or the tab itself again) to pick yours:
 
 | The Effects & Pedals list | A MIDI device there | Only one device |
 |---|---|---|
 | ![The Effects & Pedals device list](images/pedal-picker.png) | ![A looper on the Effects & Pedals tab](images/pedal-custom.png) | ![No pedal](images/pedal-none.png) |
 
-- **No pedal:** only using one device? Pick this and the tab shows how to add one later; How to connect then shows one device and one cue track. New setups start with No pedal.
+- **No pedal:** not using one? Leave the tab empty: it shows how to add one later, and How to connect shows one device and one cue track. New setups start empty.
 - **Whammy V** and **Whammy DT** (DigiTech): two devices sharing one page, described below. The DT adds Drop Tune and has no Chords.
 - **Line 6 DL4 MkII** and **HX One** (beta): ready-made pages, [below](#line-6-dl4-mkii-and-hx-one-beta).
 - **Templates** for effect pedals: the Fractal **VP4** and the Darkglass **Microtubes Infinity** ([templates](#templates-beta)). Templates for amp modellers stay in the Amps & Modellers list.

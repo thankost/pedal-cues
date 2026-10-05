@@ -3,3 +3,4 @@ external/
 .DS_Store
 .idea/
 cmake-build-*/
+.claude/worktrees/

@@ -435,7 +435,7 @@ public:
             {
                 // DL4 MkII, HX One: no tuner screen to open and close, so load the first preset.
                 proc.preview (cues::custom::cue (pedal.channel, {}, page->testMessage, 0));
-                return "Sent " + page->testMessage + " (" + modellers::presetLabel (*page, -1, 0) + ") to " + currentPortName() + " on channel "
+                return "Sent " + page->testMessage + " (a preset) to " + currentPortName() + " on channel "
                      + juce::String (pedal.channel) + ". Did the " + pedal.shortName + " switch to it? If not, check the cable direction, its channel ("
                      + page->channelHint + ") and MIDI Thru.";
             }
@@ -714,7 +714,7 @@ public:
     void refresh() override
     {
         const auto pedal = pedalInfo (state);
-        tracksSection.hint = pedal.isNone ? "one cue track, once" : "two cue tracks, once";
+        tracksSection.hint = pedal.isNone ? "one cue track, once" : "a cue track per device, once";
         tracksSection.repaint();
 
         setSetupMode (! state::getFlag ("setupViaQcChain"));
@@ -927,19 +927,18 @@ private:
         {
             tracksSteps.steps = {
                 "In your DAW, enable the MIDI outputs your devices are on.",
-                "Amp modeller track, e.g. " + ampTrack + ": insert PedalCues and set its MIDI output to the amp modeller's port (e.g. " + ampPort + ").",
-                "Pedal track, e.g. " + pedalTrack + ": insert PedalCues and set its MIDI output to the pedal's port (e.g. MIDI Out 2).",
-                "Keep the original MIDI channels. Drag Amps & Modellers tiles onto the amp modeller track, Effects & Pedals tiles onto the pedal track."
+                "Make a cue track for each device: insert PedalCues and set its MIDI output to that device's port, e.g. " + ampTrack + " on "
+                    + ampPort + ". Add the next one the same way, e.g. " + pedalTrack + " on MIDI Out 2.",
+                "Keep the original MIDI channels, and drag each tab's tiles onto its device's track."
             };
         }
         else
         {
             tracksSteps.steps = {
                 "In your DAW, enable your interface's MIDI output.",
-                "Make two cue tracks, an amp modeller track and a pedal track (e.g. " + ampTrack + " and " + pedalTrack + "), and insert PedalCues on each.",
-                "Set both tracks' MIDI output to the interface MIDI Out (it goes into the " + amp.shortName + " and through its Thru to the pedal), "
-                    "keeping the original MIDI channels.",
-                "Drag Amps & Modellers tiles onto the amp modeller track and Effects & Pedals tiles onto the pedal track."
+                "Make a cue track for each device, e.g. " + ampTrack + " and " + pedalTrack + ": insert PedalCues and set its MIDI output to the "
+                    "interface MIDI Out (it goes into the " + amp.shortName + " and through its Thru to the next device). Add more the same way.",
+                "Keep the original MIDI channels, and drag each tab's tiles onto its device's track."
             };
         }
         tracksSteps.repaint();

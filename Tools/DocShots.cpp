@@ -785,6 +785,24 @@ int main (int argc, char** argv)
             save (snapshot (editor), outDir.getChildFile ("dl4-models.png"));
             pedalPage ("line6.hx-one", { { "Chorus Shimmer", 0, 5 }, { "Rotary Lead", 1, 3 }, { "Octave Fuzz", 2, 0 } });
             save (snapshot (editor), outDir.getChildFile ("hx-one.png"));
+            // One page per new brand: Strymon (TimeLine MX models), Boss, Meris, Chase Bliss, Walrus, Source Audio.
+            pedalPage ("strymon.timeline-mx", { { "Verse Dotted 8th", 0, 4 }, { "Chorus Wide", 1, 1 }, { "Solo Tape", 2, 0 }, { "Ambient Swell", 5, 6 } });
+            save (snapshot (editor), outDir.getChildFile ("strymon-timeline-mx.png"));
+            proc.state.setProperty (IDs::fxView, 3, nullptr);
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("strymon-timeline-mx-models.png"));
+            pedalPage ("strymon.volante", { { "Slapback", 0, 4 }, { "Drum Echo", 1, 2 }, { "Tape Swell", 2, 6 } });
+            save (snapshot (editor), outDir.getChildFile ("strymon-volante.png"));
+            pedalPage ("boss.dd-500", { { "Verse Analog", 0, 4 }, { "Chorus Tape", 1, 1 }, { "Lead Digital", 2, 0 } });
+            save (snapshot (editor), outDir.getChildFile ("boss-dd-500.png"));
+            pedalPage ("meris.lvx", { { "Ambient Wash", 0, 6 }, { "Rhythmic Dub", 1, 3 } });
+            save (snapshot (editor), outDir.getChildFile ("meris-lvx.png"));
+            pedalPage ("chasebliss.mood-mkii", { { "Glitch Verse", 0, 5 }, { "Tape Chorus", 1, 2 } });
+            save (snapshot (editor), outDir.getChildFile ("chase-bliss-mood.png"));
+            pedalPage ("walrus.mako-d1", { { "Clean Delay", 0, 4 }, { "Lo-Fi", 1, 1 } });
+            save (snapshot (editor), outDir.getChildFile ("walrus-d1.png"));
+            pedalPage ("sourceaudio.nemesis", { { "Verse Echo", 0, 4 }, { "Shimmer Lead", 1, 6 } });
+            save (snapshot (editor), outDir.getChildFile ("source-audio-nemesis.png"));
             proc.state.setProperty (IDs::fxView, 0, nullptr);
             proc.state.setProperty (IDs::fxUnit, state::fxWhammy, nullptr);
             editor.refreshNow();

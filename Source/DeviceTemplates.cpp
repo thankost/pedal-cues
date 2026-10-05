@@ -139,6 +139,180 @@ Template bossGt1000()
     return t;
 }
 //==============================================================================
+// Effect pedals with no default MIDI CCs (Effects & Pedals tab): Eventide H9 (H9 User Guide Rev D, software 5.4+), Eventide H90
+// (manual 1.11.4, section 7.4 and the mapping chart), Boss RC-500 (Owner's Manual eng02, Parameter Guide eng01) and RC-600
+// (Owner's Manual eng05, Parameter Guide 1.3+). Presets work right away; every CC tile is a suggestion to assign on the pedal.
+const juce::Colour eventideColour { 0xff6fb7ff };
+const juce::Colour bossPedalColour { 0xffff5a5f };   // the Boss pedal pages' accent (DD-500 / RV-500 / MD-500)
+
+TileDef assigned (const juce::String& name, const juce::String& messages, const juce::String& what, int colour)
+{
+    return { name, messages, what + " Assign it on the pedal (the suggested CC is in the tile), or change the tile to the CC you use.", colour };
+}
+
+Template eventideH9()
+{
+    Template t;
+    t.id = "eventide.h9";
+    t.pedal = true;
+    t.brand = "Eventide";
+    t.model = "H9 / H9 MAX / H9 CORE";
+    t.aliases = "eventide h9 max core harmonizer";
+    t.colour = eventideColour;
+    t.programBase = 0;   // the RCV.MAP's Prg No. is the Program Change number (0-127); Prg No. 1 = P01 by default
+    t.expCc = 22;        // KB0, the running algorithm's first parameter (KB0-KB9 are patched from C22 by default)
+    const juce::String rcv ("the H9's System > MIDI > RCV.CTL (destination");
+    t.notes = "Why this is a template and not a page: the H9 has no default MIDI CCs for bypass, tap, the tuner or the looper. You patch "
+              "them yourself in System > MIDI > RCV.CTL (sources C0-C99 or pitch bend), so the numbers differ from player to player. "
+              "These tiles suggest numbers; set the same ones on the H9, or change the tiles to yours. Preset tiles work right away.\n\n"
+              "Built from the H9 Harmonizer User Guide (Rev D, software 5.4 and later). Not tested on hardware: check the numbers on your "
+              "pedal.\n\n"
+              "Presets: P01-P99 (the H9 CORE ships with 25). By default the receive map (RCV.MAP) loads P01-P99 with Program Change "
+              "1-99, so P01 = PC 1; what PC 0 does by default isn't documented. You can remap any Program Change to a preset, or to "
+              "bypass / active / toggle / tuner / next / last. No bank select. A preset saved bypassed loads bypassed.\n\n"
+              "Assigned tiles (RCV.CTL destination in brackets): Active [ACT] CC#80, Bypass [BYP] CC#81, Tap [TAP] CC#82, Tuner [TUN] CC#83; "
+              "Looper algorithm only: Record [REC] CC#84, Play [PLY] CC#85, Stop [STP] CC#86. The guide doesn't say which values these "
+              "switch destinations react to: the tiles send 127. Keep away from C22 and up: KB0-KB9 are patched there by default.\n\n"
+              "Expression: the Expression view starts on CC#22 = KB0, the running algorithm's first parameter (KB0-KB9 are patched to "
+              "C22 and up by default; the guide names C22-C29 in one place and C22-C31 in another). The mapping is system-wide: it "
+              "applies to every preset.\n\n"
+              "MIDI channel: System > MIDI > RCV CH (OFF, OMNI, 1-16); the guide doesn't give its factory setting.\n\n"
+              "Connection: 5-pin MIDI In and MIDI Out/Thru, and USB MIDI (mini USB). IMPORTANT: when USB is connected, the H9 ignores "
+              "its 5-pin MIDI In (thru included), so don't daisy-chain it from a MIDI cable while it's on USB. OUTPUT (XMT, THRU, "
+              "THRU+C, MERGE) sets what the MIDI Out sends.";
+    t.groups = {
+        { "Presets", range (8, [] (int i) { return TileDef { "P" + juce::String (i + 1).paddedLeft ('0', 2), "PC " + n (i + 1),
+                                                             "Program Change " + n (i + 1) + " loads P" + juce::String (i + 1).paddedLeft ('0', 2)
+                                                             + " with the default receive map (RCV.MAP).", 4 + i % 6 }; }) },
+        { "Switches (assign on the pedal)", Tiles { assigned ("Active", "CC 80=127", "Turns the effect on: " + rcv + " ACT).", 3),
+                                                    assigned ("Bypass", "CC 81=127", "Bypasses the effect: " + rcv + " BYP).", 9),
+                                                    assigned ("Tap", "CC 82=127", "One tap: " + rcv + " TAP).", 1),
+                                                    assigned ("Tuner", "CC 83=127", "The tuner: " + rcv + " TUN).", 5) } },
+        { "Looper (assign on the pedal)", Tiles { assigned ("Looper record", "CC 84=127", "Looper algorithm only: " + rcv + " REC).", 0),
+                                                  assigned ("Looper play", "CC 85=127", "Looper algorithm only: " + rcv + " PLY).", 3),
+                                                  assigned ("Looper stop", "CC 86=127", "Looper algorithm only: " + rcv + " STP).", 9) } },
+    };
+    return t;
+}
+
+Template eventideH90()
+{
+    Template t;
+    t.id = "eventide.h90";
+    t.pedal = true;
+    t.brand = "Eventide";
+    t.model = "H90";
+    t.aliases = "eventide h90 harmonizer";
+    t.colour = eventideColour;
+    t.programBase = 1;   // "By default, the H90 will transmit and receive Program Changes using PC numbers 1-100"
+    t.expCc = 11;
+    const juce::String where ("System > MIDI > Global Control (Parameter: ");
+    t.notes = "Why this is a template and not a page: the H90 has no default MIDI CC mappings (its manual: \"all mappings are customizable "
+              "by the user\"). You map them in System > MIDI > Global Control, so the numbers differ from player to player. These tiles "
+              "suggest numbers; set the same ones on the H90, or change the tiles to yours. Program tiles work right away.\n\n"
+              "Built from the Eventide H90 user manual (version 1.11.4). Not tested on hardware: check the numbers on your pedal.\n\n"
+              "Programs: up to 99 in the active list (the Playlist). By default the H90 counts Program Changes 1-100, and these tiles "
+              "count the same way (Program 1 = PC 1, the first Program Change). With PC Offset on, it counts 0-99 instead. The manual "
+              "doesn't spell out which number on the wire loads Program 1: if the tiles load the program next to the one you want, "
+              "check PC Offset (System > MIDI). Bank select isn't documented.\n\n"
+              "Assigned tiles (Global Control parameter in brackets): Tap [Tap Tempo] CC#80, Tuner [Tuner] CC#81 (enters or leaves "
+              "it), Preset P on / bypassed [P Act/Byp (M)] CC#82 (0-63 = bypassed, 64-127 = active), Next program [Inc + Load] "
+              "CC#83. Toggles react to values of 64 and up. The manual doesn't give the CC range you can pick from.\n\n"
+              "No looper tiles: the H90's looper has no MIDI CC functions of its own; it's played through HotSwitches and Perform "
+              "parameters, which you can map the same way.\n\n"
+              "MIDI channel: System > MIDI > Channel (1-16), or Receive Omni.\n\n"
+              "Connection: 5-pin MIDI In and MIDI Out/Thru, USB-C (MIDI over USB) and Bluetooth MIDI. Output Mode Thru passes on only "
+              "what arrives at the 5-pin MIDI In (and the H90 then sends nothing of its own); the manual doesn't say whether MIDI "
+              "from USB is passed on.";
+    t.groups = {
+        { "Programs", range (8, [] (int i) { return TileDef { "Program " + n (i + 1), "PC " + n (i + 1),
+                                                              "Program " + n (i + 1) + " of the active list (default numbering, PC Offset off).", 4 + i % 6 }; }) },
+        { "Switches (assign on the pedal)", Tiles { assigned ("Tap", "CC 80=127", "One tap: " + where + "Tap Tempo).", 1),
+                                                    assigned ("Tuner", "CC 81=127", "Enters or leaves the tuner: " + where + "Tuner).", 5),
+                                                    assigned ("P active", "CC 82=127", "Preset P active (64-127): " + where + "P Act/Byp (M)).", 3),
+                                                    assigned ("P bypassed", "CC 82=0", "Preset P bypassed (0-63): " + where + "P Act/Byp (M)).", 9),
+                                                    assigned ("Next program", "CC 83=127", "Loads the next program: " + where + "Inc + Load).", 7) } },
+    };
+    return t;
+}
+
+const juce::String rcAssignHow ("The manual doesn't say how a CC value fires a switch-type target: these tiles send 127. Keep the ASSIGN's "
+                                "source window at 0-127.");
+
+Template bossRc500()
+{
+    Template t;
+    t.id = "boss.rc-500";
+    t.pedal = true;
+    t.brand = "Boss";
+    t.model = "RC-500";
+    t.aliases = "boss roland rc500 rc 500 loop station looper";
+    t.colour = bossPedalColour;
+    t.programBase = 1;   // "program change messages numbered 01 through 99, corresponding to the 99 individual memories 1-99"
+    t.expCc = 11;
+    const juce::String where ("in this memory's ASSIGN settings (ASSIGN ON, SOURCE = this CC, TARGET ");
+    t.notes = "Why this is a template and not a page: the RC-500 has no fixed MIDI CCs. A CC only does something when one of a memory's "
+              "ASSIGN1-8 uses it as its SOURCE (CC#1-31 or CC#64-95), and that's set up in every memory. So you set those on the RC-500, "
+              "and these tiles follow. Memory tiles work right away.\n\n"
+              "Built from the RC-500 Owner's Manual and Parameter Guide. Not tested on hardware: check the numbers on your pedal.\n\n"
+              "Memories: 01-99 = Program Change 1-99 in the manual's numbering (the first Program Change loads memory 01; the guide "
+              "doesn't say this in so many words, the RC-600's manual does). Bank select (CC#0, CC#32) is ignored.\n\n"
+              "Assigned tiles (TARGET in brackets), each needs an ASSIGN in every memory you use it in: Rec/play [CUR REC/PLY] CC#80, "
+              "Stop [CUR STOP] CC#81, Undo/redo [CUR UND/RED] CC#82, Tap tempo [TAP TEMPO] CC#83, All start [ALL START] CC#84. "
+              + rcAssignHow + "\n\n"
+              "MIDI channel: RX CTL CH (1 out of the box) in the MIDI settings. IMPORTANT: OMNI is ON out of the box, so the RC-500 "
+              "answers on every channel: turn OMNI off if another pedal shares the cable.\n\n"
+              "Connection: MIDI IN and MIDI OUT are 3.5 mm TRS jacks: use Boss TRS/MIDI cables (BMIDI-5-35); the manual doesn't name "
+              "the TRS type. USB carries MIDI too. MIDI THRU and USB THRU are OFF out of the box: set them to MIDI OUT to pass MIDI on. "
+              "It follows MIDI clock and starts all tracks on a MIDI Start (SYNC START ALL).";
+    t.groups = {
+        { "Memories", range (8, [] (int i) { return TileDef { "Memory " + juce::String (i + 1).paddedLeft ('0', 2), "PC " + n (i + 1), {}, 4 + i % 6 }; }) },
+        { "Looper (assign on the pedal)", Tiles { assigned ("Rec/play", "CC 80=127", "Records, overdubs or plays the current track: " + where + "CUR REC/PLY).", 0),
+                                                  assigned ("Stop", "CC 81=127", "Stops the current track: " + where + "CUR STOP).", 9),
+                                                  assigned ("Undo/redo", "CC 82=127", "Undo or redo on the current track: " + where + "CUR UND/RED).", 6),
+                                                  assigned ("Tap tempo", "CC 83=127", "One tap: " + where + "TAP TEMPO).", 1),
+                                                  assigned ("All start", "CC 84=127", "Starts all tracks: " + where + "ALL START).", 3) } },
+    };
+    return t;
+}
+
+Template bossRc600()
+{
+    Template t;
+    t.id = "boss.rc-600";
+    t.pedal = true;
+    t.brand = "Boss";
+    t.model = "RC-600";
+    t.aliases = "boss roland rc600 rc 600 loop station looper";
+    t.colour = bossPedalColour;
+    t.programBase = 0;   // "Program Change messages numbered 0 through 98, corresponding to the 99 individual memories 01-99"
+    t.expCc = 11;
+    const juce::String where ("in ASSIGN (SW ON, SOURCE = MIDI CC# of this tile, TARGET ");
+    t.notes = "Why this is a template and not a page: the RC-600 has no fixed MIDI CCs. A CC only does something when one of ASSIGN1-16 uses "
+              "it as its SOURCE (MIDI CC#01-31 or CC#64-95), and the ASSIGN settings are stored in each memory (write the memory to keep "
+              "them). So you set those on the RC-600, and these tiles follow. Memory tiles work right away.\n\n"
+              "Built from the RC-600 Owner's Manual and Parameter Guide (version 1.3 and later). Not tested on hardware: check the numbers "
+              "on your pedal.\n\n"
+              "Memories: 01-99 = Program Change 0-98. Bank select (CC#0, CC#32) is ignored.\n\n"
+              "Assigned tiles (TARGET in brackets): Rec/play [CUR.TRK REC/PLY] CC#80, Play/stop [CUR.TRK PLY/STP] CC#81, Undo/redo "
+              "[CUR.TRK UN/RED] CC#82, Tap tempo [TAP TEMPO] CC#83, All start/stop [ALL ST/STP] CC#84. " + rcAssignHow + " (SOURCE ACT.LO "
+              "0, ACT.HI 127, as the guide suggests.)\n\n"
+              "MIDI channel: RX CH CTL (1 out of the box) in the MIDI settings. The guide has no OMNI setting.\n\n"
+              "Connection: MIDI IN and MIDI OUT (5-pin in the rear panel drawing) and USB (MIDI too). THRU for MIDI IN and for USB IN is "
+              "OFF out of the box: set it to MIDI OUT to pass MIDI on. It follows MIDI clock and starts all tracks on a MIDI Start "
+              "(SYNC START ALL).";
+    t.groups = {
+        { "Memories", range (8, [] (int i) { return TileDef { "Memory " + juce::String (i + 1).paddedLeft ('0', 2), "PC " + n (i), {}, 4 + i % 6 }; }) },
+        { "Looper (assign on the pedal)", Tiles { assigned ("Rec/play", "CC 80=127", "Records, overdubs or plays the current track: " + where + "CUR.TRK REC/PLY).", 0),
+                                                  assigned ("Play/stop", "CC 81=127", "Plays or stops the current track: " + where + "CUR.TRK PLY/STP).", 3),
+                                                  assigned ("Undo/redo", "CC 82=127", "Undo or redo on the current track: " + where + "CUR.TRK UN/RED).", 6),
+                                                  assigned ("Tap tempo", "CC 83=127", "One tap: " + where + "TAP TEMPO).", 1),
+                                                  assigned ("All start/stop", "CC 84=127", "Starts or stops all tracks: " + where + "ALL ST/STP).", 9) } },
+    };
+    return t;
+}
+
+//==============================================================================
 // Darkglass Microtubes Infinity: Darkglass publishes no MIDI chart for it. These numbers come from the community chart in
 // Morningstar's openmidi database (data/brands/darkglass/microtubesinfinity.yaml); no Program Changes are documented.
 Template microtubesInfinity()
@@ -197,6 +371,10 @@ const std::vector<Template>& all()
         vp4(),
         bossGt1000(),
         microtubesInfinity(),
+        eventideH9(),
+        eventideH90(),
+        bossRc500(),
+        bossRc600(),
     };
     return list;
 }

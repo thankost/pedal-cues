@@ -244,7 +244,7 @@ void removeCustomUnit (juce::ValueTree& root, const juce::ValueTree& unit)
     const auto onFirstTab = (int) root[IDs::ampUnit] == customAmpUnit && (int) root[IDs::selectedCustomUnit] == index;
     const auto onPedalsTab = (int) root[IDs::fxUnit] == fxCustom && (int) root[IDs::fxCustomUnit] == index;
     units.removeChild (unit, nullptr);
-    // Later devices move up one; the deleted one's tab falls back to the Quad Cortex / No pedal.
+    // Later devices move up one; the deleted one's tab falls back to the default device (the Quad Cortex / the Whammy V).
     for (const auto* id : { &IDs::selectedCustomUnit, &IDs::fxCustomUnit })
         if ((int) root[*id] > index)
             root.setProperty (*id, (int) root[*id] - 1, nullptr);
@@ -258,7 +258,7 @@ void removeCustomUnit (juce::ValueTree& root, const juce::ValueTree& unit)
     {
         root.setProperty (IDs::fxCustomUnit, 0, nullptr);
         if ((int) root[IDs::fxUnit] == fxCustom)
-            root.setProperty (IDs::fxUnit, fxNone, nullptr);   // the pedals tab is empty again
+            root.setProperty (IDs::fxUnit, fxWhammy, nullptr);   // the default device takes its place
     }
 }
 
@@ -278,7 +278,7 @@ void showCustomUnitOn (juce::ValueTree& root, int index, bool pedalsTab)
     else
     {
         if ((int) root[IDs::fxUnit] == fxCustom && (int) root[IDs::fxCustomUnit] == index)
-            root.setProperty (IDs::fxUnit, fxNone, nullptr);   // it moved to the first tab: the pedals tab is empty again
+            root.setProperty (IDs::fxUnit, fxWhammy, nullptr);   // it moved to the first tab: the default device takes its place
         root.setProperty (IDs::selectedCustomUnit, index, nullptr);
         root.setProperty (IDs::ampUnit, customAmpUnit, nullptr);
     }

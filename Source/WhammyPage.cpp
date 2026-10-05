@@ -462,8 +462,8 @@ public:
         title.setText ("No effect or pedal yet", juce::dontSendNotification);
         title.setFont (font (22.0f, true));
         title.setJustificationType (juce::Justification::centred);
-        body.setText ("This tab is for a pedal next to your amp modeller: a Whammy, a delay, a looper or any MIDI device. Pick one, "
-                      "or make your own, and its tiles appear here. Only using one device? Leave this empty.",
+        body.setText ("Add an effect or pedal: a Whammy, a delay, a looper or any MIDI device. Pick one, or make your own, and its "
+                      "tiles appear here. Not using one? Leave this tab empty.",
                       juce::dontSendNotification);
         body.setFont (font (14.0f));
         body.setColour (juce::Label::textColourId, dim);
