@@ -35,9 +35,11 @@ struct MovesConfig
     std::function<cues::Cue (int)> makeShape;
     std::function<cues::Cue (const std::vector<float>&, const juce::String& name)> makeDrawn;
     std::function<cues::Cue (cues::Cue)> finish;   // optional, applied to what's dragged or played (not the preview curve)
+    std::function<int()> controller;      // the CC this card moves (Import MIDI... reads it first); optional
 };
 
 class MovesPanel final : public juce::Component,
+                         public juce::FileDragAndDropTarget,
                          private juce::ValueTree::Listener,
                          private juce::AsyncUpdater
 {
@@ -71,6 +73,16 @@ private:
     class WaveEditor;
     void showWaveEditor();
     void applyWave();
+    // Draw > Import MIDI... (or a .mid dropped on the card): a move from a MIDI clip, to reuse in any song.
+    void chooseMidiFile();
+    void importMidi (const juce::File&);
+    bool isInterestedInFileDrag (const juce::StringArray&) override;
+    void fileDragEnter (const juce::StringArray&, int, int) override  { fileHover = true; repaint(); }
+    void fileDragExit (const juce::StringArray&) override             { fileHover = false; repaint(); }
+    void filesDropped (const juce::StringArray&, int, int) override;
+    void paintOverChildren (juce::Graphics&) override;
+    bool fileHover = false;   // a .mid file is held over the card: show where it goes
+    std::unique_ptr<juce::FileChooser> chooser;
 
     void updateDrawTile();
     void handleAsyncUpdate() override  { refresh(); }
@@ -99,7 +111,7 @@ private:
     juce::ToggleButton resetToggle;
     juce::TextButton shapesButton { "Shapes" }, drawButton { "Draw" };
     juce::TextButton clearButton { "Clear" }, smoothButton { "Smooth" };
-    juce::TextButton waveButton { "Wave..." };
+    juce::TextButton waveButton { "Wave..." }, importButton { "Import MIDI..." };
     WaveSettings wave;
     juce::ComboBox libraryBox;             // My drawings
     juce::TextButton saveButton { "Save" }, moreButton { "..." };

@@ -145,6 +145,7 @@ private:
                                          slot.channel (state), controller(), (cues::qc::ExpShape) s,
                                          (double) state[beats], (double) state[curve], (bool) state[reset]);
         };
+        c.controller = [this] { return controller(); };
         c.makeDrawn = [this, beats, reset] (const std::vector<float>& points, const juce::String& name)
         {
             return cues::qc::drawnMove (pedalLabel() + " "

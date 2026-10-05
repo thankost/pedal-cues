@@ -199,6 +199,20 @@ namespace whammy
     juce::String waveName (Wave);
     std::vector<float> waveDrawing (Wave, double cycles, double phaseDegrees, double shape, double low, double high,
                                     double grow = 0.0, double speed = 0.0);
+
+    // Draw > Import MIDI...: a move from a MIDI file (e.g. a clip drawn in the DAW), so it can be reused in any song.
+    // Reads the CC curve on 'preferredCc' if the file has one, else its most-used CC (not bank select), else pitch bend.
+    // The move starts at the file's start; its length is the shortest of 'lengths' that holds the clip (the last
+    // value is held to the end), or the longest one (the rest is cut). 'points' are drawPoints values, 0..1.
+    struct ImportedMove
+    {
+        std::vector<float> points;
+        double beats = 0.0;
+        int controller = -1;          // the CC read, or -1 for pitch bend
+        bool truncated = false;       // the clip was longer than the longest length
+        juce::String error;           // empty when it worked
+    };
+    ImportedMove importMove (const juce::MidiFile&, int preferredCc, const std::vector<double>& lengths);
 }
 
 //==============================================================================

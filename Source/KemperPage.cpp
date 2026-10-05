@@ -113,6 +113,7 @@ private:
                                          cues::kemper::pedalController (pedalIndex()), (cues::qc::ExpShape) s,
                                          (double) state[IDs::kpBeats], (double) state[IDs::kpCurve], (bool) state[IDs::kpReset]);
         };
+        c.controller = [this] { return cues::kemper::pedalController (pedalIndex()); };
         c.makeDrawn = [this] (const std::vector<float>& points, const juce::String& name)
         {
             return cues::qc::drawnMove ("Kemper " + cues::kemper::pedalName (pedalIndex()) + " " + (name.isNotEmpty() ? name : juce::String ("Drawn")),

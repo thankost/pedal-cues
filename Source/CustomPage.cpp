@@ -490,6 +490,7 @@ private:
             return cues::qc::shapedMove (prefix(), channel(), controller(), (cues::qc::ExpShape) s,
                                          (double) state[IDs::cuBeats], (double) state[IDs::cuCurve], (bool) state[IDs::cuReset]);
         };
+        c.controller = [this] { return controller(); };
         c.makeDrawn = [this] (const std::vector<float>& points, const juce::String& name)
         {
             return cues::qc::drawnMove (prefix() + (name.isNotEmpty() ? name : juce::String ("Drawn")), channel(), controller(),

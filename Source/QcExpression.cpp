@@ -153,6 +153,7 @@ private:
             return cues::qc::expressionMove (qcChannel(), pedalNumber(), (cues::qc::ExpShape) s, (double) state[IDs::expBeats],
                                              (double) state[IDs::expCurve], (bool) state[IDs::expReset]);
         };
+        c.controller = [this] { return pedalNumber(); };   // Exp 1 = CC#1, Exp 2 = CC#2
         c.makeDrawn = [this] (const std::vector<float>& points, const juce::String& name)
         {
             return cues::qc::expressionDrawn (qcChannel(), pedalNumber(), points, (double) state[IDs::expBeats],

@@ -361,6 +361,7 @@ private:
             return cues::whammy::sweep (state::pedalChannel (state), (cues::whammy::Shape) s, (double) state[IDs::sweepBeats],
                                         (double) state[IDs::sweepCurve], (bool) state[IDs::sweepReset]);
         };
+        c.controller = [] { return 11; };   // the treadle
         c.makeDrawn = [this] (const std::vector<float>& points, const juce::String& name)
         {
             return cues::whammy::drawn (state::pedalChannel (state), points, (double) state[IDs::sweepBeats],

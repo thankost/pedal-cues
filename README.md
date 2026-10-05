@@ -67,6 +67,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - Treadle moves on `CC#11`: Ramp Up, Ramp Down, Rise & Fall, Dive, Trill (1/16), Bend to Bar, Toe, Heel
 - Draw your own treadle move with the mouse, then drag it onto the timeline like any other move
 - **Wave...** in Draw mode generates a sine, triangle, square or saw (waves, phase, shape, low / high, grow, speed), like Reaper's CC LFO; on the treadle and on every expression pedal
+- **Import MIDI...** in every Draw mode: load a move you drew as CC automation in your DAW from a `.mid` file and reuse it in any song (saved in My drawings)
 - **My drawings:** save your drawn moves by name, load them to reuse or edit, rename or delete them. Kept on your computer
   (every project sees them, updates keep them), shared by the Whammy treadle and QC expression, and included in Export setup
 - Moves are written in beats (1/16 to 4 bars), so they follow the project tempo; adjustable curve;

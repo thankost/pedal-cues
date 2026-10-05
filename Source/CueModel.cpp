@@ -1,6 +1,7 @@
 #include "CueModel.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <functional>
 
@@ -693,6 +694,106 @@ namespace whammy
             v[(size_t) i] = (float) (lo + (hi - lo) * juce::jlimit (0.0, 1.0, y) * envelope);
         }
         return v;
+    }
+
+    ImportedMove importMove (const juce::MidiFile& file, int preferredCc, const std::vector<double>& lengths)
+    {
+        ImportedMove result;
+        const auto ppq = (int) file.getTimeFormat();
+        if (ppq <= 0)
+        {
+            result.error = "This MIDI file uses SMPTE time, not beats: export it from your DAW as a normal MIDI clip.";
+            return result;
+        }
+
+        // Every CC and pitch bend in the file, on any track and channel.
+        std::array<int, 128> ccCount {};
+        int bendCount = 0;
+        double lastBeat = 0.0;
+        for (int t = 0; t < file.getNumTracks(); ++t)
+            if (const auto* track = file.getTrack (t))
+                for (const auto* e : *track)
+                {
+                    lastBeat = juce::jmax (lastBeat, e->message.getTimeStamp() / ppq);
+                    if (e->message.isController())
+                        ++ccCount[(size_t) e->message.getControllerNumber()];
+                    else if (e->message.isPitchWheel())
+                        ++bendCount;
+                }
+
+        int cc = -1;
+        if (juce::isPositiveAndBelow (preferredCc, 128) && ccCount[(size_t) preferredCc] > 0)
+            cc = preferredCc;
+        else
+            for (int n = 1; n < 128; ++n)   // never bank select (CC#0 / CC#32)
+                if (n != 32 && ccCount[(size_t) n] > 0 && (cc < 0 || ccCount[(size_t) n] > ccCount[(size_t) cc]))
+                    cc = n;
+        if (cc < 0 && bendCount == 0)
+        {
+            result.error = "No CC or pitch bend in this MIDI file: draw the move as CC automation (e.g. CC#11) in your DAW and export the clip.";
+            return result;
+        }
+
+        // The curve as (beat, value) steps, in time order.
+        std::vector<std::pair<double, float>> steps;
+        for (int t = 0; t < file.getNumTracks(); ++t)
+            if (const auto* track = file.getTrack (t))
+                for (const auto* e : *track)
+                {
+                    const auto& m = e->message;
+                    if (cc >= 0 && m.isController() && m.getControllerNumber() == cc)
+                        steps.push_back ({ m.getTimeStamp() / ppq, (float) m.getControllerValue() / 127.0f });
+                    else if (cc < 0 && m.isPitchWheel())
+                        steps.push_back ({ m.getTimeStamp() / ppq, (float) m.getPitchWheelValue() / 16383.0f });
+                }
+        std::stable_sort (steps.begin(), steps.end(), [] (const auto& a, const auto& b) { return a.first < b.first; });
+
+        // The shortest length that holds the whole clip (or the longest there is). A tail up to 1/8 beat past a length
+        // doesn't count: PedalCues' own clips end just after the move, with the "back to heel" CC 1/16 later.
+        constexpr double tail = 0.125 + 1.0e-6;
+        const auto clip = juce::jmax (lastBeat, steps.back().first);
+        result.beats = lengths.empty() ? juce::jmax (0.25, clip) : lengths.back();
+        for (const auto l : lengths)
+            if (l + tail >= clip)
+            {
+                result.beats = l;
+                break;
+            }
+        result.truncated = clip > result.beats + tail;
+        // Anything after the move's end (that back-to-heel CC) isn't part of the shape.
+        steps.erase (std::remove_if (steps.begin(), steps.end(), [&] (const auto& st) { return st.first > result.beats + 1.0e-9; }), steps.end());
+        if (steps.empty())
+        {
+            result.error = "The CC curve starts after the end of the move.";
+            return result;
+        }
+        result.controller = cc;
+
+        // Sample it like the controller hears it: a value holds until the next one, except that values close together
+        // (a drawn ramp, like PedalCues' own 32 per beat) are joined by a straight line, so slopes don't turn into stairs.
+        constexpr double joinGap = 1.0 / 16.0 + 1.0e-6;
+        result.points.resize ((size_t) drawPoints);
+        size_t next = 0;
+        for (int i = 0; i < drawPoints; ++i)
+        {
+            const auto beat = result.beats * i / (drawPoints - 1);
+            while (next < steps.size() && steps[next].first <= beat + 1.0e-9)
+                ++next;
+            float value;
+            if (next == 0)
+                value = steps.front().second;                          // before the first value: that one
+            else if (next == steps.size())
+                value = steps.back().second;                           // after the last: it holds
+            else
+            {
+                const auto& a = steps[next - 1];
+                const auto& b = steps[next];
+                const auto gap = b.first - a.first;
+                value = gap <= joinGap && gap > 0.0 ? a.second + (b.second - a.second) * (float) ((beat - a.first) / gap) : a.second;
+            }
+            result.points[(size_t) i] = juce::jlimit (0.0f, 1.0f, value);
+        }
+        return result;
     }
 
     juce::String encodeDrawing (const std::vector<float>& points)

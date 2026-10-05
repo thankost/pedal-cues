@@ -700,6 +700,50 @@ int main (int argc, char** argv)
         CHECK (whammy::decodeDrawing ("0,1000").back() == 1.0f);
         CHECK ((int) whammy::decodeDrawing ("garbage").size() == whammy::drawPoints);
 
+        // Draw > Import MIDI...: a CC curve from a MIDI file, held step by step, at the shortest length that holds it.
+        {
+            const std::vector<double> lens { 1.0, 2.0, 4.0, 8.0 };
+            auto make = [] (std::initializer_list<std::tuple<double, int, int>> ccs, bool bend = false)
+            {
+                juce::MidiMessageSequence seq;
+                for (const auto& [beat, cc, value] : ccs)
+                    seq.addEvent (juce::MidiMessage::controllerEvent (1, cc, value), beat * 960.0);
+                if (bend)
+                    seq.addEvent (juce::MidiMessage::pitchWheel (1, 16383), 0.0);
+                juce::MidiFile f;
+                f.setTicksPerQuarterNote (960);
+                f.addTrack (seq);
+                return f;
+            };
+            const auto m = whammy::importMove (make ({ { 0.0, 11, 0 }, { 1.0, 11, 64 }, { 3.0, 11, 127 } }), 11, lens);
+            CHECK (m.error.isEmpty() && m.beats == 4.0 && m.controller == 11 && ! m.truncated && (int) m.points.size() == whammy::drawPoints);
+            CHECK (m.points.front() == 0.0f && std::abs (m.points[(size_t) whammy::drawPoints / 2] - 64.0f / 127.0f) < 1.0e-4f
+                   && m.points.back() == 1.0f);
+            // Not the card's CC: the most-used one; never bank select. Pitch bend when there's no CC.
+            const auto other = whammy::importMove (make ({ { 0.0, 0, 1 }, { 0.0, 4, 10 }, { 0.5, 4, 90 } }), 11, lens);
+            CHECK (other.controller == 4 && other.beats == 1.0);
+            CHECK (whammy::importMove (make ({}, true), 11, lens).controller == -1);
+            CHECK (whammy::importMove (make ({}), 11, lens).error.isNotEmpty());
+            CHECK (whammy::importMove (make ({ { 0.0, 11, 0 }, { 12.0, 11, 127 } }), 11, lens).truncated);
+            // A drawn move exported by PedalCues comes back the same: its length (not the next one up, despite the
+            // back-to-heel CC just after the end) and its shape.
+            for (const auto beats : { 4.0, 2.0, 8.0 })
+                for (const auto reset : { true, false })
+                {
+                    const auto shape = whammy::defaultDrawing();
+                    const auto exported = writeMidiFile (whammy::drawn (2, shape, beats, reset), 120.0);
+                    juce::MidiFile file;
+                    juce::FileInputStream in (exported);
+                    CHECK (file.readFrom (in));
+                    const auto back = whammy::importMove (file, 11, { 0.25, 0.5, 1.0, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0, 24.0, 32.0 });
+                    float worst = 0.0f;
+                    for (size_t i = 0; i < back.points.size(); ++i)
+                        worst = juce::jmax (worst, std::abs (back.points[i] - shape[i]));
+                    CHECK (back.error.isEmpty() && back.beats == beats && worst < 0.04f);
+                    exported.deleteFile();
+                }
+        }
+
         // Draw > Wave: shapes, cycles, phase, skew and range.
         {
             using whammy::Wave;

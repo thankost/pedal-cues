@@ -2,6 +2,11 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.9.1 (unreleased)
+
+- **Import MIDI... in Draw (new):** load a move from a MIDI file, like a treadle bend or an expression swell you drew as CC automation in your DAW, and reuse it in any song. Click **Import MIDI...** next to Wave... (or drop the .mid file on the card): it keeps the clip's timing, then saves it in My drawings. In every Draw mode: the Whammy, the Quad Cortex, Kemper and modeller expression, and your own devices.
+- **Moves up to 8 bars:** Length now goes to 6 and 8 bars.
+
 ## 0.9.0 (2026-10-06)
 
 - **No more MIDI Setup tab:** each page now has a strip at the top with its device's **MIDI channel**, a **Test** button and **How to connect**. How to connect opens one window with how your devices are connected, the cue tracks to make in your DAW (with your devices as examples), your DAW, the wiring guide and, in the standalone app, the MIDI port. A MIDI port you plug in while it's open shows up by itself.

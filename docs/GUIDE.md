@@ -677,6 +677,16 @@ The drawing stretches to whatever *Length* you pick. *Return to heel after move*
 
 Each change replaces the drawing. Fix it by hand afterwards, Smooth it, or **Save** it in My drawings. Wave... is in every Draw mode: the Whammy treadle, the Quad Cortex and Kemper expression, the Fractal, Line 6 and HeadRush pedals, and custom devices.
 
+#### Import MIDI...: reuse a move you made in your DAW
+
+Drew a treadle bend or an expression swell as CC automation in your DAW and want it again in other songs? Export (or drag) the clip as a `.mid` file, then click **Import MIDI...** in Draw mode (or drop the file on the card):
+
+- PedalCues reads the card's own CC (CC#11 for the Whammy, the expression CC elsewhere); if the file has another CC, the one it uses most (never bank select), or else pitch bend.
+- The move keeps its timing: it starts where the clip starts, and *Length* becomes the shortest length that holds it (up to 8 bars), with the last value held to the end. Longer clips keep their first 8 bars.
+- It then asks for a name to save it in **My drawings** (the file's name is suggested), so you can drag it into any song, as often as you like.
+
+It's in every Draw mode, like Wave....
+
 #### My drawings: save and reuse your moves
 
 Keep the moves you like and use them again in any song:

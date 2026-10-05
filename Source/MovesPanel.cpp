@@ -10,7 +10,7 @@ namespace ui
 {
 namespace
 {
-constexpr std::array<double, 10> lengths { 0.25, 0.5, 1.0, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0 };
+constexpr std::array<double, 12> lengths { 0.25, 0.5, 1.0, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0, 24.0, 32.0 };
 
 void curveOf (Tile& t, const cues::Cue& cue)
 {
@@ -312,6 +312,13 @@ MovesPanel::MovesPanel (PedalCuesProcessor& p, MovesConfig c)
                            "(like Reaper's CC LFO)");
     waveButton.onClick = [this] { showWaveEditor(); };
     addChildComponent (waveButton);
+    importButton.setComponentID (config.idPrefix + ".importMidi");
+    importButton.setColour (juce::TextButton::buttonColourId, surface);
+    importButton.setColour (juce::TextButton::textColourOffId, text);
+    importButton.setTooltip ("Load a move from a MIDI file, e.g. a clip with CC automation you drew in your DAW (or drop the .mid "
+                             "file on this card). Then Save it in My drawings to reuse it in any song.");
+    importButton.onClick = [this] { chooseMidiFile(); };
+    addChildComponent (importButton);
 
     // Shapes / Draw switch in the card header.
     const auto onText = config.colour.getPerceivedBrightness() > 0.6f ? juce::Colours::black : juce::Colours::white;
@@ -405,6 +412,7 @@ void MovesPanel::refresh()
     curveLabel.setVisible (! drawMode);
     curveSlider.setVisible (! drawMode);
     waveButton.setVisible (drawMode);
+    importButton.setVisible (drawMode);
 
     pad->points = cues::whammy::decodeDrawing (state[config.drawingId].toString());
     pad->beats = beats;
@@ -469,7 +477,8 @@ void MovesPanel::resized()
     controlsRow.removeFromLeft (24);
     {
         auto curveArea = controlsRow.removeFromLeft (272);
-        waveButton.setBounds (curveArea.withWidth (130).reduced (0, 3));
+        waveButton.setBounds (curveArea.withWidth (110).reduced (0, 3));
+        importButton.setBounds (curveArea.withTrimmedLeft (118).withWidth (140).reduced (0, 3));
         curveLabel.setBounds (curveArea.removeFromLeft (52));
         curveSlider.setBounds (curveArea);
     }
@@ -547,6 +556,80 @@ void MovesPanel::applyWave()
     pad->points = cues::whammy::waveDrawing ((cues::whammy::Wave) wave.type, wave.cycles, wave.phase, wave.shape, wave.low, wave.high,
                                              wave.grow, wave.speed);
     commitDrawing();
+}
+
+void MovesPanel::chooseMidiFile()
+{
+    chooser = std::make_unique<juce::FileChooser> ("Import a move from a MIDI file", juce::File(), "*.mid;*.midi");
+    juce::Component::SafePointer<MovesPanel> safe (this);
+    chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles, [safe] (const juce::FileChooser& fc)
+    {
+        if (safe != nullptr && fc.getResult().existsAsFile())
+            safe->importMidi (fc.getResult());
+    });
+}
+
+bool MovesPanel::isInterestedInFileDrag (const juce::StringArray& files)
+{
+    return files.size() == 1 && juce::File (files[0]).hasFileExtension ("mid;midi");
+}
+
+void MovesPanel::paintOverChildren (juce::Graphics& g)
+{
+    if (! fileHover)
+        return;
+    // A MIDI file held over the card: a light veil with a +, like dropping a file anywhere else.
+    const auto b = getLocalBounds().toFloat().reduced (2.0f);
+    g.setColour (juce::Colours::white.withAlpha (0.16f));
+    g.fillRoundedRectangle (b, 10.0f);
+    g.setColour (juce::Colours::white.withAlpha (0.85f));
+    g.drawRoundedRectangle (b.reduced (1.0f), 10.0f, 2.0f);
+    auto centre = b.withSizeKeepingCentre (b.getWidth(), 110.0f);
+    const auto plus = centre.removeFromTop (64.0f).withSizeKeepingCentre (64.0f, 64.0f);
+    g.fillEllipse (plus);
+    g.setColour (background);
+    g.fillRect (plus.withSizeKeepingCentre (30.0f, 5.0f));
+    g.fillRect (plus.withSizeKeepingCentre (5.0f, 30.0f));
+    g.setColour (juce::Colours::white);
+    g.setFont (font (16.0f, true));
+    g.drawText ("Drop to import this move", centre.withTrimmedTop (10.0f), juce::Justification::centredTop);
+}
+
+void MovesPanel::filesDropped (const juce::StringArray& files, int, int)
+{
+    fileHover = false;
+    repaint();
+    if (isInterestedInFileDrag (files))
+        importMidi (juce::File (files[0]));
+}
+
+void MovesPanel::importMidi (const juce::File& file)
+{
+    juce::MidiFile midi;
+    juce::FileInputStream in (file);
+    if (! in.openedOk() || ! midi.readFrom (in))
+    {
+        juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "Import MIDI", "That isn't a MIDI file PedalCues can read.");
+        return;
+    }
+    const auto move = cues::whammy::importMove (midi, config.controller ? config.controller() : -1,
+                                                std::vector<double> (lengths.begin(), lengths.end()));
+    if (move.error.isNotEmpty())
+    {
+        juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "Import MIDI", move.error);
+        return;
+    }
+
+    // Into the pad, at the clip's length, then offered for My drawings under the file's name.
+    state.setProperty (config.drawId, true, nullptr);
+    state.setProperty (config.beatsId, move.beats, nullptr);
+    pad->points = move.points;
+    state.setProperty (config.drawingNameId, juce::String(), nullptr);
+    commitDrawing();
+    if (move.truncated)
+        juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::InfoIcon, "Import MIDI",
+                                                "The clip is longer than 8 bars: PedalCues kept its first 8 bars.");
+    saveDrawingAs (file.getFileNameWithoutExtension());
 }
 
 void MovesPanel::commitDrawing()
