@@ -67,6 +67,8 @@ namespace qc
     Cue gigMode (int channel, int mode);
     Cue gigView (int channel, bool open);   // open or close the Gig View screen
     Cue tap (int channel);                  // one Tap Tempo press
+    // Looper X (CC#48-60, both QC manuals 4.1.1). 'press' marks the actions that toggle (any value 64-127 flips them).
+    Cue looper (int channel, const juce::String& name, int controller, int value, bool press);
     Cue footswitchPage (int channel, int page);   // QC Mini: 1 = Page I, 2 = Page II
 
     // Expression pedal automation (CC#1 / CC#2). Moves whatever is assigned to Expression 1 or 2 on the QC.

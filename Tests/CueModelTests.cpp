@@ -99,6 +99,13 @@ int main (int argc, char** argv)
     CHECK (isCC (qc::gigView (1, true).events[0].second, 1, 46, 127) && isCC (qc::gigView (3, false).events[0].second, 3, 46, 0));
     CHECK (qc::gigView (1, true).name == "QC Gig View On");
     CHECK (isCC (qc::tap (2).events[0].second, 2, 44, 127));
+    // Looper X: actions toggle (never sent twice), settings take a value.
+    {
+        auto rec = qc::looper (1, "Record / Overdub", 53, 127, true);
+        CHECK (rec.name == "QC Looper Record / Overdub" && isCC (rec.events[0].second, 1, 53, 127) && isCC (lengthPadding (rec), 1, 0, 0));
+        auto quant = qc::looper (1, "Quantize 16", 58, 9, false);
+        CHECK (isCC (lengthPadding (quant), 1, 58, 9));
+    }
 
     // QC Mini (its manual): footswitches and scenes 0-3 = A-D on Page I, 4-7 = A-D on Page II, the QC's E-H; CC#64 = page.
     CHECK (qc::miniLabel (0) == "A (I)" && qc::miniLabel (4) == "A (II)" && qc::miniLabel (7) == "D (II)");

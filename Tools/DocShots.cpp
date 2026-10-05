@@ -574,6 +574,10 @@ int main (int argc, char** argv)
                 box->onTextChange();
             }
         }
+        proc.state.setProperty (IDs::qcLooperView, true, nullptr);
+        editor.refreshNow();
+        save (snapshot (editor), outDir.getChildFile ("qc-looper.png"));
+        proc.state.setProperty (IDs::qcLooperView, false, nullptr);
         proc.state.setProperty (IDs::qcExpressionView, true, nullptr);
         editor.refreshNow();
         save (snapshot (editor), outDir.getChildFile ("qc-expression.png"));

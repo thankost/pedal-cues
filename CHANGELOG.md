@@ -2,6 +2,10 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.8.7 (2026-10-05)
+
+- **Quad Cortex Looper X (new):** a **Looper** view on the Quad Cortex page (and the QC Mini): record / overdub, play / stop, undo / redo, one shot, reverse, half speed, duplicate and punch in / out, plus quantize, duplicate and clock-start settings and opening the looper screen. Drop a tile where the looper should act, like pressing its footswitch. The preset needs a Looper X block on its grid.
+
 ## 0.8.6 (2026-10-05)
 
 - **Neural DSP Nano Cortex (new):** pick it under Neural DSP in the device list. Your 64 presets, the slots (gate, capture, cab/IR, FX 1-5) on or off, tuner, tap and expression moves. The Nano has no MIDI Out, so the wiring guide shows a second pedal on its own output.

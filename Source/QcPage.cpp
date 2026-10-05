@@ -88,7 +88,7 @@ public:
         viewChoice.setComponentID ("qc.view");
         viewChoice.setInterceptsMouseClicks (false, true);
         addAndMakeVisible (viewChoice);
-        for (auto* b : { &scenesViewButton, &expressionViewButton })
+        for (auto* b : { &scenesViewButton, &looperViewButton, &expressionViewButton })
         {
             b->setClickingTogglesState (true);
             b->setRadioGroupId (4304);
@@ -99,12 +99,25 @@ public:
             viewChoice.addAndMakeVisible (b);
         }
         scenesViewButton.setConnectedEdges (juce::Button::ConnectedOnRight);
+        looperViewButton.setConnectedEdges (juce::Button::ConnectedOnLeft | juce::Button::ConnectedOnRight);
         expressionViewButton.setConnectedEdges (juce::Button::ConnectedOnLeft);
+        looperViewButton.setComponentID ("qc.viewLooper");
+        looperViewButton.setTooltip ("Looper X: record, play, overdub, undo, reverse, half speed and its settings (CC#48-60). "
+                                     "The preset needs a Looper X block on the grid.");
         scenesViewButton.setTooltip ("Scene and footswitch tiles for the open preset");
         expressionViewButton.setTooltip ("Expression pedal moves (CC#1 / CC#2): swells, fades, wah, or draw your own. "
                                          "They act on the preset the QC has loaded.");
-        scenesViewButton.onClick     = [this] { if (scenesViewButton.getToggleState())     state.setProperty (IDs::qcExpressionView, false, nullptr); };
-        expressionViewButton.onClick = [this] { if (expressionViewButton.getToggleState()) state.setProperty (IDs::qcExpressionView, true, nullptr); };
+        auto setView = [this] (bool looper, bool expression)
+        {
+            state.setProperty (IDs::qcLooperView, looper, nullptr);
+            state.setProperty (IDs::qcExpressionView, expression, nullptr);
+        };
+        scenesViewButton.onClick     = [this, setView] { if (scenesViewButton.getToggleState())     setView (false, false); };
+        looperViewButton.onClick     = [this, setView] { if (looperViewButton.getToggleState())     setView (true, false); };
+        expressionViewButton.onClick = [this, setView] { if (expressionViewButton.getToggleState()) setView (false, true); };
+
+        for (auto* c : std::initializer_list<juce::Component*> { &looperSection, &looperSettingsSection })
+            addChildComponent (c);
 
         addChildComponent (*expression);
 
@@ -227,13 +240,55 @@ public:
         utilsSection.hint = mini() ? "tuner, tap, gig view, footswitch mode, page" : "tuner, tap, gig view, footswitch mode";
         utilsSection.repaint();
 
+        // Looper X (both QC manuals, CorOS 4.1.1): the actions toggle with any value 64-127; the settings take a value.
+        looperTiles.clear();
+        looperSettingTiles.clear();
+        struct LooperDef { const char* name; int cc, value; bool press; juce::uint32 colour; const char* note; };
+        static const LooperDef actions[] = {
+            { "Record / Overdub", 53, 127, true, 0xffe74c3c, "Starts recording; pressed again it overdubs (like the footswitch)." },
+            { "Play / Stop", 54, 127, true, 0xff2ecc71, {} }, { "Undo / Redo", 56, 127, true, 0xff9b59b6, {} },
+            { "One Shot", 50, 127, true, 0xfff5a623, "Plays the loop once." }, { "Reverse", 55, 127, true, 0xff3498db, {} },
+            { "Half Speed", 51, 127, true, 0xff1abc9c, {} }, { "Duplicate", 49, 127, true, 0xffe67e22, "Doubles the loop length." },
+            { "Punch In / Out", 52, 127, true, 0xffc0392b, {} } };
+        static const LooperDef settings[] = {
+            { "Looper open", 48, 0, false, 0xff2ec4b6, "Opens the Looper X screen (Perform mode)." },
+            { "Looper close", 48, 127, false, 0xff1e8c84, "Closes the Looper X screen." },
+            { "Quantize off", 58, 0, false, 0xff8e7cf0, {} }, { "Quantize 4", 58, 4, false, 0xff8e7cf0, "Quantize to 4 beats." },
+            { "Quantize 8", 58, 8, false, 0xff8e7cf0, "Quantize to 8 beats." }, { "Quantize 16", 58, 9, false, 0xff8e7cf0, "Quantize to 16 beats (value 9)." },
+            { "Duplicate Free", 57, 0, false, 0xffe67e22, "Duplicate mode: Free." }, { "Duplicate Sync", 57, 1, false, 0xffe67e22, "Duplicate mode: Sync." },
+            { "Clock start Free", 59, 0, false, 0xff5b8def, "MIDI Clock Start: Free." }, { "Clock start Sync", 59, 1, false, 0xff5b8def, "MIDI Clock Start: Sync." },
+            { "Perform view", 60, 0, false, 0xff7f8c8d, "The Looper X Perform view." }, { "Parameters view", 60, 1, false, 0xff7f8c8d, "The Looper X Parameters view." } };
+        auto addLooper = [this] (juce::OwnedArray<Tile>& tiles, const LooperDef& d)
+        {
+            auto* t = tiles.add (new Tile (proc, Tile::Look::utility));
+            t->title = d.name;
+            t->subtitle = "CC#" + juce::String (d.cc) + " = " + juce::String (d.value);
+            t->colour = juce::Colour (d.colour);
+            t->setTooltip ((d.note != nullptr ? juce::String (d.note) + " " : juce::String())
+                           + (d.press ? "Each clip toggles it, like a footswitch press. " : juce::String())
+                           + "Needs a Looper X block in the loaded preset. Drag onto the timeline.");
+            const auto name = juce::String (d.name);
+            const auto cc = d.cc, value = d.value;
+            const auto press = d.press;
+            t->makeCue = [this, name, cc, value, press] { return cues::qc::looper (qcChannel(), name, cc, value, press); };
+            addChildComponent (t);
+        };
+        for (const auto& d : actions)  addLooper (looperTiles, d);
+        for (const auto& d : settings) addLooper (looperSettingTiles, d);
+
         const auto showExpression = (bool) state[IDs::qcExpressionView];
-        (showExpression ? expressionViewButton : scenesViewButton).setToggleState (true, juce::dontSendNotification);
+        const auto showLooper = ! showExpression && (bool) state[IDs::qcLooperView];
+        const auto showScenes = ! showExpression && ! showLooper;
+        (showExpression ? expressionViewButton : showLooper ? looperViewButton : scenesViewButton).setToggleState (true, juce::dontSendNotification);
         for (auto* c : std::initializer_list<juce::Component*> { &scenesSection, &stompsSection, &loadFirstToggle, &stompOnToggle })
-            c->setVisible (! showExpression);
-        for (auto* t : sceneTiles) t->setVisible (! showExpression);
-        for (auto* t : stompTiles) t->setVisible (! showExpression);
-        for (auto& l : pageLabels) l.setVisible (mini() && ! showExpression);
+            c->setVisible (showScenes);
+        for (auto* t : sceneTiles) t->setVisible (showScenes);
+        for (auto* t : stompTiles) t->setVisible (showScenes);
+        for (auto& l : pageLabels) l.setVisible (mini() && showScenes);
+        for (auto* c : std::initializer_list<juce::Component*> { &looperSection, &looperSettingsSection })
+            c->setVisible (showLooper);
+        for (auto* t : looperTiles)        t->setVisible (showLooper);
+        for (auto* t : looperSettingTiles) t->setVisible (showLooper);
         expression->setVisible (showExpression);
         expression->refresh();
 
@@ -269,10 +324,11 @@ public:
             screen->setBounds (r.removeFromTop (104).expanded (3));
         r.removeFromTop (10);
 
-        viewChoice.setBounds (r.removeFromTop (30).removeFromLeft (320));
+        viewChoice.setBounds (r.removeFromTop (30).removeFromLeft (480));
         {
             auto c = viewChoice.getLocalBounds();
-            scenesViewButton.setBounds (c.removeFromLeft (c.getWidth() / 2));
+            scenesViewButton.setBounds (c.removeFromLeft (c.getWidth() / 3));
+            looperViewButton.setBounds (c.removeFromLeft (c.getWidth() / 2));
             expressionViewButton.setBounds (c);
         }
         r.removeFromTop (10);
@@ -280,6 +336,15 @@ public:
         utilsSection.setBounds (r.removeFromBottom (Section::headerHeight + 2 * 60 + 6));   // two rows: of four, or five on the Mini
         r.removeFromBottom (12);
         expression->setBounds (r);
+        {
+            // Looper view: the actions (two rows of four), then the settings (two rows of six).
+            auto area = r;
+            looperSection.setBounds (area.removeFromTop (juce::jmin (area.getHeight() / 2, Section::headerHeight + 2 * 64 + 6)));
+            area.removeFromTop (12);
+            looperSettingsSection.setBounds (area.removeFromTop (juce::jmin (area.getHeight(), Section::headerHeight + 2 * 60 + 6)));
+            layoutGrid (looperTiles, looperSection.contentArea().expanded (3), 4, 6);
+            layoutGrid (looperSettingTiles, looperSettingsSection.contentArea().expanded (3), 6, 6);
+        }
         stompsSection.setBounds (r.removeFromBottom (Section::headerHeight + 64));
         r.removeFromBottom (12);
         scenesSection.setBounds (r);
@@ -513,6 +578,8 @@ private:
     Section scenesSection  { "qc.scenes", "Scenes", "CC#43", qcBlue };
     Section stompsSection  { "qc.stomps", "Stomps", "CC#35-42", ledGreen };
     Section utilsSection   { "qc.utils", "Utilities", "tuner, tap, gig view, footswitch mode" };
+    Section looperSection  { "qc.looper", "Looper X", "CC#49-56  -  needs a Looper X block in the preset", accent };
+    Section looperSettingsSection { "qc.looperSettings", "Looper X settings", "CC#48, 57-60", accent };
 
     juce::TextButton addButton { "+ Preset" };
     juce::TextButton syncButton { "Sync from QC (USB)" };
@@ -532,7 +599,8 @@ private:
     juce::ToggleButton loadFirstToggle;
     juce::ToggleButton stompOnToggle { "Tiles switch ON" };
     juce::Component viewChoice;
-    juce::TextButton scenesViewButton { "Scenes & Stomps" }, expressionViewButton { "Expression" };
+    juce::TextButton scenesViewButton { "Scenes & Stomps" }, looperViewButton { "Looper" }, expressionViewButton { "Expression" };
+    juce::OwnedArray<Tile> looperTiles, looperSettingTiles;
     std::unique_ptr<Page> expression { makeQcExpression (proc) };
 
     juce::OwnedArray<Tile> presetTiles, sceneTiles, stompTiles, utilTiles;

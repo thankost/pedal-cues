@@ -217,6 +217,15 @@ namespace qc
         return c;
     }
 
+    Cue looper (int channel, const juce::String& name, int controller, int value, bool press)
+    {
+        Cue c;
+        c.name = "QC Looper " + name;
+        c.toggles = press;
+        c.add (0.0, juce::MidiMessage::controllerEvent (clampChannel (channel), juce::jlimit (0, 127, controller), juce::jlimit (0, 127, value)));
+        return c;
+    }
+
     Cue footswitchPage (int channel, int page)
     {
         Cue c;

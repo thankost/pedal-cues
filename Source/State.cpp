@@ -363,7 +363,8 @@ void sanitise (juce::ValueTree& root)
     setDefault (root, IDs::sweepReset, true);
     setDefault (root, IDs::sweepDraw, false);
     setDefault (root, IDs::sweepDrawing, cues::whammy::encodeDrawing (cues::whammy::defaultDrawing()));
-    setDefault (root, IDs::qcExpressionView, false);   // Quad Cortex page: Scenes & Stomps or Expression
+    setDefault (root, IDs::qcExpressionView, false);   // Quad Cortex page: Scenes & Stomps, Looper or Expression
+    setDefault (root, IDs::qcLooperView, false);
     setDefault (root, IDs::expPedal, 1);
     setDefault (root, IDs::expLoadFirst, false);   // opt-in: a preset reload can cut the sound
     setDefault (root, IDs::expBeats, 4.0);

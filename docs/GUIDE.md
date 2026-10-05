@@ -194,7 +194,7 @@ The first tab is named after your amp modeller. Click the **▾** on it (or use 
 | **Scenes** | 8 scenes laid out like the QC display: **A-D top, E-H bottom**. | `CC#43` = 0-7 |
 | **Load 1A first** (Scenes header) | Picks which preset scene and stomp tiles act on. See [below](#which-preset-do-scenes-and-stomps-act-on). | Preset + `CC#43` / `CC#35-42`, or the CC alone |
 | **Stomps** | Switch one footswitch A-H. The header switch picks whether tiles send **ON** or **OFF**. | `CC#35-42` |
-| **Scenes & Stomps / Expression** | The switch under the screen picks what the lower part shows: scene and stomp tiles, or [expression moves](#expression-swells-fades-and-wah). | |
+| **Scenes & Stomps / Looper / Expression** | The switch under the screen picks what the lower part shows: scene and stomp tiles, the [Looper X](#looper-x) tiles, or [expression moves](#expression-swells-fades-and-wah). | |
 | **Expression** | Moves whatever you assign to Expression 1 or 2 on the QC: swells, fades, wah, or your own drawing. | `CC#1` / `CC#2` |
 | **Utilities** | Tuner on/off, **Tap** (one Tap Tempo press: drop one on each beat), **Gig View** on/off (opens or closes the QC's big-text Gig View screen), and the footswitch mode (Preset / Stomp / Scene). | `CC#45`, `CC#44`, `CC#46`, `CC#47` |
 
@@ -251,6 +251,18 @@ What it reads:
 Scenes the QC leaves unlabelled keep the name they had in PedalCues. Scene colours come straight from the QC, so the tiles match the pedal.
 
 > This uses the QC's private USB connection (the one Cortex Control uses), which Neural DSP doesn't document. It follows the community's reverse-engineering in [pyquadcortex](https://github.com/stokes-audio/pyquadcortex). Tested on a Quad Cortex; a CorOS update could break syncing until PedalCues is updated, but your MIDI cues keep working regardless. On the QC Mini it should work but isn't tested yet.
+
+### Looper X
+
+![The Quad Cortex Looper view](images/qc-looper.png)
+
+Click **Looper** under the screen for the Quad Cortex's **Looper X** (from the Quad Cortex and QC Mini manuals, CorOS 4.1.1). It only works when the loaded preset has a **Looper X block** on the grid.
+
+- **Looper X:** **Record / Overdub** (CC#53), **Play / Stop** (CC#54), **Undo / Redo** (CC#56), **One Shot** (CC#50), **Reverse** (CC#55), **Half Speed** (CC#51), **Duplicate** (CC#49) and **Punch In / Out** (CC#52). Each clip works like pressing the button: drop *Record / Overdub* where recording starts and again where it should overdub, *Play / Stop* where it plays or stops.
+- **Looper X settings:** open or close the Looper X screen (CC#48), **Quantize** off / 4 / 8 / 16 beats (CC#58), **Duplicate** Free or Sync (CC#57), **MIDI Clock Start** Free or Sync (CC#59), and the Perform or Parameters view (CC#60).
+- The Utilities (tuner, tap, Gig View, footswitch mode) stay below, as on the other views.
+
+The Looper view works on the [QC Mini](#quad-cortex-mini) too. Not tested on a Quad Cortex yet: if a tile doesn't do what it says, please tell us.
 
 ### Expression: swells, fades and wah
 
@@ -312,7 +324,7 @@ The QC Mini has four footswitches, A-D, on two **footswitch pages**. Each preset
 | **Stomps** | Footswitches A-D of **Page I**, then A-D of **Page II**. | `CC#35-38` (Page I), `CC#39-42` (Page II) |
 | **Page I / Page II** (Utilities) | Shows that footswitch page on the Mini, like holding B. | `CC#64` = 0 / 127 |
 
-Everything else (presets, setlists, Load 1A first, Expression, tuner, tap, Gig View, footswitch mode, Sync from QC) works as on the Quad Cortex. The Mini has one EXP jack; Expression 2 works over MIDI only. The numbers come from Neural DSP's QC Mini manual, which lists the same MIDI as the Quad Cortex's.
+Everything else (presets, setlists, Load 1A first, Looper, Expression, tuner, tap, Gig View, footswitch mode, Sync from QC) works as on the Quad Cortex. The Mini has one EXP jack; Expression 2 works over MIDI only. The numbers come from Neural DSP's QC Mini manual, which lists the same MIDI as the Quad Cortex's.
 
 ---
 

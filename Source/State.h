@@ -98,6 +98,7 @@ namespace IDs
     PEDALCUES_ID (sweepDrawing)
     PEDALCUES_ID (sweepDrawingName)
     PEDALCUES_ID (qcExpressionView)
+    PEDALCUES_ID (qcLooperView)    // Quad Cortex page: the Looper X view (qcExpressionView wins when both are set)
     PEDALCUES_ID (expPedal)
     PEDALCUES_ID (expLoadFirst)
     PEDALCUES_ID (setupViaQcChain)   // only in exported setup files: the wiring choice (a per-computer setting)

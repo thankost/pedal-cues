@@ -146,6 +146,7 @@ void PedalCuesEditor::showPage (int index)
 void PedalCuesEditor::showQcExpression (bool show)
 {
     state.setProperty (IDs::qcExpressionView, show, nullptr);
+    state.setProperty (IDs::qcLooperView, false, nullptr);
     refreshNow();   // lay out the view now, so the tour can find its targets
 }
 
