@@ -26,7 +26,13 @@ enum class Scheme
     nano,       // Neural DSP Nano Cortex: 64 presets, PC 0-63, no banks or setlists
     darkglassAmp,// Darkglass Infinity 500 Combo / Exponent 500: presets 1-5 = PC 2-6 (pcOffset 2)
     dl4,        // Line 6 DL4 MkII: PC 0-5 = presets A-F, PC 6-127 = presets 7-128
-    hxOne       // Line 6 HX One: PC 0-127 = presets 000-127, bank select ignored
+    hxOne,      // Line 6 HX One: PC 0-127 = presets 000-127, bank select ignored
+    strymonAB,  // Strymon TimeLine / Mobius: 200 presets 00A-99B, always CC#0 = index / 128, then PC = index % 128
+    strymonABC, // Strymon BigSky: 300 presets 00A-99C, the same way
+    strymonMX,  // Strymon TimeLine MX / BigSky MX: 300 presets 000A-149B, the same way
+    numbered,   // a plain list: presetCount presets labelled from labelFrom, PC = index % 128 + pcOffset, CC#0 = index / 128 if sendBankCc0
+                // (Strymon Volante and the small pedals 0-299, Meris 1-16 with PC 0 = bypass, Chase Bliss, Source Audio...)
+    boss500     // Boss DD-500 / RV-500 / MD-500: 297 patches 01A-99C, CC#0 = index / 128, then PC = index % 128
 };
 
 struct Action { juce::String name, messages, note; int colour = 5; };   // messages in cues::custom syntax
@@ -53,6 +59,13 @@ struct Profile
     int sceneValueBase = 0;                 // Anagram: scene A = CC#107 value 1 (it ignores 0)
     bool sceneLetters = false;              // Anagram: scenes are A, B, C (others 1, 2, 3...)
     int pcOffset = 0;                       // Anagram: preset 01A = Program Change 1 (it ignores 0)
+    int presetCount = 128;                  // Scheme::numbered: how many presets
+    int labelFrom = 0;                      // Scheme::numbered: the first preset's number as the unit shows it (0 or 1)
+    bool sendBankCc0 = false;               // Scheme::numbered: CC#0 = index / 128 before every Program Change
+    std::vector<std::pair<int, juce::String>> reservedPrograms;   // indices with a fixed meaning, e.g. { 127, "Manual mode" }
+    // The CC a clip is padded with for Ableton (lengthPadding) when it has no bank CC to repeat: one the unit ignores, picked
+    // from its full MIDI chart. -1 = the usual CC#0 = 0 (CC#32 on cc0IsControl units).
+    int padCc = -1;
     juce::String sceneNote;
 
     juce::String switchesTitle;             // "Footswitches" / "Blocks"
@@ -77,6 +90,11 @@ struct Profile
 };
 
 const std::vector<Profile>& all();
+
+// The effect pedal pages, each brand group in its own file (PedalsStrymon.cpp, PedalsBoss.cpp, PedalsBoutique.cpp).
+void addStrymon (std::vector<Profile>&);
+void addBossPedals (std::vector<Profile>&);          // DD-500, RV-500, MD-500
+void addBoutiquePedals (std::vector<Profile>&);      // Meris, Chase Bliss, Walrus Audio, Source Audio, Electro-Harmonix
 const Profile* find (const juce::String& id);
 
 // Presets: each one is a setlist (CC#32 value, or -1 for units without setlists) and an index within it.

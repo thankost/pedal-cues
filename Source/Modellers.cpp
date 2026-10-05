@@ -588,6 +588,10 @@ const std::vector<Profile>& all()
                       "or newer.\n\nPresets: 128, A1-P8 = Program Change 0-127. The FX8 doesn't respond to bank select.";
             v.push_back (p);
         }
+        // Effect pedals with fixed MIDI charts, one file per brand group (the Effects & Pedals tab).
+        addStrymon (v);
+        addBossPedals (v);
+        addBoutiquePedals (v);
         return v;
     }();
     return list;
@@ -621,7 +625,8 @@ juce::StringArray setlistNames (const Profile& p)
             return s;
         }
         case Scheme::hxStomp: case Scheme::hxFour: case Scheme::axeFx2: case Scheme::ax8: case Scheme::fx8:
-        case Scheme::headrush: case Scheme::headrushOld: case Scheme::nano: case Scheme::darkglassAmp: case Scheme::dl4: case Scheme::hxOne: break;
+        case Scheme::headrush: case Scheme::headrushOld: case Scheme::nano: case Scheme::darkglassAmp: case Scheme::dl4: case Scheme::hxOne:
+        case Scheme::strymonAB: case Scheme::strymonABC: case Scheme::strymonMX: case Scheme::numbered: case Scheme::boss500: break;
     }
     return {};
 }
@@ -632,6 +637,9 @@ int slotsPerBank (const Profile& p)
     {
         case Scheme::hxStomp: return 3;
         case Scheme::axeFx2: case Scheme::headrush: case Scheme::headrushOld: case Scheme::dl4: case Scheme::hxOne: return 128;
+        case Scheme::strymonAB: case Scheme::strymonMX: return 2;
+        case Scheme::strymonABC: case Scheme::boss500: return 3;
+        case Scheme::numbered: return juce::jmax (1, p.presetCount);
         case Scheme::nano:    return 64;
         case Scheme::darkglassAmp: return 5;
         case Scheme::ax8: case Scheme::fx8: return 8;
@@ -648,6 +656,10 @@ int presetsPerSetlist (const Profile& p, int)
         case Scheme::nano:    return 64;
         case Scheme::darkglassAmp: return 5;
         case Scheme::axeFx2:  return 768;
+        case Scheme::strymonAB: return 200;
+        case Scheme::strymonABC: case Scheme::strymonMX: return 300;
+        case Scheme::numbered: return juce::jmax (1, p.presetCount);
+        case Scheme::boss500: return 297;
         case Scheme::ax8:     return 512;
         case Scheme::helix: case Scheme::podGo: case Scheme::stadium: case Scheme::hxFour: case Scheme::fx8:
         case Scheme::headrush: case Scheme::headrushOld: case Scheme::dl4: case Scheme::hxOne: break;
@@ -662,8 +674,21 @@ juce::StringArray bankNames (const Profile& p, int setlist)
         return { "MIDI PROG" };   // one list, no banks
     if (p.scheme == Scheme::nano)
         return { "ALL PRESETS" };
-    if (p.scheme == Scheme::darkglassAmp || p.scheme == Scheme::dl4 || p.scheme == Scheme::hxOne)
+    if (p.scheme == Scheme::darkglassAmp || p.scheme == Scheme::dl4 || p.scheme == Scheme::hxOne || p.scheme == Scheme::numbered)
         return { "PRESETS" };
+    if (p.scheme == Scheme::boss500)
+    {
+        for (int i = 1; i <= 99; ++i)
+            b.add (juce::String (i).paddedLeft ('0', 2));
+        return b;
+    }
+    if (p.scheme == Scheme::strymonAB || p.scheme == Scheme::strymonABC || p.scheme == Scheme::strymonMX)
+    {
+        const auto digits = p.scheme == Scheme::strymonMX ? 3 : 2;
+        for (int i = 0; i < presetsPerSetlist (p, setlist) / slotsPerBank (p); ++i)
+            b.add (juce::String (i).paddedLeft ('0', digits));   // 00-99, 000-149: the bank numbers start at 0
+        return b;
+    }
     const auto banks = presetsPerSetlist (p, setlist) / slotsPerBank (p);
     const auto letters = p.scheme == Scheme::axeFx2 || p.scheme == Scheme::fx8;
     // Stadium's USER PRESETS groups continue the bank numbers: group 2 is 33A-64D.
@@ -678,7 +703,8 @@ juce::StringArray slotNames (const Profile& p)
     juce::StringArray s;
     const auto count = slotsPerBank (p);
     for (int i = 0; i < count; ++i)
-        s.add (p.scheme == Scheme::dl4 ? (i < 6 ? juce::String::charToString ((juce::juce_wchar) ('A' + i)) : n (i + 1))
+        s.add (p.scheme == Scheme::numbered ? n (i + p.labelFrom)
+               : p.scheme == Scheme::dl4 ? (i < 6 ? juce::String::charToString ((juce::juce_wchar) ('A' + i)) : n (i + 1))
                : p.scheme == Scheme::hxOne ? juce::String (i).paddedLeft ('0', 3)
                : (p.scheme == Scheme::headrush || p.scheme == Scheme::darkglassAmp) ? n (i + 1) : (p.scheme == Scheme::headrushOld || p.scheme == Scheme::nano) ? n (i)
                : p.scheme == Scheme::axeFx2 ? juce::String (i).paddedLeft ('0', 3)
@@ -697,6 +723,14 @@ juce::String presetLabel (const Profile& p, int setlist, int index)
         return "Preset " + n (juce::jlimit (0, 4, index) + 1);
     if (p.scheme == Scheme::dl4 || p.scheme == Scheme::hxOne)
         return "Preset " + slotNames (p)[juce::jlimit (0, 127, index)];
+    if (p.scheme == Scheme::numbered)
+    {
+        index = juce::jlimit (0, juce::jmax (0, p.presetCount - 1), index);
+        for (const auto& [reserved, name] : p.reservedPrograms)
+            if (reserved == index)
+                return name;   // "Manual mode", "Bypass"...
+        return "Preset " + n (index + p.labelFrom);
+    }
     const auto per = slotsPerBank (p);
     const auto banks = bankNames (p, setlist);
     const auto bank = juce::jlimit (0, juce::jmax (0, banks.size() - 1), index / per);
@@ -747,7 +781,9 @@ void addPresetLoad (cues::Cue& c, const Profile& p, int channel, int setlist, in
     index = juce::jlimit (0, presetsPerSetlist (p, setlist) - 1, index);
     if (hasSetlists (p) && sendSetlist && setlist >= 0)
         c.add (beat, juce::MidiMessage::controllerEvent (ch, 32, juce::jlimit (0, 127, setlist)));
-    if (p.scheme == Scheme::axeFx2 || p.scheme == Scheme::ax8)
+    // Bank select on CC#0 (Strymon: always, so a clip never relies on the bank the pedal happens to be in).
+    if (p.scheme == Scheme::axeFx2 || p.scheme == Scheme::ax8 || p.scheme == Scheme::strymonAB || p.scheme == Scheme::strymonABC
+        || p.scheme == Scheme::strymonMX || p.scheme == Scheme::boss500 || (p.scheme == Scheme::numbered && p.sendBankCc0))
         c.add (beat, juce::MidiMessage::controllerEvent (ch, 0, index / 128));
     c.add (beat, juce::MidiMessage::programChange (ch, juce::jlimit (0, 127, index % 128 + p.pcOffset)));
 }
@@ -757,6 +793,7 @@ cues::Cue preset (const Profile& p, int channel, int setlist, int index, bool se
     cues::Cue c;
     c.name = p.shortName + " " + (name.isNotEmpty() ? name : presetLabel (p, setlist, index));
     c.cc0IsControl = p.cc0IsControl;
+    c.padCc = p.padCc;
     addPresetLoad (c, p, channel, setlist, index, sendSetlist, 0.0);
     return c;
 }
@@ -766,6 +803,7 @@ cues::Cue scene (const Profile& p, int channel, int sceneIndex, const juce::Stri
     cues::Cue c;
     c.name = p.shortName + " " + p.sceneWord + " " + sceneLabel (p, sceneIndex) + (name.isNotEmpty() ? " - " + name : juce::String());
     c.add (0.0, sceneMessage (p, channel, sceneIndex));
+    c.padCc = p.padCc;
     return c;
 }
 
@@ -788,6 +826,7 @@ cues::Cue switchCue (const Profile& p, int channel, int switchIndex, bool on, co
     c.add (0.0, juce::MidiMessage::controllerEvent (channelOf (channel), s.cc, p.switchesOnOff ? (on ? s.value : s.offValue) : s.value));
     c.toggles = ! p.switchesOnOff;   // a press or a toggle
     c.cc0IsControl = p.cc0IsControl;
+    c.padCc = p.padCc;
     return c;
 }
 
@@ -808,6 +847,7 @@ cues::Cue action (const Profile& p, int channel, const Action& a)
     auto c = cues::custom::cue (channel, p.shortName + " " + a.name, a.messages, 0);
     c.toggles = true;
     c.cc0IsControl = p.cc0IsControl;
+    c.padCc = p.padCc;
     return c;
 }
 }

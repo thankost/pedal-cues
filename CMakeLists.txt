@@ -69,6 +69,9 @@ target_sources(PedalCues PRIVATE
     Source/State.cpp
     Source/DeviceTemplates.cpp
     Source/Modellers.cpp
+    Source/PedalsStrymon.cpp
+    Source/PedalsBoss.cpp
+    Source/PedalsBoutique.cpp
     Source/Theme.cpp
     Source/Tile.cpp
     Source/EditorCommon.cpp
@@ -107,7 +110,7 @@ target_link_libraries(PedalCues
 option(PEDALCUES_BUILD_TESTS "Build the CueModel tests" ON)
 if(PEDALCUES_BUILD_TESTS)
     juce_add_console_app(PedalCuesTests PRODUCT_NAME "PedalCuesTests")
-    target_sources(PedalCuesTests PRIVATE Tests/CueModelTests.cpp Source/CueModel.cpp Source/State.cpp Source/DeviceTemplates.cpp Source/Modellers.cpp Source/Update.cpp Source/QcUsb.cpp)
+    target_sources(PedalCuesTests PRIVATE Tests/CueModelTests.cpp Source/CueModel.cpp Source/State.cpp Source/DeviceTemplates.cpp Source/Modellers.cpp Source/PedalsStrymon.cpp Source/PedalsBoss.cpp Source/PedalsBoutique.cpp Source/Update.cpp Source/QcUsb.cpp)
     target_compile_definitions(PedalCuesTests PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0
         JucePlugin_VersionString="${PROJECT_VERSION}"
         PEDALCUES_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/Tests/fixtures")
@@ -125,6 +128,9 @@ if(PEDALCUES_BUILD_DOCS)
         Source/State.cpp
     Source/DeviceTemplates.cpp
     Source/Modellers.cpp
+    Source/PedalsStrymon.cpp
+    Source/PedalsBoss.cpp
+    Source/PedalsBoutique.cpp
         Source/Theme.cpp
         Source/Tile.cpp
         Source/EditorCommon.cpp

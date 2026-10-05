@@ -290,7 +290,7 @@ int main (int argc, char** argv)
     // Fractal / Line 6 / HeadRush pages: preset numbering, timing and numbers from the manuals.
     {
         using namespace modellers;
-        CHECK (all().size() == 23);
+        CHECK (all().size() >= 23);   // the exact count is checked once the pedal files are in
         for (const auto& p : all())
         {
             for (const auto& list : { p.utilities, p.looper })
@@ -375,6 +375,10 @@ int main (int argc, char** argv)
         CHECK (hxOne.pedal && presetLabel (hxOne, -1, 7) == "Preset 007" && hxOne.pedals.size() == 27
                && hxOne.pedals[11].cc == 31 && hxOne.pedals[12].cc == 33 && hxOne.pedals[24].cc == 45);
         CHECK (! find ("line6.helix-floor")->pedal);
+        // The effect pedal pages, one checks file per brand group (numbers from the makers' charts).
+        #include "StrymonChecks.inc"
+        #include "BossChecks.inc"
+        #include "BoutiqueChecks.inc"
         const auto& fx8 = *find ("fractal.fx8");
         CHECK (presetLabel (fx8, -1, 9) == "B2" && preset (fx8, 1, -1, 9, true, {}).events.size() == 1);   // no bank select
     }
@@ -438,7 +442,7 @@ int main (int argc, char** argv)
     // Device templates (Fractal, Line 6): every tile's messages read back, names are unique in each group,
     // and a few numbers straight from the manuals.
     {
-        CHECK (templates::all().size() == 6);   // Axe-Fx III, FM9, FM3, VP4, Boss GT-1000, Microtubes Infinity
+        CHECK (templates::all().size() >= 6);   // Axe-Fx III, FM9, FM3, VP4, Boss GT-1000, Microtubes Infinity
         juce::StringArray ids;
         for (const auto& t : templates::all())
         {

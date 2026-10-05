@@ -17,7 +17,7 @@ static constexpr int ticksPerQuarter = 960;
 juce::MidiMessage lengthPadding (const Cue& cue)
 {
     const auto& last = cue.events.back().second;
-    const auto spareBank = cue.cc0IsControl ? 32 : 0;   // bank select MSB, or LSB where CC#0 is a control
+    const auto spareBank = cue.padCc >= 0 ? cue.padCc : cue.cc0IsControl ? 32 : 0;   // a CC the unit ignores, bank select MSB, or LSB
     if (cue.toggles)
         return juce::MidiMessage::controllerEvent (last.getChannel(), spareBank, 0);
     if (! last.isProgramChange())
