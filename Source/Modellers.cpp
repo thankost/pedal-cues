@@ -446,6 +446,103 @@ const std::vector<Profile>& all()
             v.push_back (p);
         }
 
+        // Line 6 effect pedals (Effects & Pedals tab): DL4 MkII (Owner's Manual Rev D, firmware 1.02, MIDI chapter) and
+        // HX One (Owner's Manual Rev C, firmware 3.70, MIDI chapter). Both: MIDI channel 1 out of the box, 5-pin MIDI In and
+        // Out/Thru, USB MIDI; all MIDI control is global (whatever preset is loaded).
+        {
+            Profile p;
+            p.id = "line6.dl4-mkii"; p.brand = "Line 6"; p.model = "DL4 MkII"; p.shortName = "DL4";
+            p.aliases = "dl4 mk2 mkii delay modeler looper stompbox green"; p.colour = juce::Colour (0xff5cb85c);
+            p.manual = "DL4 MkII Owner's Manual (Rev D, firmware 1.02)";
+            p.pedal = true; p.scheme = Scheme::dl4;
+            p.sceneWord = "Scene"; p.sceneCount = 0;
+            p.mainTitle = "Controls";
+            p.switchesTitle = "Note value";
+            const char* notes[] = { "1/8 triplet", "1/8", "Dotted 1/8", "1/4 triplet", "1/4", "Dotted 1/4", "1/2 triplet", "1/2", "Dotted 1/2" };
+            for (int i = 0; i < 9; ++i)
+                p.switches.push_back ({ notes[i], 12, i });
+            p.switchesNote = "Sets the delay's note value (Time Subdivisions, CC#12) in the loaded preset.";
+            p.utilities = { { "Preset on", "CC 4=0", "Turns the loaded preset on (CC#4 = 0-63).", 3 },
+                            { "Bypass", "CC 4=127", "Bypasses the loaded preset (CC#4 = 64-127), like pressing its lit footswitch.", 9 },
+                            { "Tap", "CC 64=127", oneTap, 1 },
+                            { "Looper mode on", "CC 9=127", "Classic Looper mode on (CC#9).", 4 },
+                            { "Looper mode off", "CC 9=0", "Classic Looper mode off (CC#9).", 9 },
+                            { "Reverb > delay", "CC 19=0", "Reverb-delay routing (CC#19): reverb before the delay.", 7 },
+                            { "Parallel", "CC 19=1", "Reverb-delay routing (CC#19): reverb and delay in parallel.", 7 },
+                            { "Delay > reverb", "CC 19=2", "Reverb-delay routing (CC#19): reverb after the delay.", 7 } };
+            p.looper = { { "Record", "CC 60=127", {}, 0 }, { "Overdub", "CC 60=0", {}, 1 }, { "Play", "CC 61=127", {}, 3 }, { "Stop", "CC 61=0", {}, 9 },
+                         { "Play once", "CC 62=127", {}, 4 }, { "Undo", "CC 63=0", "Undoes the last overdub (CC#63 = 0-63).", 6 },
+                         { "Redo", "CC 63=127", "Redoes the last overdub (CC#63 = 64-127).", 6 },
+                         { "Forward", "CC 65=0", {}, 5 }, { "Reverse", "CC 65=127", {}, 5 },
+                         { "Full speed", "CC 66=0", {}, 7 }, { "Half speed", "CC 66=127", {}, 7 } };
+            const juce::String clears ("Changes the loaded preset's model. Changing a model clears the preset's pedal and footswitch assignments "
+                                       "(for good if you then save the preset).");
+            ModelGroup mk2 { "MkII delays", "CC#1 = 0-14", {} }, legacy { "Legacy delays", "CC#1 = 15-29", {} }, reverbs { "Reverbs", "CC#2 = 0-15", {} };
+            const char* delays[] = { "Vintage Digital", "Crisscross", "Euclidean", "Dual Delay", "Pitch Echo", "ADT", "Ducked", "Harmony",
+                                     "Heliosphere", "Transistor", "Cosmos", "Multi Pass", "Adriatic", "Elephant Man", "Glitch",
+                                     "Digital", "Digital w/ Mod", "Echo Platter", "Stereo", "Ping Pong", "Reverse", "Dynamic", "Auto-Vol",
+                                     "Tube Echo", "Tape Echo", "Multi-Head", "Sweep", "Analog", "Analog w/ Mod", "Lo Res Delay" };
+            for (int i = 0; i < 30; ++i)
+                (i < 15 ? mk2 : legacy).actions.push_back ({ delays[i], "CC 1=" + n (i), clears, i < 15 ? 3 : 1 });
+            const char* verbs[] = { "Room", "Searchlights", "Particle Verb", "Double Tank", "Octo", "Tile", "Ducking", "Plateaux", "Cave", "Plate",
+                                    "Ganymede", "Chamber", "Hot Springs", "Hall", "Glitz", "Reverb off" };
+            for (int i = 0; i < 16; ++i)
+                reverbs.actions.push_back ({ verbs[i], "CC 2=" + n (i), clears, i == 15 ? 9 : 6 });
+            p.models = { mk2, legacy, reverbs };
+            p.pedals = { { "Expression", 3 }, { "Delay time", 11 }, { "Repeats", 13 }, { "Tweak", 14 }, { "Tweez", 15 }, { "Mix", 16 },
+                         { "Reverb decay", 17 }, { "Reverb predelay", 18 }, { "Reverb mix", 20 } };
+            p.pedalNote = "Expression (CC#3) moves what the preset assigns to the expression pedal: make that assignment first with a pedal or "
+                          "footswitch on the EXP PEDAL jack. The others move that knob like turning it (in Classic Looper mode, time, repeats, "
+                          "tweak, tweez and mix set the looper's echo).";
+            p.testMessage = "PC 0";   // preset A
+            p.channelHint = "Must match the DL4 MkII: Global Settings > MIDI Channel (1 out of the box).";
+            p.usbToThru = 2; p.usbThruSetting = "MIDI THRU on (Global Settings; off out of the box)";
+            p.notes = "Presets: Program Change 0-5 = presets A-F (the footswitches), 6-127 = presets 7-128, which you can only reach over MIDI.\n\n"
+                      "Controls: the note value (CC#12), preset on / bypass (CC#4), tap (CC#64), Classic Looper mode (CC#9) and the "
+                      "reverb-delay routing (CC#19). Models: delay model CC#1 (MkII 0-14, Legacy 15-29) and reverb model CC#2 (0-14, 15 = "
+                      "off) of the loaded preset; changing a model clears the preset's pedal assignments.\n\nLooper: CC#60-66 (record/overdub, "
+                      "play/stop, play once, undo/redo, reverse, half speed); it answers even outside Classic Looper mode.\n\n"
+                      "Connection: 5-pin MIDI In, MIDI Out/Thru and USB MIDI. MIDI THRU is off out of the box: turn it on (Global Settings) "
+                      "to pass MIDI on to another pedal.";
+            v.push_back (p);
+        }
+        {
+            Profile p;
+            p.id = "line6.hx-one"; p.brand = "Line 6"; p.model = "HX One"; p.shortName = "HX One";
+            p.aliases = "hx one hxone effect stompbox flux"; p.colour = line6Colour;
+            p.manual = "HX One Owner's Manual (Rev C, firmware 3.70)";
+            p.pedal = true; p.scheme = Scheme::hxOne;
+            p.sceneWord = "Scene"; p.sceneCount = 0;
+            p.mainTitle = "Switches";
+            p.switchesTitle = "Footswitches";
+            p.switches = { { "ON", 1, 127 }, { "FLUX", 2, 127 } };
+            p.switchesNote = "ON (CC#1) turns the effect on if it's off and off if it's on. FLUX (CC#2) is like pressing FLUX, in any mode.";
+            p.utilities = { { "Engage", "CC 4=127", "Turns the effect on (CC#4 = 64-127), whatever it was.", 3 },
+                            { "Bypass", "CC 4=0", "Bypasses the effect (CC#4 = 0-63), whatever it was.", 9 },
+                            { "Tap", "CC 93=127", oneTap + " The manual's table lists CC#93 for tap.", 1 },
+                            { "Home", "CC 5=0", "Shows the Home view (CC#5 = 0).", 8 },
+                            { "Preset list", "CC 5=1", "Shows the Preset List (CC#5 = 1).", 8 },
+                            { "Tuner", "CC 5=2", "Shows the tuner (CC#5 = 2).", 5 } };
+            p.looper = helixLooper (60, 61, 62, 63, 65, 66, 0);
+            p.pedals = { { "Expression", 3 } };
+            for (int i = 1; i <= 24; ++i)
+                p.pedals.push_back ({ "Parameter " + n (i), i <= 11 ? 20 + i : 21 + i });   // CC#21-31, 33-45 (32 is reserved)
+            p.pedals.push_back ({ "FLUX on time", 46 });
+            p.pedals.push_back ({ "FLUX off time", 48 });
+            p.pedalNote = "Expression (CC#3) works when Settings > Pedal Jack is ExpFS4. Parameters 1-24 are the loaded effect's parameters "
+                          "in order (CC#21-45, no 32).";
+            p.testMessage = "PC 0";   // preset 000
+            p.channelHint = "Must match the HX One: Settings View > MIDI Channel (1 out of the box).";
+            p.usbToThru = 1;
+            p.notes = "Presets: Program Change 0-127 = presets 000-127 (bank select is ignored; MIDI PC Rx must be on, as it is out of the box).\n\n"
+                      "Switches: ON (CC#1, any value toggles) and FLUX (CC#2). Engage / Bypass (CC#4) set it whatever it was. Views (CC#5): "
+                      "Home, Preset List, Tuner. Tap: CC#93, as in the manual's table (a note elsewhere says TAP uses CC#64; tell us which "
+                      "your unit answers).\n\nLooper (Simple Looper models): CC#60-66.\n\nExpression: CC#3 (Pedal Jack = ExpFS4), "
+                      "parameters 1-24 = CC#21-31 and 33-45, FLUX times CC#46 and 48.\n\nConnection: 5-pin MIDI In, MIDI Out/Thru (Thru on "
+                      "out of the box) and USB MIDI.";
+            v.push_back (p);
+        }
+
         // Fractal Audio (factory default CCs)
         {
             auto p = fractalBase ("fractal.axe-fx-2", "Axe-Fx II / XL / XL+", "Axe-Fx II", "axe fx axefx 2 ii xl plus",
@@ -524,7 +621,7 @@ juce::StringArray setlistNames (const Profile& p)
             return s;
         }
         case Scheme::hxStomp: case Scheme::hxFour: case Scheme::axeFx2: case Scheme::ax8: case Scheme::fx8:
-        case Scheme::headrush: case Scheme::headrushOld: case Scheme::nano: case Scheme::darkglassAmp: break;
+        case Scheme::headrush: case Scheme::headrushOld: case Scheme::nano: case Scheme::darkglassAmp: case Scheme::dl4: case Scheme::hxOne: break;
     }
     return {};
 }
@@ -534,7 +631,7 @@ int slotsPerBank (const Profile& p)
     switch (p.scheme)
     {
         case Scheme::hxStomp: return 3;
-        case Scheme::axeFx2: case Scheme::headrush: case Scheme::headrushOld: return 128;
+        case Scheme::axeFx2: case Scheme::headrush: case Scheme::headrushOld: case Scheme::dl4: case Scheme::hxOne: return 128;
         case Scheme::nano:    return 64;
         case Scheme::darkglassAmp: return 5;
         case Scheme::ax8: case Scheme::fx8: return 8;
@@ -553,7 +650,7 @@ int presetsPerSetlist (const Profile& p, int)
         case Scheme::axeFx2:  return 768;
         case Scheme::ax8:     return 512;
         case Scheme::helix: case Scheme::podGo: case Scheme::stadium: case Scheme::hxFour: case Scheme::fx8:
-        case Scheme::headrush: case Scheme::headrushOld: break;
+        case Scheme::headrush: case Scheme::headrushOld: case Scheme::dl4: case Scheme::hxOne: break;
     }
     return 128;
 }
@@ -565,7 +662,7 @@ juce::StringArray bankNames (const Profile& p, int setlist)
         return { "MIDI PROG" };   // one list, no banks
     if (p.scheme == Scheme::nano)
         return { "ALL PRESETS" };
-    if (p.scheme == Scheme::darkglassAmp)
+    if (p.scheme == Scheme::darkglassAmp || p.scheme == Scheme::dl4 || p.scheme == Scheme::hxOne)
         return { "PRESETS" };
     const auto banks = presetsPerSetlist (p, setlist) / slotsPerBank (p);
     const auto letters = p.scheme == Scheme::axeFx2 || p.scheme == Scheme::fx8;
@@ -581,7 +678,9 @@ juce::StringArray slotNames (const Profile& p)
     juce::StringArray s;
     const auto count = slotsPerBank (p);
     for (int i = 0; i < count; ++i)
-        s.add ((p.scheme == Scheme::headrush || p.scheme == Scheme::darkglassAmp) ? n (i + 1) : (p.scheme == Scheme::headrushOld || p.scheme == Scheme::nano) ? n (i)
+        s.add (p.scheme == Scheme::dl4 ? (i < 6 ? juce::String::charToString ((juce::juce_wchar) ('A' + i)) : n (i + 1))
+               : p.scheme == Scheme::hxOne ? juce::String (i).paddedLeft ('0', 3)
+               : (p.scheme == Scheme::headrush || p.scheme == Scheme::darkglassAmp) ? n (i + 1) : (p.scheme == Scheme::headrushOld || p.scheme == Scheme::nano) ? n (i)
                : p.scheme == Scheme::axeFx2 ? juce::String (i).paddedLeft ('0', 3)
                : (p.scheme == Scheme::ax8 || p.scheme == Scheme::fx8) ? n (i + 1)
                : juce::String::charToString ((juce::juce_wchar) ('A' + i)));
@@ -596,6 +695,8 @@ juce::String presetLabel (const Profile& p, int setlist, int index)
         return "PC " + n (juce::jlimit (0, 63, index));
     if (p.scheme == Scheme::darkglassAmp)
         return "Preset " + n (juce::jlimit (0, 4, index) + 1);
+    if (p.scheme == Scheme::dl4 || p.scheme == Scheme::hxOne)
+        return "Preset " + slotNames (p)[juce::jlimit (0, 127, index)];
     const auto per = slotsPerBank (p);
     const auto banks = bankNames (p, setlist);
     const auto bank = juce::jlimit (0, juce::jmax (0, banks.size() - 1), index / per);

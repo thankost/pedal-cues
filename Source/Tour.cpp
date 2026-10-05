@@ -41,10 +41,10 @@ const std::vector<TourStep>& tourSteps()
           "Drag a swell, a fade or a wah rhythm (or draw your own) to where it should happen.", true },
         { 1, { "wh.faceplate", "wh.modes" }, "6. Whammy modes",
           "The Whammy tab works the same way, laid out like the pedal: Whammy modes on top, Harmony below, Detune on its own row. Colours: "
-          "red Whammy, blue Detune, green Harmony. A dark LED means the mode loads bypassed. The switch at the top picks your pedal: "
-          "Whammy V or Whammy DT." },
+          "red Whammy, blue Detune, green Harmony. A dark LED means the mode loads bypassed. Whammy V and Whammy DT are separate devices "
+          "in the tab's list." },
         { 1, { "wh.faceplate", "wh.modes" }, "Got a Whammy DT?",
-          "Click Whammy DT at the top. The Modes card then gets a Drop Tune switch with Shift Up and Shift Down tiles: "
+          "Pick Whammy DT with the arrow on this tab. The Modes card then gets a Drop Tune switch with Shift Up and Shift Down tiles: "
           "drop or raise your tuning anywhere in a song, for example -2 for D standard. The Whammy modes and treadle moves "
           "work the same on both pedals.", false, true },
         { 1, { "wh.options" }, "Chords, bypass, heel first",
@@ -53,13 +53,13 @@ const std::vector<TourStep>& tourSteps()
         { 1, { "wh.sweepControls", "wh.sweeps" }, "7. Automate the treadle",
           "Pick a length and curve, then drag a move. It becomes CC#11 automation that follows your project tempo: "
           "ramps, dives, trills, or a bend that lands exactly on the next bar. Or click Draw, sketch your own move and save it in My drawings." },
-        { 2, { "set.pedals" }, "8. MIDI Setup: your pedals",
-          "Pick your amp modeller, then set each pedal's MIDI channel to match the pedal itself, and give the amp modeller and the Whammy different channels. "
-          "Every cue is sent on these channels, and each clip keeps the channel it was dragged with, so set them once, "
-          "before building songs, then click 'My pedals use these channels'." },
-        { 2, { "set.tracks" }, "9. DAW tracks",
-          "Pick your wiring at the top (a daisy chain through the QC or Kemper, or separate outputs), then make the two cue tracks, "
-          "QC (or Kemper) Cues and Whammy Cues, as shown. Not sure how to cable the pedals? Click 'How should I wire my pedals?'." },
+        { 2, { "set.pedals" }, "8. MIDI Setup: your devices",
+          "The devices shown are examples: click one to pick yours, or No pedal if you only have one. Set each channel to match the "
+          "device itself, a different one for each. Every cue is sent on these channels, and each clip keeps the channel it was dragged "
+          "with, so set them once, before building songs, then click 'Done: my devices use these channels'." },
+        { 2, { "set.tracks" }, "9. Set up your DAW",
+          "With two devices, pick how they're connected (each on its own output, or one cable through the first one's MIDI Thru), "
+          "then make one cue track per device as shown. Not sure how to cable them? Click 'Wiring guide'." },
         { 2, { "hdr.help" }, "You are ready",
           "The menu button (top right) reopens this tour and the user guide, shows what's new, lets you report a problem, "
           "and saves your setup as the default for new projects. In the standalone app these are in the File and Help menus. Have a great show!" },
@@ -104,6 +104,7 @@ void TourOverlay::setStep (int index)
         host.showQcExpression (s.qcExpression);
     host.showWhammyDt (s.whammyDt);
     host.showQuadCortex (s.page == 0 && ! s.anyUnit);
+    host.showWhammy (s.page == 1);
     layoutCard();
     repaint();
 }

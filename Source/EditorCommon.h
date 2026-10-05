@@ -10,6 +10,8 @@
 #include <functional>
 #include <memory>
 
+namespace modellers { struct Profile; }
+
 namespace ui
 {
 // Set (per computer) once the user confirms the MIDI channels in MIDI Setup; until then the pedal pages show a reminder.
@@ -52,10 +54,24 @@ struct AmpInfo
 };
 AmpInfo ampInfo (const juce::ValueTree& state);
 
-std::unique_ptr<Page> makeCustomPage (PedalCuesProcessor&);   // a custom unit (beta)
-std::unique_ptr<Page> makeModellerPage (PedalCuesProcessor&); // a Fractal / Line 6 unit with defined MIDI numbers
-void newCustomUnit (juce::ValueTree state);      // adds one with example tiles, shows it and asks for its name
-void importCustomUnit (juce::ValueTree state);   // Import unit: a .pedalcues-unit file
+// The pedal on the second tab: the Whammy, or a custom MIDI device (its name, colour and channel).
+struct PedalInfo
+{
+    bool isCustom = false;
+    const modellers::Profile* page = nullptr;   // a pedal page (DL4 MkII, HX One)
+    bool isNone = false;                     // no pedal picked: the tab shows how to add one
+    juce::String name { "Whammy V" };        // the device (the tab's tooltip, MIDI Setup): "Whammy V" or "Whammy DT"
+    juce::String shortName { "Whammy" };     // in sentences and track names ("Whammy Cues")
+    juce::Colour colour { theme::whammyRed };
+    int channel = 2;
+};
+PedalInfo pedalInfo (const juce::ValueTree& state);
+
+std::unique_ptr<Page> makeCustomPage (PedalCuesProcessor&, bool pedalsTab);   // a custom MIDI device (beta), on the first tab or the pedals tab
+std::unique_ptr<Page> makePedalPage (PedalCuesProcessor&);    // the second tab: the Whammy or a custom MIDI device
+std::unique_ptr<Page> makeModellerPage (PedalCuesProcessor&, bool pedalsTab = false); // a unit with defined MIDI numbers, on the first tab or the pedals tab (DL4 MkII)
+void newCustomUnit (juce::ValueTree state, bool pedalsTab = false);      // adds one with example tiles, shows it on that tab, asks its name
+void importCustomUnit (juce::ValueTree state, bool pedalsTab = false);   // Import device: a .pedalcues-device file, onto that tab
 void exportCustomUnit (juce::ValueTree unit);
 // The hover text for "Switch to the preset's setlist" (Quad Cortex, Helix, POD Go, Stadium pages).
 inline juce::String setlistSwitchTooltip (const juce::String& unit)
@@ -68,8 +84,8 @@ inline juce::String setlistSwitchTooltip (const juce::String& unit)
 }
 
 // The unit picker: built-in units, the Fractal / Line 6 templates and your MIDI devices, with a search. onDone runs after a pick.
-void showUnitPicker (juce::ValueTree state, juce::Component& target, std::function<void()> onDone);
-std::unique_ptr<juce::Component> makeUnitPicker (juce::ValueTree state, const juce::String& search = {});   // screenshots
+void showUnitPicker (juce::ValueTree state, juce::Component& target, std::function<void()> onDone, bool pedalsTab = false);
+std::unique_ptr<juce::Component> makeUnitPicker (juce::ValueTree state, const juce::String& search = {}, bool pedalsTab = false);   // screenshots
 std::unique_ptr<juce::Component> makeTileEditor (PedalCuesProcessor&, juce::ValueTree tile, bool isNew);   // custom tile: guided MIDI editor
 std::unique_ptr<Page> makeQcExpression (PedalCuesProcessor&);   // Quad Cortex page > Expression
 std::unique_ptr<Page> makeWhammyPage   (PedalCuesProcessor&);

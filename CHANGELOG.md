@@ -2,6 +2,13 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.8.8 (2026-10-05)
+
+- **Two tabs, Amps & Modellers and Effects & Pedals (new):** the first tab is your amp modeller, the second a pedal next to it. The second tab still shows the Whammy V / DT, and its new **▾** lets you pick another pedal, one of your MIDI devices (a delay, a looper...), or **No pedal** if you only have one device. Each pedal keeps its own MIDI channel. Each list only shows what belongs there (pedal templates like the VP4 are on the second tab), and a device's **...** menu moves it to the other tab. Your Whammy setups and songs are unchanged.
+- **Line 6 DL4 MkII and HX One (new, beta):** ready-made pages on the Effects & Pedals tab. DL4 MkII: presets A-F and 7-128, note value, bypass, tap, Classic Looper mode, routing, the looper, expression and knob moves, and every delay and reverb model. HX One: presets 000-127, ON / FLUX, engage / bypass, tap, tuner, the looper, expression and parameter moves. From Line 6's manuals, not tested on hardware yet.
+- **Whammy V and Whammy DT are separate devices** in the Effects & Pedals list (the switch on the Whammy page is gone). Same page, same songs; the DT adds Drop Tune.
+- **A simpler MIDI Setup:** one row per tab with the device and its channel, and a note that the Quad Cortex and Whammy are only examples until you pick yours. With two devices, choose how they're connected (each on its own output, or one cable through the first one's MIDI Thru); with one, there's nothing to choose. The daisy chain now says up front that it needs a MIDI cable into your amp modeller, not USB, and what your unit does with USB MIDI. The steps name an amp modeller track and a pedal track, with your devices as examples. Pick your DAW to see where it sets a track's MIDI output. In the standalone app, switch on the devices to check and click **Test selected** to test them all at once.
+
 ## 0.8.7 (2026-10-05)
 
 - **Quad Cortex Looper X (new):** a **Looper** view on the Quad Cortex page (and the QC Mini): record / overdub, play / stop, undo / redo, one shot, reverse, half speed, duplicate and punch in / out, plus quantize, duplicate and clock-start settings and opening the looper screen. Drop a tile where the looper should act, like pressing its footswitch. The preset needs a Looper X block on its grid.

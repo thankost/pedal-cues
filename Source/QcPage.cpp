@@ -675,7 +675,7 @@ class AmpPage final : public Page
 {
 public:
     explicit AmpPage (PedalCuesProcessor& p)
-        : state (p.state), qc (makeQcPage (p)), kemper (makeKemperPage (p)), custom (makeCustomPage (p)), modeller (makeModellerPage (p))
+        : state (p.state), qc (makeQcPage (p)), kemper (makeKemperPage (p)), custom (makeCustomPage (p, false)), modeller (makeModellerPage (p))
     {
         addChildComponent (*qc);
         addChildComponent (*kemper);

@@ -78,6 +78,7 @@ static void sanitiseCustomUnit (juce::ValueTree& u)
     setDefault (u, IDs::notes, juce::String());
     setDefault (u, IDs::programBase, 0);
     setDefault (u, IDs::expCc, 11);
+    setDefault (u, IDs::channel, 3);
     for (int i = u.getNumChildren(); --i >= 0;)
         if (! u.getChild (i).hasType (IDs::Group))
             u.removeChild (i, nullptr);
@@ -154,7 +155,88 @@ juce::ValueTree customUnit (const juce::ValueTree& root)
     return units.getChild (juce::jlimit (0, units.getNumChildren() - 1, (int) root[IDs::selectedCustomUnit]));
 }
 
-juce::ValueTree addCustomUnit (juce::ValueTree& root, juce::ValueTree unit)
+juce::ValueTree fxCustomUnit (const juce::ValueTree& root)
+{
+    const auto units = root.getChildWithName (IDs::CustomUnits);
+    if ((int) root[IDs::fxUnit] != fxCustom || units.getNumChildren() == 0)
+        return {};
+    return units.getChild (juce::jlimit (0, units.getNumChildren() - 1, (int) root[IDs::fxCustomUnit]));
+}
+
+juce::ValueTree fxModellerData (juce::ValueTree& root)
+{
+    if ((int) root[IDs::fxUnit] != fxModeller)
+        return {};
+    return modeller (root, root[IDs::fxProfile].toString());
+}
+
+int fxModellerChannel (const juce::ValueTree& root)
+{
+    auto r = root;
+    return juce::jlimit (1, 16, (int) fxModellerData (r).getProperty (IDs::channel, 3));
+}
+
+bool isPedal (const juce::ValueTree& unit)
+{
+    return unit[IDs::category].toString() == "pedal";
+}
+
+int channelFor (const juce::ValueTree& root, const juce::ValueTree& unit)
+{
+    if (unit.isValid() && unit == fxCustomUnit (root))
+        return juce::jlimit (1, 16, (int) unit.getProperty (IDs::channel, 3));
+    return juce::jlimit (1, 16, (int) root[IDs::qcChannel]);
+}
+
+void removeCustomUnit (juce::ValueTree& root, const juce::ValueTree& unit)
+{
+    auto units = root.getChildWithName (IDs::CustomUnits);
+    const auto index = units.indexOf (unit);
+    if (index < 0)
+        return;
+    const auto onFirstTab = (int) root[IDs::ampUnit] == customAmpUnit && (int) root[IDs::selectedCustomUnit] == index;
+    const auto onPedalsTab = (int) root[IDs::fxUnit] == fxCustom && (int) root[IDs::fxCustomUnit] == index;
+    units.removeChild (unit, nullptr);
+    // Later devices move up one; the deleted one's tab falls back to the Quad Cortex / the Whammy.
+    for (const auto* id : { &IDs::selectedCustomUnit, &IDs::fxCustomUnit })
+        if ((int) root[*id] > index)
+            root.setProperty (*id, (int) root[*id] - 1, nullptr);
+    if (onFirstTab || units.getNumChildren() == 0)
+    {
+        root.setProperty (IDs::selectedCustomUnit, 0, nullptr);
+        if ((int) root[IDs::ampUnit] == customAmpUnit)
+            root.setProperty (IDs::ampUnit, 0, nullptr);
+    }
+    if (onPedalsTab || units.getNumChildren() == 0)
+    {
+        root.setProperty (IDs::fxCustomUnit, 0, nullptr);
+        root.setProperty (IDs::fxUnit, fxWhammy, nullptr);
+    }
+}
+
+void showCustomUnitOn (juce::ValueTree& root, int index, bool pedalsTab)
+{
+    auto unit = root.getChildWithName (IDs::CustomUnits).getChild (index);
+    if (! unit.isValid())
+        return;
+    unit.setProperty (IDs::category, pedalsTab ? "pedal" : "amp", nullptr);
+    if (pedalsTab)
+    {
+        if ((int) root[IDs::ampUnit] == customAmpUnit && (int) root[IDs::selectedCustomUnit] == index)
+            root.setProperty (IDs::ampUnit, 0, nullptr);
+        root.setProperty (IDs::fxCustomUnit, index, nullptr);
+        root.setProperty (IDs::fxUnit, fxCustom, nullptr);
+    }
+    else
+    {
+        if ((int) root[IDs::fxUnit] == fxCustom && (int) root[IDs::fxCustomUnit] == index)
+            root.setProperty (IDs::fxUnit, fxWhammy, nullptr);
+        root.setProperty (IDs::selectedCustomUnit, index, nullptr);
+        root.setProperty (IDs::ampUnit, customAmpUnit, nullptr);
+    }
+}
+
+juce::ValueTree addCustomUnit (juce::ValueTree& root, juce::ValueTree unit, bool onPedalsTab)
 {
     auto units = root.getOrCreateChildWithName (IDs::CustomUnits, nullptr);
     const auto base = unit[IDs::name].toString().trim().isNotEmpty() ? unit[IDs::name].toString().trim() : juce::String ("My device");
@@ -170,8 +252,15 @@ juce::ValueTree addCustomUnit (juce::ValueTree& root, juce::ValueTree unit)
     }
     unit.setProperty (IDs::name, name, nullptr);
     sanitiseCustomUnit (unit);
+    unit.setProperty (IDs::category, onPedalsTab ? "pedal" : "amp", nullptr);
     units.appendChild (unit, nullptr);
-    root.setProperty (IDs::selectedCustomUnit, units.getNumChildren() - 1, nullptr);
+    if (onPedalsTab)
+    {
+        root.setProperty (IDs::fxCustomUnit, units.getNumChildren() - 1, nullptr);
+        root.setProperty (IDs::fxUnit, fxCustom, nullptr);
+    }
+    else
+        root.setProperty (IDs::selectedCustomUnit, units.getNumChildren() - 1, nullptr);
     return unit;
 }
 
@@ -220,6 +309,8 @@ static void sanitiseModPreset (juce::ValueTree& p, const modellers::Profile& pro
 static void sanitiseModeller (juce::ValueTree& m, const modellers::Profile& profile)
 {
     setDefault (m, IDs::selectedPreset, 0);
+    if (profile.pedal)
+        setDefault (m, IDs::channel, 3);   // the pedals tab: its own channel (the unit's factory 1 would clash with the first tab)
     for (int i = m.getNumChildren(); --i >= 0;)
         if (! m.getChild (i).hasType (IDs::ModPreset) && ! m.getChild (i).hasType (IDs::ModSwitch))
             m.removeChild (i, nullptr);
@@ -316,7 +407,18 @@ void sanitise (juce::ValueTree& root)
     setDefault (root, IDs::qcChannel, 1);
     setDefault (root, IDs::ampUnit, 0);
     setDefault (root, IDs::selectedCustomUnit, 0);
+    setDefault (root, IDs::fxUnit, fxWhammy);
+    setDefault (root, IDs::fxCustomUnit, 0);
     setDefault (root, IDs::modellerProfile, juce::String());
+    setDefault (root, IDs::fxProfile, juce::String());
+    setDefault (root, IDs::fxView, 0);
+    setDefault (root, IDs::fxPedal, 0);
+    setDefault (root, IDs::fxBeats, 4.0);
+    setDefault (root, IDs::fxCurve, 1.0);
+    setDefault (root, IDs::fxReset, false);
+    setDefault (root, IDs::fxDraw, false);
+    setDefault (root, IDs::fxDrawing, cues::whammy::encodeDrawing (cues::whammy::defaultDrawing()));
+    setDefault (root, IDs::fxDrawingName, juce::String());
     setDefault (root, IDs::mdLoadFirst, true);
     setDefault (root, IDs::mdSendSetlist, false);   // like the QC: only when the setlist numbers are known to be right
     setDefault (root, IDs::mdSwitchOn, true);
@@ -418,6 +520,28 @@ void sanitise (juce::ValueTree& root)
         sanitiseCustomUnit (u);
     if ((int) root[IDs::ampUnit] == customAmpUnit && units.getNumChildren() == 0)
         root.setProperty (IDs::ampUnit, 0, nullptr);
+    // The Effects & Pedals tab: the Whammy, no pedal, a custom device that exists or a known pedal page (anything else: the Whammy).
+    const auto fx = (int) root[IDs::fxUnit];
+    const auto* fxPage = modellers::find (root[IDs::fxProfile].toString());
+    if ((fx != fxWhammy && fx != fxNone && fx != fxCustom && fx != fxModeller)
+        || (fx == fxCustom && ! juce::isPositiveAndBelow ((int) root[IDs::fxCustomUnit], units.getNumChildren()))
+        || (fx == fxModeller && (fxPage == nullptr || ! fxPage->pedal)))
+        root.setProperty (IDs::fxUnit, fxWhammy, nullptr);
+    // Each device belongs to one tab. Devices from before v0.8.8: the one on the pedals tab is a pedal, the rest amps.
+    for (int i = 0; i < units.getNumChildren(); ++i)
+    {
+        auto u = units.getChild (i);
+        if (u[IDs::category].toString() != "amp" && u[IDs::category].toString() != "pedal")
+            u.setProperty (IDs::category, ((int) root[IDs::fxUnit] == fxCustom && (int) root[IDs::fxCustomUnit] == i) ? "pedal" : "amp", nullptr);
+    }
+    if ((int) root[IDs::fxUnit] == fxCustom && (int) root[IDs::ampUnit] == customAmpUnit
+        && (int) root[IDs::fxCustomUnit] == (int) root[IDs::selectedCustomUnit])
+        root.setProperty (IDs::fxUnit, fxWhammy, nullptr);   // one device can't be on both tabs
+    if (auto u = fxCustomUnit (root); u.isValid())
+        u.setProperty (IDs::category, "pedal", nullptr);   // the device on each tab belongs to it
+    if ((int) root[IDs::ampUnit] == customAmpUnit)
+        if (auto u = customUnit (root); u.isValid())
+            u.setProperty (IDs::category, "amp", nullptr);
 
     // Fractal / Line 6 / HeadRush pages: one subtree per model, so switching units keeps each one's presets.
     auto mods = root.getOrCreateChildWithName (IDs::Modellers, nullptr);
@@ -430,9 +554,11 @@ void sanitise (juce::ValueTree& root)
         else
             sanitiseModeller (m, *profile);
     }
+    if ((int) root[IDs::fxUnit] == fxModeller)
+        fxModellerData (root);   // created on first use, with its channel
     if ((int) root[IDs::ampUnit] == modellerAmpUnit)
     {
-        if (modellers::find (root[IDs::modellerProfile].toString()) == nullptr)
+        if (const auto* m = modellers::find (root[IDs::modellerProfile].toString()); m == nullptr || m->pedal)
             root.setProperty (IDs::ampUnit, 0, nullptr);   // unknown model: back to the Quad Cortex
         else
             modeller (root, root[IDs::modellerProfile].toString());
@@ -504,9 +630,10 @@ void setFlag (const juce::String& name, bool value)
 // What a setup carries besides the names: the MIDI settings and the playing preferences
 // (Whammy Chords / Load bypassed / Heel first, return to heel after moves, Expression's Load 1A first).
 // Length and curve change per song, so they stay in the project.
-static const std::array<const juce::Identifier*, 22>& setupProperties()
+static const std::array<const juce::Identifier*, 26>& setupProperties()
 {
-    static const std::array<const juce::Identifier*, 22> ids { &IDs::ampUnit, &IDs::selectedCustomUnit, &IDs::modellerProfile,
+    static const std::array<const juce::Identifier*, 26> ids { &IDs::ampUnit, &IDs::selectedCustomUnit, &IDs::fxUnit, &IDs::fxCustomUnit, &IDs::modellerProfile,
+                                                               &IDs::fxProfile, &IDs::fxReset,
                                                                &IDs::mdLoadFirst, &IDs::mdSendSetlist, &IDs::mdReset, &IDs::cuReset, &IDs::kemperSlotFirst, &IDs::kemperKeepTails,
                                                                &IDs::kpReset, &IDs::qcChannel, &IDs::whChannel, &IDs::whModel, &IDs::whPcBase,
                                                                &IDs::sendSetlist, &IDs::comboPresetScene,

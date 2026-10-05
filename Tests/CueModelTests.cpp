@@ -213,6 +213,47 @@ int main (int argc, char** argv)
         CHECK ((int) fresh[IDs::ampUnit] == state::customAmpUnit && state::customUnit (fresh)[IDs::notes].toString() == "Scenes use CC 34 on my unit.");
         file.deleteFile();
 
+        // The pedals tab (second tab): a custom device there sends on its own channel; deleting a device keeps both tabs right.
+        {
+            auto r = state::createDefault();
+            auto amp = state::addCustomUnit (r, state::createCustomUnit ("Amp side"));
+            r.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
+            auto looper = state::addCustomUnit (r, state::createCustomUnit ("Looper"), true);
+            CHECK ((int) r[IDs::fxUnit] == state::fxCustom && state::fxCustomUnit (r) == looper && state::customUnit (r) == amp);
+            looper.setProperty (IDs::channel, 5, nullptr);
+            r.setProperty (IDs::qcChannel, 1, nullptr);
+            CHECK (state::channelFor (r, looper) == 5 && state::channelFor (r, amp) == 1);
+            const auto setup = juce::File::createTempFile (".xml");
+            CHECK (state::saveLibrary (r, setup));
+            auto back = state::createDefault();
+            CHECK (state::loadLibrary (back, setup) && (int) back[IDs::fxUnit] == state::fxCustom
+                   && state::fxCustomUnit (back)[IDs::name].toString() == "Looper" && state::channelFor (back, state::fxCustomUnit (back)) == 5);
+            setup.deleteFile();
+            state::removeCustomUnit (r, amp);   // the looper moves up one; the first tab goes back to the Quad Cortex
+            CHECK ((int) r[IDs::ampUnit] == 0 && state::fxCustomUnit (r) == looper && (int) r[IDs::fxCustomUnit] == 0);
+            state::removeCustomUnit (r, looper);
+            CHECK ((int) r[IDs::fxUnit] == state::fxWhammy && ! state::fxCustomUnit (r).isValid());
+            {
+                // A device moved to the other tab takes its category and leaves the tab it was on; a device shown on the pedals
+                // tab with an old "amp" category (from before v0.8.8) is fixed by sanitise.
+                auto t = state::createDefault();
+                state::addCustomUnit (t, state::createCustomUnit ("Delay"));
+                t.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
+                const auto index = 0;
+                state::showCustomUnitOn (t, index, true);
+                CHECK ((int) t[IDs::ampUnit] == 0 && state::fxCustomUnit (t).isValid() && state::isPedal (state::fxCustomUnit (t)));
+                state::showCustomUnitOn (t, index, false);
+                CHECK ((int) t[IDs::fxUnit] == state::fxWhammy && (int) t[IDs::ampUnit] == state::customAmpUnit && ! state::isPedal (state::customUnit (t)));
+                state::showCustomUnitOn (t, index, true);
+                state::fxCustomUnit (t).setProperty (IDs::category, "amp", nullptr);
+                state::sanitise (t);
+                CHECK (state::isPedal (state::fxCustomUnit (t)));
+            }
+            r.setProperty (IDs::fxUnit, 7, nullptr);   // a value from a newer version: the Whammy
+            state::sanitise (r);
+            CHECK ((int) r[IDs::fxUnit] == state::fxWhammy);
+        }
+
         const auto unitFile = juce::File::createTempFile (".pedalcues-unit");
         CHECK (state::saveUnit (unit, unitFile));
         const auto loaded = state::loadUnit (unitFile);
@@ -225,11 +266,14 @@ int main (int argc, char** argv)
     // Fractal / Line 6 / HeadRush pages: preset numbering, timing and numbers from the manuals.
     {
         using namespace modellers;
-        CHECK (all().size() == 21);
+        CHECK (all().size() == 23);
         for (const auto& p : all())
         {
             for (const auto& list : { p.utilities, p.looper })
                 for (const auto& a : list)
+                    CHECK (custom::parse (a.messages, 0).ok());
+            for (const auto& g : p.models)
+                for (const auto& a : g.actions)
                     CHECK (custom::parse (a.messages, 0).ok());
             CHECK ((p.tunerOn.isEmpty() || (custom::parse (p.tunerOn, 0).ok() && custom::parse (p.tunerOff, 0).ok()))   // HeadRush Pedalboard...: no tuner CC
                    && ! p.notes.isEmpty() && find (p.id) == &p);
@@ -295,6 +339,18 @@ int main (int argc, char** argv)
         CHECK (expo.pedals.front().cc == 0 && isCC (switchCue (expo, 1, 2, true, {}).events[0].second, 1, 108, 1) && ! expo.hasThru);
         const auto& ax8 = *find ("fractal.ax8");
         CHECK (presetLabel (ax8, -1, 128) == "17:1" && isCC (preset (ax8, 1, -1, 128, false, {}).events[0].second, 1, 0, 1));
+        // Line 6 pedals (Effects & Pedals tab): DL4 MkII presets A-F then 7-128, models on CC#1 / CC#2; HX One presets 000-127.
+        const auto& dl4 = *find ("line6.dl4-mkii");
+        CHECK (dl4.pedal && presetLabel (dl4, -1, 0) == "Preset A" && presetLabel (dl4, -1, 5) == "Preset F"
+               && presetLabel (dl4, -1, 6) == "Preset 7" && presetLabel (dl4, -1, 127) == "Preset 128");
+        CHECK (preset (dl4, 3, -1, 6, true, {}).events.size() == 1 && preset (dl4, 3, -1, 6, true, {}).events[0].second.getProgramChangeNumber() == 6);
+        CHECK (dl4.models.size() == 3 && dl4.models[0].actions.size() == 15 && dl4.models[1].actions.size() == 15 && dl4.models[2].actions.size() == 16);
+        CHECK (isCC (action (dl4, 3, dl4.models[1].actions[14]).events[0].second, 3, 1, 29) && isCC (action (dl4, 3, dl4.models[2].actions[15]).events[0].second, 3, 2, 15));
+        CHECK (isCC (switchCue (dl4, 3, 4, true, {}).events[0].second, 3, 12, 4));   // note value 1/4
+        const auto& hxOne = *find ("line6.hx-one");
+        CHECK (hxOne.pedal && presetLabel (hxOne, -1, 7) == "Preset 007" && hxOne.pedals.size() == 27
+               && hxOne.pedals[11].cc == 31 && hxOne.pedals[12].cc == 33 && hxOne.pedals[24].cc == 45);
+        CHECK (! find ("line6.helix-floor")->pedal);
         const auto& fx8 = *find ("fractal.fx8");
         CHECK (presetLabel (fx8, -1, 9) == "B2" && preset (fx8, 1, -1, 9, true, {}).events.size() == 1);   // no bank select
     }
@@ -332,6 +388,27 @@ int main (int argc, char** argv)
         fresh.setProperty (IDs::ampUnit, 42, nullptr);                     // a unit from a newer version: the Quad Cortex
         state::sanitise (fresh);
         CHECK ((int) fresh[IDs::ampUnit] == 0);
+
+        // A pedal page on the Effects & Pedals tab: its own channel (3, not the units' factory 1), kept in the setup;
+        // a page that isn't a pedal (or is unknown) falls back to the Whammy, and a pedal can't be the first tab's unit.
+        fresh.setProperty (IDs::fxProfile, "line6.dl4-mkii", nullptr);
+        fresh.setProperty (IDs::fxUnit, state::fxModeller, nullptr);
+        state::sanitise (fresh);
+        CHECK ((int) fresh[IDs::fxUnit] == state::fxModeller && state::fxModellerChannel (fresh) == 3);
+        state::fxModellerData (fresh).setProperty (IDs::channel, 6, nullptr);
+        const auto pedalFile = juce::File::createTempFile (".xml");
+        CHECK (state::saveLibrary (fresh, pedalFile));
+        auto back = state::createDefault();
+        CHECK (state::loadLibrary (back, pedalFile) && (int) back[IDs::fxUnit] == state::fxModeller
+               && back[IDs::fxProfile].toString() == "line6.dl4-mkii" && state::fxModellerChannel (back) == 6);
+        pedalFile.deleteFile();
+        back.setProperty (IDs::fxProfile, "line6.helix-floor", nullptr);
+        state::sanitise (back);
+        CHECK ((int) back[IDs::fxUnit] == state::fxWhammy && ! state::fxModellerData (back).isValid());
+        back.setProperty (IDs::ampUnit, state::modellerAmpUnit, nullptr);
+        back.setProperty (IDs::modellerProfile, "line6.hx-one", nullptr);
+        state::sanitise (back);
+        CHECK ((int) back[IDs::ampUnit] == 0);
     }
 
     // Device templates (Fractal, Line 6): every tile's messages read back, names are unique in each group,

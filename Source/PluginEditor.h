@@ -31,6 +31,7 @@ public:
     void showQcExpression (bool show) override;
     void showWhammyDt (bool show) override;
     void showQuadCortex (bool show) override;
+    void showWhammy (bool show) override;
     juce::Colour tabColour (int tab) const;
     juce::Rectangle<int> targetBounds (const juce::StringArray& componentIds) override;
     void closeTour (bool finished) override;
@@ -115,7 +116,7 @@ private:
         UnitMenuButton() : juce::Button ("unit") {}
         juce::Colour arrowColour { juce::Colours::black };
         void paintButton (juce::Graphics&, bool highlighted, bool down) override;
-    } unitMenuButton;
+    } unitMenuButton, pedalMenuButton;
 
     // Until the MIDI channels are confirmed in MIDI Setup: a reminder above the pedal pages (clips keep the channel
     // they were dragged with, so it matters before building songs).
@@ -129,6 +130,7 @@ private:
     bool channelsConfirmed = true;
     static constexpr int channelBannerHeight = 44;
     void showUnitMenu();
+    void showPedalMenu();   // the second tab's arrow: the Whammy or a custom MIDI device
     // The ☰ menu: tour, guide, setup (save/load/export/import), updates, about, support.
     struct MenuButton final : public juce::Button
     {
@@ -141,6 +143,7 @@ private:
     std::vector<std::unique_ptr<ui::Page>> pages;
     std::unique_ptr<ui::TourOverlay> tour;
     std::optional<std::pair<juce::var, juce::var>> tourSavedWhammy;
+    std::optional<juce::var> tourSavedPedal;  // the pedals tab's choice, while the tour shows the Whammy page
     std::optional<juce::var> tourSavedUnit;   // a Kemper player's unit, while the tour shows the Quad Cortex page   // model and Drop Tune view, while the tour shows the DT
     int currentPage = 0;
     double shownBpm = 0.0;

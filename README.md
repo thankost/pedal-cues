@@ -58,7 +58,9 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - **Expression moves** on any device: swells, fades, wah, Set to tiles and drawn moves on the CC you pick (CC#11 by default, the MIDI standard Expression), saved with the device
 - **Export / Import device** as a `.pedalcues-device` file, so one person sets up a device and everyone with the same gear imports it
 
-**Whammy V / Whammy DT** (pick the model with the switch on the Whammy page)
+**Two tabs: Amps & Modellers and Effects & Pedals.** The second tab shows the **Whammy V / Whammy DT** by default, the **Line 6 DL4 MkII** or **HX One** (beta: presets, controls, looper, expression and, on the DL4, every delay and reverb model), a pedal template, any of your MIDI devices (a delay, a looper...), or nothing if you only have one device: pick it with the ▾ on the tab. Each pedal keeps its own MIDI channel.
+
+**Whammy V / Whammy DT** (two devices in the Effects & Pedals list)
 - All 21 modes, Classic or Chords (Chords on the V only), engaged or bypassed (Program Change)
 - **Whammy DT Drop Tune:** Shift Up and Shift Down tiles, 1–7 semitones, Oct and Oct + Dry, on or bypassed (Program Change 43–78)
 - Optional "heel before mode change" (`CC#11 = 0`)
@@ -76,6 +78,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - Everything is stored in your DAW project. **☰ > Save as default setup** makes new instances start with your names, colours, MIDI settings and playing preferences
 - **☰ > Export / Import setup** as a file (back it up, move to another computer, share it with the band): your presets, scenes and names for every unit (Quad Cortex, Kemper, Fractal / Line 6 / HeadRush / Darkglass / Nano Cortex pages, custom MIDI devices), MIDI settings, playing preferences, your wiring choice and My drawings
 - MIDI passes through, so the dropped items and the live preview share one track and one route
+- **MIDI Setup** lists the device on each tab with its channel, asks how they're connected only when you have two, and shows where your DAW sets a track's MIDI output; in the standalone app, **Test selected** checks the devices you switch on at once
 
 Preset and scene names are entered in the plugin (double-click to rename, right-click for colour/reorder), or read from the Quad Cortex with **Sync from QC (USB)**.
 

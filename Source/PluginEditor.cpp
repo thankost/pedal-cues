@@ -6,6 +6,12 @@ namespace
 {
 const juce::Colour tabColours[] = { qcBlue, whammyRed, accent };   // the first tab is Kemper green for a Kemper
 
+// Text on a tab: white on the Whammy's red, black on lighter colours (a custom pedal's own colour).
+juce::Colour textOn (juce::Colour tab)
+{
+    return tab.getPerceivedBrightness() < 0.55f ? juce::Colours::white : juce::Colours::black;
+}
+
 int liveEditors = 0; // message thread only
 
 juce::Component* findById (juce::Component& root, const juce::String& id)
@@ -41,7 +47,7 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     tabBar.setComponentID ("hdr.tabs");
     addAndMakeVisible (tabBar);
 
-    const juce::String names[] = { ui::ampInfo (state).name, "Whammy V / DT", "MIDI Setup" };
+    const juce::String names[] = { "Amps & Modellers", "Effects & Pedals", "MIDI Setup" };   // the device is on the page and in the tooltip
     for (int i = 0; i < 3; ++i)
     {
         auto* b = tabButtons.add (new juce::TextButton (names[i]));
@@ -50,7 +56,7 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
         b->setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
         b->setColour (juce::TextButton::buttonOnColourId, tabColour (i));
         b->setColour (juce::TextButton::textColourOffId, dim);
-        b->setColour (juce::TextButton::textColourOnId, i == 1 ? juce::Colours::white : juce::Colours::black);
+        b->setColour (juce::TextButton::textColourOnId, i == 1 ? textOn (tabColour (1)) : juce::Colours::black);
         b->onClick = [this, i, b]
         {
             // Radio buttons also "click" when another tab switches them off: only react to the tab that's now on.
@@ -58,6 +64,8 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
                 return;
             if (i == 0 && currentPage == 0)
                 showUnitMenu();   // clicking the open amp tab again: pick the unit
+            if (i == 1 && currentPage == 1)
+                showPedalMenu();  // the same on the pedals tab
             showPage (i);
         };
         tabBar.addAndMakeVisible (b);
@@ -66,6 +74,10 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     unitMenuButton.setTooltip ("Your amp modeller: Quad Cortex, Kemper Profiler or Kemper Player");
     unitMenuButton.onClick = [this] { showUnitMenu(); };
     tabBar.addAndMakeVisible (unitMenuButton);
+    pedalMenuButton.setComponentID ("pedal.unit");
+    pedalMenuButton.setTooltip ("The pedal on this tab: a Whammy V or DT, a DL4 MkII, one of your MIDI devices, or none");
+    pedalMenuButton.onClick = [this] { showPedalMenu(); };
+    tabBar.addAndMakeVisible (pedalMenuButton);
 
     updateBadge.setComponentID ("hdr.update");
     updateBadge.onOpen = [this] { showUpdateDialog (updateBadge.info); };
@@ -82,7 +94,7 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     addChildComponent (channelBanner);
 
     pages.push_back (ui::makeAmpPage (p));
-    pages.push_back (ui::makeWhammyPage (p));
+    pages.push_back (ui::makePedalPage (p));
     pages.push_back (ui::makeSettingsPage (p));
     for (auto& page : pages)
         addChildComponent (*page);
@@ -95,7 +107,7 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     setWantsKeyboardFocus (true);
     for (auto* b : tabButtons)
         b->setWantsKeyboardFocus (false);
-    for (auto* b : std::initializer_list<juce::Component*> { &unitMenuButton, &helpButton, &updateBadge })
+    for (auto* b : std::initializer_list<juce::Component*> { &unitMenuButton, &pedalMenuButton, &helpButton, &updateBadge })
         b->setWantsKeyboardFocus (false);
 
     setResizable (true, true);
@@ -140,6 +152,8 @@ void PedalCuesEditor::showPage (int index)
     }
     unitMenuButton.arrowColour = currentPage == 0 ? juce::Colours::black : dim;
     unitMenuButton.repaint();
+    pedalMenuButton.arrowColour = currentPage == 1 ? textOn (tabColour (1)) : dim;   // both arrows follow the open tab
+    pedalMenuButton.repaint();
     repaint();
 }
 
@@ -152,7 +166,7 @@ void PedalCuesEditor::showQcExpression (bool show)
 
 juce::Colour PedalCuesEditor::tabColour (int tab) const
 {
-    return tab == 0 ? ui::ampInfo (state).colour : tabColours[juce::jlimit (0, 2, tab)];
+    return tab == 0 ? ui::ampInfo (state).colour : tab == 1 ? ui::pedalInfo (state).colour : tabColours[juce::jlimit (0, 2, tab)];
 }
 
 void PedalCuesEditor::showQuadCortex (bool show)
@@ -737,14 +751,55 @@ void PedalCuesEditor::showUnitMenu()
     });
 }
 
+void PedalCuesEditor::showPedalMenu()
+{
+    juce::Component::SafePointer<PedalCuesEditor> safe (this);
+    ui::showUnitPicker (state, *tabButtons[1], [safe]
+    {
+        if (safe == nullptr)
+            return;
+        safe->showPage (1);
+        safe->grabKeyboardFocus();
+    }, true);
+}
+
+void PedalCuesEditor::showWhammy (bool show)
+{
+    // The tour's Whammy steps show the Whammy page, then put the player's own pedal back.
+    if (show)
+    {
+        if (! tourSavedPedal && (int) state[IDs::fxUnit] != state::fxWhammy)
+        {
+            tourSavedPedal = state[IDs::fxUnit];
+            state.setProperty (IDs::fxUnit, state::fxWhammy, nullptr);
+            refreshNow();
+        }
+    }
+    else if (tourSavedPedal)
+    {
+        state.setProperty (IDs::fxUnit, *tourSavedPedal, nullptr);
+        tourSavedPedal.reset();
+        refreshNow();
+    }
+}
+
 void PedalCuesEditor::handleAsyncUpdate()
 {
     // The first tab is named after the amp unit picked on it (Quad Cortex, Kemper Profiler, Kemper Player).
     if (auto* b = tabButtons[0])
     {
-        b->setButtonText (ui::ampInfo (state).name);
+        b->setTooltip (ui::ampInfo (state).name + ": click the arrow to pick your amp modeller or MIDI device");
         b->setColour (juce::TextButton::buttonOnColourId, tabColour (0));
     }
+    // The second tab is named after its pedal (Whammy V / DT, or a custom MIDI device), in its colour.
+    if (auto* b = tabButtons[1])
+    {
+        b->setTooltip (ui::pedalInfo (state).name + ": click the arrow to pick an effect or pedal (or none)");
+        b->setColour (juce::TextButton::buttonOnColourId, tabColour (1));
+        b->setColour (juce::TextButton::textColourOnId, textOn (tabColour (1)));
+    }
+    pedalMenuButton.arrowColour = currentPage == 1 ? textOn (tabColour (1)) : dim;
+    pedalMenuButton.repaint();
     unitMenuButton.arrowColour = currentPage == 0 ? juce::Colours::black : dim;
     unitMenuButton.repaint();
     repaint (getLocalBounds().removeFromTop (64));
@@ -920,13 +975,14 @@ void PedalCuesEditor::resized()
     updateBadge.setBounds (18 + 40 + 10, 36, 270, 20);
 
     // The amp tab is wider: it holds names like "HeadRush Pedalboard" plus its ▾ unit menu.
-    const int tabWidths[] = { 188, 122, 122 };
+    const int tabWidths[] = { 188, 152, 112 };   // the pedals tab has a ▾ too
     const auto tabsWidth = tabWidths[0] + tabWidths[1] + tabWidths[2] + 8;
     tabBar.setBounds (juce::Rectangle<int> (tabsWidth, 38).withCentre ({ getWidth() / 2, header.getCentreY() }));
     auto t = tabBar.getLocalBounds().reduced (4);
     for (int i = 0; i < tabButtons.size(); ++i)
         tabButtons[i]->setBounds (t.removeFromLeft (tabWidths[i]));
     unitMenuButton.setBounds (tabButtons[0]->getBounds().removeFromRight (28));
+    pedalMenuButton.setBounds (tabButtons[1]->getBounds().removeFromRight (24));
 
     layoutContent();
 
@@ -942,7 +998,7 @@ PedalCuesEditor::ChannelBanner::ChannelBanner()
 {
     openButton.setColour (juce::TextButton::buttonColourId, accent);
     openButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
-    openButton.setTooltip ("Set the channels your pedals use, then click 'My pedals use these channels'");
+    openButton.setTooltip ("Set the channels your devices use, then click 'Done: my devices use these channels'");
     addAndMakeVisible (openButton);
 }
 

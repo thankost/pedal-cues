@@ -1,6 +1,7 @@
 // Renders the images used by docs/GUIDE.md from the real UI components.
 // Usage: DocShots <outputDirectory> [iconPngPath]
 
+#include <tuple>
 #include "../Source/PluginEditor.h"
 #include "../Source/PluginProcessor.h"
 #include "../Source/DeviceTemplates.h"
@@ -745,6 +746,48 @@ int main (int argc, char** argv)
         }
         proc.state.setProperty (IDs::sweepDraw, false, nullptr);
         editor.refreshNow();
+
+        // The pedals tab: its device list, and a custom MIDI device there (here an example looper).
+        {
+            auto picker = ui::makeUnitPicker (proc.state, {}, true);
+            save (picker->createComponentSnapshot (picker->getLocalBounds(), true, scale), outDir.getChildFile ("pedal-picker.png"));
+            auto root = proc.state;
+            auto looper = state::addCustomUnit (root, state::createCustomUnit ("Looper"), true);
+            looper.setProperty (IDs::colour, juce::Colour (0xff2ec4b6).toString(), nullptr);
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("pedal-custom.png"));
+            state::removeCustomUnit (root, looper);
+            editor.refreshNow();
+            proc.state.setProperty (IDs::fxUnit, state::fxNone, nullptr);
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("pedal-none.png"));
+
+            // Line 6 pedal pages on the pedals tab: DL4 MkII (Controls, Models) and HX One.
+            auto pedalPage = [&] (const char* id, std::initializer_list<std::tuple<const char*, int, int>> demos)
+            {
+                auto m = state::modeller (root, id);
+                for (int i = m.getNumChildren(); --i >= 0;)
+                    if (m.getChild (i).hasType (IDs::ModPreset))
+                        m.removeChild (i, nullptr);
+                for (const auto& [name, index, colour] : demos)
+                    m.appendChild (state::createModPreset (id, name, -1, index, ui::paletteColour (colour)), nullptr);
+                proc.state.setProperty (IDs::fxProfile, id, nullptr);
+                proc.state.setProperty (IDs::fxUnit, state::fxModeller, nullptr);
+                proc.state.setProperty (IDs::fxView, 0, nullptr);
+                editor.refreshNow();
+            };
+            pedalPage ("line6.dl4-mkii", { { "Verse Slapback", 0, 4 }, { "Chorus Dotted 8th", 1, 1 }, { "Solo Tape Echo", 2, 0 },
+                                           { "Ambient Swell", 6, 6 }, { "Outro Reverse", 7, 2 } });
+            save (snapshot (editor), outDir.getChildFile ("dl4.png"));
+            proc.state.setProperty (IDs::fxView, 3, nullptr);
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("dl4-models.png"));
+            pedalPage ("line6.hx-one", { { "Chorus Shimmer", 0, 5 }, { "Rotary Lead", 1, 3 }, { "Octave Fuzz", 2, 0 } });
+            save (snapshot (editor), outDir.getChildFile ("hx-one.png"));
+            proc.state.setProperty (IDs::fxView, 0, nullptr);
+            proc.state.setProperty (IDs::fxUnit, state::fxWhammy, nullptr);
+            editor.refreshNow();
+        }
 
         // Whammy DT: the Drop Tune side of the Modes card.
         proc.state.setProperty (IDs::whModel, 1, nullptr);

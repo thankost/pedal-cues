@@ -14,6 +14,7 @@ struct TourHost
     virtual void showQcExpression (bool) = 0;
     virtual void showWhammyDt (bool) = 0;
     virtual void showQuadCortex (bool) = 0;
+    virtual void showWhammy (bool) = 0;   // the Whammy steps show the Whammy page, whatever pedal is on the second tab
     virtual juce::Rectangle<int> targetBounds (const juce::StringArray& componentIds) = 0;
     virtual void closeTour (bool finished) = 0;
 };

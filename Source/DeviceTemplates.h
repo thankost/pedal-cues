@@ -35,6 +35,7 @@ struct Template
     int expCc = 11;           // the CC its Expression view starts on
     juce::String source;      // where the numbers come from, if not the manufacturer's manual (the device card's amber line)
     bool cc0IsControl = false;// CC#0 is a control, not bank select (IDs::padRepeat)
+    bool pedal = false;       // listed on the Effects & Pedals tab (VP4, Microtubes Infinity) rather than Amps & Modellers
     std::vector<GroupDef> groups;
 };
 

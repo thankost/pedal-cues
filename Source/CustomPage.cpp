@@ -156,7 +156,7 @@ class TileEditor final : public juce::Component
 {
 public:
     TileEditor (PedalCuesProcessor& p, juce::ValueTree t, bool newTile)
-        : proc (p), root (p.state), tile (t), isNew (newTile), programBase ((int) state::customUnit (root)[IDs::programBase])
+        : proc (p), root (p.state), tile (t), isNew (newTile), programBase ((int) t.getParent().getParent()[IDs::programBase])
     {
         styleCaption (nameLabel, "NAME");
         styleCaption (startLabel, "START FROM");
@@ -215,7 +215,7 @@ public:
         testButton.setTooltip ("Send these messages to the device now");
         testButton.onClick = [this]
         {
-            proc.preview (cues::custom::cue ((int) root[IDs::qcChannel], nameEditor.getText(), messagesText(), programBase));
+            proc.preview (cues::custom::cue (state::channelFor (root, tile.getParent().getParent()), nameEditor.getText(), messagesText(), programBase));
         };
         saveButton.setColour (juce::TextButton::buttonColourId, accent);
         saveButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
@@ -336,7 +336,7 @@ private:
                                  : "CC#" + juce::String (st.number) + " to " + juce::String (st.value));
         }
         preview.setText (steps.empty() ? "No messages yet: pick a starting point above, or + Add message."
-                                       : "On channel " + juce::String ((int) root[IDs::qcChannel]) + ": " + parts.joinIntoString (", then ") + ".",
+                                       : "On channel " + juce::String (state::channelFor (root, tile.getParent().getParent())) + ": " + parts.joinIntoString (", then ") + ".",
                          juce::dontSendNotification);
         testButton.setEnabled (! steps.empty());
         saveButton.setEnabled (! steps.empty());
@@ -389,7 +389,7 @@ void showTileEditor (PedalCuesProcessor& proc, juce::ValueTree tile, bool isNew)
 class CustomExpression final : public Page
 {
 public:
-    explicit CustomExpression (PedalCuesProcessor& p) : proc (p), state (p.state)
+    CustomExpression (PedalCuesProcessor& p, bool pedalsTab) : proc (p), state (p.state), fx (pedalsTab)
     {
         addAndMakeVisible (moves);
         for (int cc = 0; cc < 128; ++cc)
@@ -398,7 +398,7 @@ public:
                           "CC#11 is the default because it's the MIDI standard for expression, but any CC works.");
         ccBox.onChange = [this]
         {
-            auto u = state::customUnit (state);
+            auto u = unit();
             if (u.isValid() && ccBox.getSelectedId() > 0)
                 u.setProperty (IDs::expCc, ccBox.getSelectedId() - 1, nullptr);
         };
@@ -428,7 +428,7 @@ public:
             {
                 cues::Cue c;
                 c.name = prefix() + text;
-                c.add (0.0, juce::MidiMessage::controllerEvent (juce::jlimit (1, 16, (int) state[IDs::qcChannel]), controller(), value));
+                c.add (0.0, juce::MidiMessage::controllerEvent (juce::jlimit (1, 16, channel()), controller(), value));
                 return c;
             };
             moves.extraRow().addAndMakeVisible (t);
@@ -450,13 +450,13 @@ public:
 private:
     int controller() const
     {
-        const auto u = state::customUnit (state);
+        const auto u = unit();
         return u.isValid() ? juce::jlimit (0, 127, (int) u.getProperty (IDs::expCc, 11)) : 11;
     }
 
     juce::String prefix() const
     {
-        const auto u = state::customUnit (state);
+        const auto u = unit();
         return (u.isValid() ? u[IDs::name].toString() : juce::String ("Device")) + " Exp ";
     }
 
@@ -487,19 +487,23 @@ private:
         c.shapeHolds       = [] (int s) { return s == (int) cues::qc::ExpShape::toe || s == (int) cues::qc::ExpShape::heel; };
         c.makeShape = [this] (int s)
         {
-            return cues::qc::shapedMove (prefix(), (int) state[IDs::qcChannel], controller(), (cues::qc::ExpShape) s,
+            return cues::qc::shapedMove (prefix(), channel(), controller(), (cues::qc::ExpShape) s,
                                          (double) state[IDs::cuBeats], (double) state[IDs::cuCurve], (bool) state[IDs::cuReset]);
         };
         c.makeDrawn = [this] (const std::vector<float>& points, const juce::String& name)
         {
-            return cues::qc::drawnMove (prefix() + (name.isNotEmpty() ? name : juce::String ("Drawn")), (int) state[IDs::qcChannel], controller(),
+            return cues::qc::drawnMove (prefix() + (name.isNotEmpty() ? name : juce::String ("Drawn")), channel(), controller(),
                                         points, (double) state[IDs::cuBeats], (bool) state[IDs::cuReset]);
         };
         return c;
     }
 
+    juce::ValueTree unit() const { return fx ? state::fxCustomUnit (state) : state::customUnit (state); }
+    int channel() const          { return state::channelFor (state, unit()); }
+
     PedalCuesProcessor& proc;
     juce::ValueTree state;
+    const bool fx;
     juce::ComboBox ccBox;
     juce::Label setLabel;
     juce::OwnedArray<Tile> setTiles;
@@ -510,7 +514,7 @@ private:
 class CustomPage final : public Page
 {
 public:
-    explicit CustomPage (PedalCuesProcessor& p) : proc (p), state (p.state)
+    CustomPage (PedalCuesProcessor& p, bool pedalsTab) : proc (p), state (p.state), fx (pedalsTab)
     {
         addAndMakeVisible (unitSection);
 
@@ -574,7 +578,7 @@ public:
         exportButton.setTooltip ("Save this device (groups, tiles and notes) as a file to share or back up");
         importButton.setTooltip ("Add a device from a .pedalcues-device file");
         exportButton.onClick = [this] { exportCustomUnit (unit()); };
-        importButton.onClick = [this] { importCustomUnit (state); };
+        importButton.onClick = [this] { importCustomUnit (state, fx); };
 
         groupsView.setViewedComponent (&groupsContent, false);
         groupsView.setScrollBarsShown (true, false);
@@ -625,7 +629,7 @@ public:
         unitSection.repaint();
         if (! nameLabel.isBeingEdited())
             nameLabel.setText (name, juce::dontSendNotification);
-        channelLabel.setText ("Sends on channel " + juce::String ((int) state[IDs::qcChannel]) + " (MIDI Setup)", juce::dontSendNotification);
+        channelLabel.setText ("Sends on channel " + juce::String (state::channelFor (state, u)) + " (MIDI Setup)", juce::dontSendNotification);
         const auto* fromTemplate = templates::find (u[IDs::templateId].toString());
         disclaimerLabel.setText (fromTemplate != nullptr ? templates::disclaimer (*fromTemplate) : juce::String(), juce::dontSendNotification);
         disclaimerLabel.setVisible (fromTemplate != nullptr);
@@ -796,12 +800,12 @@ public:
     }
 
 private:
-    juce::ValueTree unit() const { return state::customUnit (state); }
+    juce::ValueTree unit() const { return fx ? state::fxCustomUnit (state) : state::customUnit (state); }
 
     cues::Cue tileCue (const juce::ValueTree& tile) const
     {
         const auto u = unit();
-        auto c = cues::custom::cue ((int) state[IDs::qcChannel], u[IDs::name].toString() + " " + tile[IDs::name].toString(),
+        auto c = cues::custom::cue (state::channelFor (state, u), u[IDs::name].toString() + " " + tile[IDs::name].toString(),
                                     tile[IDs::messages].toString(), (int) u[IDs::programBase]);
         if (state::usesCc0AsControl (u))
         {
@@ -915,9 +919,12 @@ private:
         m.addItem (4, "Export device...");
         m.addItem (5, "Import device...");
         m.addItem (6, "New MIDI device...");
+        m.addSeparator();
+        m.addItem (7, fx ? "Move to Amps & Modellers" : "Move to Effects & Pedals");
 
         juce::Component::SafePointer<CustomPage> safe (this);
-        m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&unitMenuButton), [safe, u] (int result) mutable
+        const auto pedals = fx;
+        m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&unitMenuButton), [safe, u, pedals] (int result) mutable
         {
             if (safe == nullptr || result == 0)
                 return;
@@ -927,7 +934,7 @@ private:
             else if (result == 1)
                 renameNode (u, "Rename device");
             else if (result == 2)
-                state::addCustomUnit (root, u.createCopy());
+                state::addCustomUnit (root, u.createCopy(), pedals);
             else if (result == 3)
                 juce::AlertWindow::showOkCancelBox (juce::MessageBoxIconType::NoIcon, "Delete device",
                                                     "Delete \"" + u[IDs::name].toString() + "\" with all its tiles and notes? "
@@ -937,18 +944,19 @@ private:
                                                     {
                                                         if (ok != 1)
                                                             return;
-                                                        auto units = root.getChildWithName (IDs::CustomUnits);
-                                                        units.removeChild (u, nullptr);
-                                                        root.setProperty (IDs::selectedCustomUnit, 0, nullptr);
-                                                        if (units.getNumChildren() == 0)
-                                                            root.setProperty (IDs::ampUnit, 0, nullptr);   // back to the Quad Cortex
+                                                        state::removeCustomUnit (root, u);   // its tab falls back to the Quad Cortex / the Whammy
                                                     }));
             else if (result == 4)
                 exportCustomUnit (u);
             else if (result == 5)
-                importCustomUnit (root);
+                importCustomUnit (root, pedals);
             else if (result == 6)
-                newCustomUnit (root);
+                newCustomUnit (root, pedals);
+            else if (result == 7)
+            {
+                // The device changes tab: it's shown there, and this tab goes back to the Quad Cortex / the Whammy.
+                state::showCustomUnitOn (root, root.getChildWithName (IDs::CustomUnits).indexOf (u), ! pedals);
+            }
         });
     }
 
@@ -973,7 +981,8 @@ private:
     juce::StringArray tileText, tileExact;             // what the search looks in: the name (fuzzy); messages, note, group (plain)
     SearchBox search { "Search tiles" };
     juce::OwnedArray<juce::TextButton> viewButtons;   // Tiles | Expression
-    CustomExpression expression { proc };
+    const bool fx;   // on the pedals tab (second tab) rather than the first tab
+    CustomExpression expression { proc, fx };
 };
 } // namespace
 
@@ -982,15 +991,16 @@ std::unique_ptr<juce::Component> makeTileEditor (PedalCuesProcessor& p, juce::Va
     return std::make_unique<TileEditor> (p, tile, isNew);
 }
 
-std::unique_ptr<Page> makeCustomPage (PedalCuesProcessor& p)
+std::unique_ptr<Page> makeCustomPage (PedalCuesProcessor& p, bool pedalsTab)
 {
-    return std::make_unique<CustomPage> (p);
+    return std::make_unique<CustomPage> (p, pedalsTab);
 }
 
-void newCustomUnit (juce::ValueTree state)
+void newCustomUnit (juce::ValueTree state, bool pedalsTab)
 {
-    auto unit = state::addCustomUnit (state, state::createCustomUnit ("My device"));
-    state.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
+    auto unit = state::addCustomUnit (state, state::createCustomUnit ("My device"), pedalsTab);
+    if (! pedalsTab)
+        state.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
     askText ("Name your device", unit[IDs::name].toString(), [unit] (const juce::String& name) mutable
     {
         if (name.isNotEmpty())
@@ -1017,12 +1027,12 @@ void exportCustomUnit (juce::ValueTree unit)
                               });
 }
 
-void importCustomUnit (juce::ValueTree state)
+void importCustomUnit (juce::ValueTree state, bool pedalsTab)
 {
     unitChooser = std::make_unique<juce::FileChooser> ("Import device", juce::File::getSpecialLocation (juce::File::userDocumentsDirectory),
                                                        "*.pedalcues-device");
     unitChooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
-                              [state] (const juce::FileChooser& fc) mutable
+                              [state, pedalsTab] (const juce::FileChooser& fc) mutable
                               {
                                   const auto file = fc.getResult();
                                   if (! file.existsAsFile())
@@ -1034,8 +1044,9 @@ void importCustomUnit (juce::ValueTree state)
                                                                               file.getFileName() + " isn't a PedalCues device file.");
                                       return;
                                   }
-                                  state::addCustomUnit (state, unit);
-                                  state.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
+                                  state::addCustomUnit (state, unit, pedalsTab);
+                                  if (! pedalsTab)
+                                      state.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
                               });
 }
 } // namespace ui

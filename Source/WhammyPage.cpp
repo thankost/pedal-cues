@@ -1,4 +1,5 @@
 #include "EditorCommon.h"
+#include "Modellers.h"
 #include "MovesPanel.h"
 
 #include <algorithm>
@@ -113,24 +114,7 @@ public:
         moreButton.onClick = [this] { showMoreMenu(); };
         addAndMakeVisible (moreButton);
 
-        // Which Whammy (V or DT): picked right on the faceplate, where players look for their pedal.
-        for (auto* b : { &modelVButton, &modelDtButton })
-        {
-            b->setClickingTogglesState (true);
-            b->setRadioGroupId (4306);
-            b->setColour (juce::TextButton::buttonColourId, juce::Colours::black.withAlpha (0.35f));
-            b->setColour (juce::TextButton::buttonOnColourId, juce::Colours::white);
-            b->setColour (juce::TextButton::textColourOffId, juce::Colours::white.withAlpha (0.75f));
-            b->setColour (juce::TextButton::textColourOnId, whammyRed.darker (0.3f));
-            options.addAndMakeVisible (b);
-        }
-        modelVButton.setConnectedEdges (juce::Button::ConnectedOnRight);
-        modelDtButton.setConnectedEdges (juce::Button::ConnectedOnLeft);
-        modelVButton.setComponentID ("wh.model");
-        modelVButton.setTooltip ("DigiTech Whammy V (5th generation)");
-        modelDtButton.setTooltip ("DigiTech Whammy DT: adds the Drop Tune (Shift Up / Shift Down) tiles");
-        modelVButton.onClick  = [this] { if (modelVButton.getToggleState())  state.setProperty (IDs::whModel, 0, nullptr); };
-        modelDtButton.onClick = [this] { if (modelDtButton.getToggleState()) state.setProperty (IDs::whModel, 1, nullptr); };
+        // Whammy V or DT: two devices in the Effects & Pedals list (whModel), so the faceplate only names it.
 
         // Whammy DT: the Modes card switches between the Whammy side and the Drop Tune side of the pedal.
         for (auto* b : { &whammyViewButton, &dropTuneViewButton })
@@ -165,7 +149,6 @@ public:
         faceplate.tagline = dt ? "MIDI MODE  +  DROP TUNE  +  TREADLE AUTOMATION" : "MIDI MODE  +  TREADLE AUTOMATION";
         faceplate.repaint();
         chordsToggle.setVisible (! dt);
-        (dt ? modelDtButton : modelVButton).setToggleState (true, juce::dontSendNotification);
         whammyViewButton.setVisible (dt);
         dropTuneViewButton.setVisible (dt);
         (dropView ? dropTuneViewButton : whammyViewButton).setToggleState (true, juce::dontSendNotification);
@@ -255,10 +238,6 @@ public:
         options.setBounds (plate.removeFromRight (juce::jmin (760, plate.getWidth() - 440)).reduced (14, 22));
         {
             auto o = options.getLocalBounds().reduced (12, 0);
-            auto model = o.removeFromLeft (230).withSizeKeepingCentre (230, 30);
-            modelVButton.setBounds (model.removeFromLeft (model.getWidth() / 2));
-            modelDtButton.setBounds (model);
-            o.removeFromLeft (18);
             // Widths shared out by label length: Chords is short, "Load bypassed" the longest.
             const auto total = (float) o.getWidth();
             const auto share = isDt() ? std::array<float, 3> { 0.0f, 0.55f, 0.45f } : std::array<float, 3> { 0.27f, 0.40f, 0.33f };
@@ -412,7 +391,6 @@ private:
     std::vector<Group> groups;
     juce::OwnedArray<Tile> modeTiles, dropTiles;
     juce::TextButton whammyViewButton { "Whammy" }, dropTuneViewButton { "Drop Tune" };
-    juce::TextButton modelVButton { "Whammy V" }, modelDtButton { "Whammy DT" };
     juce::TextButton moreButton { "..." };
 
     void showMoreMenu()
@@ -437,5 +415,120 @@ private:
 std::unique_ptr<Page> makeWhammyPage (PedalCuesProcessor& p)
 {
     return std::make_unique<WhammyPage> (p);
+}
+
+PedalInfo pedalInfo (const juce::ValueTree& state)
+{
+    PedalInfo info;
+    info.channel = juce::jlimit (1, 16, (int) state[IDs::whChannel]);
+    info.name = (int) state[IDs::whModel] == 1 ? "Whammy DT" : "Whammy V";
+    if ((int) state[IDs::fxUnit] == state::fxNone)
+    {
+        info.isNone = true;
+        info.name = "No pedal";
+        info.shortName = "pedal";
+        info.colour = theme::raised.brighter (0.3f);
+        return info;
+    }
+    if ((int) state[IDs::fxUnit] == state::fxModeller)
+        if (const auto* m = modellers::find (state[IDs::fxProfile].toString()))
+        {
+            info.page = m;
+            info.name = m->brand + " " + m->model;
+            info.shortName = m->shortName;
+            info.colour = m->colour;
+            info.channel = state::fxModellerChannel (state);
+            return info;
+        }
+    if (const auto u = state::fxCustomUnit (state); u.isValid())
+    {
+        info.isCustom = true;
+        info.name = info.shortName = u[IDs::name].toString();
+        info.colour = state::colourOf (u, juce::Colour (0xff8e7cf0));
+        info.channel = state::channelFor (state, u);
+    }
+    return info;
+}
+
+namespace
+{
+// Effects & Pedals with no pedal picked: what the tab is for, and how to add one.
+class NoPedalPage final : public Page
+{
+public:
+    explicit NoPedalPage (juce::ValueTree s) : state (std::move (s))
+    {
+        title.setText ("No effect or pedal yet", juce::dontSendNotification);
+        title.setFont (font (22.0f, true));
+        title.setJustificationType (juce::Justification::centred);
+        body.setText ("This tab is for a pedal next to your amp modeller: a Whammy, a delay, a looper or any MIDI device. Pick one, "
+                      "or make your own, and its tiles appear here. Only using one device? Leave this empty.",
+                      juce::dontSendNotification);
+        body.setFont (font (14.0f));
+        body.setColour (juce::Label::textColourId, dim);
+        body.setJustificationType (juce::Justification::centredTop);
+        chooseButton.setColour (juce::TextButton::buttonColourId, accent);
+        chooseButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
+        chooseButton.onClick = [this] { showUnitPicker (state, chooseButton, {}, true); };
+        for (auto* c : std::initializer_list<juce::Component*> { &title, &body, &chooseButton })
+            addAndMakeVisible (c);
+    }
+
+    void refresh() override {}
+
+    void resized() override
+    {
+        auto r = getLocalBounds().withSizeKeepingCentre (juce::jmin (560, getWidth() - 40), 200);
+        title.setBounds (r.removeFromTop (40));
+        body.setBounds (r.removeFromTop (70));
+        r.removeFromTop (12);
+        chooseButton.setBounds (r.removeFromTop (40).withSizeKeepingCentre (220, 40));
+    }
+
+private:
+    juce::ValueTree state;
+    juce::Label title, body;
+    juce::TextButton chooseButton { "Choose a pedal" };
+};
+
+// The Effects & Pedals tab: the Whammy V / DT page, a pedal page (DL4 MkII, HX One), a custom MIDI device, or nothing yet.
+class PedalPage final : public Page
+{
+public:
+    explicit PedalPage (PedalCuesProcessor& p)
+        : state (p.state), whammy (makeWhammyPage (p)), custom (makeCustomPage (p, true)), none (std::make_unique<NoPedalPage> (p.state)),
+          modeller (makeModellerPage (p, true))
+    {
+        addChildComponent (*modeller);
+        addChildComponent (*whammy);
+        addChildComponent (*custom);
+        addChildComponent (*none);
+        refresh();
+    }
+
+    void refresh() override
+    {
+        const auto info = pedalInfo (state);
+        auto* shown = info.isNone ? none.get() : info.isCustom ? custom.get() : info.page != nullptr ? modeller.get() : whammy.get();
+        for (auto* page : { whammy.get(), custom.get(), none.get(), modeller.get() })
+            page->setVisible (page == shown);
+        shown->refresh();
+    }
+
+    void resized() override
+    {
+        for (auto* page : { whammy.get(), custom.get(), none.get(), modeller.get() })
+            page->setBounds (getLocalBounds());
+    }
+
+private:
+    juce::ValueTree state;
+    std::unique_ptr<Page> whammy, custom, none, modeller;
+};
+} // namespace
+
+std::unique_ptr<Page> makePedalPage (PedalCuesProcessor& p)
+{
+    return std::make_unique<PedalPage> (p);
 }
 } // namespace ui

@@ -82,6 +82,7 @@ Template vp4()
 {
     Template t;
     t.id = "fractal.vp4";
+    t.pedal = true;   // Virtual Pedalboard: an effects unit
     t.brand = "Fractal Audio";
     t.model = "VP4";
     t.aliases = "fractal vp4 vp 4 virtual pedalboard";
@@ -144,6 +145,7 @@ Template microtubesInfinity()
 {
     Template t;
     t.id = "darkglass.microtubes-infinity";
+    t.pedal = true;   // a bass preamp / drive pedal
     t.brand = "Darkglass";
     t.model = "Microtubes Infinity";
     t.aliases = "darkglass microtubes infinity mt inf bass";
@@ -224,6 +226,7 @@ juce::ValueTree createUnit (const Template& t)
     unit.setProperty (IDs::programBase, t.programBase, nullptr);
     unit.setProperty (IDs::expCc, t.expCc, nullptr);
     unit.setProperty (IDs::padRepeat, t.cc0IsControl, nullptr);
+    unit.setProperty (IDs::category, t.pedal ? "pedal" : "amp", nullptr);
     unit.setProperty (IDs::notes, juce::String(), nullptr);   // the manual's notes stay read-only (About this unit); these are the player's own
     const auto& palette = state::palette();
     for (const auto& g : t.groups)

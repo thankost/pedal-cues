@@ -8,14 +8,29 @@ namespace ui
 {
 namespace
 {
+// Which tab the page is on: the first (ampUnit 4, modellerProfile, qcChannel) or Effects & Pedals (fxUnit 3, fxProfile, its own channel).
+// Each keeps its own view and expression settings, so a Helix and a DL4 side by side don't flip together.
+struct Slot
+{
+    bool pedalsTab = false;
+    juce::Identifier profileId() const { return pedalsTab ? IDs::fxProfile : IDs::modellerProfile; }
+    juce::Identifier viewId() const    { return pedalsTab ? IDs::fxView : IDs::mdView; }
+    juce::Identifier pedalId() const   { return pedalsTab ? IDs::fxPedal : IDs::mdPedal; }
+    const modellers::Profile* profile (const juce::ValueTree& state) const { return modellers::find (state[profileId()].toString()); }
+    int channel (const juce::ValueTree& state) const
+    {
+        return pedalsTab ? state::fxModellerChannel (state) : juce::jlimit (1, 16, (int) state[IDs::qcChannel]);
+    }
+};
+
 // Expression moves on the unit's pedal CCs (Helix EXP 1-3, Fractal External controllers), with "Set to" tiles.
 class ModellerPedals final : public Page
 {
 public:
-    explicit ModellerPedals (PedalCuesProcessor& p) : proc (p), state (p.state)
+    ModellerPedals (PedalCuesProcessor& p, Slot s) : proc (p), state (p.state), slot (s)
     {
         addAndMakeVisible (moves);
-        pedalBox.onChange = [this] { state.setProperty (IDs::mdPedal, pedalBox.getSelectedId() - 1, nullptr); };
+        pedalBox.onChange = [this] { state.setProperty (slot.pedalId(), pedalBox.getSelectedId() - 1, nullptr); };
         moves.extraHeader().addAndMakeVisible (pedalBox);
         styleCaption (setLabel, "SET TO");
         moves.extraRow().addAndMakeVisible (setLabel);
@@ -52,7 +67,7 @@ public:
             {
                 cues::Cue c;
                 c.name = pedalLabel() + " " + text;
-                c.add (0.0, juce::MidiMessage::controllerEvent (juce::jlimit (1, 16, (int) state[IDs::qcChannel]), controller(), value));
+                c.add (0.0, juce::MidiMessage::controllerEvent (slot.channel (state), controller(), value));
                 return c;
             };
             moves.extraRow().addAndMakeVisible (t);
@@ -71,11 +86,11 @@ public:
     }
 
 private:
-    const modellers::Profile* profile() const { return modellers::find (state[IDs::modellerProfile].toString()); }
+    const modellers::Profile* profile() const { return slot.profile (state); }
     int pedalIndex() const
     {
         const auto* p = profile();
-        return p == nullptr ? 0 : juce::jlimit (0, juce::jmax (0, (int) p->pedals.size() - 1), (int) state[IDs::mdPedal]);
+        return p == nullptr ? 0 : juce::jlimit (0, juce::jmax (0, (int) p->pedals.size() - 1), (int) state[slot.pedalId()]);
     }
     int controller() const
     {
@@ -93,13 +108,21 @@ private:
     MovesConfig config()
     {
         MovesConfig c;
-        c.idPrefix = "md.ped";
+        c.idPrefix = slot.pedalsTab ? "fx.ped" : "md.ped";
         c.title = "Expression";
         c.hint = "CC#1";
         c.colour = qcBlue;
         c.line = qcBlue.brighter (0.3f);
-        c.beatsId = IDs::mdBeats;  c.curveId = IDs::mdCurve;  c.resetId = IDs::mdReset;
-        c.drawId = IDs::mdDraw;    c.drawingId = IDs::mdDrawing;  c.drawingNameId = IDs::mdDrawingName;
+        if (slot.pedalsTab)
+        {
+            c.beatsId = IDs::fxBeats;  c.curveId = IDs::fxCurve;  c.resetId = IDs::fxReset;
+            c.drawId = IDs::fxDraw;    c.drawingId = IDs::fxDrawing;  c.drawingNameId = IDs::fxDrawingName;
+        }
+        else
+        {
+            c.beatsId = IDs::mdBeats;  c.curveId = IDs::mdCurve;  c.resetId = IDs::mdReset;
+            c.drawId = IDs::mdDraw;    c.drawingId = IDs::mdDrawing;  c.drawingNameId = IDs::mdDrawingName;
+        }
         c.resetText = "Back to heel after move";
         c.resetTooltip = "After a move, put the pedal back to heel (0). Leave it off for a swell that should stay up.";
         c.padHint = "Drag here to draw a pedal move";
@@ -115,25 +138,25 @@ private:
         c.shapeName        = [] (int s) { return cues::qc::expShapeName ((cues::qc::ExpShape) s); };
         c.shapeDescription = [] (int s) { return cues::qc::expShapeDescription ((cues::qc::ExpShape) s); };
         c.shapeHolds       = [] (int s) { return s == (int) cues::qc::ExpShape::toe || s == (int) cues::qc::ExpShape::heel; };
-        c.makeShape = [this] (int s)
+        const auto beats = c.beatsId, curve = c.curveId, reset = c.resetId;
+        c.makeShape = [this, beats, curve, reset] (int s)
         {
-            const auto* p = profile();
             return cues::qc::shapedMove (pedalLabel() + " ",
-                                         (int) state[IDs::qcChannel], controller(), (cues::qc::ExpShape) s,
-                                         (double) state[IDs::mdBeats], (double) state[IDs::mdCurve], (bool) state[IDs::mdReset]);
+                                         slot.channel (state), controller(), (cues::qc::ExpShape) s,
+                                         (double) state[beats], (double) state[curve], (bool) state[reset]);
         };
-        c.makeDrawn = [this] (const std::vector<float>& points, const juce::String& name)
+        c.makeDrawn = [this, beats, reset] (const std::vector<float>& points, const juce::String& name)
         {
-            const auto* p = profile();
             return cues::qc::drawnMove (pedalLabel() + " "
                                             + (name.isNotEmpty() ? name : juce::String ("Drawn")),
-                                        (int) state[IDs::qcChannel], controller(), points, (double) state[IDs::mdBeats], (bool) state[IDs::mdReset]);
+                                        slot.channel (state), controller(), points, (double) state[beats], (bool) state[reset]);
         };
         return c;
     }
 
     PedalCuesProcessor& proc;
     juce::ValueTree state;
+    Slot slot;
     juce::ComboBox pedalBox;
     juce::Label setLabel;
     juce::OwnedArray<Tile> setTiles;
@@ -146,10 +169,12 @@ private:
 class ModellerPage final : public Page
 {
 public:
-    explicit ModellerPage (PedalCuesProcessor& p) : proc (p), state (p.state)
+    ModellerPage (PedalCuesProcessor& p, Slot s) : proc (p), state (p.state), slot (s)
     {
         for (auto* c : std::initializer_list<juce::Component*> { &presetsSection, &scenesSection, &switchesSection, &utilsSection, &looperSection })
             addChildComponent (c);
+        for (int g = 0; g < 3; ++g)
+            addChildComponent (modelSections.add (new Section ("md.models" + juce::String (g), "Models", "")));
         presetsSection.setVisible (true);
 
         addButton.setColour (juce::TextButton::buttonColourId, accent);
@@ -183,8 +208,8 @@ public:
 
         viewChoice.setInterceptsMouseClicks (false, true);
         addAndMakeVisible (viewChoice);
-        const char* views[] = { "Scenes & Switches", "Looper", "Expression" };   // "Looper" follows the profile (refresh)
-        for (int i = 0; i < 3; ++i)
+        const char* views[] = { "Scenes & Switches", "Looper", "Expression", "Models" };   // the first two follow the profile (refresh)
+        for (int i = 0; i < 4; ++i)
         {
             auto* b = viewButtons.add (new juce::TextButton (views[i]));
             b->setClickingTogglesState (true);
@@ -192,8 +217,7 @@ public:
             b->setColour (juce::TextButton::buttonColourId, surface);
             b->setColour (juce::TextButton::textColourOffId, dim);
             b->setColour (juce::TextButton::textColourOnId, juce::Colours::black);
-            b->setConnectedEdges ((i > 0 ? juce::Button::ConnectedOnLeft : 0) | (i < 2 ? juce::Button::ConnectedOnRight : 0));
-            b->onClick = [this, i] { state.setProperty (IDs::mdView, i, nullptr); };
+            b->onClick = [this, i] { state.setProperty (slot.viewId(), i, nullptr); };
             viewChoice.addAndMakeVisible (b);
         }
 
@@ -233,6 +257,20 @@ public:
         viewButtons[1]->setButtonText (p->looperTitle);     // Infinity 500 Combo: IR slots
         looperSection.title = p->looperTitle;
         viewButtons[2]->setEnabled (! p->pedals.empty());
+        viewButtons[0]->setButtonText (p->mainTitle);       // DL4 MkII: "Controls"
+        viewButtons[3]->setVisible (! p->models.empty());   // DL4 MkII: delay and reverb models
+        {
+            int shownButtons = 0;
+            for (auto* b : viewButtons)
+                shownButtons += b->isVisible() ? 1 : 0;
+            int i = 0;
+            for (auto* b : viewButtons)
+                if (b->isVisible())
+                {
+                    b->setConnectedEdges ((i > 0 ? juce::Button::ConnectedOnLeft : 0) | (i < shownButtons - 1 ? juce::Button::ConnectedOnRight : 0));
+                    ++i;
+                }
+        }
 
         disclaimer.setText (p->beta ? "From the " + p->brand + " manual, not tested on hardware" : juce::String ("Not tested on hardware"),
                             juce::dontSendNotification);
@@ -355,8 +393,19 @@ public:
         };
         makeActions (utilTiles, p->utilities);
         makeActions (looperTiles, p->looper);
+        for (int g = 0; g < modelTiles.size(); ++g)
+            modelTiles[g]->clear();
+        modelTiles.clear();
+        for (int g = 0; g < (int) p->models.size() && g < modelSections.size(); ++g)
+        {
+            const auto& group = p->models[(size_t) g];
+            modelSections[g]->title = group.title;
+            modelSections[g]->hint = group.hint + "  -  the loaded preset";
+            modelSections[g]->accentColour = p->colour;
+            makeActions (*modelTiles.add (new juce::OwnedArray<Tile>()), group.actions);
+        }
 
-        const auto scenesView = view == 0, looperView = view == 1, pedalView = view == 2 && ! p->pedals.empty();
+        const auto scenesView = view == 0, looperView = view == 1, pedalView = view == 2 && ! p->pedals.empty(), modelsView = view == 3;
         const auto hasScenes = p->sceneCount > 0;   // HeadRush Pedalboard, Gigboard, MX5: no scenes over MIDI
         for (auto* c : std::initializer_list<juce::Component*> { &scenesSection, &switchesSection, &loadFirstToggle })
             c->setVisible (scenesView && (hasScenes || c == &switchesSection));
@@ -368,6 +417,11 @@ public:
         for (auto* t : switchTiles) t->setVisible (scenesView);
         for (auto* t : utilTiles)   t->setVisible (scenesView || looperView);
         for (auto* t : looperTiles) t->setVisible (looperView);
+        for (int g = 0; g < modelSections.size(); ++g)
+            modelSections[g]->setVisible (modelsView && g < modelTiles.size());
+        for (auto* tiles : modelTiles)
+            for (auto* t : *tiles)
+                t->setVisible (modelsView);
         pedals.setVisible (pedalView);
         if (pedalView)
             pedals.refresh();
@@ -409,10 +463,15 @@ public:
 
         {
             auto row = r.removeFromTop (30);
-            viewChoice.setBounds (row.removeFromLeft (420));
+            int shownButtons = 0;
+            for (auto* b : viewButtons)
+                shownButtons += b->isVisible() ? 1 : 0;
+            const auto buttonWidth = shownButtons > 3 ? 116 : 140;
+            viewChoice.setBounds (row.removeFromLeft (buttonWidth * shownButtons));
             auto c = viewChoice.getLocalBounds();
             for (auto* b : viewButtons)
-                b->setBounds (c.removeFromLeft (140));
+                if (b->isVisible())
+                    b->setBounds (c.removeFromLeft (buttonWidth));
             aboutButton.setBounds (row.removeFromRight (140));
             disclaimer.setBounds (row);
             // Narrow windows: the short form, so it's never cut off.
@@ -432,6 +491,24 @@ public:
         if (view == 2)
         {
             pedals.setBounds (r);
+            return;
+        }
+        if (view == 3)
+        {
+            // The model groups stacked, each as tall as its rows of six.
+            constexpr int columns = 6;
+            int rows = 0;
+            for (auto* tiles : modelTiles)
+                rows += (tiles->size() + columns - 1) / columns;
+            const auto gaps = 10 * juce::jmax (0, modelTiles.size() - 1);
+            const auto rowHeight = juce::jlimit (34, 60, (r.getHeight() - gaps - Section::headerHeight * modelTiles.size()) / juce::jmax (1, rows));
+            for (int g = 0; g < modelTiles.size(); ++g)
+            {
+                const auto groupRows = (modelTiles[g]->size() + columns - 1) / columns;
+                modelSections[g]->setBounds (r.removeFromTop (Section::headerHeight + rowHeight * groupRows));
+                r.removeFromTop (10);
+                layoutGrid (*modelTiles[g], modelSections[g]->contentArea().expanded (3), columns, 6);
+            }
             return;
         }
 
@@ -480,14 +557,14 @@ public:
     }
 
 private:
-    const modellers::Profile* profile() const { return modellers::find (state[IDs::modellerProfile].toString()); }
-    int channel() const { return (int) state[IDs::qcChannel]; }
+    const modellers::Profile* profile() const { return slot.profile (state); }
+    int channel() const { return slot.channel (state); }
 
-    // The saved view, or Scenes & Switches when the unit has no looper / pedals for it.
+    // The saved view, or Scenes & Switches when the unit has no looper / pedals / models for it.
     int viewFor (const modellers::Profile& p) const
     {
-        const auto view = juce::jlimit (0, 2, (int) state[IDs::mdView]);
-        return (view == 1 && p.looper.empty()) || (view == 2 && p.pedals.empty()) ? 0 : view;
+        const auto view = juce::jlimit (0, 3, (int) state[slot.viewId()]);
+        return (view == 1 && p.looper.empty()) || (view == 2 && p.pedals.empty()) || (view == 3 && p.models.empty()) ? 0 : view;
     }
 
     juce::ValueTree data() const
@@ -702,6 +779,7 @@ private:
 
     PedalCuesProcessor& proc;
     juce::ValueTree state;
+    Slot slot;
 
     Section presetsSection  { "md.presetList", "Presets", "click to open" };
     Section scenesSection   { "md.scenes", "Scenes", "" };
@@ -721,15 +799,17 @@ private:
     juce::OwnedArray<juce::TextButton> viewButtons;
     juce::Label disclaimer;
     juce::TextButton aboutButton;
-    ModellerPedals pedals { proc };
+    ModellerPedals pedals { proc, slot };
+    juce::OwnedArray<Section> modelSections;
 
     juce::OwnedArray<Tile> presetTiles, sceneTiles, switchTiles, utilTiles, looperTiles;
+    juce::OwnedArray<juce::OwnedArray<Tile>> modelTiles;   // one list per Models group
     std::unique_ptr<Tile> screen;
 };
 } // namespace
 
-std::unique_ptr<Page> makeModellerPage (PedalCuesProcessor& p)
+std::unique_ptr<Page> makeModellerPage (PedalCuesProcessor& p, bool pedalsTab)
 {
-    return std::make_unique<ModellerPage> (p);
+    return std::make_unique<ModellerPage> (p, Slot { pedalsTab });
 }
 } // namespace ui

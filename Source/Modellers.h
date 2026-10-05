@@ -24,11 +24,14 @@ enum class Scheme
     headrush,   // Core, Prime, Flex Prime: each rig's MIDI PROG, shown 1-128 = PC 0-127; no bank select, no setlists
     headrushOld,// Pedalboard, Gigboard, MX5: MIDI Prog shown 0-127 = PC 0-127
     nano,       // Neural DSP Nano Cortex: 64 presets, PC 0-63, no banks or setlists
-    darkglassAmp// Darkglass Infinity 500 Combo / Exponent 500: presets 1-5 = PC 2-6 (pcOffset 2)
+    darkglassAmp,// Darkglass Infinity 500 Combo / Exponent 500: presets 1-5 = PC 2-6 (pcOffset 2)
+    dl4,        // Line 6 DL4 MkII: PC 0-5 = presets A-F, PC 6-127 = presets 7-128
+    hxOne       // Line 6 HX One: PC 0-127 = presets 000-127, bank select ignored
 };
 
 struct Action { juce::String name, messages, note; int colour = 5; };   // messages in cues::custom syntax
 struct Control { juce::String name; int cc = 0; int value = 127; int offValue = 0; };   // value: what a press / ON sends; offValue: OFF
+struct ModelGroup { juce::String title, hint; std::vector<Action> actions; };   // the Models view: "MkII delays" (CC#1 = 0-14)
 
 struct Profile
 {
@@ -39,6 +42,8 @@ struct Profile
     bool cc0IsControl = false;              // CC#0 is a control (Darkglass amps): clips are padded with CC#32 = 0, not CC#0
     juce::String looperTitle { "Looper" };  // the second view: "Looper", or "IR slots" on the Infinity 500 Combo
     juce::String testMessage;               // MIDI Setup's Test when there's no tuner over MIDI (custom syntax), e.g. "PC 2"
+    bool pedal = false;                     // an effect pedal (DL4 MkII, HX One): listed on the Effects & Pedals tab only
+    juce::String mainTitle { "Scenes & Switches" };   // the first view's button
     Scheme scheme = Scheme::helix;
 
     juce::String sceneWord;                 // "Snapshot" / "Scene"
@@ -56,6 +61,7 @@ struct Profile
     juce::String switchesNote;
 
     std::vector<Action> utilities, looper;
+    std::vector<ModelGroup> models;         // a fourth view, "Models" (DL4 MkII: delay and reverb model select)
     std::vector<Control> pedals;            // expression: Helix EXP 1-3, Fractal external controllers
     juce::String pedalNote;
 

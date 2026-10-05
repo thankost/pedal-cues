@@ -13,7 +13,8 @@ namespace
 class UnitPicker final : public juce::Component, private juce::ListBoxModel
 {
 public:
-    UnitPicker (juce::ValueTree s, std::function<void()> done) : state (std::move (s)), onDone (std::move (done))
+    UnitPicker (juce::ValueTree s, std::function<void()> done, bool pedalsTab)
+        : state (std::move (s)), onDone (std::move (done)), pedals (pedalsTab)
     {
         search.onSearch = [this] { filter(); };
         search.onSubmit = [this]
@@ -25,7 +26,7 @@ public:
                     return;
                 }
         };
-        search.setTextToShowWhenEmpty ("Search: Helix, Axe-Fx, Kemper...", dim);
+        search.setTextToShowWhenEmpty (pedals ? "Search: Whammy DT, DL4, your devices..." : "Search: Helix, Axe-Fx, Kemper...", dim);
         addAndMakeVisible (search);
 
         list.setModel (this);
@@ -96,11 +97,69 @@ private:
         bool current = false;
     };
 
+    // The Effects & Pedals tab's pages (DL4 MkII, HX One) and templates (VP4, Microtubes Infinity), grouped by brand.
+    void addTemplates (const juce::ValueTree& units, bool fxIsCustom, int fxSelected)
+    {
+        const auto fxPage = (int) state[IDs::fxUnit] == state::fxModeller ? state[IDs::fxProfile].toString() : juce::String();
+        juce::StringArray brands;
+        for (const auto& m : modellers::all())
+            if (m.pedal)
+                brands.addIfNotAlreadyThere (m.brand);
+        for (const auto& t : templates::all())
+            if (t.pedal)
+                brands.addIfNotAlreadyThere (t.brand);
+        for (const auto& brand : brands)
+        {
+            entries.push_back ({ Kind::header, brand, {}, {} });
+            for (const auto& m : modellers::all())
+                if (m.pedal && m.brand == brand)
+                    entries.push_back ({ Kind::modeller, m.model, m.beta ? juce::String ("beta") : juce::String(), m.brand + " " + m.aliases + " pedal effect",
+                                         0, m.id, m.id == fxPage });
+            for (const auto& t : templates::all())
+            {
+                if (t.brand != brand || ! t.pedal)
+                    continue;
+                int existing = -1;
+                for (int i = 0; i < units.getNumChildren(); ++i)
+                    if (units.getChild (i)[IDs::templateId].toString() == t.id)
+                        existing = i;
+                entries.push_back ({ Kind::templ, t.model, existing >= 0 ? juce::String ("added, template") : juce::String ("template"),
+                                     t.brand + " " + t.aliases, existing, t.id, fxIsCustom && existing >= 0 && existing == fxSelected });
+            }
+        }
+    }
+
     void build()
     {
         const auto ampUnit = (int) state[IDs::ampUnit];
         const auto units = state.getChildWithName (IDs::CustomUnits);
         const auto selected = (int) state[IDs::selectedCustomUnit];
+        const auto fxIsCustom = (int) state[IDs::fxUnit] == state::fxCustom;
+        const auto fxSelected = (int) state[IDs::fxCustomUnit];
+
+        if (pedals)
+        {
+            // The pedals tab (second tab): the Whammy first, then your own MIDI devices (not the one on the first tab).
+            const auto fx = (int) state[IDs::fxUnit];
+            entries.push_back ({ Kind::builtin, "No pedal", {}, "none empty nothing", state::fxNone, {}, fx == state::fxNone });
+            entries.push_back ({ Kind::header, "DigiTech", {}, {} });
+            // Two devices with one page: the DT adds Drop Tune and has no Chords (whModel).
+            const auto dt = (int) state[IDs::whModel] == 1;
+            entries.push_back ({ Kind::builtin, "Whammy V", {}, "digitech whammy v 5 pitch", state::fxWhammy, "v", fx == state::fxWhammy && ! dt });
+            entries.push_back ({ Kind::builtin, "Whammy DT", {}, "digitech whammy dt drop tune pitch", state::fxWhammy, "dt", fx == state::fxWhammy && dt });
+            addTemplates (units, fxIsCustom, fxSelected);
+            entries.push_back ({ Kind::header, "Your MIDI devices (beta)", {}, {} });
+            for (int i = 0; i < units.getNumChildren(); ++i)
+            {
+                const auto u = units.getChild (i);
+                const auto* t = templates::find (u[IDs::templateId].toString());
+                if (! state::isPedal (u) || (ampUnit == state::customAmpUnit && i == selected))
+                    continue;   // amps & modellers, or already on the first tab
+                entries.push_back ({ Kind::device, u[IDs::name].toString(), t != nullptr ? juce::String ("template") : juce::String ("your own"),
+                                     t != nullptr ? t->brand + " " + t->aliases : juce::String(), i, {}, fxIsCustom && i == fxSelected });
+            }
+            return;
+        }
 
         // Grouped by brand: Neural DSP, Kemper, Fractal Audio, Line 6, HeadRush, Boss, Darkglass, then your own devices. "beta" marks
         // units built from the manuals and not tested on hardware; "template" the units whose MIDI you assign yourself.
@@ -110,7 +169,7 @@ private:
                              state::qcMiniAmpUnit, {}, ampUnit == state::qcMiniAmpUnit });
         const auto currentModel = ampUnit == state::modellerAmpUnit ? state[IDs::modellerProfile].toString() : juce::String();
         for (const auto& m : modellers::all())   // the Nano Cortex: a page of its own
-            if (m.brand == "Neural DSP")
+            if (m.brand == "Neural DSP" && ! m.pedal)
                 entries.push_back ({ Kind::modeller, m.model, m.beta ? juce::String ("beta") : juce::String(), m.brand + " " + m.aliases, 0, m.id,
                                      m.id == currentModel });
         entries.push_back ({ Kind::header, "Kemper", {}, {} });
@@ -121,13 +180,13 @@ private:
         {
             entries.push_back ({ Kind::header, brand, {}, {} });
             for (const auto& m : modellers::all())
-                if (m.brand == brand)
+                if (m.brand == brand && ! m.pedal)   // DL4 MkII, HX One: on the Effects & Pedals tab
                     entries.push_back ({ Kind::modeller, m.model, m.beta ? juce::String ("beta") : juce::String(), m.brand + " " + m.aliases + " amp modeller",
                                          0, m.id, m.id == currentModel });
             for (const auto& t : templates::all())
             {
-                if (t.brand != brand)
-                    continue;
+                if (t.brand != brand || t.pedal)
+                    continue;   // pedal templates are on the Effects & Pedals tab
                 int existing = -1;
                 for (int i = 0; i < units.getNumChildren(); ++i)
                     if (units.getChild (i)[IDs::templateId].toString() == t.id)
@@ -143,6 +202,8 @@ private:
         {
             const auto u = units.getChild (i);
             const auto* t = templates::find (u[IDs::templateId].toString());
+            if (state::isPedal (u) || (fxIsCustom && i == fxSelected))
+                continue;   // an effect / pedal, or on the Effects & Pedals tab
             entries.push_back ({ Kind::device, u[IDs::name].toString(), t != nullptr ? juce::String ("template") : juce::String ("your own"),
                                  t != nullptr ? t->brand + " " + t->aliases : juce::String(), i, {}, ampUnit == state::customAmpUnit && i == selected });
         }
@@ -229,31 +290,48 @@ private:
         switch (e.kind)
         {
             case Kind::builtin:
-                s.setProperty (IDs::ampUnit, e.value, nullptr);
+                s.setProperty (pedals ? IDs::fxUnit : IDs::ampUnit, e.value, nullptr);   // pedals tab: the Whammy
+                if (pedals && e.value == state::fxWhammy)
+                    s.setProperty (IDs::whModel, e.templateId == "dt" ? 1 : 0, nullptr);
                 break;
             case Kind::modeller:
+                if (pedals)
+                {
+                    s.setProperty (IDs::fxProfile, e.templateId, nullptr);
+                    s.setProperty (IDs::fxUnit, state::fxModeller, nullptr);
+                    state::fxModellerData (s);
+                    break;
+                }
                 s.setProperty (IDs::modellerProfile, e.templateId, nullptr);
                 state::modeller (s, e.templateId);
                 s.setProperty (IDs::ampUnit, state::modellerAmpUnit, nullptr);
                 break;
             case Kind::device:
-                s.setProperty (IDs::selectedCustomUnit, e.value, nullptr);
-                s.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
+                state::showCustomUnitOn (s, e.value, pedals);
                 break;
             case Kind::templ:
                 // Already made from this template: show it. Otherwise add a new device from it.
                 if (e.value >= 0)
-                    s.setProperty (IDs::selectedCustomUnit, e.value, nullptr);
+                    state::showCustomUnitOn (s, e.value, pedals);
                 else if (const auto* t = templates::find (e.templateId))
-                    state::addCustomUnit (s, templates::createUnit (*t));
-                s.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
+                {
+                    state::addCustomUnit (s, templates::createUnit (*t), pedals);
+                    if (! pedals)
+                        s.setProperty (IDs::ampUnit, state::customAmpUnit, nullptr);
+                }
                 break;
             case Kind::newDevice:
-                juce::MessageManager::callAsync ([s] { newCustomUnit (s); });
+            {
+                const auto fx = pedals;
+                juce::MessageManager::callAsync ([s, fx] { newCustomUnit (s, fx); });
                 break;
+            }
             case Kind::importDevice:
-                juce::MessageManager::callAsync ([s] { importCustomUnit (s); });
+            {
+                const auto fx = pedals;
+                juce::MessageManager::callAsync ([s, fx] { importCustomUnit (s, fx); });
                 break;
+            }
             case Kind::header:
                 return;
         }
@@ -267,6 +345,7 @@ private:
 
     juce::ValueTree state;
     std::function<void()> onDone;
+    const bool pedals;   // the pedals tab's list (the Whammy and your devices) rather than the first tab's
     SearchBox search { "Search devices" };
     juce::TextButton newButton { "+ New MIDI device" }, importButton { "Import device..." };
     juce::Label key;
@@ -276,16 +355,16 @@ private:
 };
 } // namespace
 
-std::unique_ptr<juce::Component> makeUnitPicker (juce::ValueTree state, const juce::String& query)
+std::unique_ptr<juce::Component> makeUnitPicker (juce::ValueTree state, const juce::String& query, bool pedalsTab)
 {
-    auto picker = std::make_unique<UnitPicker> (std::move (state), std::function<void()> {});
+    auto picker = std::make_unique<UnitPicker> (std::move (state), std::function<void()> {}, pedalsTab);
     picker->setSearch (query);
     return picker;
 }
 
-void showUnitPicker (juce::ValueTree state, juce::Component& target, std::function<void()> onDone)
+void showUnitPicker (juce::ValueTree state, juce::Component& target, std::function<void()> onDone, bool pedalsTab)
 {
-    auto picker = std::make_unique<UnitPicker> (std::move (state), std::move (onDone));
+    auto picker = std::make_unique<UnitPicker> (std::move (state), std::move (onDone), pedalsTab);
     juce::CallOutBox::launchAsynchronously (std::move (picker), target.getScreenBounds(), nullptr);
 }
 } // namespace ui

@@ -62,12 +62,12 @@ private:
         if (oneDevice)
         {
             // Either USB straight to the device, or an interface's MIDI Out and a MIDI cable.
-            const Node usb[] = { { amp.shortName + " Cues track", "PedalCues, " + amp.box + " tab", accent },
-                                 { amp.box, "USB MIDI", amp.colour } };
+            const Node usb[] = { { "Amp modeller track", "e.g. " + amp.shortName + " Cues", accent },
+                                 { "Amp modeller", "e.g. " + amp.box + " (USB)", amp.colour } };
             const char* usbLinks[] = { "USB" };
-            const Node din[] = { { amp.shortName + " Cues track", "PedalCues, " + amp.box + " tab", accent },
+            const Node din[] = { { "Amp modeller track", "e.g. " + amp.shortName + " Cues", accent },
                                  { "MIDI interface", "MIDI Out", grey },
-                                 { amp.box, amp.midiIn, amp.colour } };
+                                 { "Amp modeller", "e.g. " + amp.box + (amp.isTrs() ? juce::String (", TRS In") : juce::String()), amp.colour } };
             const char* dinLinks[] = { "USB", "MIDI cable" };
             if (! amp.usbMidi)   // no MIDI over USB from a computer (HeadRush): the MIDI cable only
             {
@@ -87,17 +87,17 @@ private:
         if (! viaInterface)
         {
             // A MIDI Thru only passes on MIDI from the 5-pin MIDI In, not from USB, so the chain starts at an interface.
-            const Node nodes[] = { { "Cue tracks", amp.shortName + " + second device", accent },
+            const Node nodes[] = { { "Cue tracks", "one per device", accent },
                                    { "Interface", "MIDI Out", grey },
-                                   { amp.box, "MIDI In + Thru", amp.colour },
+                                   { "Amp modeller", "e.g. " + amp.box, amp.colour },
                                    { "Second device", "e.g. a Whammy", second } };
             const char* links[] = { "USB", "MIDI cable", "Thru" };
             paintChain (g, area.withSizeKeepingCentre (area.getWidth(), 66), nodes, links, 4);
             return;
         }
 
-        const Node ampRow[] = { { amp.shortName + " Cues track", "PedalCues, " + amp.box + " tab", accent },
-                                { amp.box, "USB, or MIDI Out 1", amp.colour } };
+        const Node ampRow[] = { { "Amp modeller track", "e.g. " + amp.shortName + " Cues", accent },
+                                { "Amp modeller", "e.g. " + amp.box + " (USB)", amp.colour } };
         const char* ampLinks[] = { "USB" };
         const Node other[] = { { "Second device track", "e.g. Whammy Cues", accent },
                                { "MIDI interface", "MIDI Out 2", grey },
@@ -107,9 +107,9 @@ private:
         area.removeFromTop (8);
         if (! amp.usbMidi)
         {
-            const Node cableRow[] = { { amp.shortName + " Cues track", "PedalCues, " + amp.box + " tab", accent },
+            const Node cableRow[] = { { "Amp modeller track", "e.g. " + amp.shortName + " Cues", accent },
                                       { "MIDI interface", "MIDI Out 1", grey },
-                                      { amp.box, amp.midiIn, amp.colour } };
+                                      { "Amp modeller", "e.g. " + amp.box + (amp.isTrs() ? juce::String (", TRS In") : juce::String()), amp.colour } };
             paintChain (g, top, cableRow, otherLinks, 3);
         }
         else
@@ -202,8 +202,34 @@ public:
                            "The Whammy has no USB MIDI, so it always needs a MIDI cable.",
                            "Each DAW track sends to the output its device is on." };
 
+        // Generic roles, with the picked unit as the example: "the amp modeller (e.g. Quad Cortex)" the first time, then "the amp modeller".
         for (auto* list : { &oneDevice, &daisy, &separate })
         {
+            bool named = false;
+            for (auto& step : list->steps)
+            {
+                const auto example = named ? juce::String() : " (e.g. " + d + ")";
+                if (step.startsWith (d + ": "))
+                    step = "Amp modeller" + example + ": " + step.fromFirstOccurrenceOf (d + ": ", false, false);
+                else if (step.contains ("the " + d) || step.contains ("The " + d))
+                {
+                    const auto first = juce::jmax (step.indexOf ("the " + d), step.indexOf ("The " + d));
+                    const auto prefixUpper = step.substring (first, first + 1) == "T";
+                    const auto rest = step.substring (first + 4 + d.length());
+                    const auto possessive = rest.startsWith ("'s");
+                    // "the amp modeller's MIDI In (e.g. Quad Cortex)": the example goes after the noun, at the end of the sentence.
+                    step = step.substring (0, first) + (prefixUpper ? "The amp modeller" : "the amp modeller") + (possessive ? "'s" + rest.substring (2) : example + rest);
+                    if (possessive && example.isNotEmpty())
+                    {
+                        const auto stop = step.indexOf (". ") >= 0 ? step.indexOf (". ") : step.lastIndexOf (".");
+                        step = stop >= 0 ? step.substring (0, stop) + example + step.substring (stop) : step + example;
+                    }
+                    step = step.replace ("the " + d, "the amp modeller").replace ("The " + d, "The amp modeller");
+                }
+                else
+                    continue;
+                named = true;
+            }
             list->amp = amp;
             list->rowHeight = 40;
             addChildComponent (list);
@@ -233,7 +259,8 @@ public:
     void show (int view)
     {
         current = juce::jlimit (0, 2, view);
-        viewButtons[current]->setToggleState (true, juce::dontSendNotification);
+        for (int i = 0; i < viewButtons.size(); ++i)   // exactly one lit, whatever was clicked before
+            viewButtons[i]->setToggleState (i == current, juce::dontSendNotification);
         oneDevice.setVisible (current == 0);
         daisy.setVisible (current == 1);
         separate.setVisible (current == 2);
@@ -243,11 +270,12 @@ public:
     void paint (juce::Graphics& g) override
     {
         g.fillAll (background);
-        const juce::String titles[] = { "ONE DEVICE: " + amp.box.toUpperCase(),
-                                        "DAISY CHAIN VIA " + amp.box.toUpperCase(),
+        const juce::String titles[] = { "ONE DEVICE, E.G. A " + amp.box.toUpperCase(),
+                                        "DAISY CHAIN THROUGH THE AMP MODELLER (E.G. " + amp.box.toUpperCase() + ")",
                                         "SEPARATE OUTPUTS" };
-        const juce::String subs[] = { "Just your " + amp.box + ": one cue track, sent over " + (amp.usbMidi ? "USB or " : "") + "a MIDI cable.",
-                                      "A second device on the " + amp.box + "'s MIDI Thru. Both tracks send to the same interface MIDI Out.",
+        const juce::String subs[] = { "Just your amp modeller (shown for the " + amp.box + " picked in MIDI Setup): one cue track, sent over "
+                                          + (amp.usbMidi ? "USB or " : "") + "a MIDI cable.",
+                                      "A second device on the amp modeller's MIDI Thru. Both tracks send to the same interface MIDI Out.",
                                       "Each device on its own output. Each DAW track sends to the output its device is on." };
         auto r = title;
         g.setColour (text);
@@ -347,9 +375,12 @@ public:
         addChildComponent (testSection);
 
         // Your pedals: the channels every cue is sent on.
-        styleCaption (qcChannelLabel, "Quad Cortex channel");
-        styleCaption (whChannelLabel, "Whammy channel");
-        styleCaption (ampLabel, "Amp modeller or MIDI device");
+        // One row per tab: the device (opens that tab's list), its channel and, in the standalone app, a Test tick box.
+        styleCaption (ampLabel, "Amps & Modellers");
+        styleCaption (whChannelLabel, "Effects & Pedals");
+        styleCaption (qcChannelLabel, "Channel");
+        pedalBox.setTooltip ("The pedal on the Effects & Pedals tab: a Whammy V or DT, a DL4 MkII, one of your MIDI devices, or none. Opens the same list as that tab's arrow.");
+        pedalBox.onClick = [this] { showUnitPicker (state, pedalBox, {}, true); };
         ampBox.setTooltip ("Quad Cortex, Nano Cortex, Kemper, a Fractal, Line 6, HeadRush or Darkglass unit, or your own MIDI device: the first tab and the channel below "
                            "follow it. Opens the same searchable list as the arrow on the first tab.");
         ampBox.onClick = [this] { showUnitPicker (state, ampBox, {}); };
@@ -372,7 +403,16 @@ public:
         }
 
         qcChannelBox.onChange = [this] { state.setProperty (IDs::qcChannel, qcChannelBox.getSelectedId(), nullptr); };
-        whChannelBox.onChange = [this] { state.setProperty (IDs::whChannel, whChannelBox.getSelectedId(), nullptr); };
+        whChannelBox.onChange = [this]
+        {
+            // The pedal's own channel: the Whammy's, or the custom device's (kept with the device).
+            if (auto u = state::fxCustomUnit (state); u.isValid())
+                u.setProperty (IDs::channel, whChannelBox.getSelectedId(), nullptr);
+            else if (auto m = state::fxModellerData (state); m.isValid())
+                m.setProperty (IDs::channel, whChannelBox.getSelectedId(), nullptr);
+            else
+                state.setProperty (IDs::whChannel, whChannelBox.getSelectedId(), nullptr);
+        };
 
 
         // My wiring (in the DAW tracks header): the steps below depend on it. The cable details are in Help > Wiring guide.
@@ -394,10 +434,21 @@ public:
         wiringLink.setColour (juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
         wiringLink.setColour (juce::TextButton::textColourOffId, qcBlue);
         wiringLink.onClick = [this] { showWiringGuide (state); };
-        styleCaption (wiringLabel, "My wiring:");
-        styleHint (dawHint, "Where the track's MIDI output is: Reaper: I/O > MIDI Hardware Output, and enable the port in "
-                            "Preferences > MIDI Devices ('Send to original channels'). Ableton Live: MIDI To. Cubase: the track's MIDI output. "
-                            "Logic: use an External MIDI track (Logic can't send the play-button tests to hardware; use the standalone app).");
+        styleCaption (wiringLabel, "How are they connected?");
+        chainNote.setFont (font (12.5f));
+        chainNote.setColour (juce::Label::textColourId, accent);
+        chainNote.setJustificationType (juce::Justification::topLeft);
+        chainNote.setMinimumHorizontalScale (1.0f);
+        addChildComponent (chainNote);
+        styleCaption (dawLabel, "Your DAW");
+        styleHint (dawHint, {});
+        for (auto* d : { "Reaper", "Ableton Live", "Cubase / Nuendo", "Logic Pro", "Other" })
+            dawBox.addItem (d, dawBox.getNumItems() + 1);
+        dawBox.setSelectedItemIndex (juce::jlimit (0, 4, state::getSetting ("daw").getIntValue()), juce::dontSendNotification);
+        dawBox.onChange = [this] { state::setSetting ("daw", juce::String (dawBox.getSelectedItemIndex())); updateDawHint(); };
+        updateDawHint();
+        styleHint (examplesNote, {});
+        examplesNote.setColour (juce::Label::textColourId, accent);
 
         testOutBox.onChange = [this]
         {
@@ -405,10 +456,95 @@ public:
             proc.setDirectMidiOutput (juce::isPositiveAndBelow (i - 1, testDevices.size()) ? testDevices[i - 1].identifier : juce::String());
             updateTestState();
         };
-        testQcButton.setTooltip ("Opens the QC tuner for 1.5 seconds: a quick check that the QC gets MIDI on its channel.");
-        testWhButton.setTooltip ("Steps the Whammy through Oct Up, 5th Up and 2 Oct Up: a quick check that it gets MIDI on its channel.");
-        testQcButton.onClick = [this]
+        testButton.setTooltip ("Sends a quick test to every device ticked above, on its channel: a check that each one gets MIDI.");
+        testButton.onClick = [this]
         {
+            juce::StringArray results;
+            if (testAmpToggle.getToggleState())
+                results.add (testAmp());
+            if (testPedalToggle.getToggleState())
+                results.add (testPedal());
+            setTestStatus (results.isEmpty() ? juce::String ("Tick Test next to the devices you want to check, then click Test selected.")
+                                             : results.joinIntoString ("\n\n"));
+        };
+        for (auto* t : { &testAmpToggle, &testPedalToggle })
+        {
+            t->setButtonText ("Test");
+            t->setToggleState (true, juce::dontSendNotification);
+            t->setTooltip ("Include this device in Test selected");
+        }
+        testButton.setColour (juce::TextButton::buttonColourId, accent);
+        testButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
+
+        for (auto* c : std::initializer_list<juce::Component*> { &ampLabel, &ampBox, &pedalBox, &qcChannelLabel, &whChannelLabel, &qcChannelBox, &whChannelBox,
+                                                                 &qcHint, &whHint, &confirmButton, &confirmHint, &tracksSteps, &viaQcButton,
+                                                                 &viaInterfaceButton, &wiringLabel, &wiringLink, &dawHint, &dawLabel, &dawBox,
+                                                                 &examplesNote })
+            addAndMakeVisible (c);
+        for (auto* c : std::initializer_list<juce::Component*> { &testOutBox, &testButton, &testAmpToggle, &testPedalToggle, &testHint })
+            addChildComponent (c);
+
+        const auto standalone = PedalCuesProcessor::isStandalone();
+        for (auto* c : std::initializer_list<juce::Component*> { &testSection, &testOutBox, &testButton, &testAmpToggle, &testPedalToggle, &testHint })
+            c->setVisible (standalone);
+
+        setSetupMode (! state::getFlag ("setupViaQcChain"));
+        refresh();
+    }
+
+    void refresh() override
+    {
+        qcChannelBox.setSelectedId ((int) state[IDs::qcChannel], juce::dontSendNotification);
+        const auto pedal = pedalInfo (state);
+        whChannelBox.setSelectedId (pedal.channel, juce::dontSendNotification);
+        whChannelBox.setEnabled (! pedal.isNone);
+        pedalBox.setButtonText (pedal.isNone ? juce::String ("No pedal (only one device)") : pedal.name);
+        testPedalToggle.setVisible (PedalCuesProcessor::isStandalone() && ! pedal.isNone);
+        // Until the channels are confirmed, say the devices shown are just a start.
+        examplesNote.setText (pedal.isNone ? ampInfo (state).name + " is an example: click it to pick your amp modeller or MIDI device."
+                                           : ampInfo (state).name + " and " + pedal.name + " are examples: click a device to pick yours "
+                                             "(or No pedal if you only have one).", juce::dontSendNotification);
+        examplesNote.setVisible (! state::getFlag (ui::channelsConfirmedFlag));
+        tracksSection.hint = pedal.isNone ? "one cue track, once" : "two cue tracks, once";
+        tracksSection.repaint();
+
+        // The first channel belongs to the amp unit (picked here or on the first tab).
+        const auto amp = ampInfo (state);
+        ampBox.setButtonText (amp.isModeller() ? modellers::find (state[IDs::modellerProfile].toString())->model : amp.name);
+        qcChannelLabel.setText ("Channel", juce::dontSendNotification);   // the column: each row's device channel
+        qcHint.setText (amp.isModeller() ? amp.channelHint
+                        : amp.isCustom() ? "Set the same channel on your " + amp.name + " (see its manual; not Omni)."
+                        : isKemper() ? "Set the same channel on your Kemper: System Settings > MIDI > MIDI Global Channel (not OMNI)."
+                                     : "Set the same channel on your QC: Settings > MIDI Settings > MIDI Channel (not Omni).", juce::dontSendNotification);
+        whHint.setText (pedal.isNone ? juce::String ("Nothing on the Effects & Pedals tab: only one device to set up. Add a pedal with that tab's arrow.")
+                        : pedal.page != nullptr ? pedal.page->channelHint + " Use a different channel from the " + ampShort() + "."
+                        : pedal.isCustom ? "Set the same channel on your " + pedal.name + " (see its manual). Use a different channel from the "
+                                         + ampShort() + "."
+                                       : "Set the same channel on your Whammy (see its manual). Use a different channel from the " + ampShort() + ".",
+                        juce::dontSendNotification);
+        testAmpToggle.setTooltip ("Test selected includes the " + ampShort() + (amp.isCustom() ? juce::String (": it sends your first tile.") : juce::String (": its tuner on and off (or preset 1).")));
+        testPedalToggle.setTooltip ("Test selected includes the " + pedal.shortName + (pedal.isCustom ? juce::String (": it sends your first tile.")
+                                                                                      : pedal.page != nullptr ? juce::String (": it loads its first preset.")
+                                                                                      : juce::String (": it steps through three modes.")));
+        viaQcButton.setButtonText ("Daisy chain via " + ampShort());
+        setSetupMode (! state::getFlag ("setupViaQcChain"));
+        updateConfirm();
+        refreshTestDevices();
+    }
+
+    void updateConfirm()
+    {
+        confirmButton.setToggleState (state::getFlag (ui::channelsConfirmedFlag), juce::dontSendNotification);
+        confirmButton.setButtonText (juce::String (juce::CharPointer_UTF8 (confirmButton.getToggleState()
+                                                                               ? "\xe2\x9c\x93  Done: my devices use these channels"
+                                                                               : "Done: my devices use these channels")));
+        examplesNote.setVisible (! confirmButton.getToggleState());
+    }
+
+    // The first tab's device: its tuner on and off, a first tile, preset 1 or a tap, whatever it has.
+    juce::String testAmp()
+        {
+            juce::String status;
             cues::Cue c;
             const auto ch = (int) state[IDs::qcChannel];
             if (ampInfo (state).isCustom())
@@ -420,32 +556,32 @@ public:
                         if (c.events.empty() && cues::custom::parse (t[IDs::messages].toString(), (int) unit[IDs::programBase]).ok())
                         {
                             c = cues::custom::cue (ch, t[IDs::name].toString(), t[IDs::messages].toString(), (int) unit[IDs::programBase]);
-                            setTestStatus ("Sent your first tile, \"" + t[IDs::name].toString() + "\", to " + currentPortName() + " on channel "
+                            status = ("Sent your first tile, \"" + t[IDs::name].toString() + "\", to " + currentPortName() + " on channel "
                                            + juce::String (ch) + ". Did the " + ampShort() + " react? If not, check the cable direction and its channel.");
                         }
                 if (c.events.empty())
-                    setTestStatus ("Add a tile with MIDI messages on the " + ampShort() + " page first: Test sends your first tile.");
+                    status = ("Add a tile with MIDI messages on the " + ampShort() + " page first: Test sends your first tile.");
                 else
                     proc.preview (c);
-                return;
+                return status;
             }
             const auto* model = ampInfo (state).isModeller() ? modellers::find (state[IDs::modellerProfile].toString()) : nullptr;
             if (model != nullptr && model->tunerOn.isEmpty() && model->testMessage.isNotEmpty())
             {
                 // No tuner over MIDI (Darkglass amps): load preset 1.
                 proc.preview (cues::custom::cue (ch, {}, model->testMessage, 0));
-                setTestStatus ("Sent " + model->testMessage + " (preset 1) to " + currentPortName() + " on channel " + juce::String (ch)
+                status = ("Sent " + model->testMessage + " (preset 1) to " + currentPortName() + " on channel " + juce::String (ch)
                                + ". Did the " + ampShort() + " switch to preset 1? If not, check the cable direction and its channel ("
                                + model->channelHint + ").");
-                return;
+                return status;
             }
             if (model != nullptr && model->tunerOn.isEmpty() && ! model->utilities.empty())
             {
                 // No tuner over MIDI (older HeadRush units): one tap instead.
                 proc.preview (modellers::action (*model, ch, model->utilities.front()));
-                setTestStatus ("Sent " + model->utilities.front().name + " to " + currentPortName() + " on channel " + juce::String (ch) + ". Did the "
+                status = ("Sent " + model->utilities.front().name + " to " + currentPortName() + " on channel " + juce::String (ch) + ". Did the "
                                + ampShort() + " react (its tempo LED)? If not, check the cable direction, its channel (" + model->channelHint + ") and MIDI Thru.");
-                return;
+                return status;
             }
             if (model != nullptr)
             {
@@ -454,20 +590,56 @@ public:
                     for (const auto& [b, m] : cues::custom::cue (ch, {}, text, 0).events)
                         c.add (beat + b, m);
                 proc.preview (c);
-                setTestStatus ("Sent tuner on/off to " + currentPortName() + " on channel " + juce::String (ch) + ". Did the " + ampShort()
+                status = ("Sent tuner on/off to " + currentPortName() + " on channel " + juce::String (ch) + ". Did the " + ampShort()
                                + "'s tuner open and close? If not, check the cable direction, its channel (" + model->channelHint + ") and MIDI Thru.");
-                return;
+                return status;
             }
             const auto kemper = isKemper();
             c.add (0.0, (kemper ? cues::kemper::tuner (ch, true) : cues::qc::tuner (ch, true)).events.front().second);
             c.add (proc.getHostBpm() / 40.0, (kemper ? cues::kemper::tuner (ch, false) : cues::qc::tuner (ch, false)).events.front().second);   // ~1.5 s later
             proc.preview (c);
-            setTestStatus ("Sent tuner on/off to " + currentPortName() + " on channel " + juce::String (ch)
+            status = ("Sent tuner on/off to " + currentPortName() + " on channel " + juce::String (ch)
                            + ". Did the " + ampShort() + "'s tuner open and close (or close, if it was open)? If not, check the cable direction, the "
                            + ampShort() + "'s channel, and MIDI Thru for the daisy chain.");
-        };
-        testWhButton.onClick = [this]
+            return status;
+        }
+
+    // The second tab's pedal: the Whammy steps through three modes; a custom device sends its first tile.
+    juce::String testPedal()
         {
+            juce::String status;
+            const auto pedal = pedalInfo (state);
+            if (pedal.isCustom)
+            {
+                const auto unit = state::fxCustomUnit (state);
+                cues::Cue c;
+                for (auto g : unit)
+                    for (auto t : g)
+                        if (c.events.empty() && cues::custom::parse (t[IDs::messages].toString(), (int) unit[IDs::programBase]).ok())
+                        {
+                            c = cues::custom::cue (pedal.channel, t[IDs::name].toString(), t[IDs::messages].toString(), (int) unit[IDs::programBase]);
+                            status = "Sent your first tile, \"" + t[IDs::name].toString() + "\", to " + currentPortName() + " on channel "
+                                   + juce::String (pedal.channel) + ". Did the " + pedal.shortName + " react? If not, check the cable direction and its channel.";
+                        }
+                if (c.events.empty())
+                    return "Add a tile with MIDI messages on the " + pedal.shortName + " page first: Test sends your first tile.";
+                proc.preview (c);
+                return status;
+            }
+            if (const auto* page = pedal.page; page != nullptr && page->testMessage.isNotEmpty())
+            {
+                // DL4 MkII, HX One: no tuner screen to open and close, so load the first preset.
+                proc.preview (cues::custom::cue (pedal.channel, {}, page->testMessage, 0));
+                return "Sent " + page->testMessage + " (" + modellers::presetLabel (*page, -1, 0) + ") to " + currentPortName() + " on channel "
+                     + juce::String (pedal.channel) + ". Did the " + pedal.shortName + " switch to it? If not, check the cable direction, its channel ("
+                     + page->channelHint + ") and MIDI Thru.";
+            }
+            return testWhammy();
+        }
+
+    juce::String testWhammy()
+        {
+            juce::String status;
             // Three modes half a second apart, so the LED visibly moves whatever mode the Whammy was on.
             cues::Cue c;
             const auto halfSecond = proc.getHostBpm() / 120.0;   // in beats
@@ -484,64 +656,17 @@ public:
             proc.preview (c);
             if (currentPortName().containsIgnoreCase ("Quad Cortex") || currentPortName().containsIgnoreCase ("QC")
                 || currentPortName().containsIgnoreCase ("Kemper") || currentPortName().containsIgnoreCase ("Profiler"))
-                setTestStatus ("Sent Oct Up, 5th Up, 2 Oct Up to " + currentPortName() + ", but that's the " + ampShort() + "'s USB port: its MIDI Thru "
+                status = ("Sent Oct Up, 5th Up, 2 Oct Up to " + currentPortName() + ", but that's the " + ampShort() + "'s USB port: its MIDI Thru "
                                "doesn't pass USB MIDI on, so a Whammy on its Thru won't react. Send to your interface's MIDI Out instead.");
             else
-                setTestStatus ("Sent Oct Up, 5th Up, 2 Oct Up to " + currentPortName() + " on channel " + juce::String ((int) state[IDs::whChannel])
+                status = ("Sent Oct Up, 5th Up, 2 Oct Up to " + currentPortName() + " on channel " + juce::String ((int) state[IDs::whChannel])
                                + ". Did the Whammy's mode LED step along? If not, check the cable direction, the Whammy's channel, and MIDI Thru for the daisy chain.");
-        };
-        for (auto* b : { &testQcButton, &testWhButton })
-            b->setColour (juce::TextButton::buttonColourId, raised);
-
-        for (auto* c : std::initializer_list<juce::Component*> { &ampLabel, &ampBox, &qcChannelLabel, &whChannelLabel, &qcChannelBox, &whChannelBox,
-                                                                 &qcHint, &whHint, &confirmButton, &confirmHint, &tracksSteps, &viaQcButton,
-                                                                 &viaInterfaceButton, &wiringLabel, &wiringLink, &dawHint })
-            addAndMakeVisible (c);
-        for (auto* c : std::initializer_list<juce::Component*> { &testOutBox, &testQcButton, &testWhButton, &testHint })
-            addChildComponent (c);
-
-        const auto standalone = PedalCuesProcessor::isStandalone();
-        for (auto* c : std::initializer_list<juce::Component*> { &testSection, &testOutBox, &testQcButton, &testWhButton, &testHint })
-            c->setVisible (standalone);
-
-        setSetupMode (! state::getFlag ("setupViaQcChain"));
-        refresh();
-    }
-
-    void refresh() override
-    {
-        qcChannelBox.setSelectedId ((int) state[IDs::qcChannel], juce::dontSendNotification);
-        whChannelBox.setSelectedId ((int) state[IDs::whChannel], juce::dontSendNotification);
-
-        // The first channel belongs to the amp unit (picked here or on the first tab).
-        const auto amp = ampInfo (state);
-        ampBox.setButtonText (amp.isModeller() ? modellers::find (state[IDs::modellerProfile].toString())->model : amp.name);
-        qcChannelLabel.setText (amp.name + " channel", juce::dontSendNotification);
-        qcHint.setText (amp.isModeller() ? amp.channelHint
-                        : amp.isCustom() ? "Must match the MIDI channel set on the " + amp.name + " (see its manual; not Omni)."
-                        : isKemper() ? "Must match the Kemper: System Settings > MIDI > MIDI Global Channel (not OMNI)."
-                                     : "Must match the QC: Settings > MIDI Settings > MIDI Channel (not Omni).", juce::dontSendNotification);
-        whHint.setText ("Must match the Whammy's MIDI channel (see its manual). Use a different channel from the " + ampShort() + ".",
-                        juce::dontSendNotification);
-        testQcButton.setButtonText ("Test " + ampShort());
-        testQcButton.setTooltip (amp.isCustom() ? "Sends your first tile on the " + ampShort() + " page: a quick check that it gets MIDI on its channel."
-                                                : "Opens the " + ampShort() + "'s tuner for 1.5 seconds: a quick check that it gets MIDI on its channel.");
-        viaQcButton.setButtonText ("Daisy chain via " + ampShort());
-        setSetupMode (! state::getFlag ("setupViaQcChain"));
-        updateConfirm();
-        refreshTestDevices();
-    }
-
-    void updateConfirm()
-    {
-        confirmButton.setToggleState (state::getFlag (ui::channelsConfirmedFlag), juce::dontSendNotification);
-        confirmButton.setButtonText (juce::String (juce::CharPointer_UTF8 (confirmButton.getToggleState()
-                                                                               ? "\xe2\x9c\x93  My pedals use these channels"
-                                                                               : "My pedals use these channels")));
-    }
+            return status;
+        }
 
     bool isKemper() const          { return ampInfo (state).isKemper(); }
     juce::String ampShort() const  { return ampInfo (state).shortName; }
+    juce::String pedalShort() const { return pedalInfo (state).shortName; }
 
     void visibilityChanged() override
     {
@@ -560,23 +685,30 @@ public:
 
         // Left: Your pedals, then (standalone) Test. The quick tour and the user guide are in the ☰ / Help menu.
 
-        const auto pedalsH = Section::headerHeight + 62 + 2 * 84 + 34 + 70 + 8;
+        const auto pedalsH = Section::headerHeight + 22 + 2 * 92 + 34 + 70 + 8;
         pedalsSection.setBounds (left.removeFromTop (pedalsH));
         {
+            // A list: one row per tab, device | channel | (standalone) Test, with the hint below.
             auto m = pedalsSection.contentArea().reduced (6, 2);
-            auto field = [&m] (juce::Label& l, juce::Component& c, juce::Label* hint)
+            examplesNote.setBounds (m.removeFromTop (examplesNote.isVisible() ? 22 : 0));
+            const auto standalone = PedalCuesProcessor::isStandalone();
+            auto device = [&m, standalone] (juce::Label& caption, juce::Component& box, juce::ComboBox& channel, juce::ToggleButton& test, juce::Label& hint)
             {
-                auto row = m.removeFromTop (hint != nullptr ? 84 : 62);
-                l.setBounds (row.removeFromTop (22));
-                c.setBounds (row.removeFromTop (32));
-                if (hint != nullptr)
-                    hint->setBounds (row.withTrimmedTop (2));
+                auto row = m.removeFromTop (92);
+                caption.setBounds (row.removeFromTop (22).withTrimmedRight (standalone ? 198 : 128));   // clear of the Channel column
+                auto line = row.removeFromTop (32);
+                if (standalone)
+                    test.setBounds (line.removeFromRight (70).withTrimmedLeft (8));
+                channel.setBounds (line.removeFromRight (120));
+                line.removeFromRight (8);
+                box.setBounds (line);
+                hint.setBounds (row.withTrimmedTop (2));
             };
-            field (ampLabel, ampBox, nullptr);
-            field (qcChannelLabel, qcChannelBox, &qcHint);
-            field (whChannelLabel, whChannelBox, &whHint);
+            device (ampLabel, ampBox, qcChannelBox, testAmpToggle, qcHint);
+            device (whChannelLabel, pedalBox, whChannelBox, testPedalToggle, whHint);
             confirmButton.setBounds (m.removeFromTop (34).withWidth (260));
             confirmHint.setBounds (m.removeFromTop (34).withTrimmedTop (2));
+            qcChannelLabel.setBounds (qcChannelBox.getX(), ampLabel.getY(), qcChannelBox.getWidth(), ampLabel.getHeight());
         }
 
         if (PedalCuesProcessor::isStandalone())
@@ -586,10 +718,7 @@ public:
             auto t = testSection.contentArea().reduced (6, 4);
             testOutBox.setBounds (t.removeFromTop (32));
             t.removeFromTop (8);
-            auto row = t.removeFromTop (32);
-            testQcButton.setBounds (row.removeFromLeft (row.getWidth() / 2 - 4));
-            row.removeFromLeft (8);
-            testWhButton.setBounds (row);
+            testButton.setBounds (t.removeFromTop (32).withWidth (200));
             t.removeFromTop (8);
             testHint.setBounds (t);
         }
@@ -597,19 +726,32 @@ public:
         // Right: DAW tracks, with the wiring choice in its header and a link to the wiring guide.
         tracksSection.setBounds (r);
         {
-            // The whole title row (headerArea() is only its right half, too narrow for label + two buttons).
-            auto hdr = tracksSection.getBounds().removeFromTop (Section::headerHeight).reduced (Section::padding, 8);
-            viaInterfaceButton.setBounds (hdr.removeFromRight (140));
-            hdr.removeFromRight (6);
-            viaQcButton.setBounds (hdr.removeFromRight (150));
-            hdr.removeFromRight (6);
-            wiringLabel.setBounds (hdr.removeFromRight (78));
-
             auto t = tracksSection.contentArea().reduced (8, 6);
             wiringLink.setBounds (t.removeFromBottom (30).removeFromRight (260));
-            tracksSteps.setBounds (t.removeFromTop (juce::jmin (t.getHeight() - 70, tracksSteps.steps.size() * tracksSteps.rowHeight)));
+            // Two devices: how they're connected, as two choices with a line each. One device: no choice to make.
+            if (viaQcButton.isVisible())
+            {
+                wiringLabel.setBounds (t.removeFromTop (22));
+                auto options = t.removeFromTop (58);
+                viaInterfaceButton.setBounds (options.removeFromLeft (options.getWidth() / 2 - 4));
+                options.removeFromLeft (8);
+                viaQcButton.setBounds (options);
+                t.removeFromTop (8);
+                if (chainNote.isVisible())
+                {
+                    chainNote.setBounds (t.removeFromTop (36));
+                    t.removeFromTop (4);
+                }
+                else
+                    t.removeFromTop (4);
+            }
+            tracksSteps.setBounds (t.removeFromTop (juce::jmin (t.getHeight() - 120, tracksSteps.steps.size() * tracksSteps.rowHeight)));
+            t.removeFromTop (8);
+            auto daw = t.removeFromTop (30);
+            dawLabel.setBounds (daw.removeFromLeft (90));
+            dawBox.setBounds (daw.removeFromLeft (200));
             t.removeFromTop (6);
-            dawHint.setBounds (t.removeFromTop (64));
+            dawHint.setBounds (t.removeFromTop (54));
         }
     }
 
@@ -662,14 +804,13 @@ private:
     void updateTestState()
     {
         const auto hasPort = proc.getDirectMidiOutput().isNotEmpty() || PedalCuesProcessor::standaloneLayoutForScreenshots;
-        testQcButton.setEnabled (hasPort);
-        testWhButton.setEnabled (hasPort);
+        testButton.setEnabled (hasPort);
         if (! hasPort)
             setTestStatus (testDevices.isEmpty() ? "No MIDI devices found. Connect your audio interface (for its MIDI Out), or the " + ampShort() + " over USB "
                                                    "to test only the " + ampShort() + " (its MIDI Thru doesn't pass USB MIDI on to the Whammy). Then come back to this tab."
                                                  : "Pick the MIDI port your pedals are on to test them.");
         else if (testHint.getText().isEmpty() || testHint.getText().startsWith ("Pick") || testHint.getText().startsWith ("No MIDI"))
-            setTestStatus ("The app sends straight to this port, no DAW or audio needed. Test each pedal, then use any tile's play button.");
+            setTestStatus ("The app sends straight to this port, no DAW or audio needed. Tick the devices above, click Test selected, then use any tile's play button.");
     }
 
     void setTestStatus (const juce::String& t)
@@ -693,36 +834,85 @@ private:
                                        : " over USB" + (amp.hasDin ? juce::String (" (or MIDI Out 1)") : juce::String()))
                                        + ", the second device (e.g. a Whammy) on a MIDI Out");
         (viaInterface ? viaInterfaceButton : viaQcButton).setToggleState (true, juce::dontSendNotification);
+        viaInterfaceButton.setButtonText ("Each device on its own output\n(the simplest)");
+        viaQcButton.setButtonText ("One cable through the " + amp.shortName
+                                   + (amp.usbToThru == 1 ? juce::String ("\n(daisy chain, via its MIDI Thru)") : juce::String ("\n(daisy chain: MIDI cable in, not USB)")));
+        // Picked the daisy chain: say plainly whether this unit passes USB MIDI on to its Thru (most don't).
+        chainNote.setText (amp.usbToThru == 1 ? "The " + amp.box + " also passes USB MIDI on to its Thru, so both tracks can send to its USB port instead."
+                           : amp.usbToThru == 2 ? "The " + amp.box + " passes USB MIDI on to its Thru only with " + amp.usbThruSetting
+                                                  + " on. Without it, send both tracks to your interface's MIDI Out (a cable into its " + amp.midiIn + ")."
+                           : amp.usbToThru == 3 ? "The " + amp.box + "'s manual doesn't say whether USB MIDI reaches its Thru: send both tracks to your "
+                                                  "interface's MIDI Out (a cable into its " + amp.midiIn + "), not its USB port."
+                                                : "The " + amp.box + " doesn't pass USB MIDI on to its Thru: send both tracks to your interface's MIDI Out "
+                                                  "(a cable into its " + amp.midiIn + "), not its USB port.",
+                           juce::dontSendNotification);
+
+        const auto pedal = pedalInfo (state);
+        for (auto* c : std::initializer_list<juce::Component*> { &viaQcButton, &viaInterfaceButton, &wiringLabel })
+            c->setVisible (! pedal.isNone);
+        chainNote.setVisible (! pedal.isNone && ! viaInterface && amp.usbMidi);   // MIDI cables only (HeadRush): nothing to warn about
+        // Generic roles (amp track, pedal track) with this setup's devices as the example names.
+        const auto ampTrack = "'" + ampShort() + " Cues'", pedalTrack = "'" + pedalShort() + " Cues'";
+        const auto ampPort = ! amp.usbMidi ? juce::String ("MIDI Out 1")
+                           : amp.hasDin ? amp.box + " (USB) or MIDI Out 1" : amp.box + " (USB; it has no 5-pin MIDI)";
+        if (pedal.isNone)
+        {
+            // One device: one cue track.
+            tracksSteps.steps = {
+                "In your DAW, enable the MIDI output your device is on: "
+                    + (! amp.usbMidi ? "your interface's MIDI Out (e.g. for the " + amp.box + ", it needs a MIDI cable)."
+                       : amp.hasDin ? "its USB port or your interface's MIDI Out (e.g. " + amp.box + ")." : "its USB port (e.g. " + amp.box + ")."),
+                "Make one cue track, e.g. " + ampTrack + ": insert PedalCues and set its MIDI output to that port.",
+                "Keep the original MIDI channels, and drag the tiles onto that track."
+            };
+            tracksSteps.repaint();
+            resized();
+            return;
+        }
 
         if (viaInterface)
         {
             tracksSteps.steps = {
-                "In your DAW, enable the MIDI outputs your pedals are on.",
-                "Track '" + ampShort() + " Cues': insert PedalCues and set its MIDI output to the " + amp.box
-                    + (! amp.usbMidi ? juce::String (" on MIDI Out 1.")
-                       : amp.hasDin ? juce::String (" (USB) or MIDI Out 1.") : juce::String (" (USB): it has no 5-pin MIDI.")),
-                "Track 'Whammy Cues': insert PedalCues and set its MIDI output to MIDI Out 2.",
-                "Keep the original MIDI channels. Drag " + ampShort() + " tiles onto " + ampShort() + " Cues and Whammy tiles onto Whammy Cues."
+                "In your DAW, enable the MIDI outputs your devices are on.",
+                "Amp modeller track, e.g. " + ampTrack + ": insert PedalCues and set its MIDI output to the amp modeller's port (e.g. " + ampPort + ").",
+                "Pedal track, e.g. " + pedalTrack + ": insert PedalCues and set its MIDI output to the pedal's port (e.g. MIDI Out 2).",
+                "Keep the original MIDI channels. Drag Amps & Modellers tiles onto the amp modeller track, Effects & Pedals tiles onto the pedal track."
             };
         }
         else
         {
             tracksSteps.steps = {
                 "In your DAW, enable your interface's MIDI output.",
-                "Tracks '" + ampShort() + " Cues' and 'Whammy Cues': insert PedalCues on each.",
-                "Set both tracks' MIDI output to the interface MIDI Out, keeping the original MIDI channels.",
-                "Drag " + ampShort() + " tiles onto " + ampShort() + " Cues and Whammy tiles onto Whammy Cues."
+                "Make two cue tracks, an amp modeller track and a pedal track (e.g. " + ampTrack + " and " + pedalTrack + "), and insert PedalCues on each.",
+                "Set both tracks' MIDI output to the interface MIDI Out (it goes into the " + amp.shortName + " and through its Thru to the pedal), "
+                    "keeping the original MIDI channels.",
+                "Drag Amps & Modellers tiles onto the amp modeller track and Effects & Pedals tiles onto the pedal track."
             };
         }
         tracksSteps.repaint();
+        resized();
+    }
+
+    // The DAW picker: only that DAW's "where's the MIDI output" line.
+    void updateDawHint()
+    {
+        static const char* hints[] = {
+            "Reaper: the track's I/O button > MIDI Hardware Output, and enable the port in Preferences > MIDI Devices (output). Keep "
+            "'Send to original channels'.",
+            "Ableton Live: the track's MIDI To. Enable the port as Track in Preferences > Link, Tempo & MIDI.",
+            "Cubase / Nuendo: the track's MIDI output in the Inspector.",
+            "Logic Pro: use an External MIDI track and pick the port. Logic can't send the tiles' play-button tests to hardware: use the "
+            "standalone app for those.",
+            "Other DAWs: a MIDI track whose output is set to the port your device is on. The clips keep their own MIDI channels." };
+        dawHint.setText (hints[juce::jlimit (0, 4, dawBox.getSelectedItemIndex())], juce::dontSendNotification);
     }
 
     PedalCuesProcessor& proc;
     juce::ValueTree state;
 
-    Section pedalsSection { "set.pedals", "Your pedals", "set once, must match the pedals" };
-    Section testSection   { "set.test", "Test your pedals", "sends on the channels above", ledGreen };
-    Section tracksSection { "set.tracks", "DAW tracks", "two cue tracks, once", qcBlue };
+    Section pedalsSection { "set.pedals", "Your devices", "set once, must match your devices" };
+    Section testSection   { "set.test", "Test your devices", "sends on the channels above", ledGreen };
+    Section tracksSection { "set.tracks", "Set up your DAW", "two cue tracks, once", qcBlue };
 
     juce::Label ampLabel, qcChannelLabel, whChannelLabel, qcHint, whHint, testHint;
     DeviceButton ampBox;
@@ -731,13 +921,17 @@ private:
     juce::Label confirmHint;
 
     StepsList tracksSteps;
-    juce::Label wiringLabel, dawHint;
-    juce::TextButton wiringLink { "How should I wire my pedals? >" };
+    juce::Label wiringLabel, dawHint, dawLabel, examplesNote;
+    juce::Label chainNote;   // the daisy chain: what this unit does with USB MIDI at its Thru
+    juce::ComboBox dawBox;
+    juce::TextButton wiringLink { "Wiring guide: cables and diagrams >" };
     juce::TextButton viaQcButton { "Daisy chain via QC" };
     juce::TextButton viaInterfaceButton { "Separate outputs" };
 
     juce::Array<juce::MidiDeviceInfo> testDevices;
-    juce::TextButton testQcButton { "Test QC" }, testWhButton { "Test Whammy" };
+    juce::TextButton testButton { "Test selected" };
+    juce::ToggleButton testAmpToggle, testPedalToggle;   // standalone: which devices Test selected checks
+    DeviceButton pedalBox;                               // the second tab's pedal (opens its device list)
 
 };
 } // namespace

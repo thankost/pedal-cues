@@ -46,7 +46,7 @@ namespace IDs
     PEDALCUES_ID (mdLoadFirst)
     PEDALCUES_ID (mdSendSetlist)
     PEDALCUES_ID (mdSwitchOn)
-    PEDALCUES_ID (mdView)          // 0 scenes & switches, 1 looper, 2 expression
+    PEDALCUES_ID (mdView)          // 0 scenes & switches, 1 looper, 2 expression, 3 models (DL4 MkII)
     PEDALCUES_ID (mdPedal)
     PEDALCUES_ID (mdBeats)
     PEDALCUES_ID (mdCurve)
@@ -54,6 +54,19 @@ namespace IDs
     PEDALCUES_ID (mdDraw)
     PEDALCUES_ID (mdDrawing)
     PEDALCUES_ID (mdDrawingName)
+    PEDALCUES_ID (fxUnit)          // the Effects & Pedals tab: 0 = Whammy V / DT, 1 = a custom MIDI device (fxCustomUnit), 2 = no pedal, 3 = a pedal page (fxProfile)
+    PEDALCUES_ID (fxProfile)       // the Line 6 pedal page (DL4 MkII, HX One) shown when fxUnit == 3
+    PEDALCUES_ID (fxView)          // that page's view, like mdView (3 = models)
+    PEDALCUES_ID (fxPedal)
+    PEDALCUES_ID (fxBeats)
+    PEDALCUES_ID (fxCurve)
+    PEDALCUES_ID (fxReset)
+    PEDALCUES_ID (fxDraw)
+    PEDALCUES_ID (fxDrawing)
+    PEDALCUES_ID (fxDrawingName)
+    PEDALCUES_ID (category)        // a custom device's tab: "amp" (Amps & Modellers) or "pedal" (Effects & Pedals)
+    PEDALCUES_ID (fxCustomUnit)    // which custom device is on the pedals tab (index in CustomUnits)
+    PEDALCUES_ID (channel)         // a custom device's or pedal page's MIDI channel when it's on the pedals tab (the first tab uses qcChannel)
     PEDALCUES_ID (padRepeat)       // a custom device that uses CC#0 as a control: pad its clips by repeating (lengthPadding)
     PEDALCUES_ID (expCc)           // a custom device's expression pedal CC (11 = the MIDI standard Expression controller)
     PEDALCUES_ID (cuExpressionView) // custom device page: tiles (false) or expression moves (true)
@@ -135,7 +148,22 @@ namespace state
     // template, e.g. the Microtubes Infinity's Compression): its clips are then never padded with CC#0 = 0 for Ableton.
     bool usesCc0AsControl (const juce::ValueTree& unit);
     juce::ValueTree customUnit (const juce::ValueTree& root);   // the selected custom unit (invalid if there's none)
-    juce::ValueTree addCustomUnit (juce::ValueTree& root, juce::ValueTree unit);   // makes its name unique, selects it
+    juce::ValueTree addCustomUnit (juce::ValueTree& root, juce::ValueTree unit, bool onPedalsTab = false);   // unique name, selects it on that tab
+    // The pedals tab (second tab): the Whammy (fxUnit 0), a custom MIDI device (fxUnit 1, fxCustomUnit), nothing (2)
+    // or a pedal page (fxUnit 3, fxProfile: a modellers::Profile marked pedal).
+    constexpr int fxWhammy = 0, fxCustom = 1, fxNone = 2, fxModeller = 3;
+    // The pedal page's data on the pedals tab (invalid unless fxUnit is fxModeller); its channel is IDs::channel on it.
+    juce::ValueTree fxModellerData (juce::ValueTree& root);
+    int fxModellerChannel (const juce::ValueTree& root);
+    bool isPedal (const juce::ValueTree& unit);   // a custom device for the Effects & Pedals tab (IDs::category)
+    juce::ValueTree fxCustomUnit (const juce::ValueTree& root);   // the custom device on the pedals tab (invalid if it's the Whammy)
+    // The channel a custom device sends on: its own (IDs::channel) on the pedals tab, the first tab's (qcChannel) otherwise.
+    int channelFor (const juce::ValueTree& root, const juce::ValueTree& unit);
+    // Shows custom device `index` on the first tab or the pedals tab: it takes that tab's category and leaves the other tab
+    // (which falls back to the Quad Cortex / the Whammy).
+    void showCustomUnitOn (juce::ValueTree& root, int index, bool pedalsTab);
+    // Deletes a custom device and keeps both tabs' selections pointing at the right devices.
+    void removeCustomUnit (juce::ValueTree& root, const juce::ValueTree& unit);
     bool saveUnit (const juce::ValueTree& unit, const juce::File&);   // Export unit: the unit with its notes
     juce::ValueTree loadUnit (const juce::File&);                     // invalid if it isn't a unit file
 

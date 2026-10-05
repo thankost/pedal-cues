@@ -88,12 +88,16 @@ body:
   - type: dropdown
     id: whammy
     attributes:
-      label: Whammy
-      description: Which Whammy you use with PedalCues, if any.
+      label: Effects & Pedals tab
+      description: The device on the second tab, if any.
       options:
         - Whammy V
         - Whammy DT
-        - No Whammy
+        - Line 6 DL4 MkII (beta)
+        - Line 6 HX One (beta)
+        - A template (VP4, Microtubes Infinity), name it above
+        - Custom MIDI device (beta), name it above
+        - No pedal
   - type: textarea
     id: extra
     attributes:
