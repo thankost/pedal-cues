@@ -392,15 +392,15 @@ public:
     explicit CustomExpression (PedalCuesProcessor& p) : proc (p), state (p.state)
     {
         addAndMakeVisible (moves);
-        for (int cc = 1; cc < 128; ++cc)
-            ccBox.addItem ("CC#" + juce::String (cc), cc);   // plain numbers: what a CC does is up to the device
+        for (int cc = 0; cc < 128; ++cc)
+            ccBox.addItem ("CC#" + juce::String (cc), cc + 1);   // ids start at 1; CC#0 is a control on some units (Exponent 500 Quick-Pot A)   // plain numbers: what a CC does is up to the device
         ccBox.setTooltip ("The CC this device listens to for the move: the one you assigned on the device (see its manual). "
                           "CC#11 is the default because it's the MIDI standard for expression, but any CC works.");
         ccBox.onChange = [this]
         {
             auto u = state::customUnit (state);
             if (u.isValid() && ccBox.getSelectedId() > 0)
-                u.setProperty (IDs::expCc, ccBox.getSelectedId(), nullptr);
+                u.setProperty (IDs::expCc, ccBox.getSelectedId() - 1, nullptr);
         };
         moves.extraHeader().addAndMakeVisible (ccBox);
         styleCaption (setLabel, "SET TO");
@@ -410,7 +410,7 @@ public:
 
     void refresh() override
     {
-        ccBox.setSelectedId (controller(), juce::dontSendNotification);
+        ccBox.setSelectedId (controller() + 1, juce::dontSendNotification);
         moves.setHint ("CC#" + juce::String (controller()) + "  -  what the device assigns to it");
 
         setTiles.clear();
@@ -451,7 +451,7 @@ private:
     int controller() const
     {
         const auto u = state::customUnit (state);
-        return u.isValid() ? juce::jlimit (1, 127, (int) u.getProperty (IDs::expCc, 11)) : 11;
+        return u.isValid() ? juce::jlimit (0, 127, (int) u.getProperty (IDs::expCc, 11)) : 11;
     }
 
     juce::String prefix() const
@@ -630,7 +630,8 @@ public:
         disclaimerLabel.setText (fromTemplate != nullptr ? templates::disclaimer (*fromTemplate) : juce::String(), juce::dontSendNotification);
         disclaimerLabel.setVisible (fromTemplate != nullptr);
         aboutButton.setVisible (fromTemplate != nullptr);
-        aboutButton.setButtonText ("About this unit (from the manual) >");
+        aboutButton.setButtonText (fromTemplate != nullptr && fromTemplate->source.isNotEmpty() ? juce::String ("About this unit (where the numbers come from) >")
+                                                                                                : juce::String ("About this unit (from the manual) >"));
         notesLabel.setText (fromTemplate != nullptr ? "YOUR NOTES" : "NOTES", juce::dontSendNotification);
         notesEditor.setTextToShowWhenEmpty (fromTemplate != nullptr ? "What you set on your unit, what you changed..."
                                                                     : "Why it's set up this way: manual pages, parameters, values...", dim);
@@ -800,8 +801,14 @@ private:
     cues::Cue tileCue (const juce::ValueTree& tile) const
     {
         const auto u = unit();
-        return cues::custom::cue ((int) state[IDs::qcChannel], u[IDs::name].toString() + " " + tile[IDs::name].toString(),
-                                  tile[IDs::messages].toString(), (int) u[IDs::programBase]);
+        auto c = cues::custom::cue ((int) state[IDs::qcChannel], u[IDs::name].toString() + " " + tile[IDs::name].toString(),
+                                    tile[IDs::messages].toString(), (int) u[IDs::programBase]);
+        if (state::usesCc0AsControl (u))
+        {
+            c.toggles = false;       // CC#0 is a control on this device (Infinity: Compression): repeat instead of sending CC#0 = 0
+            c.cc0IsControl = true;   // and a Program Change-only tile is padded with CC#32 = 0
+        }
+        return c;
     }
 
     void addGroup()

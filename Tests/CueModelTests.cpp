@@ -218,7 +218,7 @@ int main (int argc, char** argv)
     // Fractal / Line 6 / HeadRush pages: preset numbering, timing and numbers from the manuals.
     {
         using namespace modellers;
-        CHECK (all().size() == 17);
+        CHECK (all().size() == 21);
         for (const auto& p : all())
         {
             for (const auto& list : { p.utilities, p.looper })
@@ -263,6 +263,29 @@ int main (int argc, char** argv)
         CHECK (isCC (switchCue (core, 1, 13, true, {}).events[0].second, 1, 88, 127) && switchCue (core, 1, 0, true, {}).toggles);
         CHECK (find ("headrush.prime")->sceneCount == 8 && find ("headrush.flex-prime")->sceneCount == 6);
         CHECK (! core.usbMidi && find ("headrush.flex-prime")->midiIn == "TRS MIDI In" && find ("headrush.mx5")->switches.size() == 11);
+        // Nano Cortex: PC 0-63, eight slot bypasses on / off, tuner and tap, no scenes, looper or MIDI Out.
+        const auto& nano = *find ("neural.nano-cortex");
+        CHECK (presetLabel (nano, -1, 63) == "PC 63" && presetsPerSetlist (nano, -1) == 64 && nano.sceneCount == 0 && nano.looper.empty());
+        CHECK (preset (nano, 1, -1, 63, true, {}).events.back().second.getProgramChangeNumber() == 63 && ! nano.hasThru);
+        CHECK (isCC (switchCue (nano, 1, 7, false, {}).events[0].second, 1, 41, 0) && nano.switches.size() == 8);
+        // Anagram: 01A-42C = Program Change 1-126 (value 0 is ignored), scenes A-C = CC#107 1-3.
+        const auto& ana = *find ("darkglass.anagram");
+        CHECK (presetLabel (ana, -1, 0) == "01A" && presetLabel (ana, -1, 125) == "42C");
+        CHECK (preset (ana, 1, -1, 0, false, {}).events.back().second.getProgramChangeNumber() == 1
+               && preset (ana, 1, -1, 125, false, {}).events.back().second.getProgramChangeNumber() == 126);
+        CHECK (isCC (scene (ana, 2, 0, {}).events[0].second, 2, 107, 1) && isCC (scene (ana, 2, 2, {}).events[0].second, 2, 107, 3));
+        CHECK (isCC (switchCue (ana, 1, 2, true, {}).events[0].second, 1, 19, 127) && ana.pedals.front().cc == 89);
+        CHECK (scene (ana, 1, 1, {}).name == "Anagram Scene B" && sceneLabel (*find ("line6.helix-floor"), 1) == "2");
+        // Darkglass amps: presets 1-5 = PC 2-6, per-value effect switches (0 = on, 1 = off), FX loop 1 = on; CC#0 is a control,
+        // so their clips are padded with CC#32 = 0, never CC#0.
+        const auto& combo = *find ("darkglass.infinity-500-combo");
+        CHECK (presetLabel (combo, -1, 0) == "Preset 1" && preset (combo, 1, -1, 4, false, {}).events.back().second.getProgramChangeNumber() == 6);
+        CHECK (isCC (switchCue (combo, 1, 0, true, {}).events[0].second, 1, 1, 0) && isCC (switchCue (combo, 1, 0, false, {}).events[0].second, 1, 1, 1));
+        CHECK (isCC (switchCue (combo, 1, 4, true, {}).events[0].second, 1, 0, 1));                     // FX loop on
+        CHECK (isCC (lengthPadding (preset (combo, 2, -1, 0, false, {})), 2, 32, 0));
+        CHECK (isCC (lengthPadding (action (combo, 2, combo.utilities.front())), 2, 32, 0) && combo.looperTitle == "IR slots");
+        const auto& expo = *find ("darkglass.exponent-500");
+        CHECK (expo.pedals.front().cc == 0 && isCC (switchCue (expo, 1, 2, true, {}).events[0].second, 1, 108, 1) && ! expo.hasThru);
         const auto& ax8 = *find ("fractal.ax8");
         CHECK (presetLabel (ax8, -1, 128) == "17:1" && isCC (preset (ax8, 1, -1, 128, false, {}).events[0].second, 1, 0, 1));
         const auto& fx8 = *find ("fractal.fx8");
@@ -307,7 +330,7 @@ int main (int argc, char** argv)
     // Device templates (Fractal, Line 6): every tile's messages read back, names are unique in each group,
     // and a few numbers straight from the manuals.
     {
-        CHECK (templates::all().size() == 5);   // Axe-Fx III, FM9, FM3, VP4, Boss GT-1000: no default CCs, so templates
+        CHECK (templates::all().size() == 6);   // Axe-Fx III, FM9, FM3, VP4, Boss GT-1000, Microtubes Infinity
         juce::StringArray ids;
         for (const auto& t : templates::all())
         {
@@ -343,6 +366,17 @@ int main (int argc, char** argv)
         CHECK (tileOf ("fractal.vp4", "Presets", "A1").events.size() == 1);                                 // VP4: no bank select
         CHECK (templates::find ("fractal.fm3")->notes.contains ("can't be controlled over USB"));
         CHECK (templates::find ("fractal.axe-fx-3")->notes.startsWith ("Why this is an editable device"));
+        // Microtubes Infinity: from a community chart (the card says so); CC#0 is Compression, so clips are padded by repeating.
+        {
+            const auto& inf = *templates::find ("darkglass.microtubes-infinity");
+            CHECK (templates::disclaimer (inf).startsWith ("From a community MIDI chart") && inf.notes.contains ("Type B"));
+            auto unit = templates::createUnit (inf);
+            CHECK (state::usesCc0AsControl (unit) && (int) unit[IDs::expCc] == 1);
+            auto plain = state::createCustomUnit ("Synth");
+            CHECK (! state::usesCc0AsControl (plain));                                             // "bank 0, PC n" tiles: bank select
+            plain.getChild (0).getChild (0).setProperty (IDs::messages, "CC 0=40", nullptr);
+            CHECK (state::usesCc0AsControl (plain));                                               // CC#0 on its own: a control
+        }
         // Boss GT-1000: PC#1 (the PROGRAM MAP's numbering) = Program Change 0, after bank select CC#0 and CC#32 = 0.
         {
             const auto& gt = *templates::find ("boss.gt-1000");

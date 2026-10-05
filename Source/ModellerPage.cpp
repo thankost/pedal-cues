@@ -183,7 +183,7 @@ public:
 
         viewChoice.setInterceptsMouseClicks (false, true);
         addAndMakeVisible (viewChoice);
-        const char* views[] = { "Scenes & Switches", "Looper", "Expression" };
+        const char* views[] = { "Scenes & Switches", "Looper", "Expression" };   // "Looper" follows the profile (refresh)
         for (int i = 0; i < 3; ++i)
         {
             auto* b = viewButtons.add (new juce::TextButton (views[i]));
@@ -222,16 +222,20 @@ public:
         const auto preset = modPreset (sel);
         const auto loadFirst = (bool) state[IDs::mdLoadFirst];
         const auto switchOn = (bool) state[IDs::mdSwitchOn];
-        const auto view = juce::jlimit (0, 2, (int) state[IDs::mdView]);
+        const auto view = viewFor (*p);
         const auto setlists = modellers::hasSetlists (*p);
         const auto label = presetLabel (preset);
 
         for (auto* b : viewButtons)
             b->setColour (juce::TextButton::buttonOnColourId, p->colour);
         viewButtons[view]->setToggleState (true, juce::dontSendNotification);
+        viewButtons[1]->setEnabled (! p->looper.empty());   // Nano Cortex: no looper over MIDI
+        viewButtons[1]->setButtonText (p->looperTitle);     // Infinity 500 Combo: IR slots
+        looperSection.title = p->looperTitle;
         viewButtons[2]->setEnabled (! p->pedals.empty());
 
-        disclaimer.setText ("From the " + p->brand + " manual, not tested on hardware", juce::dontSendNotification);
+        disclaimer.setText (p->beta ? "From the " + p->brand + " manual, not tested on hardware" : juce::String ("Not tested on hardware"),
+                            juce::dontSendNotification);
 
         // Setlists: the same rule as the Quad Cortex. Off by default; a reminder when presets span several setlists.
         juce::SortedSet<int> usedSetlists;
@@ -286,7 +290,7 @@ public:
         screen = std::make_unique<Tile> (proc, Tile::Look::screen);
         screen->screenHeading = "LOADED PRESET";
         screen->chipsHeading = p->sceneWord.toUpperCase() + "S";
-        screen->numberedChips = true;
+        screen->numberedChips = ! p->sceneLetters;
         screen->title = preset[IDs::name].toString();
         screen->subtitle = (setlists ? shortSetlist (preset) + " | " : juce::String()) + label;
         screen->colour = state::colourOf (preset);
@@ -303,8 +307,9 @@ public:
             const auto scene = nthOfType (preset, IDs::Scene, s);
             auto* t = sceneTiles.add (new Tile (proc, Tile::Look::footswitch));
             t->title = scene[IDs::name].toString();
-            t->badge = juce::String (s + 1);
-            t->subtitle = loadFirst ? label + " > " + p->sceneWord + " " + juce::String (s + 1) : p->sceneWord + " " + juce::String (s + 1) + " - current";
+            const auto sl = modellers::sceneLabel (*p, s);
+            t->badge = sl;
+            t->subtitle = loadFirst ? label + " > " + p->sceneWord + " " + sl : p->sceneWord + " " + sl + " - current";
             t->colour = state::colourOf (scene);
             t->setTooltip ("Drag onto the timeline to switch to this " + p->sceneWord.toLowerCase() + ". Double-click to rename, right-click for colour.");
             t->makeCue = [this, sel, s] { return sceneCue (sel, s); };
@@ -320,7 +325,10 @@ public:
             const auto& control = p->switches[(size_t) s];
             auto* t = switchTiles.add (new Tile (proc, Tile::Look::stomp));
             t->title = node[IDs::name].toString();
-            t->subtitle = p->switchesOnOff ? "CC#" + juce::String (control.cc) + (switchOn ? "  ON" : "  OFF")
+            const auto unusualValues = control.value != 127 || control.offValue != 0;   // Darkglass amps: ON sends 0 or 1
+            t->subtitle = p->switchesOnOff ? "CC#" + juce::String (control.cc)
+                                               + (unusualValues ? " = " + juce::String (switchOn ? control.value : control.offValue) : juce::String())
+                                               + (switchOn ? "  ON" : "  OFF")
                                            : "CC#" + juce::String (control.cc) + (control.value != 127 ? " = " + juce::String (control.value) : juce::String());
             t->active = ! p->switchesOnOff || switchOn;
             t->setTooltip (p->switchesNote + " Double-click to rename.");
@@ -408,7 +416,8 @@ public:
             aboutButton.setBounds (row.removeFromRight (140));
             disclaimer.setBounds (row);
             // Narrow windows: the short form, so it's never cut off.
-            const auto full = "From the " + p->brand + " manual, not tested on hardware";
+            // Not beta (Nano Cortex): only that it isn't tested yet.
+            const auto full = p->beta ? "From the " + p->brand + " manual, not tested on hardware" : juce::String ("Not tested on hardware");
             const juce::String shortForm ("Not tested on hardware");
             const auto room = (float) row.getWidth() - 8.0f;
             disclaimer.setText (juce::GlyphArrangement::getStringWidth (disclaimer.getFont(), full) < room ? full
@@ -419,7 +428,7 @@ public:
         }
         r.removeFromTop (10);
 
-        const auto view = juce::jlimit (0, 2, (int) state[IDs::mdView]);
+        const auto view = viewFor (*p);
         if (view == 2)
         {
             pedals.setBounds (r);
@@ -473,6 +482,13 @@ public:
 private:
     const modellers::Profile* profile() const { return modellers::find (state[IDs::modellerProfile].toString()); }
     int channel() const { return (int) state[IDs::qcChannel]; }
+
+    // The saved view, or Scenes & Switches when the unit has no looper / pedals for it.
+    int viewFor (const modellers::Profile& p) const
+    {
+        const auto view = juce::jlimit (0, 2, (int) state[IDs::mdView]);
+        return (view == 1 && p.looper.empty()) || (view == 2 && p.pedals.empty()) ? 0 : view;
+    }
 
     juce::ValueTree data() const
     {

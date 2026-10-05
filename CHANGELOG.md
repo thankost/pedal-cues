@@ -2,6 +2,14 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.8.6 (2026-10-05)
+
+- **Neural DSP Nano Cortex (new):** pick it under Neural DSP in the device list. Your 64 presets, the slots (gate, capture, cab/IR, FX 1-5) on or off, tuner, tap and expression moves. The Nano has no MIDI Out, so the wiring guide shows a second pedal on its own output.
+- **Darkglass Anagram (new, beta):** presets 01A-42C, scenes A-C, footswitches A-C, tuner, Preset / Stomp / Scene mode, the looper, and moves on the expression pedal and knob bindings. From Darkglass's KosmOS 1.17 manual; if 01A doesn't load or the scenes don't switch on your Anagram, please tell us.
+- **Darkglass Microtubes Infinity template (new, beta):** distortion modes, cab sim and control tiles, and expression moves on Drive or any control. Darkglass doesn't publish its MIDI chart, so this one comes from a community chart (the card says so). Its MIDI jack is TRS Type B.
+- **Darkglass Infinity 500 Combo and Exponent 500 (new, beta):** pages for both amps: presets 1-5, bypass and mute, the Combo's effects, drive modes and IR slots, the Exponent's footswitches, and expression moves on every control (drive, EQ, Quick-Pots, master volume...). From their manuals' default MIDI mapping.
+- Clips for units that use CC#0 as a control (the Darkglass amps, the Infinity's compression) no longer get a spare CC#0 added for Ableton.
+
 ## 0.8.5 (2026-10-04)
 
 - **Wave... in Draw (new):** generate a sine, triangle, square or saw instead of drawing by hand, like Reaper's CC LFO. Set how many waves, the phase, the shape, the range (low / high), and let it **grow** (build up or die away) or **speed up / slow down** across the move. The wave lands in the drawing pad, so you can still fix it by hand or save it in My drawings. On the Whammy treadle and every expression pedal (Quad Cortex, Kemper, Fractal, Line 6, HeadRush, custom devices). Thanks for the idea!

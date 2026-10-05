@@ -1,4 +1,6 @@
 #include "State.h"
+
+#include <algorithm>
 #include "CueModel.h"
 #include "Modellers.h"
 
@@ -103,6 +105,22 @@ static juce::ValueTree customTile (const juce::String& name, const juce::String&
     t.setProperty (IDs::note, note, nullptr);
     t.setProperty (IDs::colour, paletteColour (colour).toString(), nullptr);
     return t;
+}
+
+bool usesCc0AsControl (const juce::ValueTree& unit)
+{
+    if ((bool) unit[IDs::padRepeat])
+        return true;
+    for (auto group : unit)
+        for (auto tile : group)
+        {
+            const auto steps = cues::custom::parse (tile[IDs::messages].toString(), (int) unit[IDs::programBase]).steps;
+            for (size_t i = 0; i < steps.size(); ++i)
+                if (steps[i].kind == cues::custom::Step::Kind::controller && steps[i].number == 0
+                    && std::none_of (steps.begin() + (long) i, steps.end(), [] (const auto& st) { return st.kind == cues::custom::Step::Kind::program; }))
+                    return true;
+        }
+    return false;
 }
 
 juce::ValueTree createCustomUnit (const juce::String& name)

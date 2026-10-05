@@ -16,14 +16,15 @@ static constexpr int ticksPerQuarter = 960;
 juce::MidiMessage lengthPadding (const Cue& cue)
 {
     const auto& last = cue.events.back().second;
+    const auto spareBank = cue.cc0IsControl ? 32 : 0;   // bank select MSB, or LSB where CC#0 is a control
     if (cue.toggles)
-        return juce::MidiMessage::controllerEvent (last.getChannel(), 0, 0);
+        return juce::MidiMessage::controllerEvent (last.getChannel(), spareBank, 0);
     if (! last.isProgramChange())
         return last;
     for (auto it = cue.events.rbegin(); it != cue.events.rend(); ++it)
         if (it->second.isController())
             return it->second;
-    return juce::MidiMessage::controllerEvent (last.getChannel(), 0, 0);
+    return juce::MidiMessage::controllerEvent (last.getChannel(), spareBank, 0);
 }
 
 juce::File writeMidiFile (const Cue& cue, double bpm)

@@ -33,6 +33,8 @@ struct Template
     juce::String notes;       // About this unit (read-only, always from the app): manual, what to set on the unit, connection facts
     int programBase = 0;      // how the unit numbers Program Changes (Boss: PC#1-128); the tiles' "PC n" use it
     int expCc = 11;           // the CC its Expression view starts on
+    juce::String source;      // where the numbers come from, if not the manufacturer's manual (the device card's amber line)
+    bool cc0IsControl = false;// CC#0 is a control, not bank select (IDs::padRepeat)
     std::vector<GroupDef> groups;
 };
 

@@ -615,6 +615,9 @@ int main (int argc, char** argv)
             state::addCustomUnit (root, templates::createUnit (*templates::find ("boss.gt-1000")));
             editor.refreshNow();
             save (snapshot (editor), outDir.getChildFile ("template-boss-gt-1000.png"));
+            state::addCustomUnit (root, templates::createUnit (*templates::find ("darkglass.microtubes-infinity")));
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("template-microtubes-infinity.png"));
         }
 
         // Fractal / Line 6 pages with demo presets.
@@ -680,6 +683,20 @@ int main (int argc, char** argv)
             fill ("headrush.pedalboard", { { "Clean", -1, 0, 4, {} }, { "Rhythm", -1, 1, 1, {} }, { "Lead", -1, 2, 0, {} } });
             editor.refreshNow();
             save (snapshot (editor), outDir.getChildFile ("headrush-pedalboard.png"));
+            fill ("neural.nano-cortex", { { "Clean", -1, 0, 4, {} }, { "Crunch", -1, 1, 1, {} }, { "Lead", -1, 2, 0, {} }, { "Ambient", -1, 3, 6, {} } });
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("nano-cortex.png"));
+            fill ("darkglass.anagram", { { "Verse Clean", -1, 0, 4, { "Verse", "Chorus", "Bridge" } }, { "Fuzz Bass", -1, 1, 1, {} },
+                                         { "Octave Lead", -1, 3, 0, {} } });
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("anagram.png"));
+            fill ("darkglass.infinity-500-combo", { { "Clean", -1, 0, 4, {} }, { "Growl", -1, 1, 1, {} }, { "Fuzz", -1, 2, 0, {} },
+                                                    { "Slap", -1, 3, 6, {} }, { "Solo", -1, 4, 2, {} } });
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("infinity-500.png"));
+            fill ("darkglass.exponent-500", { { "Clean", -1, 0, 4, {} }, { "Drive", -1, 1, 1, {} }, { "Lead", -1, 2, 0, {} } });
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("exponent-500.png"));
             proc.state.setProperty (IDs::ampUnit, 0, nullptr);
             editor.refreshNow();
         }

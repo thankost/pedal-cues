@@ -22,23 +22,32 @@ enum class Scheme
     ax8,        // 64 banks of 8, shown 01:1-64:8, CC#0 = index / 128, PC = index % 128
     fx8,        // 16 banks A-P of 8, shown A1-P8, Program Change only
     headrush,   // Core, Prime, Flex Prime: each rig's MIDI PROG, shown 1-128 = PC 0-127; no bank select, no setlists
-    headrushOld // Pedalboard, Gigboard, MX5: MIDI Prog shown 0-127 = PC 0-127
+    headrushOld,// Pedalboard, Gigboard, MX5: MIDI Prog shown 0-127 = PC 0-127
+    nano,       // Neural DSP Nano Cortex: 64 presets, PC 0-63, no banks or setlists
+    darkglassAmp// Darkglass Infinity 500 Combo / Exponent 500: presets 1-5 = PC 2-6 (pcOffset 2)
 };
 
 struct Action { juce::String name, messages, note; int colour = 5; };   // messages in cues::custom syntax
-struct Control { juce::String name; int cc = 0; int value = 127; };   // value: what a press sends (Line 6)
+struct Control { juce::String name; int cc = 0; int value = 127; int offValue = 0; };   // value: what a press / ON sends; offValue: OFF
 
 struct Profile
 {
     juce::String id, brand, model, shortName, aliases;
     juce::Colour colour;
     juce::String manual;                    // "Helix Owner's Manual, firmware 3.80"
+    bool beta = true;                       // "beta" in the device list and "From the <brand> manual" on the page (Nano Cortex: no, just "Not tested on hardware")
+    bool cc0IsControl = false;              // CC#0 is a control (Darkglass amps): clips are padded with CC#32 = 0, not CC#0
+    juce::String looperTitle { "Looper" };  // the second view: "Looper", or "IR slots" on the Infinity 500 Combo
+    juce::String testMessage;               // MIDI Setup's Test when there's no tuner over MIDI (custom syntax), e.g. "PC 2"
     Scheme scheme = Scheme::helix;
 
     juce::String sceneWord;                 // "Snapshot" / "Scene"
     int sceneCount = 8, sceneCc = 69;
     bool sceneBuffered = false;             // Line 6: a snapshot sent during a preset load waits for it (same tick is fine)
     bool scenePerCc = false;                // HeadRush: scene N is its own CC (sceneCc + N, any value), not a value of sceneCc
+    int sceneValueBase = 0;                 // Anagram: scene A = CC#107 value 1 (it ignores 0)
+    bool sceneLetters = false;              // Anagram: scenes are A, B, C (others 1, 2, 3...)
+    int pcOffset = 0;                       // Anagram: preset 01A = Program Change 1 (it ignores 0)
     juce::String sceneNote;
 
     juce::String switchesTitle;             // "Footswitches" / "Blocks"
@@ -53,6 +62,7 @@ struct Profile
     juce::String tunerOn, tunerOff;         // MIDI Setup's Test button (custom message syntax)
     juce::String channelHint;               // MIDI Setup: where the channel is set on the unit
     bool hasDin = true;                     // a MIDI In jack (POD Go: USB only)
+    bool hasThru = true;                    // a MIDI Out / Thru to pass MIDI on (Nano Cortex: none)
     juce::String midiIn { "5-pin MIDI In" };  // Flex Prime, MX5: "TRS MIDI In"
     bool usbMidi = true;                    // MIDI over USB from a computer (HeadRush: not in the manuals)
     int usbToThru = 0;                      // 0 never, 1 yes, 2 only with a setting (usbThruSetting)
@@ -73,6 +83,7 @@ int slotsPerBank (const Profile&);
 juce::String presetLabel (const Profile&, int setlist, int index);    // "01A", "33A", "A000", "17:1", "A1", "Prog 12"
 juce::String slotTitle (const Profile&);                              // the Edit preset field: "Preset", "MIDI PROG"
 juce::String sceneCcs (const Profile&);                               // "CC#69", "CC#21-30"
+juce::String sceneLabel (const Profile&, int sceneIndex);             // "1", or "A" on the Anagram
 juce::String setlistLabel (const Profile&, int setlist);              // "USER 1", "" when none
 int defaultSetlist (const Profile&);
 

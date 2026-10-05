@@ -13,7 +13,7 @@ const std::vector<TourStep>& tourSteps()
           "your timeline. This one-minute tour shows you around. Use the arrow keys or the buttons below.", false, false, true },
         { 0, { "hdr.tabs" }, "Choose your device",
           "First, pick what you play through: click the arrow on the first tab and choose your device. Quad Cortex (or Mini), "
-          "Kemper Profiler or Player, a Fractal, Line 6 or HeadRush unit (ready-made from their manuals, beta), or any other MIDI device: "
+          "Kemper Profiler or Player, a Nano Cortex, a Fractal, Line 6, HeadRush or Darkglass unit (ready-made from their manuals, beta), or any other MIDI device: "
           "start from a template (Axe-Fx III, Boss GT-1000...) or make your own tiles. Type in the list to search. The tab, its page and "
           "the MIDI it sends follow your choice (it's also in MIDI Setup). The next steps show the Quad Cortex page; the other pages work "
           "the same way.", false, false, true },

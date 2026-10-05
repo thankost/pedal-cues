@@ -1,6 +1,6 @@
 # PedalCues
 
-Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex / QC Mini**, the **Kemper Profiler / Kemper Player**, **Fractal Audio** (Axe-Fx, FM, AX8, FX8, VP4), **Line 6** (Helix, HX, POD Go, Helix Stadium) and **HeadRush** (Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5) units (beta) and the **DigiTech Whammy V / Whammy DT**, plus **any other MIDI device** with tiles you make yourself (beta).
+Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex / QC Mini**, the **Kemper Profiler / Kemper Player**, **Fractal Audio** (Axe-Fx, FM, AX8, FX8, VP4), **Line 6** (Helix, HX, POD Go, Helix Stadium), **HeadRush** (Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5) and **Darkglass** (Anagram, Infinity 500 Combo, Exponent 500, Microtubes Infinity) units (beta), the **Neural DSP Nano Cortex** and the **DigiTech Whammy V / Whammy DT**, plus **any other MIDI device** with tiles you make yourself (beta).
 A VST3 / AU / LV2 / Standalone plugin (JUCE) for Windows, macOS and Linux. Tested in Reaper; it should work in any DAW that accepts dragged MIDI files and can send a MIDI track to a hardware output (Ableton Live, Cubase, Bitwig, Studio One; in Logic the clips work on an External MIDI track).
 
 **[Download for Windows, macOS and Linux](https://thankost.github.io/pedal-cues/)**
@@ -43,13 +43,14 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - **Pedal moves** on Wah (`CC#1`), Pitch (`CC#4`), Volume (`CC#7`) or Morph (`CC#11`): the same shapes, Set to tiles and Draw as QC expression
 - Built from Kemper's MIDI documentation; not tested on a real Kemper yet
 
-**Fractal Audio, Line 6 and HeadRush (beta)**, built from the manuals, not tested on hardware yet (pick them from the searchable device list, the ▾ on the first tab):
+**Fractal Audio, Line 6, HeadRush and Darkglass (beta), and the Nano Cortex**, built from the manuals, not tested on hardware yet (pick them from the searchable device list, the ▾ on the first tab):
 - **Pages like the Quad Cortex** for units with defined MIDI numbers: Helix Floor / LT / Rack, HX Stomp, HX Stomp XL, HX Effects, POD Go, Helix Stadium (Line 6) and Axe-Fx II / XL / XL+, AX8, FX8 (Fractal factory defaults). Presets with setlists or banks as the unit shows them, scenes / snapshots named per preset (load the preset first, or not), footswitches or blocks, utilities, looper and expression moves
 - **Templates** for the Axe-Fx III, FM9, FM3 and VP4, which have no default MIDI CCs: preset tiles plus scene, tuner and looper tiles with suggested numbers to set on the unit (see *Any MIDI device* below)
 - **HeadRush pages**: Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5. Presets by each rig's MIDI PROG number, scenes (Core 10, Prime 8, Flex Prime 6, CC#21 and up), block toggles (CC#75 and up), tuner, tap, rig and footswitch modes, looper and expression. HeadRush documents MIDI cables only (no MIDI over USB from a computer)
+- **Darkglass Anagram page**: presets 01A-42C, scenes A-C, footswitches A-C, tuner, modes, looper, expression and knob moves. **Neural DSP Nano Cortex page**: 64 presets, slot bypass (gate, capture, cab, FX 1-5), tuner, tap and expression (no MIDI Out, so no daisy chain) **Darkglass Infinity 500 Combo / Exponent 500 pages**: presets 1-5, bypass and mute, effects or footswitches, drive modes and IR slots (Combo), expression moves on every control
 
 **Any MIDI device (beta)**: anything that takes MIDI, including units where you set up the MIDI mapping yourself
-- **Templates** for units with their own MIDI mapping: Axe-Fx III, FM9, FM3, VP4 and **Boss GT-1000 / GT-1000CORE**. Ready-made tiles from the manual plus what to set on the unit; adjust them to your numbers
+- **Templates** for units with their own MIDI mapping: Axe-Fx III, FM9, FM3, VP4, **Boss GT-1000 / GT-1000CORE** and **Darkglass Microtubes Infinity** (from a community chart; TRS Type B MIDI). Ready-made tiles from the manual plus what to set on the unit; adjust them to your numbers
 - **Your own device** for anything else (another Boss, a synth, a looper...), from its MIDI chart
 - Groups and tiles you name yourself; each tile is one or more standard messages (Program Change, Control Change, bank select), set up in a guided editor with ready-made starting points and a Test button
 - Programs counted from 0 or 1, as the device's manual does; notes on the device and on each tile
@@ -69,10 +70,10 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
   optional return to heel afterwards
 
 **Workflow**
-- **Search every list:** presets on the Quad Cortex, Fractal, Line 6 and HeadRush pages, Kemper performances, custom device tiles and the device list. Forgiving: letters in order (`drpc` finds *Drop C Heavy*), one typo, or a location like `SL2` / `3B`
+- **Search every list:** presets on the Quad Cortex, Fractal, Line 6, HeadRush, Darkglass and Nano Cortex pages, Kemper performances, custom device tiles and the device list. Forgiving: letters in order (`drpc` finds *Drop C Heavy*), one typo, or a location like `SL2` / `3B`
 - Update notice: the header shows your version and whether a newer release is out (one GitHub request when it opens; turn it off in the ☰ menu)
 - Everything is stored in your DAW project. **☰ > Save as default setup** makes new instances start with your names, colours, MIDI settings and playing preferences
-- **☰ > Export / Import setup** as a file (back it up, move to another computer, share it with the band): your presets, scenes and names for every unit (Quad Cortex, Kemper, Fractal / Line 6 / HeadRush pages, custom MIDI devices), MIDI settings, playing preferences, your wiring choice and My drawings
+- **☰ > Export / Import setup** as a file (back it up, move to another computer, share it with the band): your presets, scenes and names for every unit (Quad Cortex, Kemper, Fractal / Line 6 / HeadRush / Darkglass / Nano Cortex pages, custom MIDI devices), MIDI settings, playing preferences, your wiring choice and My drawings
 - MIDI passes through, so the dropped items and the live preview share one track and one route
 
 Preset and scene names are entered in the plugin (double-click to rename, right-click for colour/reorder), or read from the Quad Cortex with **Sync from QC (USB)**.
@@ -122,7 +123,7 @@ cmake --build build --target PedalCuesTests
 
 ## DAW setup (Reaper as the example)
 
-1. Connect your devices one of three ways. **Help > Wiring Guide** in the app shows each, named after your unit. "Your unit" is the Quad Cortex, Kemper, Fractal, Line 6, HeadRush or custom device on the first tab; the second device, if you have one, is for example a Whammy:
+1. Connect your devices one of three ways. **Help > Wiring Guide** in the app shows each, named after your unit. "Your unit" is the Quad Cortex, Kemper, Fractal, Line 6, HeadRush, Darkglass, Nano Cortex or custom device on the first tab; the second device, if you have one, is for example a Whammy:
    - **One device:** your unit on USB, or a MIDI cable from your interface's MIDI Out to its MIDI In. One cue track.
    - **Daisy chain:** interface **MIDI Out → your unit's MIDI In**, its **MIDI Thru → the second device's MIDI In** (MIDI Thru on). Both cue tracks output to that interface MIDI Out.
    - **Separate outputs:** your unit on **USB or MIDI Out 1**, the second device on **MIDI Out 2**. Each cue track outputs to its device's port.
@@ -151,8 +152,8 @@ Source/PluginProcessor.* MIDI passthrough, preview scheduling, host tempo, state
 Source/Theme.*           colour palette + custom LookAndFeel
 Source/PluginEditor.*    window, header tabs, first-run tour host
 Source/QcPage.cpp        Quad Cortex page (+ QcExpression.cpp)    Source/KemperPage.cpp  Kemper page
-Source/Modellers.*       Fractal / Line 6 / HeadRush profiles (from the manuals)    Source/ModellerPage.cpp  their pages
-Source/DeviceTemplates.* templates: Axe-Fx III / FM9 / FM3 / VP4, Boss GT-1000    Source/CustomPage.cpp  custom MIDI devices + tile editor
+Source/Modellers.*       Fractal / Line 6 / HeadRush / Darkglass / Nano Cortex profiles (from the manuals)    Source/ModellerPage.cpp  their pages
+Source/DeviceTemplates.* templates: Axe-Fx III / FM9 / FM3 / VP4, Boss GT-1000, Microtubes Infinity    Source/CustomPage.cpp  custom MIDI devices + tile editor
 Source/UnitPicker.cpp    searchable device list    Source/Fuzzy.h  fuzzy search    Source/MovesPanel.*  expression / treadle moves
 Source/QcUsb.*, QcSyncDialog.cpp  Sync from QC (USB, read-only)
 Source/WhammyPage.cpp    Whammy V / DT page
@@ -179,4 +180,4 @@ PedalCues is free. If it helps your show and you'd like to say thanks, you can d
 
 Free and open source under the [MIT License](LICENSE). Copyright (c) 2026 **Thanasis Kostopoulos**. [github.com/thankost/pedal-cues](https://github.com/thankost/pedal-cues)
 
-Built with [JUCE](https://juce.com), which is licensed separately (AGPLv3 / JUCE licence), and [hidapi](https://github.com/libusb/hidapi) (BSD licence option). The USB sync follows the protocol documented by [pyquadcortex](https://github.com/stokes-audio/pyquadcortex) (MIT). All product and company names (Neural DSP, Quad Cortex, Kemper, Fractal Audio, Axe-Fx, Line 6, Helix, POD, HeadRush, Boss, DigiTech, Whammy and others) are trademarks of their respective owners. This project is not affiliated with any of them.
+Built with [JUCE](https://juce.com), which is licensed separately (AGPLv3 / JUCE licence), and [hidapi](https://github.com/libusb/hidapi) (BSD licence option). The USB sync follows the protocol documented by [pyquadcortex](https://github.com/stokes-audio/pyquadcortex) (MIT). All product and company names (Neural DSP, Quad Cortex, Kemper, Fractal Audio, Axe-Fx, Line 6, Helix, POD, HeadRush, Boss, Darkglass, DigiTech, Whammy and others) are trademarks of their respective owners. This project is not affiliated with any of them.

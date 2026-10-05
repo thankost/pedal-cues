@@ -54,6 +54,7 @@ namespace IDs
     PEDALCUES_ID (mdDraw)
     PEDALCUES_ID (mdDrawing)
     PEDALCUES_ID (mdDrawingName)
+    PEDALCUES_ID (padRepeat)       // a custom device that uses CC#0 as a control: pad its clips by repeating (lengthPadding)
     PEDALCUES_ID (expCc)           // a custom device's expression pedal CC (11 = the MIDI standard Expression controller)
     PEDALCUES_ID (cuExpressionView) // custom device page: tiles (false) or expression moves (true)
     PEDALCUES_ID (cuBeats)
@@ -129,6 +130,9 @@ namespace state
     juce::ValueTree modeller (juce::ValueTree& root, const juce::String& profileId);   // its data, created on first use
     juce::ValueTree createModPreset (const juce::String& profileId, const juce::String& name, int setlist, int index, juce::Colour);
     juce::ValueTree createCustomUnit (const juce::String& name);
+    // True when the device uses CC#0 as a control (a CC#0 with no Program Change after it, or IDs::padRepeat from a
+    // template, e.g. the Microtubes Infinity's Compression): its clips are then never padded with CC#0 = 0 for Ableton.
+    bool usesCc0AsControl (const juce::ValueTree& unit);
     juce::ValueTree customUnit (const juce::ValueTree& root);   // the selected custom unit (invalid if there's none)
     juce::ValueTree addCustomUnit (juce::ValueTree& root, juce::ValueTree unit);   // makes its name unique, selects it
     bool saveUnit (const juce::ValueTree& unit, const juce::File&);   // Export unit: the unit with its notes

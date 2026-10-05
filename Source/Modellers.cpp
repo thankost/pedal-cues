@@ -13,6 +13,8 @@ namespace
 const juce::Colour line6Colour   { 0xffd9534f };
 const juce::Colour fractalColour { 0xff4e9bd8 };
 const juce::Colour headrushColour { 0xfff28c28 };
+const juce::Colour darkglassColour { 0xff9aa5b1 };
+const juce::Colour neuralColour { 0xff3fa9f5 };
 
 juce::String n (int v) { return juce::String (v); }
 
@@ -315,6 +317,135 @@ const std::vector<Profile>& all()
             v.push_back (p);
         }
 
+        // Neural DSP Nano Cortex (User Manual 2.2.0, Incoming MIDI CC List)
+        {
+            Profile p;
+            p.id = "neural.nano-cortex"; p.brand = "Neural DSP"; p.model = "Nano Cortex"; p.shortName = "Nano Cortex";
+            p.aliases = "neural dsp nano cortex nanocortex"; p.colour = neuralColour; p.manual = "Nano Cortex User Manual 2.2.0";
+            p.beta = false;   // same maker and MIDI conventions as the Quad Cortex, like the QC Mini
+            p.scheme = Scheme::nano;
+            p.sceneWord = "Scene"; p.sceneCount = 0;
+            p.switchesTitle = "Slots"; p.switchesOnOff = true;
+            p.switches = { { "Input Gate", 34, 127 }, { "Capture", 35, 127 }, { "Cab / IR", 36, 127 }, { "FX 1", 37, 127 }, { "FX 2", 38, 127 },
+                           { "FX 3", 39, 127 }, { "FX 4", 40, 127 }, { "FX 5", 41, 127 } };
+            p.switchesNote = "Turns the slot on or off in the loaded preset (0-63 = off, 64-127 = on).";
+            p.utilities = { { "Tuner on", "CC 43=127", {}, 5 }, { "Tuner off", "CC 43=0", {}, 9 }, { "Tap", "CC 42=127", oneTap, 1 } };
+            p.pedals = { { "Expression", 1 } };
+            p.pedalNote = "Moves what the preset assigns to the expression pedal (CC#1), like a real pedal. Handy on the Nano: its EXP/MIDI "
+                          "jack is either a pedal or MIDI, so with MIDI on it there's no room for a real pedal.";
+            p.tunerOn = "CC 43=127"; p.tunerOff = "CC 43=0";
+            p.channelHint = "Must match the Nano: Cortex Cloud app > Settings > MIDI CHANNEL. For TRS MIDI, set EXP/MIDI INPUT MODE to MIDI.";
+            p.midiIn = "TRS MIDI In (EXP/MIDI jack)";
+            p.hasThru = false;
+            p.usbToThru = 0;
+            p.notes = "Presets: the 64 slots under ALL PRESETS are Program Change 0-63 (the app's PC/CC button shows the numbers). No banks, "
+                      "setlists or scenes over MIDI.\n\nSlots: Input Gate, Capture, Cab/IR and FX 1-5 on or off (CC#34-41). Utilities: tuner "
+                      "(CC#43) and tap (CC#42). Expression: CC#1.\n\nConnection: USB-C MIDI, or TRS MIDI Type A into the EXP/MIDI jack (set "
+                      "EXP/MIDI INPUT MODE to MIDI in the app). The Nano has no MIDI Out, so it can't pass MIDI on to another pedal: give a "
+                      "second pedal its own output. Its MIDI THRU setting only forwards TRS MIDI to USB.";
+            v.push_back (p);
+        }
+
+        // Darkglass Anagram (Anagram Manual, KosmOS 1.17, MIDI Support)
+        {
+            Profile p;
+            p.id = "darkglass.anagram"; p.brand = "Darkglass"; p.model = "Anagram"; p.shortName = "Anagram";
+            p.aliases = "darkglass anagram kosmos bass guitar essentials"; p.colour = darkglassColour;
+            p.manual = "Anagram Manual, KosmOS 1.17";
+            p.scheme = Scheme::hxStomp;   // 42 banks x A-C, shown 01A-42C
+            p.pcOffset = 1;
+            p.sceneWord = "Scene"; p.sceneCount = 3; p.sceneCc = 107; p.sceneValueBase = 1; p.sceneLetters = true;
+            p.sceneNote = "Scene Select is CC#107. With Load preset first, the scene follows the preset 1/16 later.";
+            p.switchesTitle = "Footswitches (Stomp mode)"; p.switchesOnOff = true;
+            p.switches = { { "Foot A", 17, 127 }, { "Foot B", 18, 127 }, { "Foot C", 19, 127 } };
+            p.switchesNote = "The Stomp mode footswitch bindings (CC#17-19, the default numbers). With the Anagram's Toggle Logic setting on "
+                             "Value (the default), 0-63 = off and 64-127 = on; on Toggle, every clip flips it.";
+            p.utilities = { { "Tuner", "CC 86=127", "Enters or exits the tuner. " + toggle, 5 },
+                            { "Preset mode", "CC 85=1", {}, 8 }, { "Stomp mode", "CC 85=2", {}, 8 }, { "Scene mode", "CC 85=3", {}, 8 },
+                            { "Next preset", "CC 105=127", {}, 9 }, { "Previous preset", "CC 106=127", {}, 9 },
+                            { "Next scene", "CC 108=127", {}, 9 }, { "Previous scene", "CC 109=127", {}, 9 } };
+            p.looper = { { "Play/Stop", "CC 111=127", toggle, 3 }, { "Rec/Dub", "CC 112=127", toggle, 0 }, { "Undo", "CC 114=127", {}, 6 },
+                         { "Redo", "CC 115=127", {}, 6 }, { "Clear slot", "CC 113=127", {}, 9 }, { "Looper screen", "CC 110=127", toggle, 8 } };
+            p.pedals = { { "Expression", 89 }, { "Knob 1", 20 }, { "Knob 2", 21 }, { "Knob 3", 22 }, { "Knob 4", 23 }, { "Knob 5", 24 },
+                         { "Knob 6", 25 } };
+            p.pedalNote = "Moves what the preset binds to the expression pedal (CC#89) or to a knob binding (CC#20-25, the default numbers).";
+            p.tunerOn = "CC 86=127"; p.tunerOff = "CC 86=127";
+            p.channelHint = "Must match the Anagram: Device settings > MIDI > MIDI In Chan (Omni listens on every channel).";
+            p.midiIn = "TRS MIDI In";
+            p.usbToThru = 3;
+            p.notes = "Presets: 126, 01A-42C. Program Change 1 = 01A, 2 = 01B ... 126 = 42C: the Anagram ignores value 0, and its MIDI Style "
+                      "numbering (001-126) matches the Program Change. Not tested on a unit yet: if 01A doesn't load, tell us.\n\n"
+                      "Scenes: each preset holds three (A-C), selected with CC#107 = 1, 2, 3. The manual's table lists values 1-126 (01A-42C); "
+                      "PedalCues sends 1-3 for the open preset's scenes. Tell us if your Anagram needs something else.\n\n"
+                      "The footswitch, knob and expression CCs are the default binding numbers; if you changed them in Bindings > Edit CCs, "
+                      "use a custom MIDI device. \"Ignore Redundant PC\" decides whether reloading the open preset does anything.\n\n"
+                      "Connection: 3.5 mm TRS MIDI In and Out (Type A), and USB MIDI (turn USB MIDI on). MIDI Through passes incoming MIDI "
+                      "on to the ports you choose.";
+            v.push_back (p);
+        }
+
+        // Darkglass Infinity 500 Combo and Exponent 500 (their manuals' default MIDI mapping). "Per-value" switch type by
+        // default: a bypass is 0 = effect on, 1 = effect off; the FX loop is 0 = off, 1 = on. CC#0 is a control on both.
+        auto darkglassAmp = [] (const juce::String& id, const juce::String& model, const juce::String& aliases, const juce::String& manual)
+        {
+            Profile p;
+            p.id = id; p.brand = "Darkglass"; p.model = model; p.shortName = model; p.aliases = "darkglass " + aliases + " amp bass";
+            p.colour = darkglassColour; p.manual = manual; p.scheme = Scheme::darkglassAmp; p.pcOffset = 2;
+            p.sceneCount = 0; p.switchesOnOff = true; p.cc0IsControl = true;
+            p.utilities = { { "Bypass", "PC 0", "Bypasses the amp's processing (Program Change 0).", 9 },
+                            { "Mute", "PC 1", "Mutes the amp (Program Change 1).", 0 } };
+            p.testMessage = "PC 2";   // preset 1
+            p.channelHint = "It listens on every channel (Omni) out of the box; set a channel in the Darkglass Suite (Configuration).";
+            p.midiIn = "5-pin MIDI In"; p.hasThru = false; p.usbToThru = 0;
+            return p;
+        };
+        {
+            auto p = darkglassAmp ("darkglass.infinity-500-combo", "Infinity 500 Combo", "infinity 500 combo", "Infinity 500 Combo manual (MIDI mapping)");
+            p.switchesTitle = "Effects";
+            p.switches = { { "Noise gate", 1, 0, 1 }, { "Octaver", 3, 0, 1 }, { "Compressor", 6, 0, 1 }, { "Drive", 9, 0, 1 }, { "FX loop", 0, 1, 0 } };
+            p.switchesNote = "Default Per-value switch type: the effects send 0 = on, 1 = off (bypassed); the FX loop sends 1 = on, 0 = off.";
+            p.utilities.push_back ({ "Comp pre-drive", "CC 7=0", "Compressor position (CC#7): 0 = pre-drive, 1 = post-drive.", 7 });
+            p.utilities.push_back ({ "Comp post-drive", "CC 7=1", "Compressor position (CC#7): 0 = pre-drive, 1 = post-drive.", 7 });
+            p.utilities.push_back ({ "Leo Bass", "CC 10=0", "Drive mode (CC#10).", 0 });
+            p.utilities.push_back ({ "Vintage MT", "CC 10=1", "Drive mode (CC#10): Vintage Microtubes.", 1 });
+            p.utilities.push_back ({ "B3K", "CC 10=2", "Drive mode (CC#10): Microtubes B3K.", 2 });
+            p.utilities.push_back ({ "Alpha Omega", "CC 10=3", "Drive mode (CC#10).", 4 });
+            p.looperTitle = "IR slots";
+            p.looper.push_back ({ "IR bypass", "CC 22=0", "IR slot (CC#22): 0 = IR bypass, 1-7 = slots.", 9 });
+            for (int i = 1; i <= 7; ++i)
+                p.looper.push_back ({ "IR slot " + n (i), "CC 22=" + n (i), {}, 3 + i });
+            p.pedals = { { "Drive amount", 11 }, { "Drive tone", 12 }, { "Drive blend", 13 }, { "Drive level", 14 }, { "Comp amount", 8 },
+                         { "Octaver filter", 4 }, { "Octaver blend", 5 }, { "Gate threshold", 2 }, { "Tweeter", 15 },
+                         { "EQ low shelf", 16 }, { "EQ 250 Hz", 17 }, { "EQ 500 Hz", 18 }, { "EQ 1.5 kHz", 19 }, { "EQ 3 kHz", 20 },
+                         { "EQ slider 6", 21 }, { "Preset level", 23 } };
+            p.pedalNote = "Moves that control of the loaded preset (0-127), like turning the knob or slider.";
+            p.notes = "These are the default MIDI numbers from the manual. If you changed the mapping or the switch type in the Darkglass Suite "
+                      "(Configuration), use a custom MIDI device instead.\n\nPresets 1-5 = Program Change 2-6; Bypass = PC 0, Mute = PC 1.\n\n"
+                      "Effects use the default Per-value switch type: 0 = effect on, 1 = effect off (noise gate CC#1, octaver CC#3, compressor "
+                      "CC#6, drive CC#9); FX loop CC#0: 1 = on, 0 = off. Compressor position CC#7, drive mode CC#10 (Leo Bass, Vintage "
+                      "Microtubes, B3K, Alpha Omega), IR slot CC#22 (the IR slots view).\n\nUpdate to firmware 1.2 or higher before using MIDI "
+                      "with anything other than the Darkglass MIDI Footswitch.\n\nConnection: 5-pin MIDI In on the back panel (the 7-pin "
+                      "connector is only for the Darkglass MIDI Footswitch) or USB MIDI. No MIDI Out, so it can't pass MIDI on to another pedal.";
+            v.push_back (p);
+        }
+        {
+            auto p = darkglassAmp ("darkglass.exponent-500", "Exponent 500", "exponent 500 head", "Exponent 500 manual (MIDI configuration)");
+            p.switchesTitle = "Footswitches";
+            for (int i = 0; i < 5; ++i)
+                p.switches.push_back ({ "Footswitch " + n (i + 1), 106 + i, 1, 0 });
+            p.switchesNote = "Switches the effect bypasses bound to this Darkglass MIDI Footswitch button in the preset (CC#106-110, "
+                             "Per-value switch type: 1 and 0 are the two positions).";
+            p.pedals = { { "Quick-Pot A", 0 }, { "Quick-Pot B", 1 }, { "Quick-Pot C", 2 }, { "Quick-Pot D", 3 }, { "Quick-Pot E", 4 },
+                         { "Master volume", 5 } };
+            p.pedalNote = "Moves the Quick-Pot (what it controls is set per preset) or the master volume, like turning it.";
+            p.notes = "These are the default MIDI numbers from the manual. If you changed the mapping or the switch type in the Darkglass Suite, "
+                      "use a custom MIDI device instead.\n\nPresets 1-5 = Program Change 2-6; Bypass = PC 0, Mute = PC 1.\n\n"
+                      "Quick-Pots A-E = CC#0-4, master volume CC#5 (the Expression view). Footswitches 1-5 = CC#106-110: they switch the "
+                      "effect bypasses bound to each Darkglass MIDI Footswitch button in the preset.\n\nConnection: 5-pin MIDI In on the back "
+                      "panel (the 7-pin connector is only for the Darkglass MIDI Footswitch) or USB MIDI. No MIDI Out, so it can't pass MIDI on.";
+            v.push_back (p);
+        }
+
         // Fractal Audio (factory default CCs)
         {
             auto p = fractalBase ("fractal.axe-fx-2", "Axe-Fx II / XL / XL+", "Axe-Fx II", "axe fx axefx 2 ii xl plus",
@@ -393,7 +524,7 @@ juce::StringArray setlistNames (const Profile& p)
             return s;
         }
         case Scheme::hxStomp: case Scheme::hxFour: case Scheme::axeFx2: case Scheme::ax8: case Scheme::fx8:
-        case Scheme::headrush: case Scheme::headrushOld: break;
+        case Scheme::headrush: case Scheme::headrushOld: case Scheme::nano: case Scheme::darkglassAmp: break;
     }
     return {};
 }
@@ -404,6 +535,8 @@ int slotsPerBank (const Profile& p)
     {
         case Scheme::hxStomp: return 3;
         case Scheme::axeFx2: case Scheme::headrush: case Scheme::headrushOld: return 128;
+        case Scheme::nano:    return 64;
+        case Scheme::darkglassAmp: return 5;
         case Scheme::ax8: case Scheme::fx8: return 8;
         case Scheme::helix: case Scheme::podGo: case Scheme::stadium: case Scheme::hxFour: break;
     }
@@ -415,6 +548,8 @@ int presetsPerSetlist (const Profile& p, int)
     switch (p.scheme)
     {
         case Scheme::hxStomp: return 126;
+        case Scheme::nano:    return 64;
+        case Scheme::darkglassAmp: return 5;
         case Scheme::axeFx2:  return 768;
         case Scheme::ax8:     return 512;
         case Scheme::helix: case Scheme::podGo: case Scheme::stadium: case Scheme::hxFour: case Scheme::fx8:
@@ -428,6 +563,10 @@ juce::StringArray bankNames (const Profile& p, int setlist)
     juce::StringArray b;
     if (p.scheme == Scheme::headrush || p.scheme == Scheme::headrushOld)
         return { "MIDI PROG" };   // one list, no banks
+    if (p.scheme == Scheme::nano)
+        return { "ALL PRESETS" };
+    if (p.scheme == Scheme::darkglassAmp)
+        return { "PRESETS" };
     const auto banks = presetsPerSetlist (p, setlist) / slotsPerBank (p);
     const auto letters = p.scheme == Scheme::axeFx2 || p.scheme == Scheme::fx8;
     // Stadium's USER PRESETS groups continue the bank numbers: group 2 is 33A-64D.
@@ -442,7 +581,7 @@ juce::StringArray slotNames (const Profile& p)
     juce::StringArray s;
     const auto count = slotsPerBank (p);
     for (int i = 0; i < count; ++i)
-        s.add (p.scheme == Scheme::headrush ? n (i + 1) : p.scheme == Scheme::headrushOld ? n (i)
+        s.add ((p.scheme == Scheme::headrush || p.scheme == Scheme::darkglassAmp) ? n (i + 1) : (p.scheme == Scheme::headrushOld || p.scheme == Scheme::nano) ? n (i)
                : p.scheme == Scheme::axeFx2 ? juce::String (i).paddedLeft ('0', 3)
                : (p.scheme == Scheme::ax8 || p.scheme == Scheme::fx8) ? n (i + 1)
                : juce::String::charToString ((juce::juce_wchar) ('A' + i)));
@@ -453,6 +592,10 @@ juce::String presetLabel (const Profile& p, int setlist, int index)
 {
     if (p.scheme == Scheme::headrush || p.scheme == Scheme::headrushOld)
         return "Prog " + slotNames (p)[juce::jlimit (0, 127, index)];
+    if (p.scheme == Scheme::nano)
+        return "PC " + n (juce::jlimit (0, 63, index));
+    if (p.scheme == Scheme::darkglassAmp)
+        return "Preset " + n (juce::jlimit (0, 4, index) + 1);
     const auto per = slotsPerBank (p);
     const auto banks = bankNames (p, setlist);
     const auto bank = juce::jlimit (0, juce::jmax (0, banks.size() - 1), index / per);
@@ -461,7 +604,13 @@ juce::String presetLabel (const Profile& p, int setlist, int index)
 
 juce::String slotTitle (const Profile& p)
 {
-    return p.scheme == Scheme::headrush || p.scheme == Scheme::headrushOld ? "MIDI PROG (as set on the rig)" : "Preset";
+    return p.scheme == Scheme::headrush || p.scheme == Scheme::headrushOld ? "MIDI PROG (as set on the rig)"
+         : p.scheme == Scheme::nano ? "Program Change (PC/CC view in the app)" : "Preset";
+}
+
+juce::String sceneLabel (const Profile& p, int sceneIndex)
+{
+    return p.sceneLetters ? juce::String::charToString ((juce::juce_wchar) ('A' + juce::jlimit (0, 25, sceneIndex))) : n (sceneIndex + 1);
 }
 
 juce::String sceneCcs (const Profile& p)
@@ -475,7 +624,7 @@ static juce::MidiMessage sceneMessage (const Profile& p, int channel, int sceneI
 {
     const auto s = juce::jlimit (0, juce::jmax (0, p.sceneCount - 1), sceneIndex);
     return p.scenePerCc ? juce::MidiMessage::controllerEvent (juce::jlimit (1, 16, channel), p.sceneCc + s, 127)
-                        : juce::MidiMessage::controllerEvent (juce::jlimit (1, 16, channel), p.sceneCc, s);
+                        : juce::MidiMessage::controllerEvent (juce::jlimit (1, 16, channel), p.sceneCc, juce::jlimit (0, 127, s + p.sceneValueBase));
 }
 
 juce::String setlistLabel (const Profile& p, int setlist)
@@ -499,13 +648,14 @@ void addPresetLoad (cues::Cue& c, const Profile& p, int channel, int setlist, in
         c.add (beat, juce::MidiMessage::controllerEvent (ch, 32, juce::jlimit (0, 127, setlist)));
     if (p.scheme == Scheme::axeFx2 || p.scheme == Scheme::ax8)
         c.add (beat, juce::MidiMessage::controllerEvent (ch, 0, index / 128));
-    c.add (beat, juce::MidiMessage::programChange (ch, index % 128));
+    c.add (beat, juce::MidiMessage::programChange (ch, juce::jlimit (0, 127, index % 128 + p.pcOffset)));
 }
 
 cues::Cue preset (const Profile& p, int channel, int setlist, int index, bool sendSetlist, const juce::String& name)
 {
     cues::Cue c;
     c.name = p.shortName + " " + (name.isNotEmpty() ? name : presetLabel (p, setlist, index));
+    c.cc0IsControl = p.cc0IsControl;
     addPresetLoad (c, p, channel, setlist, index, sendSetlist, 0.0);
     return c;
 }
@@ -513,7 +663,7 @@ cues::Cue preset (const Profile& p, int channel, int setlist, int index, bool se
 cues::Cue scene (const Profile& p, int channel, int sceneIndex, const juce::String& name)
 {
     cues::Cue c;
-    c.name = p.shortName + " " + p.sceneWord + " " + n (sceneIndex + 1) + (name.isNotEmpty() ? " - " + name : juce::String());
+    c.name = p.shortName + " " + p.sceneWord + " " + sceneLabel (p, sceneIndex) + (name.isNotEmpty() ? " - " + name : juce::String());
     c.add (0.0, sceneMessage (p, channel, sceneIndex));
     return c;
 }
@@ -522,7 +672,7 @@ cues::Cue sceneAfterPreset (const Profile& p, int channel, int setlist, int inde
                             const juce::String& presetName, int sceneIndex, const juce::String& sceneName)
 {
     cues::Cue c;
-    c.name = p.shortName + " " + presetName + " > " + n (sceneIndex + 1) + (sceneName.isNotEmpty() ? " - " + sceneName : juce::String());
+    c.name = p.shortName + " " + presetName + " > " + sceneLabel (p, sceneIndex) + (sceneName.isNotEmpty() ? " - " + sceneName : juce::String());
     addPresetLoad (c, p, channel, setlist, index, sendSetlist, 0.0);
     c.add (p.sceneBuffered ? 0.0 : fractalGap, sceneMessage (p, channel, sceneIndex));
     return c;
@@ -534,8 +684,9 @@ cues::Cue switchCue (const Profile& p, int channel, int switchIndex, bool on, co
     cues::Cue c;
     const auto label = name.isNotEmpty() ? name : s.name;
     c.name = p.shortName + " " + label + (p.switchesOnOff ? (on ? " On" : " Off") : juce::String());
-    c.add (0.0, juce::MidiMessage::controllerEvent (channelOf (channel), s.cc, p.switchesOnOff ? (on ? 127 : 0) : s.value));
+    c.add (0.0, juce::MidiMessage::controllerEvent (channelOf (channel), s.cc, p.switchesOnOff ? (on ? s.value : s.offValue) : s.value));
     c.toggles = ! p.switchesOnOff;   // a press or a toggle
+    c.cc0IsControl = p.cc0IsControl;
     return c;
 }
 
@@ -555,6 +706,7 @@ cues::Cue action (const Profile& p, int channel, const Action& a)
     // Tuner, tap, next scene, looper...: most are presses or toggles, so never pad the clip with a second one.
     auto c = cues::custom::cue (channel, p.shortName + " " + a.name, a.messages, 0);
     c.toggles = true;
+    c.cc0IsControl = p.cc0IsControl;
     return c;
 }
 }

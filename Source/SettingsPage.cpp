@@ -186,6 +186,13 @@ public:
                             "Use Separate outputs instead: the " + d + " on USB, the second device on your interface's MIDI Out." };
             daisy.showFlow = false;
         }
+        else if (! amp.hasThru)
+        {
+            daisy.steps = { "The " + d + " has no MIDI Out, so it can't pass MIDI on to a second device: there's no daisy chain.",
+                            "Use Separate outputs instead: the " + d + " on USB (or its " + amp.midiIn + "), the second device on your "
+                            "interface's MIDI Out." };
+            daisy.showFlow = false;
+        }
 
         separate.viaInterface = true;
         separate.steps = { ! amp.usbMidi ? d + ": a MIDI cable from MIDI Out 1 to its MIDI In." + trsNote
@@ -256,6 +263,8 @@ public:
         juce::String warn;
         if (! amp.hasDin)
             warn = "The " + amp.box + " has no 5-pin MIDI: it can't pass MIDI on to a second device. Give the second device its own MIDI output.";
+        else if (! amp.hasThru)
+            warn = "The " + amp.box + " has no MIDI Out: it can't pass MIDI on to a second device. Give the second device its own MIDI output.";
         else if (! amp.usbMidi)
             warn = {};   // MIDI cables only (HeadRush): the steps say so, and its Thru passes on its MIDI In
         else if (amp.usbToThru == 2)
@@ -341,7 +350,7 @@ public:
         styleCaption (qcChannelLabel, "Quad Cortex channel");
         styleCaption (whChannelLabel, "Whammy channel");
         styleCaption (ampLabel, "Amp modeller or MIDI device");
-        ampBox.setTooltip ("Quad Cortex, Kemper, a Fractal, HeadRush or Line 6 unit, or your own MIDI device: the first tab and the channel below "
+        ampBox.setTooltip ("Quad Cortex, Nano Cortex, Kemper, a Fractal, Line 6, HeadRush or Darkglass unit, or your own MIDI device: the first tab and the channel below "
                            "follow it. Opens the same searchable list as the arrow on the first tab.");
         ampBox.onClick = [this] { showUnitPicker (state, ampBox, {}); };
         styleHint (qcHint, "Must match the QC: Settings > MIDI Settings > MIDI Channel (not Omni).");
@@ -421,6 +430,15 @@ public:
                 return;
             }
             const auto* model = ampInfo (state).isModeller() ? modellers::find (state[IDs::modellerProfile].toString()) : nullptr;
+            if (model != nullptr && model->tunerOn.isEmpty() && model->testMessage.isNotEmpty())
+            {
+                // No tuner over MIDI (Darkglass amps): load preset 1.
+                proc.preview (cues::custom::cue (ch, {}, model->testMessage, 0));
+                setTestStatus ("Sent " + model->testMessage + " (preset 1) to " + currentPortName() + " on channel " + juce::String (ch)
+                               + ". Did the " + ampShort() + " switch to preset 1? If not, check the cable direction and its channel ("
+                               + model->channelHint + ").");
+                return;
+            }
             if (model != nullptr && model->tunerOn.isEmpty() && ! model->utilities.empty())
             {
                 // No tuner over MIDI (older HeadRush units): one tap instead.
@@ -662,14 +680,15 @@ private:
     void setSetupMode (bool viaInterface)
     {
         const auto amp = ampInfo (state);
-        if (amp.hasDin)
+        if (amp.canChain())
             state::setFlag ("setupViaQcChain", ! viaInterface);
         else
-            viaInterface = true;   // USB only (POD Go): no daisy chain, and the saved choice stays for other units
-        viaQcButton.setEnabled (amp.hasDin);
-        viaQcButton.setTooltip (amp.hasDin ? "Interface MIDI Out > " + amp.box + " " + amp.midiIn + " > its MIDI Thru > the second device (e.g. a Whammy). "
-                                             "A MIDI Thru only passes on MIDI from the MIDI In jack, so this needs an interface MIDI Out."
-                                           : "The " + amp.box + " has no 5-pin MIDI, so it can't be in a daisy chain.");
+            viaInterface = true;   // USB only (POD Go) or no MIDI Out (Nano Cortex): no daisy chain; the saved choice stays for other units
+        viaQcButton.setEnabled (amp.canChain());
+        viaQcButton.setTooltip (amp.canChain() ? "Interface MIDI Out > " + amp.box + " " + amp.midiIn + " > its MIDI Thru > the second device (e.g. a Whammy). "
+                                                 "A MIDI Thru only passes on MIDI from the MIDI In jack, so this needs an interface MIDI Out."
+                                : ! amp.hasDin ? "The " + amp.box + " has no 5-pin MIDI, so it can't be in a daisy chain."
+                                               : "The " + amp.box + " has no MIDI Out, so it can't be in a daisy chain.");
         viaInterfaceButton.setTooltip ("Each device on its own output: the " + amp.box + (! amp.usbMidi ? juce::String (" on MIDI Out 1")
                                        : " over USB" + (amp.hasDin ? juce::String (" (or MIDI Out 1)") : juce::String()))
                                        + ", the second device (e.g. a Whammy) on a MIDI Out");

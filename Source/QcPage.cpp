@@ -564,6 +564,7 @@ AmpInfo ampInfo (const juce::ValueTree& state)
             a.name = a.box = a.shortName = p->shortName;
             a.colour = p->colour;
             a.hasDin = p->hasDin;
+            a.hasThru = p->hasThru;
             a.midiIn = p->midiIn;
             a.usbMidi = p->usbMidi;
             a.usbToThru = p->usbToThru;

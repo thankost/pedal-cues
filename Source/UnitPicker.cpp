@@ -45,8 +45,8 @@ public:
         addAndMakeVisible (newButton);
         addAndMakeVisible (importButton);
 
-        key.setText ("beta: built from the manual, not tested on hardware yet. template: for units whose MIDI you assign yourself, "
-                     "ready-made tiles to adjust. Any other device: + New MIDI device.", juce::dontSendNotification);
+        key.setText ("beta: built from the manual, not tested on hardware yet. template: ready-made tiles to adjust, for units whose "
+                     "MIDI you assign yourself or whose numbers aren't in the manual. Any other device: + New MIDI device.", juce::dontSendNotification);
         key.setFont (font (11.5f));
         key.setColour (juce::Label::textColourId, dim);
         key.setJustificationType (juce::Justification::topLeft);
@@ -79,7 +79,7 @@ public:
         buttons.removeFromLeft (8);
         importButton.setBounds (buttons);
         r.removeFromBottom (6);
-        key.setBounds (r.removeFromBottom (32));
+        key.setBounds (r.removeFromBottom (46));
         r.removeFromBottom (4);
         list.setBounds (r);
     }
@@ -102,23 +102,28 @@ private:
         const auto units = state.getChildWithName (IDs::CustomUnits);
         const auto selected = (int) state[IDs::selectedCustomUnit];
 
-        // Grouped by brand: Neural DSP, Kemper, Fractal Audio, Line 6, HeadRush, Boss, then your own devices. "beta" marks
+        // Grouped by brand: Neural DSP, Kemper, Fractal Audio, Line 6, HeadRush, Boss, Darkglass, then your own devices. "beta" marks
         // units built from the manuals and not tested on hardware; "template" the units whose MIDI you assign yourself.
         entries.push_back ({ Kind::header, "Neural DSP", {}, {} });
         entries.push_back ({ Kind::builtin, ampUnitName (0), {}, "neural dsp qc amp modeller", 0, {}, ampUnit == 0 });
         entries.push_back ({ Kind::builtin, ampUnitName (state::qcMiniAmpUnit), {}, "neural dsp qc mini amp modeller",
                              state::qcMiniAmpUnit, {}, ampUnit == state::qcMiniAmpUnit });
+        const auto currentModel = ampUnit == state::modellerAmpUnit ? state[IDs::modellerProfile].toString() : juce::String();
+        for (const auto& m : modellers::all())   // the Nano Cortex: a page of its own
+            if (m.brand == "Neural DSP")
+                entries.push_back ({ Kind::modeller, m.model, m.beta ? juce::String ("beta") : juce::String(), m.brand + " " + m.aliases, 0, m.id,
+                                     m.id == currentModel });
         entries.push_back ({ Kind::header, "Kemper", {}, {} });
         for (int u = 1; u < 3; ++u)
             entries.push_back ({ Kind::builtin, ampUnitName (u), {}, "kemper amp modeller", u, {}, ampUnit == u });
 
-        const auto currentModel = ampUnit == state::modellerAmpUnit ? state[IDs::modellerProfile].toString() : juce::String();
-        for (const auto* brand : { "Fractal Audio", "Line 6", "HeadRush", "Boss" })
+        for (const auto* brand : { "Fractal Audio", "Line 6", "HeadRush", "Boss", "Darkglass" })
         {
             entries.push_back ({ Kind::header, brand, {}, {} });
             for (const auto& m : modellers::all())
                 if (m.brand == brand)
-                    entries.push_back ({ Kind::modeller, m.model, "beta", m.brand + " " + m.aliases + " amp modeller", 0, m.id, m.id == currentModel });
+                    entries.push_back ({ Kind::modeller, m.model, m.beta ? juce::String ("beta") : juce::String(), m.brand + " " + m.aliases + " amp modeller",
+                                         0, m.id, m.id == currentModel });
             for (const auto& t : templates::all())
             {
                 if (t.brand != brand)

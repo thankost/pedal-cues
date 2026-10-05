@@ -13,6 +13,7 @@ namespace
 {
 const juce::Colour fractalColour { 0xff4e9bd8 };
 const juce::Colour bossColour { 0xffe8c547 };
+const juce::Colour darkglassColour { 0xff9aa5b1 };
 
 using Tiles = std::vector<TileDef>;
 
@@ -136,6 +137,46 @@ Template bossGt1000()
     };
     return t;
 }
+//==============================================================================
+// Darkglass Microtubes Infinity: Darkglass publishes no MIDI chart for it. These numbers come from the community chart in
+// Morningstar's openmidi database (data/brands/darkglass/microtubesinfinity.yaml); no Program Changes are documented.
+Template microtubesInfinity()
+{
+    Template t;
+    t.id = "darkglass.microtubes-infinity";
+    t.brand = "Darkglass";
+    t.model = "Microtubes Infinity";
+    t.aliases = "darkglass microtubes infinity mt inf bass";
+    t.colour = darkglassColour;
+    t.source = "a community MIDI chart (openmidi), not Darkglass's manual";
+    t.expCc = 1;          // Drive: the Expression view moves it
+    t.cc0IsControl = true;
+    const juce::String modeNote ("Distortion mode (CC#13): each mode has a range of values; this tile sends one from the middle.");
+    t.notes = "Why this is a template: Darkglass doesn't publish a MIDI chart for the Microtubes Infinity. Its manual only says it takes "
+              "MIDI on a 3.5 mm TRS jack and over USB. These numbers come from a community chart (Morningstar's openmidi database), not "
+              "from Darkglass. Not tested on hardware: check them on your pedal.\n\n"
+              "No Program Changes are documented, so there are no preset tiles. Add one with + Tile if your pedal loads its presets that way.\n\n"
+              "Controls (0-127): CC#0 Compression, 1 Drive, 2 Character, 3 Blend, 4 Level, 5 Headphone volume, 6-11 EQ sliders 1-6 (left "
+              "to right), 12 Compression ratio, 13 Distortion mode, 14 Active cab sim. The Expression view moves any of them: pick the CC "
+              "(it starts on Drive, CC#1).\n\n"
+              "Distortion mode (CC#13): 0-21 bypass distortion, 22-42 clean tube preamp, 43-63 Vintage Microtubes, 64-85 Microtubes B3K, "
+              "86-106 Vintage multi-band, 107-127 B3K multi-band.\n\n"
+              "Cab sim (CC#14): the chart doesn't say which values turn it on; the tiles assume 0 = off, 127 = on.\n\n"
+              "IMPORTANT, the MIDI cable: the Infinity's MIDI jack is TRS Type B, unlike Type A on most gear. Use a Type B cable or adapter, "
+              "or a controller that can switch to Type B. USB MIDI works too.\n\n"
+              "CC#0 is Compression here, not bank select, so PedalCues never sends a spare CC#0 in this device's clips.";
+    t.groups = {
+        { "Distortion", Tiles { { "Distortion off", "CC 13=10", modeNote, 9 }, { "Clean tube", "CC 13=32", modeNote, 4 },
+                                { "Vintage", "CC 13=53", modeNote, 1 }, { "B3K", "CC 13=75", modeNote, 0 },
+                                { "Vintage multi-band", "CC 13=96", modeNote, 6 }, { "B3K multi-band", "CC 13=117", modeNote, 2 } } },
+        { "Cab sim", Tiles { { "Cab sim on", "CC 14=127", "Assumed 0 = off, 127 = on (not in the chart).", 3 },
+                             { "Cab sim off", "CC 14=0", "Assumed 0 = off, 127 = on (not in the chart).", 9 } } },
+        { "Set a control", Tiles { { "Drive half", "CC 1=64", "Drive (CC#1) at half. Use the Expression view for moves.", 0 },
+                                   { "Blend full", "CC 3=127", "Blend (CC#3) fully wet.", 5 },
+                                   { "Blend half", "CC 3=64", "Blend (CC#3) at half.", 5 } } },
+    };
+    return t;
+}
 }
 
 //==============================================================================
@@ -153,6 +194,7 @@ const std::vector<Template>& all()
                        "cable from your interface's MIDI Out."),
         vp4(),
         bossGt1000(),
+        microtubesInfinity(),
     };
     return list;
 }
@@ -167,6 +209,8 @@ const Template* find (const juce::String& id)
 
 juce::String disclaimer (const Template& t)
 {
+    if (t.source.isNotEmpty())
+        return "From " + t.source + ". Not tested on hardware: check the numbers on your unit.";
     return "From the " + t.brand + " " + t.model + " manual. Not tested on hardware: check the numbers on your unit.";
 }
 
@@ -179,6 +223,7 @@ juce::ValueTree createUnit (const Template& t)
     unit.setProperty (IDs::colour, t.colour.toString(), nullptr);
     unit.setProperty (IDs::programBase, t.programBase, nullptr);
     unit.setProperty (IDs::expCc, t.expCc, nullptr);
+    unit.setProperty (IDs::padRepeat, t.cc0IsControl, nullptr);
     unit.setProperty (IDs::notes, juce::String(), nullptr);   // the manual's notes stay read-only (About this unit); these are the player's own
     const auto& palette = state::palette();
     for (const auto& g : t.groups)

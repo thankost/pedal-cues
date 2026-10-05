@@ -16,6 +16,7 @@ struct Cue
     double lengthBeats = 1.0;
     std::vector<std::pair<double, juce::MidiMessage>> events;
     bool toggles = false;   // a press or toggle (tap, a Line 6 footswitch, a HeadRush block): sending it twice would undo it
+    bool cc0IsControl = false;   // the unit uses CC#0 as a control (Darkglass amps, Infinity): pad with CC#32 = 0 instead
 
     void add (double beat, const juce::MidiMessage& m) { events.emplace_back (beat, m); }
 };

@@ -38,6 +38,8 @@ struct AmpInfo
     juce::Colour colour { theme::qcBlue };
     // Connection facts for the wiring guide.
     bool hasDin = true;                    // a MIDI In jack, 5-pin or TRS (POD Go: USB only)
+    bool hasThru = true;                   // a MIDI Out / Thru to pass MIDI on (Nano Cortex: none)
+    bool canChain() const { return hasDin && hasThru; }
     juce::String midiIn { "5-pin MIDI In" }; // QC Mini, Flex Prime, MX5: "TRS MIDI In"
     bool usbMidi = true;                   // MIDI over USB from the computer (HeadRush: not in its manuals)
     int usbToThru = 0;                     // 0 never (QC, Kemper), 1 yes, 2 only with a setting, 3 not documented
