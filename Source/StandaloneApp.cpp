@@ -60,7 +60,7 @@ public:
 
 private:
     enum ItemIds { checkUpdates = 1, autoCheck, tour, guide, github, support, about,
-                   saveDefault, loadDefault, exportSetup, importSetup, wiringGuide, whatsNew, reportProblem, midiNone = 100, midiFirst = 101 };
+                   saveDefault, loadDefault, exportSetup, importSetup, wiringGuide, connectRig, whatsNew, reportProblem, midiNone = 100, midiFirst = 101 };
 
     PedalCuesProcessor* processor() const
     {
@@ -98,6 +98,7 @@ private:
         {
             m.addItem (tour, "Quick Tour");
             m.addItem (guide, "User Guide");
+            m.addItem (connectRig, "How to Connect (Wiring and DAW Tracks)...");
             m.addItem (wiringGuide, "Wiring Guide");
             m.addItem (whatsNew, "What's New");
             m.addSeparator();
@@ -124,7 +125,7 @@ private:
                 p->setDirectMidiOutput (juce::isPositiveAndBelow (id - midiFirst, midiDevices.size())
                                             ? midiDevices[id - midiFirst].identifier : juce::String());
             if (e != nullptr)
-                e->refreshNow();   // MIDI Setup's Test output shows the same choice
+                e->refreshNow();   // How to connect's Test port shows the same choice
             return;
         }
 
@@ -142,6 +143,7 @@ private:
             case exportSetup:   if (e != nullptr) e->exportSetup(); break;
             case importSetup:   if (e != nullptr) e->importSetup(); break;
             case wiringGuide:   if (processor() != nullptr) ui::showWiringGuide (processor()->state); break;
+            case connectRig:    if (processor() != nullptr) ui::showConnectDialog (*processor()); break;
             case whatsNew:      juce::URL (ui::changelogUrl).launchInDefaultBrowser(); break;
             case reportProblem: ui::problemReportUrl().launchInDefaultBrowser(); break;
             default: break;

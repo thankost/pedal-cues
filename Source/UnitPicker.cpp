@@ -8,7 +8,7 @@ namespace ui
 {
 namespace
 {
-// The unit picker (the ▾ on the first tab, and "More devices..." in MIDI Setup): a searchable, scrolling list of the
+// The unit picker (the ▾ on the first tab, and the devices in How to connect): a searchable, scrolling list of the
 // built-in units, the Fractal and Line 6 templates, and the player's own MIDI devices.
 class UnitPicker final : public juce::Component, private juce::ListBoxModel
 {

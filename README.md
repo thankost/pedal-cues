@@ -1,6 +1,6 @@
 # PedalCues
 
-Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex, QC Mini and Nano Cortex**, the **Kemper Profiler / Kemper Player**, **Fractal Audio** (Axe-Fx, FM, AX8, FX8, VP4), **Line 6** (Helix, HX, POD Go, Helix Stadium), **HeadRush** (Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5), **Darkglass** (Anagram, Infinity 500 Combo, Exponent 500, Microtubes Infinity) and **Boss** (GT-1000) units (beta), and the **DigiTech Whammy V / Whammy DT**, plus **any other MIDI device** with tiles you make yourself (beta).
+Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex, QC Mini and Nano Cortex**, the **Kemper Profiler / Kemper Player**, **Fractal Audio** (Axe-Fx, FM, AX8, FX8, VP4), **Line 6** (Helix, HX, POD Go, Helix Stadium, DL4 MkII, HX One), **HeadRush** (Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5), **Darkglass** (Anagram, Infinity 500 Combo, Exponent 500, Microtubes Infinity) and **Boss** (GT-1000) units (beta), and the **DigiTech Whammy V / Whammy DT** & more amp modellers, effects and pedals, plus **any other MIDI device** with tiles you make yourself (beta).
 A VST3 / AU / LV2 / Standalone plugin (JUCE) for Windows, macOS and Linux. Tested in Reaper; it should work in any DAW that accepts dragged MIDI files and can send a MIDI track to a hardware output (Ableton Live, Cubase, Bitwig, Studio One; in Logic the clips work on an External MIDI track).
 
 **[Download for Windows, macOS and Linux](https://thankost.github.io/pedal-cues/)**
@@ -16,9 +16,9 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 |---|---|---|
 | ![Helix Floor page](docs/images/helix.png) | ![Axe-Fx II page](docs/images/axe-fx-2.png) | ![Kemper page](docs/images/kemper.png) |
 
-| Whammy V / DT | Custom MIDI device | MIDI Setup |
+| Whammy V / DT | Custom MIDI device | How to connect |
 |---|---|---|
-| ![Whammy page](docs/images/whammy.png) | ![A custom MIDI device](docs/images/custom-device.png) | ![MIDI Setup tab](docs/images/settings.png) |
+| ![Whammy page](docs/images/whammy.png) | ![A custom MIDI device](docs/images/custom-device.png) | ![Connect your rig](docs/images/settings.png) |
 
 ## Features
 
@@ -36,7 +36,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
   Wah Rhythm, Rise to Bar, Toe, Heel, fixed positions (heel / 25% / half / 75% / toe), or draw your own; tempo-synced.
   Acts on the loaded preset, or optionally **loads the open preset first** (safe if a preset gets changed by accident)
 
-**Kemper Profiler / Kemper Player** (pick the unit with the ▾ on the first tab, or in MIDI Setup)
+**Kemper Profiler / Kemper Player** (pick the unit with the ▾ on the first tab)
 - Performance tiles with five slots each → bank select `CC#32` + Program Change (Player: Program Change, 10 banks of 5)
 - Slot tiles either **load their performance first** (default) or switch a slot of the **current performance** → `CC#50–54`
 - Effect modules A, B, C, D, X, MOD, DLY, REV on/off (`CC#17–29`, delay and reverb with or without tails)
@@ -78,7 +78,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - Everything is stored in your DAW project. **☰ > Save as default setup** makes new instances start with your names, colours, MIDI settings and playing preferences
 - **☰ > Export / Import setup** as a file (back it up, move to another computer, share it with the band): your presets, scenes and names for every unit (Quad Cortex, Kemper, Fractal / Line 6 / HeadRush / Darkglass / Nano Cortex pages, custom MIDI devices), MIDI settings, playing preferences, your wiring choice and My drawings
 - MIDI passes through, so the dropped items and the live preview share one track and one route
-- **MIDI Setup** lists the device on each tab with its channel, asks how they're connected only when you have two, and shows where your DAW sets a track's MIDI output; in the standalone app, **Test selected** checks the devices you switch on at once
+- **A MIDI strip at the top of each page:** the device's own MIDI channel (every device keeps its own, saved with your setup), **Test** and **How to connect**. How to connect asks how your devices are connected only when you have two, lists the cue tracks with your devices as examples, and shows where your DAW sets a track's MIDI output; in the standalone app it also picks the MIDI port
 
 Preset and scene names are entered in the plugin (double-click to rename, right-click for colour/reorder), or read from the Quad Cortex with **Sync from QC (USB)**.
 
@@ -127,12 +127,12 @@ cmake --build build --target PedalCuesTests
 
 ## DAW setup (Reaper as the example)
 
-1. Connect your devices one of three ways. **Help > Wiring Guide** in the app shows each, named after your unit. "Your unit" is the Quad Cortex, Kemper, Fractal, Line 6, HeadRush, Darkglass, Nano Cortex or custom device on the first tab; the second device, if you have one, is for example a Whammy:
+1. Connect your devices one of three ways. **How to connect** (at the top of each page) and the **Wiring guide** show each, with your unit as the example. "Your unit" is the Quad Cortex, Kemper, Fractal, Line 6, HeadRush, Darkglass, Nano Cortex or custom device on the first tab; the second device, if you have one, is for example a Whammy:
    - **One device:** your unit on USB, or a MIDI cable from your interface's MIDI Out to its MIDI In. One cue track.
    - **Daisy chain:** interface **MIDI Out → your unit's MIDI In**, its **MIDI Thru → the second device's MIDI In** (MIDI Thru on). Both cue tracks output to that interface MIDI Out.
    - **Separate outputs:** your unit on **USB or MIDI Out 1**, the second device on **MIDI Out 2**. Each cue track outputs to its device's port.
    - ⚠️ **A MIDI Thru only passes on MIDI from the 5-pin MIDI In**, not MIDI received over **USB** (confirmed for the Quad Cortex and Kemper, true for most units). So "your unit on USB, the second device on its Thru" doesn't work; the Wiring Guide notes the exceptions (Helix Stadium with *MIDI Over USB C*, Axe-Fx II with *USB Adapter Mode*). The Whammy has only a 5-pin MIDI In, so it always needs a MIDI cable; POD Go has only USB MIDI, so it can't be in a chain.
-2. Give each device its **own MIDI channel** (not Omni; e.g. your unit on 1, the Whammy on 2) and set the same numbers in the plugin's **MIDI Setup** tab, **before** dragging cues: every clip keeps the channel it was dragged with. Click *My pedals use these channels* to hide the reminder.
+2. Give each device its **own MIDI channel** (not Omni; e.g. your unit on 1, the Whammy on 2) and set the same number at the top of each device's page, **before** dragging cues: every clip keeps the channel it was dragged with. Click **Done** in the strip to hide the reminder.
 3. In your DAW, enable the MIDI outputs you use (Reaper: *Preferences > MIDI Devices*).
 4. Create one track per device (e.g. **QC Cues** and **Whammy Cues**), insert *PedalCues* on each, and set each track's MIDI output as above (Reaper: *I/O > MIDI Hardware Output*, leave *Send to original channels*).
 5. Turn snapping on and drag each device's tiles onto its own track at the bars you want.
@@ -161,7 +161,7 @@ Source/DeviceTemplates.* templates: Axe-Fx III / FM9 / FM3 / VP4, Boss GT-1000, 
 Source/UnitPicker.cpp    searchable device list    Source/Fuzzy.h  fuzzy search    Source/MovesPanel.*  expression / treadle moves
 Source/QcUsb.*, QcSyncDialog.cpp  Sync from QC (USB, read-only)
 Source/WhammyPage.cpp    Whammy V / DT page
-Source/SettingsPage.cpp  MIDI Setup tab (your pedals, DAW tracks, test) and the wiring guide
+Source/SettingsPage.cpp  MIDI strip (channel, Test), How to connect window (DAW tracks, standalone port) and the wiring guide
 Source/Tour.*            quick-tour overlay (steps + spotlight)
 Tools/DocShots.cpp       renders docs/images/*.png
 docs/GUIDE.md            user guide

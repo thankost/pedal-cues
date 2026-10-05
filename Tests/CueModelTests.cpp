@@ -223,6 +223,30 @@ int main (int argc, char** argv)
             looper.setProperty (IDs::channel, 5, nullptr);
             r.setProperty (IDs::qcChannel, 1, nullptr);
             CHECK (state::channelFor (r, looper) == 5 && state::channelFor (r, amp) == 1);
+            {
+                // Every device keeps its own channel: switching the first tab's unit never changes another device's.
+                auto c = state::createDefault();
+                c.setProperty (IDs::ampUnit, 0, nullptr);
+                state::setAmpChannel (c, 4);
+                c.setProperty (IDs::ampUnit, 1, nullptr);
+                CHECK (state::ampChannel (c) == 1);
+                state::setAmpChannel (c, 7);
+                c.setProperty (IDs::ampUnit, 0, nullptr);
+                CHECK (state::ampChannel (c) == 4 && (int) c[IDs::kemperChannel] == 7);
+                c.setProperty (IDs::fxUnit, state::fxWhammy, nullptr);
+                c.setProperty (IDs::whModel, 1, nullptr);
+                state::setPedalChannel (c, 9);
+                c.setProperty (IDs::whModel, 0, nullptr);
+                CHECK (state::pedalChannel (c) == 2 && (int) c[IDs::whDtChannel] == 9);
+                // Older state had one shared amp channel: every amp-side device starts from it.
+                auto old = state::createDefault();
+                auto dev = state::addCustomUnit (old, state::createCustomUnit ("Old amp"));
+                old.removeProperty (IDs::perDeviceChannels, nullptr);
+                old.removeProperty (IDs::kemperChannel, nullptr);
+                old.setProperty (IDs::qcChannel, 5, nullptr);
+                state::sanitise (old);
+                CHECK ((int) old[IDs::kemperChannel] == 5 && state::channelFor (old, dev) == 5);
+            }
             const auto setup = juce::File::createTempFile (".xml");
             CHECK (state::saveLibrary (r, setup));
             auto back = state::createDefault();
@@ -232,7 +256,7 @@ int main (int argc, char** argv)
             state::removeCustomUnit (r, amp);   // the looper moves up one; the first tab goes back to the Quad Cortex
             CHECK ((int) r[IDs::ampUnit] == 0 && state::fxCustomUnit (r) == looper && (int) r[IDs::fxCustomUnit] == 0);
             state::removeCustomUnit (r, looper);
-            CHECK ((int) r[IDs::fxUnit] == state::fxWhammy && ! state::fxCustomUnit (r).isValid());
+            CHECK ((int) r[IDs::fxUnit] == state::fxNone && ! state::fxCustomUnit (r).isValid());
             {
                 // A device moved to the other tab takes its category and leaves the tab it was on; a device shown on the pedals
                 // tab with an old "amp" category (from before v0.8.8) is fixed by sanitise.
@@ -243,7 +267,7 @@ int main (int argc, char** argv)
                 state::showCustomUnitOn (t, index, true);
                 CHECK ((int) t[IDs::ampUnit] == 0 && state::fxCustomUnit (t).isValid() && state::isPedal (state::fxCustomUnit (t)));
                 state::showCustomUnitOn (t, index, false);
-                CHECK ((int) t[IDs::fxUnit] == state::fxWhammy && (int) t[IDs::ampUnit] == state::customAmpUnit && ! state::isPedal (state::customUnit (t)));
+                CHECK ((int) t[IDs::fxUnit] == state::fxNone && (int) t[IDs::ampUnit] == state::customAmpUnit && ! state::isPedal (state::customUnit (t)));
                 state::showCustomUnitOn (t, index, true);
                 state::fxCustomUnit (t).setProperty (IDs::category, "amp", nullptr);
                 state::sanitise (t);

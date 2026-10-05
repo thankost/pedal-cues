@@ -118,17 +118,10 @@ private:
         void paintButton (juce::Graphics&, bool highlighted, bool down) override;
     } unitMenuButton, pedalMenuButton;
 
-    // Until the MIDI channels are confirmed in MIDI Setup: a reminder above the pedal pages (clips keep the channel
-    // they were dragged with, so it matters before building songs).
-    struct ChannelBanner final : public juce::Component
-    {
-        ChannelBanner();
-        void paint (juce::Graphics&) override;
-        void resized() override;
-        juce::TextButton openButton { "Open MIDI Setup" };
-    } channelBanner;
+    // Above each device page: its MIDI channel (with the reminder and Done until confirmed), Test and How to connect.
+    std::vector<std::unique_ptr<ui::Page>> strips;
+    static constexpr int stripHeight = 58;
     bool channelsConfirmed = true;
-    static constexpr int channelBannerHeight = 44;
     void showUnitMenu();
     void showPedalMenu();   // the second tab's arrow: the Whammy or a custom MIDI device
     // The ☰ menu: tour, guide, setup (save/load/export/import), updates, about, support.

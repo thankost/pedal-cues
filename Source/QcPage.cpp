@@ -395,7 +395,7 @@ private:
     }
 
     juce::ValueTree qcTree() const { return state.getChildWithName (IDs::QC); }
-    int qcChannel() const          { return (int) state[IDs::qcChannel]; }
+    int qcChannel() const          { return state::ampChannel (state); }
     bool mini() const              { return (int) state[IDs::ampUnit] == state::qcMiniAmpUnit; }
 
     // Scene / footswitch 0-7 as the unit shows it: A-H on the Quad Cortex, "A (I)" .. "D (II)" on the Mini.
@@ -670,7 +670,7 @@ AmpInfo ampInfo (const juce::ValueTree& state)
 
 namespace
 {
-// The first tab: the Quad Cortex or Kemper page, for the unit picked with the ▾ on the tab (or in MIDI Setup).
+// The first tab: the Quad Cortex or Kemper page, for the unit picked with the ▾ on the tab (or in How to connect).
 class AmpPage final : public Page
 {
 public:

@@ -80,7 +80,12 @@ namespace IDs
     PEDALCUES_ID (selectedCustomUnit)
 
     PEDALCUES_ID (ampUnit)         // first tab: 0 = Quad Cortex, 1 = Kemper Profiler, 2 = Kemper Player, 3 = a custom unit, 4 = a Fractal / Line 6 page, 5 = QC Mini
-    PEDALCUES_ID (qcChannel)       // the amp unit's MIDI channel (Quad Cortex or Kemper)
+    PEDALCUES_ID (qcChannel)       // the Quad Cortex's MIDI channel (each device has its own: ampChannel / pedalChannel)
+    PEDALCUES_ID (qcMiniChannel)
+    PEDALCUES_ID (kemperChannel)
+    PEDALCUES_ID (kemperPlayerChannel)
+    PEDALCUES_ID (whDtChannel)     // the Whammy DT's (whChannel is the Whammy V's)
+    PEDALCUES_ID (perDeviceChannels) // set once older state (one shared amp channel) has been given a channel per device
     PEDALCUES_ID (selectedPerformance)
     PEDALCUES_ID (kemperSlotFirst) // Kemper "Load P1 first" for slot and effect tiles
     PEDALCUES_ID (kemperEffectOn)
@@ -157,8 +162,13 @@ namespace state
     int fxModellerChannel (const juce::ValueTree& root);
     bool isPedal (const juce::ValueTree& unit);   // a custom device for the Effects & Pedals tab (IDs::category)
     juce::ValueTree fxCustomUnit (const juce::ValueTree& root);   // the custom device on the pedals tab (invalid if it's the Whammy)
-    // The channel a custom device sends on: its own (IDs::channel) on the pedals tab, the first tab's (qcChannel) otherwise.
-    int channelFor (const juce::ValueTree& root, const juce::ValueTree& unit);
+    // Every device keeps its own MIDI channel: the Quad Cortex, QC Mini, Kemper Profiler, Kemper Player, each modeller page and
+    // custom device (IDs::channel on its node), the Whammy V and the Whammy DT. Switching devices never changes another's channel.
+    int channelFor (const juce::ValueTree& root, const juce::ValueTree& unit);   // a custom device's own channel
+    int ampChannel (const juce::ValueTree& root);           // the device on the Amps & Modellers tab
+    void setAmpChannel (juce::ValueTree& root, int channel);
+    int pedalChannel (const juce::ValueTree& root);         // the device on the Effects & Pedals tab (the Whammy V / DT, a page, a custom device)
+    void setPedalChannel (juce::ValueTree& root, int channel);
     // Shows custom device `index` on the first tab or the pedals tab: it takes that tab's category and leaves the other tab
     // (which falls back to the Quad Cortex / the Whammy).
     void showCustomUnitOn (juce::ValueTree& root, int index, bool pedalsTab);

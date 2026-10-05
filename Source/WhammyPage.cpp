@@ -174,7 +174,7 @@ public:
             t->setTooltip ("Drag onto the timeline to switch the Whammy to this mode. Double-click to rename.");
             t->makeCue = [this, i, node]
             {
-                return cues::whammy::effect ((int) state[IDs::whChannel], i, node[IDs::name].toString(),
+                return cues::whammy::effect (state::pedalChannel (state), i, node[IDs::name].toString(),
                                              (bool) state[IDs::whChords] && ! isDt(), (bool) state[IDs::whBypass],
                                              (int) state[IDs::whPcBase], (bool) state[IDs::whHeelFirst]);
             };
@@ -197,7 +197,7 @@ public:
                 t->setTooltip (cues::whammy::shiftDescription (up, step) + ". Drag onto the timeline where the new tuning starts.");
                 t->makeCue = [this, up, step]
                 {
-                    return cues::whammy::dropTune ((int) state[IDs::whChannel], up, step, (bool) state[IDs::whBypass],
+                    return cues::whammy::dropTune (state::pedalChannel (state), up, step, (bool) state[IDs::whBypass],
                                                    (int) state[IDs::whPcBase]);
                 };
                 addChildComponent (t);
@@ -358,12 +358,12 @@ private:
         c.shapeHolds       = [] (int s) { return s == (int) cues::whammy::Shape::toe || s == (int) cues::whammy::Shape::heel; };
         c.makeShape = [this] (int s)
         {
-            return cues::whammy::sweep ((int) state[IDs::whChannel], (cues::whammy::Shape) s, (double) state[IDs::sweepBeats],
+            return cues::whammy::sweep (state::pedalChannel (state), (cues::whammy::Shape) s, (double) state[IDs::sweepBeats],
                                         (double) state[IDs::sweepCurve], (bool) state[IDs::sweepReset]);
         };
         c.makeDrawn = [this] (const std::vector<float>& points, const juce::String& name)
         {
-            return cues::whammy::drawn ((int) state[IDs::whChannel], points, (double) state[IDs::sweepBeats],
+            return cues::whammy::drawn (state::pedalChannel (state), points, (double) state[IDs::sweepBeats],
                                         (bool) state[IDs::sweepReset], name);
         };
         return c;
@@ -420,7 +420,7 @@ std::unique_ptr<Page> makeWhammyPage (PedalCuesProcessor& p)
 PedalInfo pedalInfo (const juce::ValueTree& state)
 {
     PedalInfo info;
-    info.channel = juce::jlimit (1, 16, (int) state[IDs::whChannel]);
+    info.channel = state::pedalChannel (state);
     info.name = (int) state[IDs::whModel] == 1 ? "Whammy DT" : "Whammy V";
     if ((int) state[IDs::fxUnit] == state::fxNone)
     {

@@ -27,6 +27,7 @@ void save (const juce::Image& img, const juce::File& file)
 
 void fillDemoState (juce::ValueTree root)
 {
+    root.setProperty (IDs::fxUnit, state::fxWhammy, nullptr);   // the demo has a Whammy on Effects & Pedals (new setups start with none)
     auto qc = root.getChildWithName (IDs::QC);
     qc.removeAllChildren (nullptr);
 
@@ -535,7 +536,7 @@ int main (int argc, char** argv)
     proc.state = state::createDefault();
     fillDemoState (proc.state);
 
-    // Screenshots show the channels as confirmed (no reminder banner), except channel-banner.png and settings.png.
+    // Screenshots show the channels as confirmed (the MIDI strip without its reminder), except channel-banner.png and settings.png.
     const auto channelsWereConfirmed = state::getFlag (ui::channelsConfirmedFlag);
     state::setFlag (ui::channelsConfirmedFlag, false);
     {
@@ -815,12 +816,11 @@ int main (int argc, char** argv)
         for (const auto& [viaQc, name] : { std::pair<bool, const char*> { false, "settings.png" }, { true, "settings-qc-chain.png" } })
         {
             state::setFlag ("setupViaQcChain", viaQc);
-            state::setFlag (ui::channelsConfirmedFlag, viaQc);   // settings.png shows the button before it's clicked
-            PedalCuesEditor editor (proc, false);
-            editor.setSize (1120, 760);
-            editor.refreshNow();
-            editor.showPage (2);
-            save (snapshot (editor), outDir.getChildFile (name));
+            state::setFlag (ui::channelsConfirmedFlag, viaQc);   // settings.png shows the "examples" note
+            auto panel = ui::makeSettingsPage (proc);   // How to connect: the Connect your rig window
+            panel->setSize (1000, 640);
+            panel->refresh();
+            save (panel->createComponentSnapshot (panel->getLocalBounds(), true, scale), outDir.getChildFile (name));
         }
         state::setFlag ("setupViaQcChain", previous);
         state::setFlag (ui::channelsConfirmedFlag, true);
@@ -859,12 +859,10 @@ int main (int argc, char** argv)
         // The standalone app's MIDI Setup tab, with the "Test your pedals" card (demo port, after a Test QC click).
         PedalCuesProcessor::standaloneLayoutForScreenshots = true;
         {
-            PedalCuesEditor editor (proc, false);
-            editor.setSize (1120, 760);
-            editor.refreshNow();
-            editor.setHelpInMenuBar (true);   // like the real app: the ☰ items are in the menu bar
-            editor.showPage (2);
-            save (snapshot (editor), outDir.getChildFile ("settings-standalone.png"));
+            auto panel = ui::makeSettingsPage (proc);
+            panel->setSize (1000, 760);
+            panel->refresh();
+            save (panel->createComponentSnapshot (panel->getLocalBounds(), true, scale), outDir.getChildFile ("settings-standalone.png"));
         }
         PedalCuesProcessor::standaloneLayoutForScreenshots = false;
     }

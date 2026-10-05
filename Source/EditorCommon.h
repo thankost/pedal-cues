@@ -14,7 +14,7 @@ namespace modellers { struct Profile; }
 
 namespace ui
 {
-// Set (per computer) once the user confirms the MIDI channels in MIDI Setup; until then the pedal pages show a reminder.
+// Set (per computer) once the user clicks Done in a page's MIDI strip; until then the strips show the reminder.
 inline const juce::String channelsConfirmedFlag { "channelsConfirmed" };
 
 // Base for the three tab pages.
@@ -60,7 +60,7 @@ struct PedalInfo
     bool isCustom = false;
     const modellers::Profile* page = nullptr;   // a pedal page (DL4 MkII, HX One)
     bool isNone = false;                     // no pedal picked: the tab shows how to add one
-    juce::String name { "Whammy V" };        // the device (the tab's tooltip, MIDI Setup): "Whammy V" or "Whammy DT"
+    juce::String name { "Whammy V" };        // the device (the tab's tooltip, the MIDI strip): "Whammy V" or "Whammy DT"
     juce::String shortName { "Whammy" };     // in sentences and track names ("Whammy Cues")
     juce::Colour colour { theme::whammyRed };
     int channel = 2;
@@ -89,7 +89,9 @@ std::unique_ptr<juce::Component> makeUnitPicker (juce::ValueTree state, const ju
 std::unique_ptr<juce::Component> makeTileEditor (PedalCuesProcessor&, juce::ValueTree tile, bool isNew);   // custom tile: guided MIDI editor
 std::unique_ptr<Page> makeQcExpression (PedalCuesProcessor&);   // Quad Cortex page > Expression
 std::unique_ptr<Page> makeWhammyPage   (PedalCuesProcessor&);
-std::unique_ptr<Page> makeSettingsPage (PedalCuesProcessor&);
+std::unique_ptr<Page> makeSettingsPage (PedalCuesProcessor&);   // the Connect your rig panel (devices, wiring, DAW tracks, standalone port)
+std::unique_ptr<Page> makeMidiStrip (PedalCuesProcessor&, bool pedalTab);   // above each device page: channel, Done, Test, How to connect
+void showConnectDialog (PedalCuesProcessor&);                               // How to connect: the Connect your rig window
 void showWiringGuide (const juce::ValueTree& state);   // Help > Wiring guide, for the unit on the first tab
 void showQcSyncDialog (juce::ValueTree state);   // Quad Cortex page > Sync from QC (USB)
 std::unique_ptr<juce::Component> makeWiringGuide (const AmpInfo&, int view = -1);   // view: 0 one device, 1 daisy chain, 2 separate

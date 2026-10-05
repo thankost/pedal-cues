@@ -18,7 +18,7 @@ PedalCues turns pedal changes into **drag and drop**. Each tile in the plugin is
 8. [Custom MIDI devices (beta)](#8-custom-midi-devices-beta)
 9. [Build a song, step by step](#9-build-a-song-step-by-step)
 10. [Effects & Pedals: Whammy V / DT, DL4 MkII, HX One and your devices](#10-effects--pedals-whammy-v--dt-dl4-mkii-hx-one-and-your-devices)
-11. [MIDI Setup and your setup](#11-midi-setup-and-your-setup)
+11. [MIDI channels, How to connect and your setup](#11-midi-channels-how-to-connect-and-your-setup)
 12. [Troubleshooting](#12-troubleshooting)
 
 ---
@@ -88,7 +88,7 @@ Then unplug and replug the QC's USB cable. If you try PedalCues on Linux, please
 
 Finally, let your DAW find the plugin. In **Reaper**, go to *Options > Preferences > Plug-ins > VST* and click **Re-scan**; other DAWs have a similar re-scan in their plugin settings. PedalCues appears under *Instruments*.
 
-> There's also a Standalone app (`PedalCues.exe` / `PedalCues.app` / `PedalCues` on Linux) for testing tiles against the pedal without a DAW. It only needs a MIDI port: pick it in the **Test your devices** card on the **MIDI Setup** tab (or in the app's **Options > MIDI Output** menu), then press **Test selected** to check your pedals. No audio device is needed. After that, click any tile's round play button and the pedal changes. For treadle moves, set your song's tempo by clicking the BPM pill ("set tempo"), and play your guitar while you test so you hear the bend.
+> There's also a Standalone app (`PedalCues.exe` / `PedalCues.app` / `PedalCues` on Linux) for testing tiles against the pedal without a DAW. It only needs a MIDI port: pick it in **How to connect** (at the top of each page, or **Help > How to Connect**) or in the app's **Options > MIDI Output** menu, then press **Test** at the top of a page (or **Test all**) to check your devices. No audio device is needed. After that, click any tile's round play button and the pedal changes. For treadle moves, set your song's tempo by clicking the BPM pill ("set tempo"), and play your guitar while you test so you hear the bend.
 
 ---
 
@@ -115,14 +115,14 @@ PedalCues sends MIDI from your DAW's tracks to your devices: one **cue track** p
 - **Quad Cortex:** *Settings > MIDI Settings*. Set a fixed **MIDI Channel** (default 1, not *Omni*). For the daisy chain, turn **MIDI Thru** on.
 - **QC Mini:** *Settings > Device > MIDI*: the same **MIDI Channel** and **MIDI Thru** settings.
 - **Kemper:** in the Kemper's *System Settings*, set the **MIDI channel** to a fixed number (it's *Omni* out of the box). For the daisy chain, use its MIDI Thru (on models where one jack is MIDI Out and Thru, set it to Thru; see the Kemper manual).
-- **Whammy V or Whammy DT:** set its MIDI channel (default 2) as described in the pedal's manual.
-- **A custom MIDI device:** set its MIDI channel as its manual describes.
-- Give the two devices **different channels**, and set the same numbers in the plugin's **MIDI Setup** tab. That way both can share one cable without reacting to each other's cues.
+- **Whammy V or Whammy DT:** set its MIDI channel (PedalCues suggests 2) as described in the pedal's manual.
+- **A custom MIDI device, DL4 MkII, HX One...:** set its MIDI channel as its manual describes.
+- Give the two devices **different channels**, and set the same number at the top of each device's page in PedalCues (its **MIDI channel** box). That way both can share one cable without reacting to each other's cues. Every device keeps its own channel: switching to another device shows that one's.
 - **Do this before you build songs.** Every clip keeps the channel it was dragged with, so changing the channel later doesn't change clips already on the timeline (drag them in again). An amp modeller left on *Omni* also hears the Whammy's cues: in a daisy chain, a Whammy mode change would load another preset or slot.
 
-Until you confirm the channels, PedalCues shows a reminder above the pages. Click **Open MIDI Setup**, set the channels, then click **Done: my devices use these channels** to hide it (on this computer).
+Until you confirm the channels, the strip at the top of each page says so in amber, with a **Done** button. Set the channel, then click **Done** (it's remembered on this computer).
 
-![Reminder to set the MIDI channels first](images/channel-banner.png)
+![The MIDI channel strip, before Done](images/channel-banner.png)
 
 ---
 
@@ -152,11 +152,11 @@ In Reaper:
 
 > With the daisy chain, a single track would also work, since both pedals share one cable and their channels keep the cues apart. Two tracks keep the arrangement easier to read and let you mute one pedal.
 
-The plugin's **MIDI Setup** tab shows the same steps for each setup:
+**How to connect** (at the top of each page, or in the ☰ menu) shows the same steps for your devices:
 
 | Each device on its own output | One cable through the QC (daisy chain) |
 |---|---|
-| ![Settings, two cue tracks](images/settings.png) | ![Settings, daisy chain](images/settings-qc-chain.png) |
+| ![How to connect, two cue tracks](images/settings.png) | ![How to connect, daisy chain](images/settings-qc-chain.png) |
 
 ---
 
@@ -181,7 +181,7 @@ An early step, **Choose your device**, shows where to pick what you play through
 
 ![Quad Cortex page](images/quad-cortex.png)
 
-The first tab is named after your amp modeller. Click the **▾** on it (or the device in **MIDI Setup > Your devices > Amps & Modellers**) to open the device list: **Quad Cortex**, [**Quad Cortex Mini**](#quad-cortex-mini), **Kemper Profiler**, **Kemper Player**, [Fractal, Line 6, HeadRush, Darkglass units and the Nano Cortex](#7-fractal-line-6-headrush-darkglass-and-more-beta), [templates](#templates-beta) such as the Boss GT-1000, and your own [MIDI devices](#8-custom-midi-devices-beta), in that order. Type to search it. With a Kemper, the tab turns green and shows the [Kemper page](#6-kemper-page) instead. Your QC presets stay in the project, so you can switch back any time.
+The first tab is named after your amp modeller. Click the **▾** on it (or the tab itself again) to open the device list: **Quad Cortex**, [**Quad Cortex Mini**](#quad-cortex-mini), **Kemper Profiler**, **Kemper Player**, [Fractal, Line 6, HeadRush, Darkglass units and the Nano Cortex](#7-fractal-line-6-headrush-darkglass-and-more-beta), [templates](#templates-beta) such as the Boss GT-1000, and your own [MIDI devices](#8-custom-midi-devices-beta), in that order. Type to search it. With a Kemper, the tab turns green and shows the [Kemper page](#6-kemper-page) instead. Your QC presets stay in the project, so you can switch back any time.
 
 **Presets vs scenes:** a *preset* is a whole rig on the QC (often one per song), such as *Clean Rig* or *Drop C Heavy*. *Scenes* are the parts of the song inside that preset, such as *Intro*, *Verse* and *Chorus*. Load the preset once where the song starts, then switch scenes as the song moves on.
 
@@ -360,7 +360,7 @@ It works like the Quad Cortex's [Expression](#expression-swells-fades-and-wah): 
 
 ### Names and setup
 
-Type the performance and slot names in PedalCues, as they're shown on the Kemper. Unlike the Quad Cortex, the Kemper can't send its performance names and colours to another program, so there's no sync. The Kemper's MIDI channel is in **MIDI Setup > Your devices**, next to the Whammy's: set the Kemper to the same fixed channel (it's *Omni* out of the box).
+Type the performance and slot names in PedalCues, as they're shown on the Kemper. Unlike the Quad Cortex, the Kemper can't send its performance names and colours to another program, so there's no sync. The Kemper's MIDI channel is at the top of its page: set the Kemper to the same fixed channel (it's *Omni* out of the box).
 
 > Tested against Kemper's MIDI documentation, not on a real Kemper yet. If something doesn't switch as expected, please [tell us](https://github.com/thankost/pedal-cues/issues/new?template=problem.yml).
 
@@ -432,7 +432,7 @@ Built from the Anagram manual (KosmOS 1.17, *MIDI Support*). Darkglass says its 
 - **Footswitches A-C** (the Stomp mode bindings): CC#17-19, ON or OFF with the header switch. With the Anagram's *Toggle Logic* setting on *Value* (the default), 0-63 = off and 64-127 = on.
 - **Utilities:** tuner (CC#86), Preset / Stomp / Scene mode (CC#85 = 1 / 2 / 3), next / previous preset and scene. **Looper:** play/stop, rec/dub, undo, redo, clear slot and the looper screen (CC#110-115).
 - **Expression:** the expression pedal binding (CC#89) and knob bindings 1-6 (CC#20-25). The footswitch, knob and expression numbers are the *default* binding CCs; if you changed them (*Bindings > Edit CCs*), use a custom MIDI device.
-- **Connection:** 3.5 mm TRS MIDI In and Out (Type A) and USB MIDI (turn *USB MIDI* on). Set *MIDI In Chan* to the channel in MIDI Setup.
+- **Connection:** 3.5 mm TRS MIDI In and Out (Type A) and USB MIDI (turn *USB MIDI* on). Set *MIDI In Chan* to the channel at the top of its page.
 
 ### Darkglass Infinity 500 Combo and Exponent 500 (beta)
 
@@ -459,7 +459,7 @@ Built from the Nano Cortex User Manual 2.2.0 (*Incoming MIDI CC List*). Pick **N
 - **Presets:** the 64 slots under *ALL PRESETS* are **Program Change 0-63** (the app's *PC/CC* button shows the numbers). No banks, setlists or scenes over MIDI.
 - **Slots:** Input Gate, Capture, Cab/IR and FX 1-5 on or off (CC#34-41).
 - **Utilities:** tuner on / off (CC#43) and tap (CC#42). **Expression:** CC#1, with the shapes, Set to tiles, Draw and Wave. There's no looper over MIDI.
-- **Connection:** USB-C MIDI, or **TRS MIDI Type A** into the **EXP/MIDI** jack: set *EXP/MIDI INPUT MODE* to *MIDI* in the Cortex Cloud app (then the jack can't take a real pedal, which is where the Expression view helps). Set *MIDI CHANNEL* there to the channel in MIDI Setup.
+- **Connection:** USB-C MIDI, or **TRS MIDI Type A** into the **EXP/MIDI** jack: set *EXP/MIDI INPUT MODE* to *MIDI* in the Cortex Cloud app (then the jack can't take a real pedal, which is where the Expression view helps). Set *MIDI CHANNEL* there to the channel at the top of its page.
 - The Nano has **no MIDI Out**, so it can't pass MIDI on to a second pedal: give a Whammy or other pedal its own MIDI output (the wiring guide shows *Separate outputs*).
 
 ---
@@ -475,7 +475,7 @@ Not on a Quad Cortex, Kemper or one of the [Fractal, Line 6 and HeadRush pages](
 
 Either way it's an ordinary MIDI device you can edit, give [expression moves](#expression-moves-on-any-device) and share.
 
-**Make one:** click the **▾** on the first tab (or *MIDI Setup > Amp modeller or MIDI device*) and choose a template (an [Axe-Fx III, FM9, FM3, VP4, Boss GT-1000 or Microtubes Infinity](#templates-beta)) to start from its manual, or click **+ New MIDI device** under the list and give it a name: it starts with example tiles to edit, and the tab takes its name. **Import device...** next to it adds one from a file.
+**Make one:** click the **▾** on the first tab (or click the open tab again) and choose a template (an [Axe-Fx III, FM9, FM3, VP4, Boss GT-1000 or Microtubes Infinity](#templates-beta)) to start from its manual, or click **+ New MIDI device** under the list and give it a name: it starts with example tiles to edit, and the tab takes its name. **Import device...** next to it adds one from a file.
 
 **The device card (left):**
 - **Name:** double-click to rename. The **...** menu has rename, colour, duplicate, delete and **New MIDI device**.
@@ -527,7 +527,7 @@ These four Fractal units have **no default MIDI CCs**: you assign scene select, 
 - **Presets:** on the GT-1000, set *MENU > MIDI > MAP SELECT* to **PROG** and fill *PROGRAM MAP BANK1* (PC#1, PC#2... = the patches you want). The tiles **BANK1 PC#1**, **PC#2**... load those (bank select CC#0 and CC#32 = 0, then the Program Change, counted from 1 like the GT-1000). Rename them after your patches.
 - **Expression:** switch the device to [Expression](#expression-moves-on-any-device); it starts on **CC#11**. On the GT-1000, make an ASSIGN with *SOURCE* = CC#11 and the *TARGET* you want to move (foot volume, a wah, a delay level...), ACT LOW 0, ACT HIGH 127.
 - **Switches:** *Switch 1-4 on / off* send CC#80-83 = 127 / 0. Make an ASSIGN for each with *SOURCE* = that CC, *MODE* = MOMENT, and the target (an effect's on/off).
-- Set *RX CHANNEL* (MENU > MIDI > MIDI SETTING) to the channel in PedalCues' MIDI Setup.
+- Set *RX CHANNEL* (MENU > MIDI > MIDI SETTING) to the channel at the top of the device's PedalCues page.
 
 ![A Darkglass Microtubes Infinity device](images/template-microtubes-infinity.png)
 
@@ -561,18 +561,18 @@ This example covers a song with a clean verse, a crunchy chorus and a Whammy sol
 
 ## 10. Effects & Pedals: Whammy V / DT, DL4 MkII, HX One and your devices
 
-The first tab, **Amps & Modellers**, is for your amp modeller; the second, **Effects & Pedals**, for a pedal next to it. It shows the **DigiTech Whammy V** as an example; click the **▾** on the tab (or the device in **MIDI Setup > Your devices > Effects & Pedals**) to pick yours:
+The first tab, **Amps & Modellers**, is for your amp modeller; the second, **Effects & Pedals**, for a pedal next to it. New setups start with **No pedal** there; click the **▾** on the tab (or the tab itself again) to pick yours:
 
 | The Effects & Pedals list | A MIDI device there | Only one device |
 |---|---|---|
 | ![The Effects & Pedals device list](images/pedal-picker.png) | ![A looper on the Effects & Pedals tab](images/pedal-custom.png) | ![No pedal](images/pedal-none.png) |
 
-- **No pedal:** only using one device? Pick this and the tab shows how to add one later; MIDI Setup then shows one device and one cue track.
+- **No pedal:** only using one device? Pick this and the tab shows how to add one later; How to connect then shows one device and one cue track. New setups start with No pedal.
 - **Whammy V** and **Whammy DT** (DigiTech): two devices sharing one page, described below. The DT adds Drop Tune and has no Chords.
 - **Line 6 DL4 MkII** and **HX One** (beta): ready-made pages, [below](#line-6-dl4-mkii-and-hx-one-beta).
 - **Templates** for effect pedals: the Fractal **VP4** and the Darkglass **Microtubes Infinity** ([templates](#templates-beta)). Templates for amp modellers stay in the Amps & Modellers list.
 - **Your MIDI devices:** any [custom MIDI device](#8-custom-midi-devices-beta) (a delay, a looper, a synth...), with its tiles and expression moves, or **+ New MIDI device** / **Import device...** under the list. A device belongs to one tab: to move it, use **Move to Amps & Modellers** (or **Move to Effects & Pedals**) in the device's **...** menu.
-- The tab takes the pedal's name and colour. Each pedal keeps **its own MIDI channel**: set it in MIDI Setup (the Whammy's, or the device's or page's own, saved with your setup).
+- The tab takes the pedal's name and colour. Each pedal keeps **its own MIDI channel**, set at the top of its page and saved with your setup.
 
 Switching pedals doesn't change clips already on the timeline: each keeps the pedal and channel it was dragged with.
 
@@ -585,7 +585,7 @@ Switching pedals doesn't change clips already on the timeline: each keeps the pe
 Laid out like the [Fractal and Line 6 pages](#7-fractal-line-6-headrush-darkglass-and-more-beta), built from Line 6's owner's manuals and not tested on hardware yet (**About this unit** lists every number):
 - **DL4 MkII:** presets **A-F** (Program Change 0-5) and **7-128** (PC 6-127, only reachable over MIDI). **Controls:** the delay's note value (CC#12), preset on / bypass, tap, Classic Looper mode on / off and the reverb-delay routing. **Looper:** record, overdub, play, stop, play once, undo, redo, reverse, half speed (CC#60-66). **Expression:** the expression pedal (CC#3; make the assignment first with a pedal on the EXP PEDAL jack) and the knobs (time, repeats, tweak, tweez, mix, reverb decay, predelay and mix). **Models:** the 15 MkII and 15 Legacy delays (CC#1) and the 15 secret reverbs plus Reverb off (CC#2) of the loaded preset. Changing a model clears the preset's pedal assignments, as on the pedal.
 - **HX One:** presets **000-127** (PC 0-127). **Switches:** ON (toggles) and FLUX; Engage / Bypass, tap (CC#93, as in the manual's table), Home, Preset List and Tuner. **Looper** (Simple Looper models) and **Expression** on the pedal (CC#3, with Pedal Jack set to ExpFS4), parameters 1-24 and the FLUX times.
-- Both use MIDI channel 1 out of the box, the same as most amp modellers: set the pedal to another channel (PedalCues suggests 3) and pick the same in MIDI Setup. The DL4 MkII's MIDI Thru is off out of the box; turn it on in its Global Settings if another device is after it.
+- Both use MIDI channel 1 out of the box, the same as most amp modellers: set the pedal to another channel (PedalCues suggests 3) and pick the same at the top of its page. The DL4 MkII's MIDI Thru is off out of the box; turn it on in its Global Settings if another device is after it.
 
 Switching pedals doesn't change clips already on the timeline: each keeps the pedal and channel it was dragged with.
 
@@ -690,26 +690,26 @@ My drawings are saved **on your computer**, not in one project, so every project
 
 ---
 
-## 11. MIDI Setup and your setup
+## 11. MIDI channels, How to connect and your setup
 
-| Plugin (in your DAW) | Standalone app |
+![The MIDI channel strip at the top of a page](images/quad-cortex.png)
+
+**The strip at the top of each page** (set once, required):
+- **MIDI channel:** the channel the device on this tab listens on. Set the same on the device itself (the hint next to it says where) and give each device a different one. Every device keeps its own channel: the Quad Cortex, a Kemper, each Fractal / Line 6 / HeadRush / Darkglass page, each custom device, the Whammy V and the Whammy DT. Every cue is sent on it, and each clip keeps the channel it was dragged with, so set it before building songs. Until you click **Done**, the strip reminds you in amber.
+- **Test:** sends a quick check to the device on its channel and says what it sent: the amp modeller opens and closes its tuner (CC#45 on the QC, CC#31 on the Kemper; preset 1 or a tap on units without a tuner over MIDI), a custom MIDI device sends your first tile, the DL4 MkII and HX One load their first preset, and the Whammy steps through **Oct Up, 5th Up and 2 Oct Up** half a second apart. In your DAW it goes out of this track's MIDI output; in the standalone app, to the port picked in How to connect.
+- **How to connect >** opens the **Connect your rig** window (also **☰ > How to connect**, **Help > How to Connect** in the standalone app).
+
+| Connect your rig (plugin) | Connect your rig (standalone app) |
 |---|---|
-| ![MIDI Setup tab in the plugin](images/settings.png) | ![MIDI Setup tab in the standalone app, with Test your devices](images/settings-standalone.png) |
+| ![Connect your rig](images/settings.png) | ![Connect your rig in the standalone app](images/settings-standalone.png) |
 
-The **MIDI Setup** tab has two cards in the plugin, and a third, **Test your devices**, in the standalone app:
-
-- **Your devices** (set once, required): one row per tab, each with its device, its **MIDI channel** and (in the standalone app) a **Test** switch. Until you confirm the channels, a note says the devices shown (Quad Cortex and Whammy) are only examples:
-  - **Amps & Modellers:** your amp modeller or MIDI device (Quad Cortex, Kemper, a [Fractal, Line 6, HeadRush or Darkglass unit](#7-fractal-line-6-headrush-darkglass-and-more-beta) or a [custom MIDI device](#8-custom-midi-devices-beta)). Clicking it opens the same searchable list as the ▾ on the first tab.
-  - **Effects & Pedals:** the pedal on the [second tab](#10-effects--pedals-whammy-v--dt-dl4-mkii-hx-one-and-your-devices): a Whammy V or DT, a DL4 MkII or HX One, one of your MIDI devices, or **No pedal** if you only have one device. Each pedal keeps its own channel.
-
-  The channels must match the devices themselves and be different from each other. Every cue is sent on these channels, whatever your wiring, and each clip keeps the channel it was dragged with. When they match, click **Done: my devices use these channels** (this hides the reminder on the other pages; click again to undo it).
-- **Set up your DAW:** with two devices, pick how they're connected: **Each device on its own output** (the simplest) or **One cable through the QC** (a daisy chain through the first device's MIDI Thru; only offered when that device has a MIDI Thru). The daisy chain needs a MIDI cable into the first device, not USB: when you pick it, an amber note says what your unit does with USB MIDI (the QC and Kemper never pass it on to their Thru; some units do only with a setting, named there; a few always do). The steps use generic tracks, an amp modeller track and a pedal track, with your devices' names as examples. With one device there's nothing to choose. The card then lists the steps: the cue tracks and their MIDI outputs. Pick **Your DAW** (Reaper, Ableton Live, Cubase, Nuendo, Logic Pro or Other) to see where that DAW sets a track's MIDI output. **Wiring guide: cables and diagrams** opens the wiring guide (also in the ☰ / **Help** menu): one device, a daisy chain or separate outputs, with the cables and signal flow for each and the setup that doesn't work.
-- **Test your devices** (standalone app only): the MIDI port the app sends to, and **Test selected**, which tests every device switched on in *Your devices* at once, on its channel. The amp modeller opens and closes its tuner (CC#45 on the QC, CC#31 on the Kemper; preset 1 or a tap on units without a tuner over MIDI); a custom MIDI device sends your first tile; the DL4 MkII and HX One load their first preset; the Whammy steps through **Oct Up, 5th Up and 2 Oct Up** half a second apart, so you see its LED move. The card then says what it sent to each one; check that each reacted.
-
+**Connect your rig:**
+- **Test your devices** (standalone app only): the MIDI port the app sends to (a port you plug in appears by itself) and **Test all**, which tests both devices at once.
+- **Set up your DAW:** with two devices, pick how they're connected: **Each device on its own output** (the simplest) or **One cable through the amp modeller** (a daisy chain through its MIDI Thru; only offered when it has one). The daisy chain needs a MIDI cable into the amp modeller, not USB: an amber note says what your unit does with USB MIDI (the QC and Kemper never pass it on to their Thru; some units do only with a setting, named there; a few always do). With one device there's nothing to choose. The steps use generic tracks, an amp modeller track and a pedal track, with your devices as examples. Pick **Your DAW** (Reaper, Ableton Live, Cubase / Nuendo, Logic Pro or Other) to see where that DAW sets a track's MIDI output. **Wiring guide: cables and diagrams** opens the wiring guide: one device, a daisy chain or separate outputs, with the cables and signal flow for each and the setup that doesn't work.
 
 ### Your setup: save, share, start new projects with it
 
-Your setup is your preset, scene, footswitch and Whammy names and colours, the MIDI settings above, and your playing preferences: the Whammy's **Chords**, **Load bypassed** and **Heel first**, **Return to heel** / **Back to heel after move**, and Expression's **Load 1A first**; your amp modeller or MIDI device, your custom MIDI devices, and the Kemper's **Load P1 first**, **Keep tails** and **Back to heel after move**. It's stored inside each DAW project automatically. (Length and Curve change from song to song, so they stay in each project.) From the **☰** menu (the **File** menu in the standalone app):
+Your setup is your preset, scene, footswitch and Whammy names and colours, every device's MIDI channel and the other MIDI settings, and your playing preferences: the Whammy's **Chords**, **Load bypassed** and **Heel first**, **Return to heel** / **Back to heel after move**, and Expression's **Load 1A first**; your amp modeller or MIDI device, your custom MIDI devices, and the Kemper's **Load P1 first**, **Keep tails** and **Back to heel after move**. It's stored inside each DAW project automatically. (Length and Curve change from song to song, so they stay in each project.) From the **☰** menu (the **File** menu in the standalone app):
 - **Save as default setup:** new PedalCues instances start with it.
 - **Load default setup:** brings it back into this project.
 - **Export setup / Import setup:** a file to back up, move to another computer, or share with your band. It also carries your **wiring choice** (Daisy chain or Separate outputs) and your [saved drawings](#my-drawings-save-and-reuse-your-moves); importing adds the drawings to your list and never removes any.
@@ -736,22 +736,22 @@ PedalCues asks GitHub for the latest release when it opens; nothing else is sent
 | Nothing happens on the pedal | Check the track's MIDI output (Reaper: *MIDI Hardware Output*) and that the pedal's MIDI port is enabled in your DAW's MIDI preferences. Try a tile's play button. |
 | Sync from QC: "the loaded preset has unsaved changes" | Reading every preset loads each one, which would lose those edits. Save (or discard) them on the QC, then sync again. Or untick "every ticked preset" to import names and the loaded preset only. |
 | Sync from QC: "No Quad Cortex found" or "Couldn't open" | Connect the QC's **USB** port (not just MIDI) and switch it on. Quit **Cortex Control**, which keeps the USB connection to itself. Wait until the QC has fully started, then try again. On **Linux**, install the USB permission rule from [Install](#1-install) once. |
-| Standalone app: tiles do nothing | Pick the port your pedals are on in **MIDI Setup > Test your devices** (or **Options > MIDI Output**), then try **Test selected**. On Windows, close your DAW first; only one program can use a MIDI port at a time. |
+| Standalone app: tiles do nothing | Pick the port your devices are on in **How to connect** (or **Options > MIDI Output**), then try **Test** at the top of the page. On Windows, close your DAW first; only one program can use a MIDI port at a time. |
 | Scene or stomp changes the wrong preset | **Load 1A first** is off, so tiles act on whatever preset the QC has loaded. Switch it on in the Scenes header so they load their own preset first. |
 | A stomp tile changes scenes | The QC is in Scene mode, where footswitch A-H select scenes. Put the QC in Stomp mode (or drop the **Stomp Mode** tile before your stomp cues). Before v0.4.2 the Scene Mode and Stomp Mode tiles were swapped; drag those clips in again. |
 | The QC stays in another setlist | Turn on **Switch to the preset's setlist** (under the preset list, or the **Setlists not sent: turn on** button above *Sync from QC*), check the preset's setlist number in *Edit preset*, then drag its clips into your DAW again: clips keep what they were dragged with. |
 | Wrong preset loads | Check setlist, bank and slot in *Edit preset*. If presets are in other setlists, turn on **Switch to the preset's setlist** under the preset list. Setlist numbers are as the QC shows them (Factory Presets = 0). Before v0.4.28 PedalCues sent one less, so if you added 1 to work around it, set them back. |
 | The scene changes a little after the beat | That's the 1/16 gap of **Load 1A first**, which gives the QC time to load the preset. Drop the tile 1/16 early, or switch Load 1A first off inside the song. See [Timing](#timing-scenes-right-after-a-preset). |
 | Whammy doesn't react | If the QC is on USB and the Whammy hangs off the QC's Thru, that can't work: the QC doesn't forward USB MIDI (a known QC limitation). Use one of the [three working setups](#2-connect-your-rig). Otherwise check the cable direction (MIDI Out to MIDI In) and the channels, set the QC to a fixed channel (not *Omni*), and for the daisy chain turn on QC MIDI Thru. |
-| My amp changes preset or slot when a Whammy cue plays | The amp modeller is on *Omni*, so it also hears the Whammy's Program Changes. Set it to a fixed channel, different from the Whammy's, and the same number in **MIDI Setup**. |
+| My amp changes preset or slot when a Whammy cue plays | The amp modeller is on *Omni*, so it also hears the Whammy's Program Changes. Set it to a fixed channel, different from the Whammy's, and the same number at the top of its page. |
 | I changed a channel, but old clips still use the old one | Clips keep the channel they were dragged with. Drag those tiles in again (or change the clips' channel in your DAW). |
-| Kemper doesn't react | Set the Kemper to a fixed MIDI channel (not *Omni*) and the same number in **MIDI Setup > Your devices**. Put Kemper clips on the **Kemper Cues** track. Check that **Amp modeller** is set to your Kemper model. |
+| Kemper doesn't react | Set the Kemper to a fixed MIDI channel (not *Omni*) and the same number at the top of the Kemper page. Put Kemper clips on the **Kemper Cues** track. Check that **Amp modeller** is set to your Kemper model. |
 | Kemper loads the wrong slot | Check the performance number in *Edit performance*. **Load P1 first** off loads that slot of the performance the Kemper *already has*; switch it on to load the performance too. |
 | Whammy doesn't react (Kemper on USB) | Like the QC, the Kemper doesn't pass USB MIDI on to its MIDI Thru. Give the Whammy its own MIDI output, or send to the Kemper's 5-pin MIDI In. See [Connect your rig](#2-connect-your-rig). |
 | An Axe-Fx III, FM9, FM3 or VP4 scene or tuner tile does nothing | These units have no default MIDI CCs. Assign the numbers from the device's Notes in *SETUP > MIDI/Remote*, or change the tiles to yours. On an FM3, use a 5-pin MIDI cable: it can't be controlled over USB. |
-| A Helix / Fractal page tile does nothing | Check the unit's MIDI channel (*About this unit* says where) against MIDI Setup, and that the cue track sends to the unit. On a Fractal page, the CCs are the factory defaults: if you changed them on the unit, use a custom MIDI device. |
+| A Helix / Fractal page tile does nothing | Check the unit's MIDI channel (*About this unit* says where) against the channel at the top of its page, and that the cue track sends to the unit. On a Fractal page, the CCs are the factory defaults: if you changed them on the unit, use a custom MIDI device. |
 | A Helix preset loads from the wrong setlist | Turn on **Switch to the preset's setlist** under the preset list, check the preset's setlist, then drag its clips in again. |
-| A custom device tile does nothing | Check the device's MIDI channel (the same in MIDI Setup and on the device) and its MIDI chart: CC numbers and values differ for every device. Try **Test on the device** in the tile editor. |
+| A custom device tile does nothing | Check the device's MIDI channel (the same at the top of its page and on the device) and its MIDI chart: CC numbers and values differ for every device. Try **Test on the device** in the tile editor. |
 | A custom device loads the preset next to the one I wanted | Its manual counts presets from the other number: switch **Programs count from 0 / 1** on the device card. |
 | Expression tiles do nothing | Assign the parameter to **Expression 1** (or 2) on the QC, in that preset, and pick the same **Exp 1 / Exp 2** in PedalCues. The clips must be on the **QC Cues** track, on the QC's channel. |
 | Expression moves the wrong thing | It acts on the preset the QC has loaded. Put the move after the right preset or scene clip, or switch on **Load 1A first** in Expression. |

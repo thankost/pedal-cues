@@ -629,7 +629,7 @@ public:
         unitSection.repaint();
         if (! nameLabel.isBeingEdited())
             nameLabel.setText (name, juce::dontSendNotification);
-        channelLabel.setText ("Sends on channel " + juce::String (state::channelFor (state, u)) + " (MIDI Setup)", juce::dontSendNotification);
+        channelLabel.setText ("Sends on channel " + juce::String (state::channelFor (state, u)) + " (set it at the top of this tab)", juce::dontSendNotification);
         const auto* fromTemplate = templates::find (u[IDs::templateId].toString());
         disclaimerLabel.setText (fromTemplate != nullptr ? templates::disclaimer (*fromTemplate) : juce::String(), juce::dontSendNotification);
         disclaimerLabel.setVisible (fromTemplate != nullptr);

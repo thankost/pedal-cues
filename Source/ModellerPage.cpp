@@ -19,7 +19,7 @@ struct Slot
     const modellers::Profile* profile (const juce::ValueTree& state) const { return modellers::find (state[profileId()].toString()); }
     int channel (const juce::ValueTree& state) const
     {
-        return pedalsTab ? state::fxModellerChannel (state) : juce::jlimit (1, 16, (int) state[IDs::qcChannel]);
+        return pedalsTab ? state::fxModellerChannel (state) : state::ampChannel (state);
     }
 };
 

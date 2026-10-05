@@ -120,7 +120,7 @@ Template bossGt1000()
     t.notes = "Why this is a template and not a page: the GT-1000 has no fixed MIDI CCs. It only reacts to a CC that an ASSIGN uses as its "
               "source, and which patch a Program Change loads is up to its PROGRAM MAP. So you set those on the unit, and these tiles follow.\n\n"
               "Built from the Boss GT-1000 MIDI Implementation and the GT-1000CORE Parameter Guide. Not tested on hardware: check on your unit.\n\n"
-              "1. MIDI channel: MENU > MIDI > MIDI SETTING > RX CHANNEL, the same as in PedalCues' MIDI Setup.\n\n"
+              "1. MIDI channel: MENU > MIDI > MIDI SETTING > RX CHANNEL, the same as at the top of its PedalCues tab.\n\n"
               "2. Presets: set MENU > MIDI > MAP SELECT to PROG, then in PROGRAM MAP BANK1 set PC#1, PC#2... to the patches you want "
               "(U001-U250, P001-P250). The preset tiles send bank select (CC#0, then CC#32 = 0) and the Program Change: BANK1 = bank 0, "
               "BANK2 = bank 1. Rename the tiles after your patches.\n\n"

@@ -104,7 +104,7 @@ public:
 
 private:
     int pedalNumber() const { return (int) state[IDs::expPedal] == 2 ? 2 : 1; }
-    int qcChannel() const   { return (int) state[IDs::qcChannel]; }
+    int qcChannel() const   { return state::ampChannel (state); }
 
     // The preset open in the list (what "Load 1A first" loads).
     juce::ValueTree openPreset() const

@@ -4,7 +4,7 @@ using namespace theme;
 
 namespace
 {
-const juce::Colour tabColours[] = { qcBlue, whammyRed, accent };   // the first tab is Kemper green for a Kemper
+const juce::Colour tabColours[] = { qcBlue, whammyRed };   // the first tab is Kemper green for a Kemper
 
 // Text on a tab: white on the Whammy's red, black on lighter colours (a custom pedal's own colour).
 juce::Colour textOn (juce::Colour tab)
@@ -47,8 +47,9 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     tabBar.setComponentID ("hdr.tabs");
     addAndMakeVisible (tabBar);
 
-    const juce::String names[] = { "Amps & Modellers", "Effects & Pedals", "MIDI Setup" };   // the device is on the page and in the tooltip
-    for (int i = 0; i < 3; ++i)
+    // Two tabs, one per device; each page's MIDI strip holds its channel, and How to connect the wiring and DAW tracks.
+    const juce::String names[] = { "Amps & Modellers", "Effects & Pedals" };   // the device is on the page and in the tooltip
+    for (int i = 0; i < 2; ++i)
     {
         auto* b = tabButtons.add (new juce::TextButton (names[i]));
         b->setClickingTogglesState (true);
@@ -90,14 +91,14 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     helpButton.onClick = [this] { showHelpMenu (&helpButton); };
     addAndMakeVisible (helpButton);
 
-    channelBanner.openButton.onClick = [this] { showPage (2); };
-    addChildComponent (channelBanner);
-
     pages.push_back (ui::makeAmpPage (p));
     pages.push_back (ui::makePedalPage (p));
-    pages.push_back (ui::makeSettingsPage (p));
     for (auto& page : pages)
         addChildComponent (*page);
+    strips.push_back (ui::makeMidiStrip (p, false));
+    strips.push_back (ui::makeMidiStrip (p, true));
+    for (auto& strip : strips)
+        addChildComponent (*strip);
 
     state.addListener (this);
 
@@ -142,8 +143,8 @@ PedalCuesEditor::~PedalCuesEditor()
 void PedalCuesEditor::showPage (int index)
 {
     currentPage = juce::jlimit (0, (int) pages.size() - 1, index);
-    channelsConfirmed = state::getFlag (ui::channelsConfirmedFlag);
-    channelBanner.setVisible (! channelsConfirmed && currentPage != 2);
+    for (int i = 0; i < (int) strips.size(); ++i)   // no strip over "No pedal": there's no device to set up
+        strips[(size_t) i]->setVisible (i == currentPage && ! (i == 1 && ui::pedalInfo (state).isNone));
     layoutContent();
     for (int i = 0; i < (int) pages.size(); ++i)
     {
@@ -166,7 +167,7 @@ void PedalCuesEditor::showQcExpression (bool show)
 
 juce::Colour PedalCuesEditor::tabColour (int tab) const
 {
-    return tab == 0 ? ui::ampInfo (state).colour : tab == 1 ? ui::pedalInfo (state).colour : tabColours[juce::jlimit (0, 2, tab)];
+    return tab == 0 ? ui::ampInfo (state).colour : tab == 1 ? ui::pedalInfo (state).colour : tabColours[juce::jlimit (0, 1, tab)];
 }
 
 void PedalCuesEditor::showQuadCortex (bool show)
@@ -339,7 +340,7 @@ void PedalCuesEditor::importSetup()
                                   {
                                       state::setFlag ("setupViaQcChain", (bool) safe->state[IDs::setupViaQcChain]);
                                       safe->state.removeProperty (IDs::setupViaQcChain, nullptr);
-                                      safe->refreshNow();   // MIDI Setup shows the imported wiring
+                                      safe->refreshNow();   // How to connect shows the imported wiring
                                   }
                               }
                               else
@@ -354,6 +355,7 @@ void PedalCuesEditor::showHelpMenu (juce::Component* target, const juce::String&
     m.addSectionHeader ("PedalCues " JucePlugin_VersionString);
     m.addItem (1, "Quick tour");
     m.addItem (2, "User guide");
+    m.addItem (17, "How to connect (wiring and DAW tracks)");
     m.addItem (14, "Wiring guide");
     m.addItem (15, "What's new");
     m.addSeparator();
@@ -394,6 +396,7 @@ void PedalCuesEditor::showHelpMenu (juce::Component* target, const juce::String&
             case 12: safe->exportSetup(); break;
             case 13: safe->importSetup(); break;
             case 14: ui::showWiringGuide (safe->state); break;
+            case 17: ui::showConnectDialog (safe->pedalProcessor); break;
             case 15: juce::URL (ui::changelogUrl).launchInDefaultBrowser(); break;
             case 16: ui::problemReportUrl().launchInDefaultBrowser(); break;
             default: break;
@@ -806,10 +809,20 @@ void PedalCuesEditor::handleAsyncUpdate()
 
     for (auto& page : pages)
         page->refresh();
+    for (auto& strip : strips)
+        strip->refresh();
+    showPage (currentPage);   // No pedal hides the strip and gives its room to the page
 }
 
 void PedalCuesEditor::timerCallback()
 {
+    // Done in a strip (or in another PedalCues window) is a per-computer setting, not project state: pick it up here.
+    if (const auto confirmed = state::getFlag (ui::channelsConfirmedFlag); confirmed != channelsConfirmed)
+    {
+        channelsConfirmed = confirmed;
+        for (auto& strip : strips)
+            strip->refresh();
+    }
     const auto bpm = pedalProcessor.getHostBpm();
     if (std::abs (bpm - shownBpm) > 0.01)
     {
@@ -957,12 +970,15 @@ void PedalCuesEditor::showTempoEditor()
                                             this);
 }
 
-// The pages below the header, with the channel reminder above them while it's shown.
+// The pages below the header, each with its MIDI strip on top.
 void PedalCuesEditor::layoutContent()
 {
     auto content = getLocalBounds().withTrimmedTop (64);
-    if (channelBanner.isVisible())
-        channelBanner.setBounds (content.removeFromTop (channelBannerHeight).reduced (14, 0).withTrimmedTop (8));
+    const auto strip = content.removeFromTop (stripHeight).withTrimmedTop (6);
+    for (auto& s : strips)
+        s->setBounds (strip);
+    if (currentPage == 1 && ui::pedalInfo (state).isNone)
+        content = getLocalBounds().withTrimmedTop (64);
     for (auto& page : pages)
         page->setBounds (content);
 }
@@ -975,8 +991,8 @@ void PedalCuesEditor::resized()
     updateBadge.setBounds (18 + 40 + 10, 36, 270, 20);
 
     // The amp tab is wider: it holds names like "HeadRush Pedalboard" plus its ▾ unit menu.
-    const int tabWidths[] = { 188, 152, 112 };   // the pedals tab has a ▾ too
-    const auto tabsWidth = tabWidths[0] + tabWidths[1] + tabWidths[2] + 8;
+    const int tabWidths[] = { 188, 152 };   // the pedals tab has a ▾ too
+    const auto tabsWidth = tabWidths[0] + tabWidths[1] + 8;
     tabBar.setBounds (juce::Rectangle<int> (tabsWidth, 38).withCentre ({ getWidth() / 2, header.getCentreY() }));
     auto t = tabBar.getLocalBounds().reduced (4);
     for (int i = 0; i < tabButtons.size(); ++i)
@@ -994,35 +1010,3 @@ void PedalCuesEditor::resized()
 }
 
 //==============================================================================
-PedalCuesEditor::ChannelBanner::ChannelBanner()
-{
-    openButton.setColour (juce::TextButton::buttonColourId, accent);
-    openButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
-    openButton.setTooltip ("Set the channels your devices use, then click 'Done: my devices use these channels'");
-    addAndMakeVisible (openButton);
-}
-
-void PedalCuesEditor::ChannelBanner::paint (juce::Graphics& g)
-{
-    const auto b = getLocalBounds().toFloat();
-    g.setColour (accent.withAlpha (0.14f));
-    g.fillRoundedRectangle (b, 8.0f);
-    g.setColour (accent.withAlpha (0.6f));
-    g.drawRoundedRectangle (b.reduced (0.5f), 8.0f, 1.0f);
-
-    auto r = getLocalBounds().reduced (14, 0).withTrimmedRight (openButton.getWidth() + 16);
-    g.setColour (text);
-    g.setFont (font (13.0f, true));
-    const juce::String first ("First, set your pedals' MIDI channels.");
-    g.drawText (first, r, juce::Justification::centredLeft);
-    r.removeFromLeft ((int) juce::GlyphArrangement::getStringWidth (g.getCurrentFont(), first) + 8);
-    g.setColour (dim);
-    g.setFont (font (12.5f));
-    g.drawFittedText ("Every clip keeps the channel it was dragged with, so do this before building songs.", r,
-                      juce::Justification::centredLeft, 1);
-}
-
-void PedalCuesEditor::ChannelBanner::resized()
-{
-    openButton.setBounds (getLocalBounds().removeFromRight (160).reduced (6, 5));
-}

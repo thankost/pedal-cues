@@ -15,7 +15,7 @@ const std::vector<TourStep>& tourSteps()
           "First, pick what you play through: click the arrow on the first tab and choose your device. Quad Cortex (or Mini), "
           "Kemper Profiler or Player, a Nano Cortex, a Fractal, Line 6, HeadRush or Darkglass unit (ready-made from their manuals, beta), or any other MIDI device: "
           "start from a template (Axe-Fx III, Boss GT-1000...) or make your own tiles. Type in the list to search. The tab, its page and "
-          "the MIDI it sends follow your choice (it's also in MIDI Setup). The next steps show the Quad Cortex page; the other pages work "
+          "the MIDI it sends follow your choice. The next steps show the Quad Cortex page; the other pages work "
           "the same way.", false, false, true },
         { 0, { "qc.presetList" }, "1. Add your presets",
           "Add each Quad Cortex preset (a whole rig, often one per song) with '+ Preset', or read them all from the pedal with "
@@ -53,14 +53,14 @@ const std::vector<TourStep>& tourSteps()
         { 1, { "wh.sweepControls", "wh.sweeps" }, "7. Automate the treadle",
           "Pick a length and curve, then drag a move. It becomes CC#11 automation that follows your project tempo: "
           "ramps, dives, trills, or a bend that lands exactly on the next bar. Or click Draw, sketch your own move and save it in My drawings." },
-        { 2, { "set.pedals" }, "8. MIDI Setup: your devices",
-          "The devices shown are examples: click one to pick yours, or No pedal if you only have one. Set each channel to match the "
-          "device itself, a different one for each. Every cue is sent on these channels, and each clip keeps the channel it was dragged "
-          "with, so set them once, before building songs, then click 'Done: my devices use these channels'." },
-        { 2, { "set.tracks" }, "9. Set up your DAW",
-          "With two devices, pick how they're connected (each on its own output, or one cable through the first one's MIDI Thru), "
-          "then make one cue track per device as shown. Not sure how to cable them? Click 'Wiring guide'." },
-        { 2, { "hdr.help" }, "You are ready",
+        { 0, { "strip.amp" }, "8. Each device's MIDI channel",
+          "Above each page: the device's MIDI channel. Set it to the channel the device itself uses, a different one for each device, "
+          "then click Done. Every cue is sent on it, and each clip keeps the channel it was dragged with, so set it once, before building "
+          "songs. Test sends a quick check to the device." },
+        { 0, { "strip.connect" }, "9. How to connect",
+          "Opens Connect your rig: the cables (one device, a daisy chain or separate outputs) and the cue tracks to make in your DAW, "
+          "with your devices as the examples. In the standalone app, pick the MIDI port there too." },
+        { 0, { "hdr.help" }, "You are ready",
           "The menu button (top right) reopens this tour and the user guide, shows what's new, lets you report a problem, "
           "and saves your setup as the default for new projects. In the standalone app these are in the File and Help menus. Have a great show!" },
     };

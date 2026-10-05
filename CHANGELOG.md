@@ -2,6 +2,12 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.9.0 (2026-10-06)
+
+- **No more MIDI Setup tab:** each page now has a strip at the top with its device's **MIDI channel**, a **Test** button and **How to connect**. How to connect opens one window with how your devices are connected, the cue tracks to make in your DAW (with your devices as examples), your DAW, the wiring guide and, in the standalone app, the MIDI port. A MIDI port you plug in while it's open shows up by itself.
+- **Every device keeps its own MIDI channel:** the Quad Cortex, QC Mini, Kemper, each Fractal / Line 6 / HeadRush / Darkglass page, each of your devices, the Whammy V and the Whammy DT. Switching devices never changes another one's channel. The channels are saved with your setup (Export setup, Save as default). Your songs and older setups keep the channels they had.
+- **New setups start with No pedal** on Effects & Pedals, so you only see the devices you pick. Setups and projects that use the Whammy keep it.
+
 ## 0.8.8 (2026-10-05)
 
 - **Two tabs, Amps & Modellers and Effects & Pedals (new):** the first tab is your amp modeller, the second a pedal next to it. The second tab still shows the Whammy V / DT, and its new **▾** lets you pick another pedal, one of your MIDI devices (a delay, a looper...), or **No pedal** if you only have one device. Each pedal keeps its own MIDI channel. Each list only shows what belongs there (pedal templates like the VP4 are on the second tab), and a device's **...** menu moves it to the other tab. Your Whammy setups and songs are unchanged.

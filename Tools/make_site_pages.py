@@ -137,6 +137,7 @@ def page(title: str, description: str, current: str, main: str, source: str) -> 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>/* Reloads start at the top (links to a #section still jump there). */if ('scrollRestoration' in history) history.scrollRestoration = 'manual';window.addEventListener('load', function () {{ if (!location.hash) window.scrollTo(0, 0); }});</script>
   <title>{title} - PedalCues</title>
   <meta name="description" content="{description}">
   <link rel="icon" type="image/png" href="images/icon.png">

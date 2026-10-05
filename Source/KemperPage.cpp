@@ -59,7 +59,7 @@ public:
                 const auto v = juce::roundToInt (pos * 127.0f);
                 c.name = "Kemper " + cues::kemper::pedalName (pedalIndex()) + " " + (v == 0 ? juce::String ("Heel") : v == 127 ? juce::String ("Toe")
                                                                                         : juce::String (juce::roundToInt (pos * 100.0f)) + "%");
-                c.add (0.0, juce::MidiMessage::controllerEvent (juce::jlimit (1, 16, (int) state[IDs::qcChannel]),
+                c.add (0.0, juce::MidiMessage::controllerEvent (juce::jlimit (1, 16, state::ampChannel (state)),
                                                                 cues::kemper::pedalController (pedalIndex()), v));
                 return c;
             };
@@ -109,14 +109,14 @@ private:
         c.shapeHolds       = [] (int s) { return s == (int) cues::qc::ExpShape::toe || s == (int) cues::qc::ExpShape::heel; };
         c.makeShape = [this] (int s)
         {
-            return cues::qc::shapedMove ("Kemper " + cues::kemper::pedalName (pedalIndex()) + " ", (int) state[IDs::qcChannel],
+            return cues::qc::shapedMove ("Kemper " + cues::kemper::pedalName (pedalIndex()) + " ", state::ampChannel (state),
                                          cues::kemper::pedalController (pedalIndex()), (cues::qc::ExpShape) s,
                                          (double) state[IDs::kpBeats], (double) state[IDs::kpCurve], (bool) state[IDs::kpReset]);
         };
         c.makeDrawn = [this] (const std::vector<float>& points, const juce::String& name)
         {
             return cues::qc::drawnMove ("Kemper " + cues::kemper::pedalName (pedalIndex()) + " " + (name.isNotEmpty() ? name : juce::String ("Drawn")),
-                                        (int) state[IDs::qcChannel], cues::kemper::pedalController (pedalIndex()), points,
+                                        state::ampChannel (state), cues::kemper::pedalController (pedalIndex()), points,
                                         (double) state[IDs::kpBeats], (bool) state[IDs::kpReset]);
         };
         return c;
@@ -378,7 +378,7 @@ public:
 
 private:
     juce::ValueTree kemperTree() const { return state.getChildWithName (IDs::Kemper); }
-    int channel() const                { return (int) state[IDs::qcChannel]; }
+    int channel() const                { return state::ampChannel (state); }
 
     int numPerformances() const
     {

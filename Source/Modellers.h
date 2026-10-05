@@ -41,7 +41,7 @@ struct Profile
     bool beta = true;                       // "beta" in the device list and "From the <brand> manual" on the page (Nano Cortex: no, just "Not tested on hardware")
     bool cc0IsControl = false;              // CC#0 is a control (Darkglass amps): clips are padded with CC#32 = 0, not CC#0
     juce::String looperTitle { "Looper" };  // the second view: "Looper", or "IR slots" on the Infinity 500 Combo
-    juce::String testMessage;               // MIDI Setup's Test when there's no tuner over MIDI (custom syntax), e.g. "PC 2"
+    juce::String testMessage;               // the strip's Test when there's no tuner over MIDI (custom syntax), e.g. "PC 2"
     bool pedal = false;                     // an effect pedal (DL4 MkII, HX One): listed on the Effects & Pedals tab only
     juce::String mainTitle { "Scenes & Switches" };   // the first view's button
     Scheme scheme = Scheme::helix;
@@ -65,8 +65,8 @@ struct Profile
     std::vector<Control> pedals;            // expression: Helix EXP 1-3, Fractal external controllers
     juce::String pedalNote;
 
-    juce::String tunerOn, tunerOff;         // MIDI Setup's Test button (custom message syntax)
-    juce::String channelHint;               // MIDI Setup: where the channel is set on the unit
+    juce::String tunerOn, tunerOff;         // the strip's Test (custom message syntax)
+    juce::String channelHint;               // the strip's hint: where the channel is set on the unit
     bool hasDin = true;                     // a MIDI In jack (POD Go: USB only)
     bool hasThru = true;                    // a MIDI Out / Thru to pass MIDI on (Nano Cortex: none)
     juce::String midiIn { "5-pin MIDI In" };  // Flex Prime, MX5: "TRS MIDI In"
