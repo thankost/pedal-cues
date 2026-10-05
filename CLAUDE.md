@@ -1,6 +1,6 @@
 # PedalCues: notes for Claude
 
-JUCE plugin (VST3 / AU on macOS / LV2 on Linux / Standalone; Windows, macOS (universal: Intel from 10.13, Apple Silicon from 11; `CMAKE_OSX_DEPLOYMENT_TARGET` 10.13 and the pkg's `os-version min`) and Linux; tested in Reaper, DAW-neutral wording elsewhere) that turns Quad Cortex, Kemper and Whammy V / DT MIDI changes, and tiles for any other MIDI device (custom MIDI devices, beta), into drag-and-drop tiles. The author is Thanasis Kostopoulos (GitHub `thankost`). The repo is public: https://github.com/thankost/pedal-cues. The download site is https://thankost.github.io/pedal-cues/, served from `docs/` on `main`.
+JUCE plugin (VST3 / AU on macOS / LV2 on Linux / Standalone; Windows, macOS (universal: Intel from 10.13, Apple Silicon from 11; `CMAKE_OSX_DEPLOYMENT_TARGET` 10.13 and the pkg's `os-version min`) and Linux; tested in Reaper, DAW-neutral wording elsewhere) that turns MIDI changes for the Quad Cortex / QC Mini / Nano Cortex, Kemper, Fractal, Line 6, HeadRush, Darkglass, Boss GT-1000 and Whammy V / DT, and tiles for any other MIDI device (custom MIDI devices, beta), into drag-and-drop tiles. The website headline lists the brands (`docs/index.html` h1, title and meta descriptions) and so do the README intro and the GitHub About text: update them all when a brand is added. The author is Thanasis Kostopoulos (GitHub `thankost`). The repo is public: https://github.com/thankost/pedal-cues. The download site is https://thankost.github.io/pedal-cues/, served from `docs/` on `main`.
 
 ## Build and test
 

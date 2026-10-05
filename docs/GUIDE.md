@@ -1,6 +1,6 @@
 # PedalCues user guide
 
-PedalCues turns pedal changes into **drag and drop**. Each tile in the plugin is a Quad Cortex preset, a scene, a footswitch, the tuner, a Kemper performance slot or effect switch, a tile you made for any other MIDI device, a Whammy V or Whammy DT mode, a Whammy DT Drop Tune shift, or a Whammy treadle move. Drag a tile onto your DAW timeline and it lands as a **named MIDI clip** at that bar. Press play, and your rig follows the song.
+PedalCues turns pedal changes into **drag and drop**. Each tile in the plugin is a preset, a scene or snapshot, a footswitch or effect, the tuner, a looper action or an expression move on your Quad Cortex, Kemper, Fractal, Line 6, HeadRush, Darkglass or Nano Cortex, a tile you made for any other MIDI device, a Whammy V or Whammy DT mode, a Whammy DT Drop Tune shift, or a Whammy treadle move. Drag a tile onto your DAW timeline and it lands as a **named MIDI clip** at that bar. Press play, and your rig follows the song.
 
 ![PedalCues cues on a DAW timeline](images/timeline.png)
 

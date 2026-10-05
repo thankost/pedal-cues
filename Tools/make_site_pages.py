@@ -183,8 +183,8 @@ def guide():
 {body}
   </main>
 </div>"""
-    return page("User guide", "How to install PedalCues, connect your Quad Cortex and Whammy V, and build songs with "
-                "drag-and-drop pedal cues.", "guide.html", main, "docs/GUIDE.md")
+    return page("User guide", "How to install PedalCues, connect your Quad Cortex, Kemper, Fractal, Line 6, HeadRush, Darkglass, "
+                "Whammy or any MIDI device, and build songs with drag-and-drop pedal cues.", "guide.html", main, "docs/GUIDE.md")
 
 
 def changelog():

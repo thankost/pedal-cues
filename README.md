@@ -1,6 +1,6 @@
 # PedalCues
 
-Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex / QC Mini**, the **Kemper Profiler / Kemper Player**, **Fractal Audio** (Axe-Fx, FM, AX8, FX8, VP4), **Line 6** (Helix, HX, POD Go, Helix Stadium), **HeadRush** (Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5) and **Darkglass** (Anagram, Infinity 500 Combo, Exponent 500, Microtubes Infinity) units (beta), the **Neural DSP Nano Cortex** and the **DigiTech Whammy V / Whammy DT**, plus **any other MIDI device** with tiles you make yourself (beta).
+Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex, QC Mini and Nano Cortex**, the **Kemper Profiler / Kemper Player**, **Fractal Audio** (Axe-Fx, FM, AX8, FX8, VP4), **Line 6** (Helix, HX, POD Go, Helix Stadium), **HeadRush** (Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5), **Darkglass** (Anagram, Infinity 500 Combo, Exponent 500, Microtubes Infinity) and **Boss** (GT-1000) units (beta), and the **DigiTech Whammy V / Whammy DT**, plus **any other MIDI device** with tiles you make yourself (beta).
 A VST3 / AU / LV2 / Standalone plugin (JUCE) for Windows, macOS and Linux. Tested in Reaper; it should work in any DAW that accepts dragged MIDI files and can send a MIDI track to a hardware output (Ableton Live, Cubase, Bitwig, Studio One; in Logic the clips work on an External MIDI track).
 
 **[Download for Windows, macOS and Linux](https://thankost.github.io/pedal-cues/)**
