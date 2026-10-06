@@ -2,10 +2,6 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
-## 0.9.3 (unreleased)
-
-- The quick tour calls the pedals tab by its name, Effects & Pedals.
-
 ## 0.9.2 (2026-10-06)
 
 - **Knobs instead of Expression** on the Strymon Compadre, the Walrus Audio MAKO D1, R1, M1 and ACS1 and the Source Audio Nemesis: their MIDI charts have no expression CC, so that view turns the knobs (time, mix, decay...) and is now called Knobs.

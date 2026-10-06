@@ -24,7 +24,7 @@ Write down every user-visible change: features, renamed buttons / tabs / setting
 | `Source/Tour.cpp` | steps that describe it (inserting a step shifts `tourShots` in Tools/DocShots.cpp) |
 | `Tools/DocShots.cpp` | a shot for each new page / view / dialog that the docs show; remove shots of removed UI |
 | `docs/images` | `build/DocShots_artefacts/Release/DocShots docs/images`, then **look at** every changed image; delete images nothing references |
-| `CHANGELOG.md` | the next version's section ("(unreleased)" until the release), plain words for musicians |
+| `CHANGELOG.md` | the next version's section ("(unreleased)" until the release), plain words for musicians. Only changes a musician would notice or care about: no entries for wording fixes, typos or docs-only edits |
 | `.github/ISSUE_TEMPLATE/` | device / wiring dropdowns (keep the ids `version`, `os`, `daw`) |
 | `CLAUDE.md` | facts about the changed code (names, ids, rules) |
 

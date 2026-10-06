@@ -188,13 +188,38 @@ def guide():
     text = re.sub(r"## Contents\n.*?\n---\n", "", text, flags=re.S)
     body, toc = markdown(text)
     side = "".join(f'<a href="#{a}">{t}</a>' for level, a, t in toc if level == 2)
+    # The contents column follows the reader: the section whose heading last passed under the sticky header is marked.
+    spy = """
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var heads = links.map(function (a) { return document.getElementById(decodeURIComponent(a.hash.slice(1))); });
+    var current = null, queued = false;
+    function update() {
+      queued = false;
+      var line = 120, on = 0;
+      for (var i = 0; i < heads.length; i++)
+        if (heads[i] && heads[i].getBoundingClientRect().top <= line) on = i;
+      if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 2) on = heads.length - 1;   // the last, short section
+      if (links[on] === current) return;
+      if (current) { current.classList.remove('on'); current.removeAttribute('aria-current'); }
+      current = links[on];
+      if (current) { current.classList.add('on'); current.setAttribute('aria-current', 'location'); }
+    }
+    function queue() { if (!queued) { queued = true; requestAnimationFrame(update); } }
+    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', queue);
+    window.addEventListener('load', update);
+    update();
+  })();
+</script>"""
     main = f"""<div class="wrap guide">
   <aside class="toc"><b>Contents</b>{side}</aside>
   <main class="doc">
     <h1>User guide</h1>
 {body}
   </main>
-</div>"""
+</div>""" + spy
     return page("User guide", "How to install PedalCues, connect your Quad Cortex, Kemper, Fractal, Line 6, HeadRush, Darkglass, "
                 "Whammy or any MIDI device, and build songs with drag-and-drop pedal cues.", "guide.html", main, "docs/GUIDE.md")
 

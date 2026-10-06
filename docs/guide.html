@@ -314,6 +314,29 @@
 <p>PedalCues is free software by <b>Thanasis Kostopoulos</b>, released under the <a href="https://github.com/thankost/pedal-cues/blob/main/LICENSE">MIT License</a>. Source: <a href="https://github.com/thankost/pedal-cues">github.com/thankost/pedal-cues</a>. In the plugin, open <b>☰ &gt; About PedalCues</b>. Not affiliated with any device maker. All product and company names are trademarks of their respective owners.</p>
   </main>
 </div>
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var heads = links.map(function (a) { return document.getElementById(decodeURIComponent(a.hash.slice(1))); });
+    var current = null, queued = false;
+    function update() {
+      queued = false;
+      var line = 120, on = 0;
+      for (var i = 0; i < heads.length; i++)
+        if (heads[i] && heads[i].getBoundingClientRect().top <= line) on = i;
+      if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 2) on = heads.length - 1;   // the last, short section
+      if (links[on] === current) return;
+      if (current) { current.classList.remove('on'); current.removeAttribute('aria-current'); }
+      current = links[on];
+      if (current) { current.classList.add('on'); current.setAttribute('aria-current', 'location'); }
+    }
+    function queue() { if (!queued) { queued = true; requestAnimationFrame(update); } }
+    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', queue);
+    window.addEventListener('load', update);
+    update();
+  })();
+</script>
 <footer>
   <div class="wrap">
     <span>&copy; 2026 Thanasis Kostopoulos &middot; MIT License &middot; Built with JUCE &middot; <a href="guide.html">User guide</a> &middot; <a href="changelog.html">What's new</a> &middot; <a href="help.html">Help</a> &middot; <a href="https://github.com/thankost/pedal-cues">GitHub</a></span>
