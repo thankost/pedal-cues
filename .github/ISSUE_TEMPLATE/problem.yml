@@ -89,7 +89,7 @@ body:
     id: whammy
     attributes:
       label: Effects & Pedals tab
-      description: The device on the second tab, if any.
+      description: The device on the Effects & Pedals tab (the Whammy V unless you picked another).
       options:
         - Whammy V
         - Whammy DT
@@ -102,7 +102,7 @@ body:
         - Walrus Audio, Source Audio or EHX (beta), name the model above
         - A template (VP4, Microtubes Infinity, Eventide H9 / H90, Boss RC-500 / RC-600), name it above
         - Custom MIDI device (beta), name it above
-        - None
+        - I don't use this tab
   - type: textarea
     id: extra
     attributes:

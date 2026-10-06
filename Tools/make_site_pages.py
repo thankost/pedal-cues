@@ -137,7 +137,18 @@ def page(title: str, description: str, current: str, main: str, source: str) -> 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script>/* Reloads start at the top (links to a #section still jump there). */if ('scrollRestoration' in history) history.scrollRestoration = 'manual';window.addEventListener('load', function () {{ if (!location.hash) window.scrollTo(0, 0); }});</script>
+  <script>/* Reloads always start at the top: drop a #section left by an earlier click and jump without the smooth scroll (lazy images
+     loading mid-animation used to stop it part way). Opening a link to a #section still jumps there. */
+  (function () {{
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    var nav = window.performance && performance.getEntriesByType ? performance.getEntriesByType('navigation')[0] : null;
+    if (nav && nav.type === 'reload' && location.hash) history.replaceState(null, '', location.pathname + location.search);
+    function toTop() {{ if (!location.hash) window.scrollTo({{ top: 0, left: 0, behavior: 'instant' }}); }}
+    toTop();
+    document.addEventListener('DOMContentLoaded', toTop);
+    window.addEventListener('load', toTop);
+  }})();
+  </script>
   <title>{title} - PedalCues</title>
   <meta name="description" content="{description}">
   <link rel="icon" type="image/png" href="images/icon.png">

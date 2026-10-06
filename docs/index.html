@@ -3,7 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script>/* Reloads start at the top (links to a #section still jump there). */if ('scrollRestoration' in history) history.scrollRestoration = 'manual';window.addEventListener('load', function () { if (!location.hash) window.scrollTo(0, 0); });</script>
+  <script>/* Reloads always start at the top: drop a #section left by an earlier click and jump without the smooth scroll (lazy images
+     loading mid-animation used to stop it part way). Opening a link to a #section still jumps there. */
+  (function () {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    var nav = window.performance && performance.getEntriesByType ? performance.getEntriesByType('navigation')[0] : null;
+    if (nav && nav.type === 'reload' && location.hash) history.replaceState(null, '', location.pathname + location.search);
+    function toTop() { if (!location.hash) window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
+    toTop();
+    document.addEventListener('DOMContentLoaded', toTop);
+    window.addEventListener('load', toTop);
+  })();
+  </script>
   <title>PedalCues - drag-and-drop MIDI cues for Quad Cortex, Kemper, Fractal, Helix, Strymon, HeadRush, Darkglass, Whammy &amp; more amp modellers, effects &amp; pedals</title>
   <meta name="description" content="Free VST3/AU plugin: drag Quad Cortex, Nano Cortex, Kemper, Fractal, Line 6 Helix and DL4, Strymon, Boss, Meris, Chase Bliss, HeadRush, Darkglass and Whammy V / DT cues, more amp modellers, effects and pedals, or tiles for any MIDI device, onto your DAW timeline as named MIDI clips. Windows, macOS and Linux.">
   <link rel="icon" type="image/png" href="images/icon.png">
@@ -238,7 +249,7 @@
       <figure><img src="images/dl4-models.png" alt="Line 6 DL4 MkII page" loading="lazy"><figcaption>DL4 MkII on Effects &amp; Pedals: every delay and reverb model (beta)</figcaption></figure>
       <figure><img src="images/strymon-timeline-mx-models.png" alt="Strymon TimeLine MX page" loading="lazy"><figcaption>Strymon TimeLine MX: delay types and dual mode (beta)</figcaption></figure>
       <figure><img src="images/chase-bliss-mood.png" alt="Chase Bliss MOOD MKII page" loading="lazy"><figcaption>Chase Bliss MOOD MKII, and Meris, Walrus, Source Audio, EHX (beta)</figcaption></figure>
-      <figure><img src="images/pedal-picker.png" alt="Effects and Pedals device list" loading="lazy"><figcaption>Pick the pedal on the second tab, or none</figcaption></figure>
+      <figure><img src="images/pedal-picker.png" alt="Effects and Pedals device list" loading="lazy"><figcaption>Effects &amp; Pedals: pick the Whammy, a Strymon, Boss, Meris and more</figcaption></figure>
       <figure><img src="images/whammy-draw.png" alt="Draw a treadle move" loading="lazy"><figcaption>Draw your own treadle move</figcaption></figure>
       <figure><img src="images/timeline.png" alt="Cues on a DAW timeline" loading="lazy"><figcaption>Named cues on the timeline</figcaption></figure>
       <figure><img src="images/preset-target.png" alt="Which preset scenes act on" loading="lazy"><figcaption>Scenes load their preset first, or use the current one</figcaption></figure>

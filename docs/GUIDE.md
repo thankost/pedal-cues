@@ -156,7 +156,7 @@ In Reaper:
 
 | Each device on its own output | One cable through the QC (daisy chain) |
 |---|---|
-| ![How to connect, two cue tracks](images/settings.png) | ![How to connect, daisy chain](images/settings-qc-chain.png) |
+| ![How to connect, each device on its own output](images/settings.png) | ![How to connect, daisy chain](images/settings-qc-chain.png) |
 
 ---
 

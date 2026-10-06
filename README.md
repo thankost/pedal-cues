@@ -58,7 +58,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - **Expression moves** on any device: swells, fades, wah, Set to tiles and drawn moves on the CC you pick (CC#11 by default, the MIDI standard Expression), saved with the device
 - **Export / Import device** as a `.pedalcues-device` file, so one person sets up a device and everyone with the same gear imports it
 
-**Two tabs: Amps & Modellers and Effects & Pedals.** The second tab shows the **Whammy V / Whammy DT** by default, the **Line 6 DL4 MkII** or **HX One** (beta: presets, controls, looper, expression and, on the DL4, every delay and reverb model), a pedal template, any of your MIDI devices (a delay, a looper...), or nothing if you only have one device: pick it with the ▾ on the tab. Each pedal keeps its own MIDI channel.
+**Two tabs: Amps & Modellers and Effects & Pedals.** **Effects & Pedals** shows the **Whammy V / Whammy DT** by default; pick another with the ▾ on the tab: a Strymon, Boss, Meris, Chase Bliss, Walrus Audio, Source Audio or EHX pedal, the **Line 6 DL4 MkII** or **HX One** (beta: presets, controls, looper, expression and models), a pedal template or any of your MIDI devices (a delay, a looper...). Each pedal keeps its own MIDI channel.
 
 **Whammy V / Whammy DT** (two devices in the Effects & Pedals list)
 - All 21 modes, Classic or Chords (Chords on the V only), engaged or bypassed (Program Change)

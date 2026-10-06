@@ -3,7 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script>/* Reloads start at the top (links to a #section still jump there). */if ('scrollRestoration' in history) history.scrollRestoration = 'manual';window.addEventListener('load', function () { if (!location.hash) window.scrollTo(0, 0); });</script>
+  <script>/* Reloads always start at the top: drop a #section left by an earlier click and jump without the smooth scroll (lazy images
+     loading mid-animation used to stop it part way). Opening a link to a #section still jumps there. */
+  (function () {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    var nav = window.performance && performance.getEntriesByType ? performance.getEntriesByType('navigation')[0] : null;
+    if (nav && nav.type === 'reload' && location.hash) history.replaceState(null, '', location.pathname + location.search);
+    function toTop() { if (!location.hash) window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }
+    toTop();
+    document.addEventListener('DOMContentLoaded', toTop);
+    window.addEventListener('load', toTop);
+  })();
+  </script>
   <title>User guide - PedalCues</title>
   <meta name="description" content="How to install PedalCues, connect your Quad Cortex, Kemper, Fractal, Line 6, HeadRush, Darkglass, Whammy or any MIDI device, and build songs with drag-and-drop pedal cues.">
   <link rel="icon" type="image/png" href="images/icon.png">
@@ -68,7 +79,7 @@
 <p><b>Check it works:</b> click the round play button on a scene tile, and the QC should switch scene (on the Kemper page, a slot tile). Click one on a Whammy mode, and the Whammy's mode LED should move.</p>
 <blockquote><p>With the daisy chain, a single track would also work, since both pedals share one cable and their channels keep the cues apart. Two tracks keep the arrangement easier to read and let you mute one pedal.</p></blockquote>
 <p><b>How to connect</b> (at the top of each page, or in the ☰ menu) shows the same steps for your devices:</p>
-<div class="pair"><figure><a href="images/settings.png"><img src="images/settings.png" alt="How to connect, two cue tracks" loading="lazy"></a><figcaption>Each device on its own output</figcaption></figure><figure><a href="images/settings-qc-chain.png"><img src="images/settings-qc-chain.png" alt="How to connect, daisy chain" loading="lazy"></a><figcaption>One cable through the QC (daisy chain)</figcaption></figure></div>
+<div class="pair"><figure><a href="images/settings.png"><img src="images/settings.png" alt="How to connect, each device on its own output" loading="lazy"></a><figcaption>Each device on its own output</figcaption></figure><figure><a href="images/settings-qc-chain.png"><img src="images/settings-qc-chain.png" alt="How to connect, daisy chain" loading="lazy"></a><figcaption>One cable through the QC (daisy chain)</figcaption></figure></div>
 <hr>
 <h2 id="4-first-launch-the-quick-tour">4. First launch: the quick tour</h2>
 <p>The first time you open PedalCues, a quick tour walks you through every area. It dims the window, highlights one part at a time, and explains it.</p>
