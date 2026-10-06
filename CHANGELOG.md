@@ -2,6 +2,10 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.9.2 (2026-10-06)
+
+- **Knobs instead of Expression** on the Strymon Compadre, the Walrus Audio MAKO D1, R1, M1 and ACS1 and the Source Audio Nemesis: their MIDI charts have no expression CC, so that view turns the knobs (time, mix, decay...) and is now called Knobs.
+
 ## 0.9.1 (2026-10-06)
 
 - **Import MIDI... in Draw (new):** load a move from a MIDI file, like a treadle bend or an expression swell you drew as CC automation in your DAW, and reuse it in any song. Click **Import MIDI...** next to Wave... (or drop the .mid file on the card): it keeps the clip's timing, then saves it in My drawings. In every Draw mode: the Whammy, the Quad Cortex, Kemper and modeller expression, and your own devices.

@@ -710,6 +710,7 @@ void addStrymon (std::vector<Profile>& v)
                      choices ("Boost EQ", 17, 1, { "Flat", "Treble", "Mid" }, "The boost EQ (CC#17).", 6),
                      choices ("Boost type", 18, 1, { "Clean", "Dirty" }, "The boost type (CC#18).", 7) };
         p.pedals = { { "Comp level", 12 }, { "Compression", 14 }, { "Dry", 15 }, { "Boost", 19 } };
+        p.pedalsTitle = "Knobs";   // the table has no expression CC: this view turns the knobs
         p.pedalNote = "Moves that knob like turning it. The Compadre's MIDI table has no expression CC.";
         p.notes = "Sources: Compadre User Manual Rev C (MIDI specification, p.18-19)." + noMidiGuide + "\n\nPresets: 300, numbered 0-299. "
                   "Each preset tile sends the bank (CC#0: 0 = 0-127, 1 = 128-255, 2 = 256-299) and then Program Change = the number "

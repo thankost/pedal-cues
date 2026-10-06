@@ -57,6 +57,7 @@ public:
     void refresh();
     void resized() override;
     void setHint (const juce::String& hint)   { section.hint = hint; section.repaint(); }
+    void setTitle (const juce::String& title) { section.title = title; section.repaint(); }
 
     // The Draw > Wave... panel on its own (DocShots).
     static std::unique_ptr<juce::Component> makeWaveEditor (WaveSettings, juce::Colour);

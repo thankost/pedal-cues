@@ -55,6 +55,7 @@ public:
         }
         pedalBox.setSelectedId (pedalIndex() + 1, juce::dontSendNotification);
         pedalBox.setTooltip (p->pedalNote);
+        moves.setTitle (p->pedalsTitle);
         moves.setHint ("CC#" + juce::String (controller()) + (controlMax() != 127 ? " = 0-" + juce::String (controlMax()) : juce::String())
                        + "  -  the loaded preset");
 
@@ -297,6 +298,7 @@ public:
         viewButtons[1]->setButtonText (p->looperTitle);     // Infinity 500 Combo: IR slots
         looperSection.title = p->looperTitle;
         viewButtons[2]->setVisible (! p->pedals.empty());
+        viewButtons[2]->setButtonText (p->pedalsTitle);     // "Knobs" where the chart has no expression CC
         viewButtons[0]->setButtonText (p->mainTitle);       // DL4 MkII: "Controls"
         viewButtons[3]->setVisible (! p->models.empty());   // DL4 MkII: delay and reverb models
         viewButtons[0]->setVisible (hasControls (*p));       // a pedal with only a looper / expression: no empty Controls view
@@ -377,7 +379,7 @@ public:
         {
             faceplate.model = p->model.toUpperCase();
             faceplate.tagline = p->brand.toUpperCase() + "  +  PRESETS" + (! p->looper.empty() ? juce::String ("  +  LOOPER") : juce::String())
-                              + (! p->pedals.empty() ? juce::String ("  +  EXPRESSION") : juce::String());
+                              + (! p->pedals.empty() ? "  +  " + p->pedalsTitle.toUpperCase() : juce::String());
             const auto body = p->faceplate.isTransparent() ? p->colour : p->faceplate;   // the pedal's own colour where we know it
             // Light enclosures (white, silver, yellow) keep their colour with a gentler shade and dark lettering.
             const auto light = body.getPerceivedBrightness() > 0.53f;

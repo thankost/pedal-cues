@@ -994,6 +994,7 @@ void addBoutiquePedals (std::vector<Profile>& v)
         p.pedals.push_back ({ "Feedback mode", 32, 127, 0, false, 2 });
         p.pedals.push_back ({ "Mod shape", 33, 127, 0, false, 5 });
         p.pedals.push_back ({ "Grain pitch", 34, 127, 0, false, 4 });
+        p.pedalsTitle = "Knobs";   // no expression CC in the chart: this view turns the knobs
         p.pedalNote = "The D1 has no expression CC; these move that knob like turning it. Program, divisions, feedback mode, mod shape and "
                       "grain pitch take small numbers (0-5, 0-2, 0-4); Models has a tile for each value.";
         const juce::String unnamed (" The manual doesn't number the choices, so the tile shows the value.");
@@ -1019,6 +1020,7 @@ void addBoutiquePedals (std::vector<Profile>& v)
         p.pedals = knobs ({ { "Decay", 3 }, { "Pre delay", 9 }, { "Mix", 14 }, { "Rate", 15 }, { "Depth", 20 }, { "Swell", 21 }, { "Duck", 22 },
                             { "EQ low", 23 }, { "EQ high", 24 }, { "Size", 25 }, { "Diffuse", 26 }, { "Feedback EQ", 27 }, { "Octave type", 81 } });
         p.pedals.push_back ({ "Program", 28, 127, 0, false, 5 });
+        p.pedalsTitle = "Knobs";   // no expression CC in the chart: this view turns the knobs
         p.pedalNote = "The R1 has no expression CC; these move that control like turning it. Program (CC#28) runs 0-5.";
         p.models = { numberedValues ("Program", "Program", 28, 6, "Program (CC#28, 0-5). The manual doesn't number the programs, so the tile "
                                      "shows the value.", 3) };
@@ -1049,6 +1051,7 @@ void addBoutiquePedals (std::vector<Profile>& v)
         p.pedals.push_back ({ "Shape", 15, 127, 0, false, 2 });
         p.pedals.push_back ({ "Division", 16, 127, 0, false, 4 });
         p.pedals.push_back ({ "Lo-fi age", 25, 127, 0, false, 4 });
+        p.pedalsTitle = "Knobs";   // no expression CC in the chart: this view turns the knobs
         p.pedalNote = "The M1 has no expression CC; these move that control like turning it. Program (0-5), shape (0-2), division (0-4) and "
                       "lo-fi age (0-4) run over their own ranges.";
         p.notes = walrusNotes ("Controls: effect on / bypass (CC#31), rotary speed (CC#86), skip (CC#87, Tap held: On holds, Off releases), "
@@ -1082,6 +1085,7 @@ void addBoutiquePedals (std::vector<Profile>& v)
                             { "Presence", 104 }, { "Resonance", 105 }, { "Room decay", 103 }, { "Gate threshold", 89 }, { "Gate release", 90 } });
         p.pedals.push_back ({ "Amp left", 28, 127, 0, false, 5 });
         p.pedals.push_back ({ "Amp right", 29, 127, 0, false, 5 });
+        p.pedalsTitle = "Knobs";   // no expression CC in the chart: this view turns the knobs
         p.pedalNote = "The ACS1 has no expression CC; these move that control like turning it. Amp left / right (CC#28/29) run 0-5.";
         p.notes = walrusNotes ("Controls: boost (CC#31), IR bypass (CC#85), amp bypass (CC#86). There's no effect on / bypass tile: the "
                                "manual prints the bypass CC#30 as \"0-5\" (likely a misprint; the MKI used 0 / 127). Models: left and right cab "
@@ -1129,6 +1133,7 @@ void addBoutiquePedals (std::vector<Profile>& v)
                             { "Tape age", 22 }, { "Tremolo", 23 }, { "Tap 1 level", 25 }, { "Tap 1 pan", 26 }, { "Tap 2 level", 27 },
                             { "Tap 2 pan", 28 }, { "Tap 2 time", 29 }, { "Input low pass", 30 } });
         p.pedals.push_back ({ "Pitch shift", 24, 127, 0, false, 125 });   // 0 = +31 st, 31 = unison, 62 = -31 st, 63-125 reverse
+        p.pedalsTitle = "Knobs";   // no expression CC in the chart: this view turns the knobs
         p.pedalNote = "No remote expression CC in the Nemesis chart; these move that control like turning it. Pitch shift (CC#24) runs 0-125: "
                       "0 = +31 semitones, 31 = unison, 62 = -31, 63-125 the same with reverse.";
         p.notes = sourceAudioNotes ("Controls: effect on / bypass (CC#101; CC#38 does the same), infinite hold (CC#97), bypass toggle (CC#102, any "

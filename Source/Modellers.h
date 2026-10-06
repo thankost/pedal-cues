@@ -52,6 +52,7 @@ struct Profile
     juce::String manual;                    // "Helix Owner's Manual, firmware 3.80"
     bool beta = true;                       // "beta" in the device list and "From the <brand> manual" on the page (Nano Cortex: no, just "Not tested on hardware")
     bool cc0IsControl = false;              // CC#0 is a control (Darkglass amps): clips are padded with CC#32 = 0, not CC#0
+    juce::String pedalsTitle { "Expression" };   // the third view: "Knobs" on pedals whose chart has no expression CC (Walrus MAKO)
     juce::String looperTitle { "Looper" };  // the second view: "Looper", or "IR slots" on the Infinity 500 Combo
     juce::String testMessage;               // the strip's Test when there's no tuner over MIDI (custom syntax), e.g. "PC 2"
     bool pedal = false;                     // an effect pedal (DL4 MkII, HX One): listed on the Effects & Pedals tab only

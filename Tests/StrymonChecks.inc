@@ -203,4 +203,14 @@
     }
     for (const auto& prof : all())
         CHECK (prof.models.size() <= (size_t) modellers::maxModelGroups);
+    // The third view says "Knobs" exactly where the chart has no expression CC (Compadre, Walrus MAKO, Nemesis).
+    for (const auto& prof : all())
+        if (prof.pedal && ! prof.pedals.empty())
+        {
+            const auto hasExp = std::any_of (prof.pedals.begin(), prof.pedals.end(),
+                                             [] (const modellers::Control& c) { return c.name == "Expression"; });
+            CHECK ((prof.pedalsTitle == "Knobs") == ! hasExp && (hasExp ? prof.pedalsTitle == "Expression" : true));
+        }
+    CHECK (find ("strymon.compadre")->pedalsTitle == "Knobs" && find ("walrus.mako-acs1")->pedalsTitle == "Knobs"
+           && find ("sourceaudio.nemesis")->pedalsTitle == "Knobs" && find ("sourceaudio.ventris")->pedalsTitle == "Expression");
 }
