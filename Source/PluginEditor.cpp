@@ -48,7 +48,7 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     addAndMakeVisible (tabBar);
 
     // Two tabs, one per device; each page's MIDI strip holds its channel, and How to connect the wiring and DAW tracks.
-    const juce::String names[] = { "Amps & Modellers", "Effects & Pedals" };   // the device is on the page and in the tooltip
+    const juce::String names[] = { "Amps & Modelers", "Effects & Pedals" };   // the device is on the page and in the tooltip
     for (int i = 0; i < 2; ++i)
     {
         auto* b = tabButtons.add (new juce::TextButton (names[i]));
@@ -72,7 +72,7 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
         tabBar.addAndMakeVisible (b);
     }
     unitMenuButton.setComponentID ("amp.unit");
-    unitMenuButton.setTooltip ("Your amp modeller: Quad Cortex, Kemper Profiler or Kemper Player");
+    unitMenuButton.setTooltip ("Your amp modeler: Quad Cortex, Kemper Profiler or Kemper Player");
     unitMenuButton.onClick = [this] { showUnitMenu(); };
     tabBar.addAndMakeVisible (unitMenuButton);
     pedalMenuButton.setComponentID ("pedal.unit");
@@ -791,7 +791,7 @@ void PedalCuesEditor::handleAsyncUpdate()
     // The first tab is named after the amp unit picked on it (Quad Cortex, Kemper Profiler, Kemper Player).
     if (auto* b = tabButtons[0])
     {
-        b->setTooltip (ui::ampInfo (state).name + ": click the arrow to pick your amp modeller or MIDI device");
+        b->setTooltip (ui::ampInfo (state).name + ": click the arrow to pick your amp modeler or MIDI device");
         b->setColour (juce::TextButton::buttonOnColourId, tabColour (0));
     }
     // The second tab is named after its pedal (Whammy V / DT, or a custom MIDI device), in its colour.

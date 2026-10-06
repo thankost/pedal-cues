@@ -163,8 +163,8 @@ private:
         // Grouped by brand: Neural DSP, Kemper, Fractal Audio, Line 6, HeadRush, Boss, Darkglass, then your own devices. "beta" marks
         // units built from the manuals and not tested on hardware; "template" the units whose MIDI you assign yourself.
         entries.push_back ({ Kind::header, "Neural DSP", {}, {} });
-        entries.push_back ({ Kind::builtin, ampUnitName (0), {}, "neural dsp qc amp modeller", 0, {}, ampUnit == 0 });
-        entries.push_back ({ Kind::builtin, ampUnitName (state::qcMiniAmpUnit), {}, "neural dsp qc mini amp modeller",
+        entries.push_back ({ Kind::builtin, ampUnitName (0), {}, "neural dsp qc amp modeler modeller", 0, {}, ampUnit == 0 });
+        entries.push_back ({ Kind::builtin, ampUnitName (state::qcMiniAmpUnit), {}, "neural dsp qc mini amp modeler modeller",
                              state::qcMiniAmpUnit, {}, ampUnit == state::qcMiniAmpUnit });
         const auto currentModel = ampUnit == state::modellerAmpUnit ? state[IDs::modellerProfile].toString() : juce::String();
         for (const auto& m : modellers::all())   // the Nano Cortex: a page of its own
@@ -173,14 +173,14 @@ private:
                                      m.id == currentModel });
         entries.push_back ({ Kind::header, "Kemper", {}, {} });
         for (int u = 1; u < 3; ++u)
-            entries.push_back ({ Kind::builtin, ampUnitName (u), {}, "kemper amp modeller", u, {}, ampUnit == u });
+            entries.push_back ({ Kind::builtin, ampUnitName (u), {}, "kemper amp modeler modeller", u, {}, ampUnit == u });
 
         for (const auto* brand : { "Fractal Audio", "Line 6", "HeadRush", "Boss", "Darkglass" })
         {
             entries.push_back ({ Kind::header, brand, {}, {} });
             for (const auto& m : modellers::all())
                 if (m.brand == brand && ! m.pedal)   // DL4 MkII, HX One: on the Effects & Pedals tab
-                    entries.push_back ({ Kind::modeller, m.model, m.beta ? juce::String ("beta") : juce::String(), m.brand + " " + m.aliases + " amp modeller",
+                    entries.push_back ({ Kind::modeller, m.model, m.beta ? juce::String ("beta") : juce::String(), m.brand + " " + m.aliases + " amp modeler modeller",
                                          0, m.id, m.id == currentModel });
             for (const auto& t : templates::all())
             {

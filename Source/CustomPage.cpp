@@ -922,7 +922,7 @@ private:
         m.addItem (5, "Import device...");
         m.addItem (6, "New MIDI device...");
         m.addSeparator();
-        m.addItem (7, fx ? "Move to Amps & Modellers" : "Move to Effects & Pedals");
+        m.addItem (7, fx ? "Move to Amps & Modelers" : "Move to Effects & Pedals");
         if (namesync::targetFor (u[IDs::templateId].toString()).has_value())   // GT-1000, Axe-Fx III, FM9, FM3, VP4
         {
             m.addSeparator();

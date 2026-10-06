@@ -2,13 +2,17 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.9.3 (2026-10-06)
+
+- Improved texts across the app.
+
 ## 0.9.2 (2026-10-06)
 
 - **Knobs instead of Expression** on the Strymon Compadre, the Walrus Audio MAKO D1, R1, M1 and ACS1 and the Source Audio Nemesis: their MIDI charts have no expression CC, so that view turns the knobs (time, mix, decay...) and is now called Knobs.
 
 ## 0.9.1 (2026-10-06)
 
-- **Import MIDI... in Draw (new):** load a move from a MIDI file, like a treadle bend or an expression swell you drew as CC automation in your DAW, and reuse it in any song. Click **Import MIDI...** next to Wave... (or drop the .mid file on the card): it keeps the clip's timing, then saves it in My drawings. In every Draw mode: the Whammy, the Quad Cortex, Kemper and modeller expression, and your own devices.
+- **Import MIDI... in Draw (new):** load a move from a MIDI file, like a treadle bend or an expression swell you drew as CC automation in your DAW, and reuse it in any song. Click **Import MIDI...** next to Wave... (or drop the .mid file on the card): it keeps the clip's timing, then saves it in My drawings. In every Draw mode: the Whammy, the Quad Cortex, Kemper and modeler expression, and your own devices.
 - **Moves up to 8 bars:** Length now goes to 6 and 8 bars.
 - **Import from HX Edit (new):** on the Helix, HX Stomp and HX Effects pages, read preset names, setlists and snapshot names and colours from an HX Edit export (.hls, .hlb or .hlx). It only reads the file.
 - **Read preset names from the unit (new, beta):** Strymon TimeLine / BigSky / Mobius, Boss DD-500 / RV-500 / MD-500 and the GT-1000, Axe-Fx III, FM9, FM3 and VP4 devices can fill in their preset names over MIDI. PedalCues only sends read requests; nothing on the unit changes. Not tested on hardware yet: please tell us if it works.
@@ -34,10 +38,10 @@ Download the latest version from the [PedalCues website](https://thankost.github
 
 ## 0.8.8 (2026-10-05)
 
-- **Two tabs, Amps & Modellers and Effects & Pedals (new):** the first tab is your amp modeller, the second a pedal next to it. The second tab still shows the Whammy V / DT, and its new **▾** lets you pick another pedal, one of your MIDI devices (a delay, a looper...), or **No pedal** if you only have one device. Each pedal keeps its own MIDI channel. Each list only shows what belongs there (pedal templates like the VP4 are on the second tab), and a device's **...** menu moves it to the other tab. Your Whammy setups and songs are unchanged.
+- **Two tabs, Amps & Modelers and Effects & Pedals (new):** the first tab is your amp modeler, the second a pedal next to it. The second tab still shows the Whammy V / DT, and its new **▾** lets you pick another pedal, one of your MIDI devices (a delay, a looper...), or **No pedal** if you only have one device. Each pedal keeps its own MIDI channel. Each list only shows what belongs there (pedal templates like the VP4 are on the second tab), and a device's **...** menu moves it to the other tab. Your Whammy setups and songs are unchanged.
 - **Line 6 DL4 MkII and HX One (new, beta):** ready-made pages on the Effects & Pedals tab. DL4 MkII: presets A-F and 7-128, note value, bypass, tap, Classic Looper mode, routing, the looper, expression and knob moves, and every delay and reverb model. HX One: presets 000-127, ON / FLUX, engage / bypass, tap, tuner, the looper, expression and parameter moves. From Line 6's manuals, not tested on hardware yet.
 - **Whammy V and Whammy DT are separate devices** in the Effects & Pedals list (the switch on the Whammy page is gone). Same page, same songs; the DT adds Drop Tune.
-- **A simpler MIDI Setup:** one row per tab with the device and its channel, and a note that the Quad Cortex and Whammy are only examples until you pick yours. With two devices, choose how they're connected (each on its own output, or one cable through the first one's MIDI Thru); with one, there's nothing to choose. The daisy chain now says up front that it needs a MIDI cable into your amp modeller, not USB, and what your unit does with USB MIDI. The steps name an amp modeller track and a pedal track, with your devices as examples. Pick your DAW to see where it sets a track's MIDI output. In the standalone app, switch on the devices to check and click **Test selected** to test them all at once.
+- **A simpler MIDI Setup:** one row per tab with the device and its channel, and a note that the Quad Cortex and Whammy are only examples until you pick yours. With two devices, choose how they're connected (each on its own output, or one cable through the first one's MIDI Thru); with one, there's nothing to choose. The daisy chain now says up front that it needs a MIDI cable into your amp modeler, not USB, and what your unit does with USB MIDI. The steps name an amp modeler track and a pedal track, with your devices as examples. Pick your DAW to see where it sets a track's MIDI output. In the standalone app, switch on the devices to check and click **Test selected** to test them all at once.
 
 ## 0.8.7 (2026-10-05)
 
@@ -123,12 +127,12 @@ Download the latest version from the [PedalCues website](https://thankost.github
 
 ## 0.5.0 (2026-10-03)
 
-- **Kemper support (new):** the first tab now works with a **Quad Cortex**, a **Kemper Profiler** (Head, Rack, Stage and the other Profilers, in Performance mode) or a **Kemper Player**. Click the **▾** on the tab (or *MIDI Setup > Amp modeller*) to pick yours; the tab is named after it.
+- **Kemper support (new):** the first tab now works with a **Quad Cortex**, a **Kemper Profiler** (Head, Rack, Stage and the other Profilers, in Performance mode) or a **Kemper Player**. Click the **▾** on the tab (or *MIDI Setup > Amp modeler*) to pick yours; the tab is named after it.
 - **Kemper page:** your performances with their five slots, like QC presets and scenes. Slot tiles load their performance first, or switch a slot of the performance already loaded. Effect tiles switch modules A–D, X, MOD, Delay and Reverb on or off (with or without tails), plus Tuner, Tap x4, Morph and Rotary tiles.
 - **Kemper pedal moves:** swells, fades, wah rhythms or your own drawing on the Kemper's Wah, Pitch, Volume or Morph pedal, tempo-synced. No physical pedal needed. Built from Kemper's MIDI documentation; if you try it on your Kemper, please tell us how it goes.
 - **Wiring guide follows your unit:** with a Kemper it shows the Kemper's cables. It also makes clear that the Whammy needs a MIDI cable from an interface (it has no USB MIDI), and that neither the QC nor the Kemper passes USB MIDI on to its MIDI Thru.
 - **macOS installer:** if the PedalCues app is open, the installer now asks you to quit it first, so it's never replaced while running. A short welcome page reminds you to quit your DAW too (plugins it has loaded keep the old version until it restarts) and to remove old zip installs.
-- Your amp modeller and the Kemper preferences are part of your setup (Save as default, Export / Import). The quick tour shows where to pick your unit.
+- Your amp modeler and the Kemper preferences are part of your setup (Save as default, Export / Import). The quick tour shows where to pick your unit.
 
 ## 0.4.29 (2026-10-03)
 

@@ -70,7 +70,7 @@ body:
   - type: dropdown
     id: amp
     attributes:
-      label: Amp modeller or MIDI device
+      label: Amp modeler or MIDI device
       description: Which unit you use with PedalCues, if any.
       options:
         - Quad Cortex

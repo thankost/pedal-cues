@@ -62,12 +62,12 @@ private:
         if (oneDevice)
         {
             // Either USB straight to the device, or an interface's MIDI Out and a MIDI cable.
-            const Node usb[] = { { "Amp modeller track", "e.g. " + amp.shortName + " Cues", accent },
-                                 { "Amp modeller", "e.g. " + amp.box + " (USB)", amp.colour } };
+            const Node usb[] = { { "Amp modeler track", "e.g. " + amp.shortName + " Cues", accent },
+                                 { "Amp modeler", "e.g. " + amp.box + " (USB)", amp.colour } };
             const char* usbLinks[] = { "USB" };
-            const Node din[] = { { "Amp modeller track", "e.g. " + amp.shortName + " Cues", accent },
+            const Node din[] = { { "Amp modeler track", "e.g. " + amp.shortName + " Cues", accent },
                                  { "MIDI interface", "MIDI Out", grey },
-                                 { "Amp modeller", "e.g. " + amp.box + (amp.isTrs() ? juce::String (", TRS In") : juce::String()), amp.colour } };
+                                 { "Amp modeler", "e.g. " + amp.box + (amp.isTrs() ? juce::String (", TRS In") : juce::String()), amp.colour } };
             const char* dinLinks[] = { "USB", "MIDI cable" };
             if (! amp.usbMidi)   // no MIDI over USB from a computer (HeadRush): the MIDI cable only
             {
@@ -89,15 +89,15 @@ private:
             // A MIDI Thru only passes on MIDI from the 5-pin MIDI In, not from USB, so the chain starts at an interface.
             const Node nodes[] = { { "Cue tracks", "one per device", accent },
                                    { "Interface", "MIDI Out", grey },
-                                   { "Amp modeller", "e.g. " + amp.box, amp.colour },
+                                   { "Amp modeler", "e.g. " + amp.box, amp.colour },
                                    { "Second device", "e.g. a Whammy", second } };
             const char* links[] = { "USB", "MIDI cable", "Thru" };
             paintChain (g, area.withSizeKeepingCentre (area.getWidth(), 66), nodes, links, 4);
             return;
         }
 
-        const Node ampRow[] = { { "Amp modeller track", "e.g. " + amp.shortName + " Cues", accent },
-                                { "Amp modeller", "e.g. " + amp.box + " (USB)", amp.colour } };
+        const Node ampRow[] = { { "Amp modeler track", "e.g. " + amp.shortName + " Cues", accent },
+                                { "Amp modeler", "e.g. " + amp.box + " (USB)", amp.colour } };
         const char* ampLinks[] = { "USB" };
         const Node other[] = { { "Second device track", "e.g. Whammy Cues", accent },
                                { "MIDI interface", "MIDI Out 2", grey },
@@ -107,9 +107,9 @@ private:
         area.removeFromTop (8);
         if (! amp.usbMidi)
         {
-            const Node cableRow[] = { { "Amp modeller track", "e.g. " + amp.shortName + " Cues", accent },
+            const Node cableRow[] = { { "Amp modeler track", "e.g. " + amp.shortName + " Cues", accent },
                                       { "MIDI interface", "MIDI Out 1", grey },
-                                      { "Amp modeller", "e.g. " + amp.box + (amp.isTrs() ? juce::String (", TRS In") : juce::String()), amp.colour } };
+                                      { "Amp modeler", "e.g. " + amp.box + (amp.isTrs() ? juce::String (", TRS In") : juce::String()), amp.colour } };
             paintChain (g, top, cableRow, otherLinks, 3);
         }
         else
@@ -210,7 +210,7 @@ public:
             {
                 const auto example = named ? juce::String() : " (e.g. " + d + ")";
                 if (step.startsWith (d + ": "))
-                    step = "Amp modeller" + example + ": " + step.fromFirstOccurrenceOf (d + ": ", false, false);
+                    step = "Amp modeler" + example + ": " + step.fromFirstOccurrenceOf (d + ": ", false, false);
                 else if (step.contains ("the " + d) || step.contains ("The " + d))
                 {
                     const auto first = juce::jmax (step.indexOf ("the " + d), step.indexOf ("The " + d));
@@ -218,13 +218,13 @@ public:
                     const auto rest = step.substring (first + 4 + d.length());
                     const auto possessive = rest.startsWith ("'s");
                     // "the amp modeller's MIDI In (e.g. Quad Cortex)": the example goes after the noun, at the end of the sentence.
-                    step = step.substring (0, first) + (prefixUpper ? "The amp modeller" : "the amp modeller") + (possessive ? "'s" + rest.substring (2) : example + rest);
+                    step = step.substring (0, first) + (prefixUpper ? "The amp modeler" : "the amp modeler") + (possessive ? "'s" + rest.substring (2) : example + rest);
                     if (possessive && example.isNotEmpty())
                     {
                         const auto stop = step.indexOf (". ") >= 0 ? step.indexOf (". ") : step.lastIndexOf (".");
                         step = stop >= 0 ? step.substring (0, stop) + example + step.substring (stop) : step + example;
                     }
-                    step = step.replace ("the " + d, "the amp modeller").replace ("The " + d, "The amp modeller");
+                    step = step.replace ("the " + d, "the amp modeler").replace ("The " + d, "The amp modeler");
                 }
                 else
                     continue;
@@ -271,11 +271,11 @@ public:
     {
         g.fillAll (background);
         const juce::String titles[] = { "ONE DEVICE, E.G. A " + amp.box.toUpperCase(),
-                                        "DAISY CHAIN THROUGH THE AMP MODELLER (E.G. " + amp.box.toUpperCase() + ")",
+                                        "DAISY CHAIN THROUGH THE AMP MODELER (E.G. " + amp.box.toUpperCase() + ")",
                                         "SEPARATE OUTPUTS" };
-        const juce::String subs[] = { "Just your amp modeller (shown for the " + amp.box + " on the Amps & Modellers tab): one cue track, sent over "
+        const juce::String subs[] = { "Just your amp modeler (shown for the " + amp.box + " on the Amps & Modelers tab): one cue track, sent over "
                                           + (amp.usbMidi ? "USB or " : "") + "a MIDI cable.",
-                                      "A second device on the amp modeller's MIDI Thru. Both tracks send to the same interface MIDI Out.",
+                                      "A second device on the amp modeler's MIDI Thru. Both tracks send to the same interface MIDI Out.",
                                       "Each device on its own output. Each DAW track sends to the output its device is on." };
         auto r = title;
         g.setColour (text);
@@ -888,7 +888,7 @@ private:
         (viaInterface ? viaInterfaceButton : viaQcButton).setToggleState (true, juce::dontSendNotification);
         viaInterfaceButton.setButtonText ("Each device on its own output\n(the simplest)");
         // The generic role, with the picked unit as the example (its USB rule is in the note below).
-        viaQcButton.setButtonText ("One cable through the amp modeller\n(daisy chain, e.g. via the " + amp.shortName + "'s Thru"
+        viaQcButton.setButtonText ("One cable through the amp modeler\n(daisy chain, e.g. via the " + amp.shortName + "'s Thru"
                                    + (amp.usbToThru == 1 ? juce::String (")") : juce::String (": MIDI cable in, not USB)")));
         // Picked the daisy chain: say plainly whether this unit passes USB MIDI on to its Thru (most don't).
         chainNote.setText (amp.usbToThru == 1 ? "The " + amp.box + " also passes USB MIDI on to its Thru, so both tracks can send to its USB port instead."
