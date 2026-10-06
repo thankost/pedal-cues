@@ -40,7 +40,10 @@ struct Action { juce::String name, messages, note; int colour = 5; };   // messa
 // down = 0, up = 127; MX press = 0, release = 127). max: a parameter's top value on the Expression view (Boost 0-60, Low end
 // 0-20): its moves and Set to tiles run from 0 to max instead of 0-127.
 struct Control { juce::String name; int cc = 0; int value = 127; int offValue = 0; bool press = false; int max = 127; };
-struct ModelGroup { juce::String title, hint; std::vector<Action> actions; };   // the Models view: "MkII delays" (CC#1 = 0-14)
+// The Models view: "MkII delays" (CC#1 = 0-14). warning: shown in amber instead of the hint, e.g. when the maker doesn't publish
+// which value is which (Strymon's type knob).
+struct ModelGroup { juce::String title, hint; std::vector<Action> actions; juce::String warning; };
+constexpr int maxModelGroups = 5;   // the Models view has this many sections (BigSky MX: 2 types, dual mode, 2 infinite modes)
 
 struct Profile
 {
@@ -52,7 +55,9 @@ struct Profile
     juce::String looperTitle { "Looper" };  // the second view: "Looper", or "IR slots" on the Infinity 500 Combo
     juce::String testMessage;               // the strip's Test when there's no tuner over MIDI (custom syntax), e.g. "PC 2"
     bool pedal = false;                     // an effect pedal (DL4 MkII, HX One): listed on the Effects & Pedals tab only
+    juce::Colour faceplate;                 // the real enclosure's colour for the page's faceplate (transparent = the brand colour)
     juce::String mainTitle { "Scenes & Switches" };   // the first view's button
+    juce::String presetWord { "Preset" };   // what the unit's Program Changes select: "Preset", or "Loop" on the Chase Bliss Blooper
     Scheme scheme = Scheme::helix;
 
     juce::String sceneWord;                 // "Snapshot" / "Scene"

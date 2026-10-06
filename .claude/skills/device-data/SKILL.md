@@ -33,7 +33,7 @@ Go through the whole chart and make sure each documented control has a home:
   (`reservedPrograms`: Manual mode, Favorite, Live, Bypass...).
 - **Controls view:** bypass / engage, on/off switches (paired utilities with the real thresholds), tap, infinite /
   hold / freeze, modes, routing, and **footswitches** as `Control::press` tiles (value then offValue 1/16 later:
-  Strymon A / B / Tap down 0 / up 127, MX press 0 / release 127). Enumerations with a known order (tap division,
+  read each manual's own wording: Strymon gen 1 A / B "down 0 / up 127", but TAP "off 0 / on 127" (press = 127 then 0); MX press 0 / release 127). Enumerations with a known order (tap division,
   routing, LFO shape, config) as value tiles (`switches` with fixed values, or utilities).
 - **Looper view:** every looper CC (any-value toggles are utilities, never repeated).
 - **Expression view (`pedals`):** expression CC first, then every knob and every continuous parameter, with

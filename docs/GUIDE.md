@@ -429,7 +429,7 @@ HeadRush publishes one fixed MIDI map, so each unit gets a page. It works a litt
 - **Blocks:** Block 1-14 (11 on Pedalboard, Gigboard and MX5), CC#75 and up, as numbered in the rig. HeadRush only **toggles** a block: each clip turns it on if it was off and off if it was on. Rename the tiles after your blocks.
 - **Utilities and looper:** tuner (CC#92, toggles; not on Pedalboard, Gigboard or MX5), tap, next / previous rig, Rig and Stomp footswitch modes; looper record, start/stop, insert, peel, mute, reverse, speed and length.
 - **Expression:** Core CC#1 (external pedal); Prime and Flex Prime CC#1 (built-in) and CC#2 (external).
-- The **footswitch CCs** aren't tiles: they do whatever each footswitch does in the current mode, and need a press and a release.
+- **Footswitch tiles** (Core, Prime, Flex Prime) press and release the footswitch (127, then 0 1/16 later), like your foot: they do whatever that footswitch does in the current mode. The older Pedalboard, Gigboard and MX5 guides don't give the values, so they have no footswitch tiles.
 - **Connection:** use a MIDI cable from your interface. The manuals don't mention MIDI over USB from a computer, so the wiring guide shows MIDI cables only. Flex Prime and MX5 have 3.5 mm TRS MIDI jacks (Type A): use a TRS MIDI cable or a 5-pin to TRS adapter.
 
 ![HeadRush Pedalboard page: blocks only](images/headrush-pedalboard.png)
@@ -443,7 +443,7 @@ Built from the Anagram manual (KosmOS 1.17, *MIDI Support*). Darkglass says its 
 - **Presets:** 01A-42C, loaded with a Program Change. The Anagram ignores value 0, and its *MIDI Style* numbering (001-126) matches the Program Change, so **01A = Program Change 1**. If 01A doesn't load on your unit, please tell us.
 - **Scenes A-C** (three per preset): CC#107 = 1, 2, 3. The manual's table lists values 1-126; PedalCues sends 1-3 for the open preset. Tell us if your Anagram needs something else.
 - **Footswitches A-C** (the Stomp mode bindings): CC#17-19, ON or OFF with the header switch. With the Anagram's *Toggle Logic* setting on *Value* (the default), 0-63 = off and 64-127 = on.
-- **Utilities:** tuner (CC#86), Preset / Stomp / Scene mode (CC#85 = 1 / 2 / 3), next / previous preset and scene. **Looper:** play/stop, rec/dub, undo, redo, clear slot and the looper screen (CC#110-115).
+- **Utilities:** tuner (CC#86), Preset / Stomp / Scene mode (CC#85 = 1 / 2 / 3), next / previous preset and scene. **Looper:** play/stop, rec/dub, undo, redo, next / previous slot and the looper screen (never clear: PedalCues doesn't send it) (CC#110-115).
 - **Expression:** the expression pedal binding (CC#89) and knob bindings 1-6 (CC#20-25). The footswitch, knob and expression numbers are the *default* binding CCs; if you changed them (*Bindings > Edit CCs*), use a custom MIDI device.
 - **Connection:** 3.5 mm TRS MIDI In and Out (Type A) and USB MIDI (turn *USB MIDI* on). Set *MIDI In Chan* to the channel at the top of its page.
 
@@ -606,14 +606,22 @@ Laid out like the [Fractal and Line 6 pages](#7-fractal-line-6-headrush-darkglas
 |---|---|---|
 | ![TimeLine MX models](images/strymon-timeline-mx-models.png) | ![MOOD MKII](images/chase-bliss-mood.png) | ![LVX](images/meris-lvx.png) |
 
-Ready-made pages from each maker's MIDI chart, on the Effects & Pedals tab (pick them with the **▾**). They're built from the manuals and not tested on hardware yet; **About this unit** on each page lists every number, what each tile sends and what the manual doesn't say.
+| Strymon Volante | Boss DD-500 | Walrus Audio MAKO D1 |
+|---|---|---|
+| ![Volante](images/strymon-volante.png) | ![DD-500](images/boss-dd-500.png) | ![MAKO D1](images/walrus-d1.png) |
 
-- **Strymon:** TimeLine, BigSky, Mobius (presets 00A-99B / 00A-99C), TimeLine MX and BigSky MX (000A-149B), Volante, Sunset, Riverside, Compadre, Iridium, cloudburst, Flint V2, El Capistan V2, Deco V2, DIG V2, Lex V2, blueSky V2, Brig, Olivera, Ultraviolet and Zelzah (presets 0-299). Every preset clip sends its bank (CC#0) and Program Change. The small pedals' fixed programs show their meaning: *Manual mode* (PC 127), *Favorite* and the *MultiSwitch* presets. Controls: bypass, tap, on/off for each effect side, infinite / hold; **Looper** on the TimeLine (MX); **Expression** on CC#100 and the knobs; **Models** where Strymon documents the order (TimeLine MX delay types and dual mode).
+Ready-made pages from each maker's MIDI chart, on the Effects & Pedals tab (pick them with the **▾**). Like the Whammy, each has a faceplate in the pedal's own colour, with the loaded preset in its display (drag it onto the timeline to load the preset). They're built from the manuals and not tested on hardware yet; **About this unit** on each page lists every number, what each tile sends and what the manual doesn't say.
+
+- **Strymon:** TimeLine, BigSky, Mobius (presets 00A-99B / 00A-99C), TimeLine MX and BigSky MX (000A-149B), Volante, Sunset, Riverside, Compadre, Iridium, cloudburst, Flint V2, El Capistan V2, Deco V2, DIG V2, Lex V2, blueSky V2, Brig, Olivera, Ultraviolet and Zelzah (presets 0-299). Every preset clip sends its bank (CC#0) and Program Change. The small pedals' fixed programs show their meaning: *Manual mode* (PC 127), *Favorite* and the *MultiSwitch* presets. Controls: bypass, tap, on/off for each effect side, infinite / hold; **Looper** on the TimeLine (MX); **Expression** on CC#100 and the knobs; **Models** with the type tiles (TimeLine MX delay types and dual mode). On the TimeLine, BigSky, Mobius and BigSky MX, the type knob's tiles are numbered **Type 0-11**: Strymon's manuals give the numbers but not which one is which machine, and an amber line in the group says so. Try them on your pedal (and tell us the order you find).
+
+  ![TimeLine Models: numbered type tiles](images/strymon-timeline-models.png)
+
 - **Boss DD-500, RV-500, MD-500:** patches 01A-99C, effect on / bypass, the DD-500's phrase loop, and the knobs as expression moves. The CC numbers are the ones in Boss's tables: if you changed them in the pedal's MIDI menu, use a custom device. If a preset tile loads another patch, check the pedal's *PC MAP*.
 - **Meris:** Mercury7, Ottobit Jr., Polymoon, Enzo, Hedra (16 presets; PC 0 = bypass), and the X series LVX, MercuryX, Enzo X, Ottobit X (with their block types under Models).
-- **Chase Bliss:** MOOD MKII, Blooper, Dark World, Thermae, Habit, CXM 1978, Preamp MKII, Generation Loss MKII, Lossy, Brothers AM, Onward, Clean. *Live* (PC 0) returns to the knobs. PedalCues never sends their factory-reset or save commands.
+- **Chase Bliss:** MOOD MKII, Blooper, Dark World, Thermae, Habit, CXM 1978, Preamp MKII, Generation Loss MKII, Lossy, Brothers AM, Onward, Clean. *Live* (PC 0) returns to the knobs. The Blooper's programs are loops, so its list says **Loops** (Loop 1-16, PC 0-15). PedalCues never sends their factory-reset or save commands.
 - **Walrus Audio MAKO D1, R1, M1, ACS1** (MKII; the MKI pedals use different numbers), **Source Audio Nemesis, Ventris, Collider**, and **EHX POG3, Oceans Abyss**.
 - **Templates** (you assign the CCs on the pedal): **Eventide H9 and H90**, **Boss RC-500 and RC-600** loopers. Their preset tiles work right away.
+- **Footswitch tiles** press and release the pedal's footswitch (down, then up 1/16 later), like your foot. **Expression** lists every knob and parameter; parameters with a small range (Boost 0-60, Smear 0-18...) move only over their own range. Settings that belong to one machine or reverb type say so ("dTape: ...") and only act when that type is loaded. Views scroll when there are more tiles than fit.
 - Set each pedal's MIDI channel on the pedal and at the top of its page. Several of these take MIDI on a TRS jack (the EXP jack on Meris and some Strymon pedals, a MIDIBox for Chase Bliss): **About this unit** says which cable.
 
 Switching pedals doesn't change clips already on the timeline: each keeps the pedal and channel it was dragged with.

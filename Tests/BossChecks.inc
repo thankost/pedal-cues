@@ -18,12 +18,22 @@
         CHECK (bankAndPc (0, 0, 0) && bankAndPc (127, 0, 127) && bankAndPc (128, 1, 0) && bankAndPc (255, 1, 127)   // 01A, 43B, 43C, 86A
                && bankAndPc (256, 2, 0) && bankAndPc (296, 2, 40));                                                 // 86B, 99C
         CHECK (b->pedals.size() >= 5 && b->pedals[0].name == "Expression" && b->pedals[0].cc == 16 && b->pedals[1].cc == 17);
-        CHECK (b->tunerOn.isEmpty() && b->switches.empty() && b->notes.contains ("MIDI PC MAP") && b->notes.contains ("MIDI menu"));
-        // No footswitch-emulation CCs (A/B/TAP-CTL 82-84, CTL 1/2 80-81: 127 pressed, 0 released) in any tile.
+        CHECK (b->tunerOn.isEmpty() && b->notes.contains ("MIDI PC MAP") && b->notes.contains ("MIDI menu"));
+        // The switch-emulation CCs (A/B/TAP-CTL 82-84, CTL 1/2 80-81: 127 pressed, 0 released) are press tiles only, never utilities.
         for (const auto& bossList : { b->utilities, b->looper })
             for (const auto& bossAction : bossList)
                 for (const auto& st : custom::parse (bossAction.messages, 0).steps)
                     CHECK (st.number < 80 || st.number > 84);
+        CHECK (! b->switchesOnOff && b->switches.size() >= 2);
+        for (int i = 0; i < (int) b->switches.size(); ++i)
+        {
+            const auto& sw = b->switches[(size_t) i];
+            CHECK (sw.press && sw.value == 127 && sw.offValue == 0 && sw.cc >= 80 && sw.cc <= 84);
+            const auto press = switchCue (*b, 2, i, true, {});
+            CHECK (press.events.size() == 2 && isCC (press.events[0].second, 2, sw.cc, 127) && isCC (press.events[1].second, 2, sw.cc, 0)
+                   && std::abs (press.events[1].first - 0.25) < 1.0e-9 && press.toggles);
+        }
+        CHECK (b->switches[b->switches.size() - 2].cc == 80 && b->switches.back().cc == 81);   // CTL 1 / CTL 2 last on all three
     }
     const auto& dd = *find ("boss.dd-500");
     CHECK (dd.utilities.size() == 2 && isCC (action (dd, 1, dd.utilities[0]).events[0].second, 1, 21, 127)
@@ -32,6 +42,9 @@
            && isCC (action (dd, 1, dd.looper[4]).events[0].second, 1, 25, 127) && dd.pedals.size() == 5 && dd.pedals[4].cc == 20);
     for (const auto& ddLoop : dd.looper)
         CHECK (! ddLoop.messages.contains ("26"));                                  // CC#26 clears the phrase: no tile
+    CHECK (dd.switches.size() == 5 && dd.switches[0].cc == 82 && dd.switches[1].cc == 83 && dd.switches[2].cc == 84
+           && dd.switches[2].name == "[TAP/CTL]");
+    CHECK (find ("boss.rv-500")->switches.size() == 2 && find ("boss.md-500")->switches.size() == 2);   // no [A] / [B] / [TAP/CTL] CCs
     const auto& rv = *find ("boss.rv-500");
     CHECK (rv.looper.empty() && rv.pedals.size() == 11 && rv.pedals[6].cc == 22 && rv.pedals[10].cc == 26
            && isCC (action (rv, 1, rv.utilities[0]).events[0].second, 1, 27, 127) && isCC (action (rv, 1, rv.utilities[5]).events[0].second, 1, 29, 0));

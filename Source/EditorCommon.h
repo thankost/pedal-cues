@@ -138,6 +138,7 @@ public:
     static constexpr int padding = 10;
 
     juce::String title, hint;
+    juce::Colour hintColour { theme::dim };   // amber for a warning ("Strymon doesn't publish the order...")
     juce::Colour accentColour;
     juce::Colour fill { theme::surface.withAlpha (0.55f) };
 };
@@ -170,4 +171,16 @@ void renameNode (juce::ValueTree node, const juce::String& title);
 void editPresetDialog (juce::ValueTree preset);
 
 void styleCaption (juce::Label&, const juce::String& text);
+// A pedal's faceplate banner: brushed gradient, screws, a heavy italic model name and a tagline (Whammy, effect pedal pages).
+class Faceplate final : public juce::Component
+{
+public:
+    Faceplate() { setInterceptsMouseClicks (false, false); }
+    juce::String model { "WHAMMY V" }, tagline { "MIDI MODE  +  TREADLE AUTOMATION" };
+    juce::Colour top { 0xffe0303f }, bottom { 0xff9e1426 };   // the Whammy's red
+    juce::Colour ink { juce::Colours::white };                 // the logotype; dark on white / silver / yellow pedals
+    int logoWidth = 360;
+    void paint (juce::Graphics&) override;
+};
+
 } // namespace ui

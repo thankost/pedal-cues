@@ -393,6 +393,7 @@ int main (int argc, char** argv)
         #include "StrymonChecks.inc"
         #include "BossChecks.inc"
         #include "BoutiqueChecks.inc"
+        #include "ModellerChecks.inc"
         #include "HelixImportChecks.inc"
         #include "MidiNameSyncChecks.inc"
         const auto& fx8 = *find ("fractal.fx8");

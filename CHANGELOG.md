@@ -2,7 +2,7 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
-## 0.9.1 (unreleased)
+## 0.9.1 (2026-10-06)
 
 - **Import MIDI... in Draw (new):** load a move from a MIDI file, like a treadle bend or an expression swell you drew as CC automation in your DAW, and reuse it in any song. Click **Import MIDI...** next to Wave... (or drop the .mid file on the card): it keeps the clip's timing, then saves it in My drawings. In every Draw mode: the Whammy, the Quad Cortex, Kemper and modeller expression, and your own devices.
 - **Moves up to 8 bars:** Length now goes to 6 and 8 bars.
@@ -12,6 +12,12 @@ Download the latest version from the [PedalCues website](https://thankost.github
 - **New templates:** Eventide H9 and H90, Boss RC-500 and RC-600 (you assign the CCs on the pedal; the preset tiles work right away).
 - **Delete your devices from the list:** an **x** next to each of your MIDI devices (or right-click), with a check first. Clips already in your songs keep working.
 - **Effects & Pedals always shows a device:** new setups and deleted pedals show the Whammy V again instead of an empty tab.
+- **Fuller pages, checked against two sources:** every pedal and device page now covers its whole MIDI chart, checked against the maker's manual and the midi.guide community charts: **footswitch press tiles** (press and release, like your foot: Strymon A / B / Tap, Boss CTL, HeadRush FS), every parameter on the Expression view with its **real range** (Boost 0-60, Smear 0-18...), per-machine settings, more blocks on the Fractal pages, transport and knobs on the Helix Stadium, the drum machine on HeadRush, dips on Chase Bliss... About this unit lists the sources and what's still left out.
+- **Strymon type knob tiles:** the TimeLine, BigSky and Mobius pages have **Type 0-11** tiles on Models (the machine / reverb / effect type knob, CC#19), and the BigSky MX has them for reverb 1 and 2. Strymon's manuals give the numbers but don't say which number is which machine, so the tiles are numbered and an amber line says so: try them on your pedal and tell us what you find.
+- **The Blooper says Loops:** its list, its add button and its display call its programs loops, not presets.
+- **Views scroll** when a page has more tiles than fit, so nothing gets squeezed.
+- Removed the looper **Clear** tiles (Helix Stadium, Anagram): PedalCues doesn't send commands that erase anything.
+- **Pedal faceplates:** every effect pedal page has a faceplate in the pedal's own enclosure colour (from the maker's photos), like the Whammy, with the loaded preset in its display.
 - **Pages show only the views they have:** no greyed-out Looper or Expression buttons, and utilities sit right under the switches.
 - **How to connect:** one cue track per device, "add the next one the same way".
 - **Fix:** on pages without scenes (effect pedals, the Nano Cortex), on/off tiles no longer load a preset first.

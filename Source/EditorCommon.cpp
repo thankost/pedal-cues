@@ -30,7 +30,7 @@ void Section::paint (juce::Graphics& g)
     g.setFont (titleFont);
     g.drawText (titleText, header.removeFromLeft (titleWidth), juce::Justification::centredLeft);
 
-    g.setColour (dim);
+    g.setColour (hintColour);
     g.setFont (font (12.0f));
     g.drawText (hint, header, juce::Justification::centredLeft, true);
 }
@@ -203,5 +203,60 @@ void editPresetDialog (juce::ValueTree preset)
         preset.setProperty (IDs::slot,    juce::jmax (0, w->getComboBoxComponent ("slot")->getSelectedItemIndex()), nullptr);
     }), true);
 }
+
+// The pedal faceplate: the Whammy's red banner, and every effect pedal page in its brand colour.
+void Faceplate::paint (juce::Graphics& g)
+    {
+        const auto b = getLocalBounds().toFloat();
+        juce::ColourGradient grad (top, b.getTopLeft(), bottom, b.getBottomRight(), false);
+        g.setGradientFill (grad);
+        g.fillRoundedRectangle (b, 14.0f);
+
+        // Brushed highlights.
+        g.setColour (juce::Colours::white.withAlpha (0.07f));
+        g.fillRoundedRectangle (b.withHeight (b.getHeight() * 0.45f).reduced (2.0f, 2.0f), 12.0f);
+        g.setColour (juce::Colours::black.withAlpha (0.35f));
+        g.drawRoundedRectangle (b.reduced (0.5f), 14.0f, 1.0f);
+
+        // Screws.
+        for (auto p : { juce::Point<float> (12.0f, 12.0f), { 12.0f, b.getBottom() - 12.0f } })
+        {
+            g.setColour (bottom.darker (0.6f));
+            g.fillEllipse (juce::Rectangle<float> (7.0f, 7.0f).withCentre (p));
+            g.setColour (juce::Colours::white.withAlpha (0.25f));
+            g.drawLine (p.x - 2.5f, p.y, p.x + 2.5f, p.y, 1.0f);
+        }
+
+        auto area = getLocalBounds().reduced (28, 10);
+        auto logo = area.removeFromLeft (logoWidth).toFloat();
+
+        // Italic, heavy logotype drawn as a skewed glyph run.
+        // Long names ("GENERATION LOSS MKII", "VENTRIS DUAL REVERB") shrink to fit the space left of the display.
+        auto size = logo.getHeight() * 0.58f;
+        const auto width = juce::GlyphArrangement::getStringWidth (juce::Font (font (size, true)).withHorizontalScale (1.1f), model);
+        const auto room = logo.getWidth() - 16.0f;   // the shear leans the top of the letters right
+        if (width > room)
+            size *= room / width;
+        juce::GlyphArrangement ga;
+        ga.addLineOfText (juce::Font (font (size, true)).withHorizontalScale (1.1f),
+                          model, logo.getX(), logo.getCentreY() + logo.getHeight() * 0.17f);
+        juce::Path text;
+        ga.createPath (text);
+        text.applyTransform (juce::AffineTransform::shear (-0.22f, 0.0f)
+                                 .translated (0.22f * (logo.getCentreY()), 0.0f));
+
+        const auto darkInk = ink.getPerceivedBrightness() < 0.5f;
+        g.setColour (darkInk ? juce::Colours::white.withAlpha (0.35f) : juce::Colours::black.withAlpha (0.35f));
+        g.fillPath (text, juce::AffineTransform::translation (darkInk ? 1.0f : 2.0f, darkInk ? 1.5f : 3.0f));
+        g.setColour (ink);
+        g.fillPath (text);
+
+        const auto tb = text.getBounds();
+
+        g.setColour (ink.withAlpha (0.8f));
+        g.setFont (font (11.0f, true));
+        g.drawText (tagline, juce::Rectangle<float> (tb.getX(), tb.getBottom() + 4.0f, 460.0f, 14.0f),
+                    juce::Justification::centredLeft);
+    }
 
 } // namespace ui

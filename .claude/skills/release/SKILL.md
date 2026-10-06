@@ -7,7 +7,9 @@ description: Cut a new PedalCues release (version bump, signed commit with relea
 
 Follow these steps in order. Stop and report if any step fails.
 
-1. **Check the tree.** Run `git status`. Everything that should ship is committed or about to be. If the UI or behaviour changed, the docs, website and screenshots must already be updated (see CLAUDE.md).
+1. **Docs check (required, every release).** Run the `docs-check` skill (`.claude/skills/docs-check/SKILL.md`) over everything since the last tag (`git log $(git describe --tags --abbrev=0)..HEAD` plus uncommitted changes): README, guide (+ `make_site_pages.py`), website, help page, tour, screenshots (regenerated and looked at), changelog, issue forms, and CLAUDE.md (not the GitHub About text: the author manages it). Report what was updated. Don't go on until it's done.
+
+   Then **check the tree**: `git status`. Everything that should ship is committed or about to be.
 
 2. **Wait for the previous release.** Run `gh run list -R thankost/pedal-cues --workflow Build --limit 4`. If a tag build is still running, wait for it to finish. Releasing two versions at once can mark the wrong one as Latest.
 

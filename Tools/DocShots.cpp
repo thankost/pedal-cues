@@ -788,6 +788,11 @@ int main (int argc, char** argv)
             proc.state.setProperty (IDs::fxView, 3, nullptr);
             editor.refreshNow();
             save (snapshot (editor), outDir.getChildFile ("strymon-timeline-mx-models.png"));
+            // The first-generation TimeLine's Models: numbered Type tiles with the amber "Strymon doesn't publish" line.
+            pedalPage ("strymon.timeline", { { "Verse Dotted 8th", 0, 4 }, { "Chorus Wide", 1, 1 }, { "Solo Tape", 2, 0 } });
+            proc.state.setProperty (IDs::fxView, 3, nullptr);
+            editor.refreshNow();
+            save (snapshot (editor), outDir.getChildFile ("strymon-timeline-models.png"));
             pedalPage ("strymon.volante", { { "Slapback", 0, 4 }, { "Drum Echo", 1, 2 }, { "Tape Swell", 2, 6 } });
             save (snapshot (editor), outDir.getChildFile ("strymon-volante.png"));
             pedalPage ("boss.dd-500", { { "Verse Analog", 0, 4 }, { "Chorus Tape", 1, 1 }, { "Lead Digital", 2, 0 } });

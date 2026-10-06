@@ -12,62 +12,6 @@ namespace ui
 {
 namespace
 {
-// The red Whammy faceplate banner ("WHAMMY V" or "WHAMMY DT").
-class Faceplate final : public juce::Component
-{
-public:
-    Faceplate() { setInterceptsMouseClicks (false, false); }
-
-    juce::String model { "WHAMMY V" }, tagline { "MIDI MODE  +  TREADLE AUTOMATION" };
-
-    void paint (juce::Graphics& g) override
-    {
-        const auto b = getLocalBounds().toFloat();
-        juce::ColourGradient grad (juce::Colour (0xffe0303f), b.getTopLeft(), juce::Colour (0xff9e1426), b.getBottomRight(), false);
-        g.setGradientFill (grad);
-        g.fillRoundedRectangle (b, 14.0f);
-
-        // Brushed highlights.
-        g.setColour (juce::Colours::white.withAlpha (0.07f));
-        g.fillRoundedRectangle (b.withHeight (b.getHeight() * 0.45f).reduced (2.0f, 2.0f), 12.0f);
-        g.setColour (juce::Colours::black.withAlpha (0.35f));
-        g.drawRoundedRectangle (b.reduced (0.5f), 14.0f, 1.0f);
-
-        // Screws.
-        for (auto p : { juce::Point<float> (12.0f, 12.0f), { 12.0f, b.getBottom() - 12.0f } })
-        {
-            g.setColour (juce::Colour (0xff5c0b15));
-            g.fillEllipse (juce::Rectangle<float> (7.0f, 7.0f).withCentre (p));
-            g.setColour (juce::Colours::white.withAlpha (0.25f));
-            g.drawLine (p.x - 2.5f, p.y, p.x + 2.5f, p.y, 1.0f);
-        }
-
-        auto area = getLocalBounds().reduced (28, 10);
-        auto logo = area.removeFromLeft (360).toFloat();
-
-        // Italic, heavy logotype drawn as a skewed glyph run.
-        juce::GlyphArrangement ga;
-        ga.addLineOfText (juce::Font (font (logo.getHeight() * 0.58f, true)).withHorizontalScale (1.1f),
-                          model, logo.getX(), logo.getCentreY() + logo.getHeight() * 0.17f);
-        juce::Path text;
-        ga.createPath (text);
-        text.applyTransform (juce::AffineTransform::shear (-0.22f, 0.0f)
-                                 .translated (0.22f * (logo.getCentreY()), 0.0f));
-
-        g.setColour (juce::Colours::black.withAlpha (0.35f));
-        g.fillPath (text, juce::AffineTransform::translation (2.0f, 3.0f));
-        g.setColour (juce::Colours::white);
-        g.fillPath (text);
-
-        const auto tb = text.getBounds();
-
-        g.setColour (juce::Colours::white.withAlpha (0.8f));
-        g.setFont (font (11.0f, true));
-        g.drawText (tagline, juce::Rectangle<float> (tb.getX(), tb.getBottom() + 4.0f, 460.0f, 14.0f),
-                    juce::Justification::centredLeft);
-    }
-};
-
 class OptionsPanel final : public juce::Component
 {
 public:

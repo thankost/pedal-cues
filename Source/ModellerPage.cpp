@@ -195,11 +195,16 @@ class ModellerPage final : public Page
 public:
     ModellerPage (PedalCuesProcessor& p, Slot s) : proc (p), state (p.state), slot (s)
     {
-        for (auto* c : std::initializer_list<juce::Component*> { &presetsSection, &scenesSection, &switchesSection, &utilsSection, &looperSection })
-            addChildComponent (c);
-        for (int g = 0; g < 3; ++g)
-            addChildComponent (modelSections.add (new Section ("md.models" + juce::String (g), "Models", "")));
-        presetsSection.setVisible (true);
+        addAndMakeVisible (presetsSection);
+        // The views' sections and tiles live in a scrolling area under the view buttons.
+        viewArea.setViewedComponent (&viewContent, false);
+        viewArea.setScrollBarsShown (true, false);
+        viewArea.setScrollBarThickness (8);
+        addChildComponent (viewArea);
+        for (auto* c : std::initializer_list<juce::Component*> { &scenesSection, &switchesSection, &utilsSection, &looperSection })
+            viewContent.addChildComponent (c);
+        for (int g = 0; g < modellers::maxModelGroups; ++g)
+            viewContent.addChildComponent (modelSections.add (new Section ("md.models" + juce::String (g), "Models", "")));
 
         addButton.setColour (juce::TextButton::buttonColourId, accent);
         addButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
@@ -236,9 +241,9 @@ public:
         addChildComponent (readNamesButton);
 
         loadFirstToggle.onClick = [this] { state.setProperty (IDs::mdLoadFirst, loadFirstToggle.getToggleState(), nullptr); };
-        addChildComponent (loadFirstToggle);
+        viewContent.addChildComponent (loadFirstToggle);
         switchOnToggle.onClick = [this] { state.setProperty (IDs::mdSwitchOn, switchOnToggle.getToggleState(), nullptr); };
-        addChildComponent (switchOnToggle);
+        viewContent.addChildComponent (switchOnToggle);
 
         viewChoice.setInterceptsMouseClicks (false, true);
         addAndMakeVisible (viewChoice);
@@ -266,6 +271,7 @@ public:
         addAndMakeVisible (aboutButton);
 
         addChildComponent (pedals);
+        addChildComponent (faceplate);   // effect pedals: the Whammy-style banner, with the loaded preset in its display
         refresh();
     }
 
@@ -326,6 +332,9 @@ public:
                                    "setlist the unit is on. Click to turn it on, then drag preset clips you made before into your DAW again.");
 
         presetsSection.accentColour = p->colour;
+        presetsSection.title = p->presetWord + "s";
+        addButton.setButtonText ("+ " + p->presetWord);
+        search.setTextToShowWhenEmpty ("Search " + p->presetWord.toLowerCase() + "s", dim);
         scenesSection.title = p->sceneWord + "s";
         scenesSection.accentColour = p->colour;
         scenesSection.hint = modellers::sceneCcs (*p) + "  -  "
@@ -362,8 +371,23 @@ public:
             presetList.addAndMakeVisible (t);
         }
 
+        // Effect pedals get a faceplate in the brand's colour, like the Whammy, with the preset display set into it.
+        faceplate.setVisible (p->pedal);
+        if (p->pedal)
+        {
+            faceplate.model = p->model.toUpperCase();
+            faceplate.tagline = p->brand.toUpperCase() + "  +  PRESETS" + (! p->looper.empty() ? juce::String ("  +  LOOPER") : juce::String())
+                              + (! p->pedals.empty() ? juce::String ("  +  EXPRESSION") : juce::String());
+            const auto body = p->faceplate.isTransparent() ? p->colour : p->faceplate;   // the pedal's own colour where we know it
+            // Light enclosures (white, silver, yellow) keep their colour with a gentler shade and dark lettering.
+            const auto light = body.getPerceivedBrightness() > 0.53f;
+            faceplate.top = light ? body.brighter (0.05f) : body.brighter (0.15f);
+            faceplate.bottom = light ? body.darker (0.35f) : body.darker (0.75f);
+            faceplate.ink = light ? juce::Colour (0xff1c1c1f) : juce::Colours::white;
+            faceplate.repaint();
+        }
         screen = std::make_unique<Tile> (proc, Tile::Look::screen);
-        screen->screenHeading = "LOADED PRESET";
+        screen->screenHeading = "LOADED " + p->presetWord.toUpperCase();   // "LOADED LOOP" on the Blooper
         screen->chipsHeading = p->sceneWord.toUpperCase() + "S";
         screen->numberedChips = ! p->sceneLetters;
         screen->title = preset[IDs::name].toString();
@@ -390,7 +414,7 @@ public:
             t->makeCue = [this, sel, s] { return sceneCue (sel, s); };
             t->onDoubleClick = [scene] { renameNode (scene, "Rename"); };
             t->onContextMenu = [this, scene, sel, s] { nodeMenu (scene, true, [this, sel, s] { return sceneCue (sel, s); }); };
-            addChildComponent (t);
+            viewContent.addChildComponent (t);
         }
 
         switchTiles.clear();
@@ -410,7 +434,7 @@ public:
             t->makeCue = [this, sel, s] { return switchCue (sel, s); };
             t->onDoubleClick = [node] { renameNode (node, "Rename"); };
             t->onContextMenu = [this, node, sel, s] { nodeMenu (node, false, [this, sel, s] { return switchCue (sel, s); }); };
-            addChildComponent (t);
+            viewContent.addChildComponent (t);
         }
 
         auto makeActions = [this, p] (juce::OwnedArray<Tile>& tiles, const std::vector<modellers::Action>& actions)
@@ -425,7 +449,7 @@ public:
                 t->colour = juce::Colour (palette.getReference (a.colour % palette.size()).argb);
                 t->setTooltip ((a.note.isNotEmpty() ? a.note + "\n" : juce::String()) + "Drag onto the timeline (" + t->subtitle + ").");
                 t->makeCue = [this, a] { return modellers::action (*profile(), channel(), a); };
-                addChildComponent (t);
+                viewContent.addChildComponent (t);
             }
         };
         makeActions (utilTiles, p->utilities);
@@ -437,7 +461,8 @@ public:
         {
             const auto& group = p->models[(size_t) g];
             modelSections[g]->title = group.title;
-            modelSections[g]->hint = group.hint + "  -  the loaded preset";
+            modelSections[g]->hint = group.warning.isNotEmpty() ? group.hint + "  -  " + group.warning : group.hint + "  -  the loaded preset";
+            modelSections[g]->hintColour = group.warning.isNotEmpty() ? accent : dim;
             modelSections[g]->accentColour = p->colour;
             makeActions (*modelTiles.add (new juce::OwnedArray<Tile>()), group.actions);
         }
@@ -500,7 +525,18 @@ public:
         }
         layoutPresets();
 
-        if (screen != nullptr)
+        if (p->pedal)
+        {
+            auto plate = r.removeFromTop (120);
+            faceplate.setBounds (plate);
+            faceplate.logoWidth = plate.getWidth() / 2 - 40;
+            if (screen != nullptr)
+            {
+                screen->setBounds (plate.removeFromRight (plate.getWidth() / 2).reduced (14, 10));
+                screen->toFront (false);
+            }
+        }
+        else if (screen != nullptr)
             screen->setBounds (r.removeFromTop (104).expanded (3));
         r.removeFromTop (10);
 
@@ -531,88 +567,64 @@ public:
         r.removeFromTop (10);
 
         const auto view = viewFor (*p);
+        viewArea.setVisible (view != 2);
         if (view == 2)
         {
             pedals.setBounds (r);
             return;
         }
+
+        // Every other view stacks its sections at their natural height and scrolls when there are more tiles than fit
+        // (HeadRush Prime blocks + footswitches, Fractal blocks, Chase Bliss switches and dips...).
+        viewArea.setBounds (r);
+        const auto width = r.getWidth() - viewArea.getScrollBarThickness() - 4;
+        int y = 0;
+        auto place = [&] (Section& section, int contentHeight)
+        {
+            section.setBounds (0, y, width, Section::headerHeight + contentHeight);
+            y += section.getHeight() + 12;
+            return section.contentArea().expanded (3);
+        };
+        auto rowsFor = [] (int count, int columns) { return (count + juce::jmax (1, columns) - 1) / juce::jmax (1, columns); };
+
         if (view == 3)
         {
-            // The model groups stacked, each as tall as its rows of six.
             constexpr int columns = 6;
-            int rows = 0;
-            for (auto* tiles : modelTiles)
-                rows += (tiles->size() + columns - 1) / columns;
-            const auto gaps = 10 * juce::jmax (0, modelTiles.size() - 1);
-            const auto rowHeight = juce::jlimit (34, 60, (r.getHeight() - gaps - Section::headerHeight * modelTiles.size()) / juce::jmax (1, rows));
             for (int g = 0; g < modelTiles.size(); ++g)
+                layoutGrid (*modelTiles[g], place (*modelSections[g], 56 * rowsFor (modelTiles[g]->size(), columns)), columns, 6);
+        }
+        else
+        {
+            if (view == 0 && p->sceneCount > 0)
             {
-                const auto groupRows = (modelTiles[g]->size() + columns - 1) / columns;
-                modelSections[g]->setBounds (r.removeFromTop (Section::headerHeight + rowHeight * groupRows));
-                r.removeFromTop (10);
-                layoutGrid (*modelTiles[g], modelSections[g]->contentArea().expanded (3), columns, 6);
+                // Up to six scenes in one row; more in two (8 as two rows of four, like the units' displays).
+                const auto columns = p->sceneCount > 6 ? (p->sceneCount + 1) / 2 : p->sceneCount;
+                layoutGrid (sceneTiles, place (scenesSection, 66 * rowsFor (p->sceneCount, columns)), juce::jmax (1, columns), 0);
+                auto hdr = scenesSection.headerArea().withSizeKeepingCentre (scenesSection.headerArea().getWidth(), 28);
+                loadFirstToggle.setBounds (hdr.removeFromRight (190));
             }
-            return;
+            if (view == 0 && ! p->switches.empty())
+            {
+                const auto count = (int) p->switches.size();
+                const auto columns = juce::jmin (count, count > 10 ? 7 : 6);
+                layoutGrid (switchTiles, place (switchesSection, 68 * rowsFor (count, columns)), columns, 6);
+                if (switchOnToggle.isVisible())
+                    switchOnToggle.setBounds (switchesSection.headerArea().removeFromRight (160));
+            }
+            if (view == 1)
+            {
+                const auto count = (int) p->looper.size();
+                layoutGrid (looperTiles, place (looperSection, 62 * rowsFor (count, 4)), 4, 6);
+            }
+            // Utilities: up to six in a row (at least four wide), more in rows of up to six so the names stay readable (the view scrolls).
+            const auto utilCount = (int) p->utilities.size();
+            if (utilCount > 0)
+            {
+                const auto utilColumns = utilCount <= 6 ? juce::jmax (4, utilCount) : juce::jmin (6, (utilCount + 1) / 2);
+                layoutGrid (utilTiles, place (utilsSection, 62 * rowsFor (utilCount, utilColumns)), utilColumns, 6);
+            }
         }
-
-        // Up to six utilities in a row; more wrap into rows of at most eight, so the names stay readable (Chase Bliss: 20+).
-        const auto utilCount = (int) p->utilities.size();
-        const auto utilRows = utilCount <= 6 ? 1 : (utilCount + 7) / 8 + (utilCount > 8 && utilCount <= 16 ? 0 : 0);
-        const auto utilColumns = utilCount <= 6 ? juce::jmax (4, utilCount) : (utilCount + juce::jmax (2, utilRows) - 1) / juce::jmax (2, utilRows);   // at least four wide
-        const auto rowsUsed = (utilCount + utilColumns - 1) / juce::jmax (1, utilColumns);
-        // Pages without scenes (effect pedals, Nano Cortex): utilities right under the switches, not at the bottom of an empty page.
-        const auto utilsOnTop = p->sceneCount == 0 && view == 0;
-        if (utilsOnTop && ! p->switches.empty())
-        {
-            const auto count = (int) p->switches.size();
-            const auto columns = juce::jmin (6, count);
-            switchesSection.setBounds (r.removeFromTop (Section::headerHeight + 64 * ((count + columns - 1) / columns)));
-            r.removeFromTop (12);
-            layoutGrid (switchTiles, switchesSection.contentArea().expanded (3), columns, 6);
-            if (switchOnToggle.isVisible())
-                switchOnToggle.setBounds (switchesSection.headerArea().removeFromRight (160));
-        }
-        utilsSection.setBounds (utilsOnTop ? r.removeFromTop (Section::headerHeight + 60 * rowsUsed) : r.removeFromBottom (Section::headerHeight + 60 * rowsUsed));
-        if (! utilsOnTop)
-            r.removeFromBottom (12);
-        layoutGrid (utilTiles, utilsSection.contentArea().expanded (3), utilColumns, 6);
-        if (utilsOnTop)
-            return;
-
-        if (view == 1)
-        {
-            looperSection.setBounds (r);
-            layoutGrid (looperTiles, looperSection.contentArea().expanded (3), 4, 6);
-            return;
-        }
-
-        if (! p->switches.empty())
-        {
-            // Five switches a row; in a short window (the channel reminder, 14 HeadRush blocks) seven a row, then
-            // lower rows, so the scenes keep room for their names.
-            const auto count = (int) p->switches.size();
-            const auto sceneRows = p->sceneCount > 6 ? 2 : p->sceneCount > 0 ? 1 : 0;
-            const auto sceneRoom = sceneRows > 0 ? Section::headerHeight + sceneRows * 62 : 0;
-            int columns = juce::jmin (5, count), rowHeight = 64;
-            auto height = [&] { return Section::headerHeight + rowHeight * ((count + columns - 1) / columns); };
-            if (r.getHeight() - height() - 12 < sceneRoom)
-                columns = juce::jmin (7, count);
-            if (r.getHeight() - height() - 12 < sceneRoom)
-                rowHeight = 52;
-            switchesSection.setBounds (p->sceneCount > 0 ? r.removeFromBottom (height()) : r.removeFromTop (height()));
-            r.removeFromBottom (12);
-            layoutGrid (switchTiles, switchesSection.contentArea().expanded (3), columns, 6);
-            if (switchOnToggle.isVisible())
-                switchOnToggle.setBounds (switchesSection.headerArea().removeFromRight (160));
-        }
-        scenesSection.setBounds (r);
-        {
-            auto hdr = scenesSection.headerArea().withSizeKeepingCentre (scenesSection.headerArea().getWidth(), 28);
-            loadFirstToggle.setBounds (hdr.removeFromRight (190));
-        }
-        // Up to six scenes in one row; more in two (8 as two rows of four, like the units' displays).
-        const auto columns = p->sceneCount > 6 ? (p->sceneCount + 1) / 2 : p->sceneCount;
-        layoutGrid (sceneTiles, scenesSection.contentArea().expanded (3), juce::jmax (1, columns), 0);
+        viewContent.setSize (width, juce::jmax (y, r.getHeight()));
     }
 
 private:
@@ -870,6 +882,9 @@ private:
     juce::Label disclaimer;
     juce::TextButton aboutButton;
     ModellerPedals pedals { proc, slot };
+    juce::Viewport viewArea;            // the view's sections, scrolling
+    juce::Component viewContent;
+    Faceplate faceplate;
     juce::OwnedArray<Section> modelSections;
 
     juce::OwnedArray<Tile> presetTiles, sceneTiles, switchTiles, utilTiles, looperTiles;

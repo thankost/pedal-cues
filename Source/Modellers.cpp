@@ -56,6 +56,30 @@ const juce::String line6Buffered ("Line 6: a snapshot sent during a preset load 
 const juce::String fsNote ("Presses the footswitch in whatever mode the unit is in (Stomp, Preset or Snapshot), like your foot would. "
                            "It acts on the preset that's loaded.");
 
+// The rest of the Helix-family global CCs (Owner's Manuals 3.80 MIDI CC tables, the same in midi.guide's community charts):
+// next / previous snapshot (CC#69 = 8 / 9), the MODE switch (CC#71, any value) and Page left / right (CC#81 0-63 / 64-127).
+void addHelixGlobals (Profile& p, bool playEditView)
+{
+    p.utilities.push_back ({ "Next snapshot", "CC 69=8", "CC#69 = 8.", 4 });
+    p.utilities.push_back ({ "Prev snapshot", "CC 69=9", "CC#69 = 9.", 4 });
+    p.utilities.push_back ({ "Mode switch", "CC 71=127", "Presses the MODE switch (CC#71, any value).", 8 });
+    p.utilities.push_back ({ "Page <", "CC 81=0", "Page Left (CC#81 = 0-63).", 8 });
+    p.utilities.push_back ({ "Page >", "CC 81=127", "Page Right (CC#81 = 64-127).", 8 });
+    if (playEditView)
+        p.utilities.push_back ({ "Play/Edit view", "CC 73=127", "Toggles between Play and Edit view (CC#73, any value).", 8 });
+}
+
+std::vector<Control> parameterKnobs (int count)
+{
+    std::vector<Control> c;
+    for (int i = 0; i < count; ++i)
+        c.push_back ({ "Knob " + n (i + 1), 75 + i });   // Parameter Knob 1-6 (global control): CC#75-80
+    return c;
+}
+
+const juce::String knobsNote (" Knob 1-N emulate the Parameter Knobs under the screen (CC#75 and up, \"global control\" in the manual).");
+const juce::String notCc128 ("The manual's table ends with a \"CC#128\" line (a joke entry: MIDI CCs stop at 127), so it isn't here.");
+
 Profile helixBase (const juce::String& id, const juce::String& model, const juce::String& aliases, const juce::String& manual, bool exp3)
 {
     Profile p;
@@ -74,13 +98,19 @@ Profile helixBase (const juce::String& id, const juce::String& model, const juce
     p.pedals = { { "EXP 1", 1 }, { "EXP 2", 2 } };
     if (exp3)
         p.pedals.push_back ({ "EXP 3", 3 });
-    p.pedalNote = "Moves what the preset assigns to this expression pedal, like a real pedal.";
+    addHelixGlobals (p, false);
+    for (const auto& k : parameterKnobs (6))
+        p.pedals.push_back (k);
+    p.pedalNote = "EXP moves what the preset assigns to that expression pedal, like a real pedal." + knobsNote.replace ("1-N", "1-6");
     p.tunerOn = "CC 68=127"; p.tunerOff = "CC 68=127";
     p.channelHint = "Must match the unit: Global Settings > MIDI/Tempo > MIDI Base Channel.";
     p.usbToThru = 3;   // not documented
     p.notes = "Presets: PC 0-127 = 01A-32D in the setlist the unit is on. With \"Switch to the preset's setlist\" on, each preset also sends its "
               "setlist (CC#32: 0 FACTORY 1, 1 FACTORY 2, 2-6 USER 1-5, 7 TEMPLATES).\n\n" + line6Buffered + "\n\n"
-              "Footswitch CCs 49-58 press FS1-FS5 and FS7-FS11 (no CC for FS6 or FS12). Next/previous preset needs firmware 3.80 or newer.\n\n"
+              "Footswitch CCs 49-58 press FS1-FS5 and FS7-FS11 (no CC for FS6 or FS12): any value is one press, so each tile sends one "
+              "message. Next/previous preset needs firmware 3.80 or newer.\n\n"
+              "Also: next / previous snapshot (CC#69 = 8 / 9), the MODE switch (CC#71), Page left / right (CC#81) and, on the "
+              "Expression view, Parameter Knobs 1-6 (CC#75-80). midi.guide (community chart) lists the same numbers. " + notCc128 + "\n\n"
               "MIDI Thru passes on what arrives at the 5-pin MIDI In; Line 6 doesn't say whether USB MIDI is passed on too.";
     return p;
 }
@@ -98,12 +128,19 @@ Profile hxBase (const juce::String& id, const juce::String& model, const juce::S
                     { "Next preset", "CC 72=127", "Firmware 3.80 or newer.", 9 }, { "Previous preset", "CC 72=0", "Firmware 3.80 or newer.", 9 } };
     p.looper = helixLooper (60, 61, 62, 63, 65, 66, looperBlock);
     p.pedals = { { "EXP 1", 1 }, { "EXP 2", 2 } };
-    p.pedalNote = "Moves what the preset assigns to this expression pedal, like a real pedal.";
+    // HX Stomp / Stomp XL / Effects: CC#69 = 8 / 9, MODE CC#71, Page CC#81, Parameter Knobs 1-3 (CC#75-77); Play/Edit view CC#73
+    // only on HX Stomp and Stomp XL (added there; HX Effects lists CC#73 as reserved). POD Go replaces these (its table has none).
+    addHelixGlobals (p, false);
+    for (const auto& k : parameterKnobs (3))
+        p.pedals.push_back (k);
+    p.pedalNote = "EXP moves what the preset assigns to that expression pedal, like a real pedal." + knobsNote.replace ("1-N", "1-3");
     p.tunerOn = "CC 68=127"; p.tunerOff = "CC 68=127";
     p.channelHint = "Must match the unit: Global Settings > MIDI/Tempo > MIDI Base Channel (channel 1 out of the box).";
     p.usbToThru = 3;
-    p.notes = "No setlists. " + line6Buffered + "\n\nMIDI Thru passes on what arrives at the 5-pin MIDI In; Line 6 doesn't say whether USB MIDI "
-              "is passed on too. It listens on MIDI channel 1 out of the box.";
+    p.notes = "No setlists. " + line6Buffered + "\n\nAlso: next / previous snapshot (CC#69 = 8 / 9), the MODE switch (CC#71), Page left / right "
+              "(CC#81) and, on the Expression view, Parameter Knobs 1-3 (CC#75-77). Footswitch CCs: any value is one press. midi.guide "
+              "(community chart) lists the same numbers. " + notCc128 + "\n\nMIDI Thru passes on what arrives at the 5-pin MIDI In; Line 6 "
+              "doesn't say whether USB MIDI is passed on too. It listens on MIDI channel 1 out of the box.";
     return p;
 }
 
@@ -122,6 +159,73 @@ std::vector<Action> headrushLooper (bool openClose)
     if (openClose)
         a.push_back ({ "Looper screen", "CC 91=127", "Opens or closes the looper. " + toggle, 8 });
     return a;
+}
+
+// Core, Prime, Flex Prime (User Guides v5.1.0, External MIDI Control): every CC acts on any value except the pedals and knobs, and the
+// footswitches, which need 127 (press) then 0 (release), else the switch's hold function fires. Appended after the blocks
+// (switch names are kept by index) and to the utilities; the drum machine, metronome, mic dry and lock screen go on the second view.
+enum class HeadRushModel { core, prime, flex };
+
+void addHeadRushExtras (Profile& p, HeadRushModel m)
+{
+    const auto footswitches = m == HeadRushModel::prime ? 12 : m == HeadRushModel::core ? 5 : 3;
+    for (int i = 0; i < footswitches; ++i)
+        p.switches.push_back ({ "FS" + n (i + 1), 49 + i, 127, 0, true });
+    p.switchesTitle = "Blocks & footswitches";
+    p.switchesNote = "Blocks (CC#75 and up) toggle: on if off, off if on. FS tiles (CC#49 and up) press the footswitch: 127, then 0 "
+                     "1/16 later, like your foot, doing what that switch does in the current footswitch mode. Rename the tiles after your "
+                     "blocks.";
+    auto& u = p.utilities;
+    u.push_back ({ "Hybrid mode", "CC 95=127", "Enters Hybrid footswitch mode (CC#95).", 8 });
+    u.push_back ({ "Setlist mode", "CC 96=127", "Enters Setlist footswitch mode (CC#96).", 8 });
+    if (m == HeadRushModel::core)
+        u.push_back ({ "5 Rig mode", "CC 98=127", "Enters 5 Rig footswitch mode (CC#98).", 8 });
+    if (m == HeadRushModel::prime)
+        u.push_back ({ "Song mode", "CC 99=127", "Enters Song footswitch mode (CC#99).", 8 });
+    u.push_back ({ "Next bank", "CC 19=127", "Bank Down (Next Bank), CC#19.", 9 });
+    u.push_back ({ "Prev bank", "CC 18=127", "Bank Up (Previous Bank), CC#18.", 9 });
+    u.push_back ({ "Tempo -", "CC 12=127", "Global tempo down (CC#12).", 1 });
+    u.push_back ({ "Tempo +", "CC 13=127", "Global tempo up (CC#13).", 1 });
+    u.push_back ({ m == HeadRushModel::core ? "Pedal switch" : "Pedal A/B", "CC 14=127",
+                   m == HeadRushModel::core ? "The external pedal's switch (A/B), CC#14." : "The internal pedal's switch (A/B), CC#14.", 7 });
+    if (m == HeadRushModel::prime)
+        u.push_back ({ "Ext pedal C/D", "CC 15=127", "The external pedal's switch (C/D), CC#15.", 7 });
+    else
+        u.push_back ({ "FS bank A/B", "CC 20=127", "Footswitch Bank (A/B), CC#20.", 8 });
+    u.push_back ({ "Hands-Free", "CC 90=127", "Opens or closes Hands-Free (CC#90).", 8 });
+
+    p.looperTitle = "Looper & drums";
+    if (m == HeadRushModel::prime)
+        p.looper.push_back ({ "Unpeel", "CC 123=127", "Puts back the last peeled overdub (CC#123).", 6 });
+    const std::pair<const char*, int> drums[] = { { "Drums screen", 31 }, { "Drums play/stop", 42 }, { "Drums fill", 43 },
+                                                  { "Drums next/bridge", 44 }, { "Drums outro", 45 }, { "Drums mute", 46 },
+                                                  { "Drums accent", 47 }, { "Prev kit", 32 }, { "Next kit", 33 }, { "Prev style", 34 },
+                                                  { "Next style", 35 }, { "Prev variation", 36 }, { "Next variation", 37 },
+                                                  { "Drums vol -", 38 }, { "Drums vol +", 39 }, { "Intensity -", 40 }, { "Intensity +", 41 } };
+    for (const auto& [name, cc] : drums)
+        p.looper.push_back ({ name, "CC " + n (cc) + "=127", "Drum machine (CC#" + n (cc) + ", any value).", 2 });
+    if (m == HeadRushModel::prime)
+    {
+        p.looper.push_back ({ "Metronome", "CC 118=127", "Turns the metronome on or off (CC#118).", 1 });
+        p.looper.push_back ({ "Metronome vol -", "CC 119=127", "CC#119.", 1 });
+        p.looper.push_back ({ "Metronome vol +", "CC 120=127", "CC#120.", 1 });
+    }
+    if (m != HeadRushModel::flex)
+        p.looper.push_back ({ "Mic dry", "CC 89=127", "Mic Dry on / off (CC#89).", 5 });
+    p.looper.push_back ({ "Lock screen", "CC 93=127", "Opens or closes the lock screen (CC#93).", 9 });
+}
+
+juce::String headrushExtrasNote (HeadRushModel m)
+{
+    return juce::String ("\n\nFrom the same chart: the footswitches as press tiles (127 then 0, as the guide says), the footswitch modes, bank up / "
+                         "down, global tempo - / +, the pedal switch")
+           + (m == HeadRushModel::prime ? "es (A/B, C/D)" : " (A/B) and footswitch bank (A/B)") + ", Hands-Free; and on the Looper & drums "
+           "view the drum machine (CC#31-47)" + (m == HeadRushModel::prime ? ", Looper unpeel (CC#123), the metronome (CC#118-120)" : "")
+           + (m != HeadRushModel::flex ? ", Mic dry (CC#89)" : "") + " and the lock screen (CC#93)."
+           + (m == HeadRushModel::prime ? " Expression: the Top / Middle / Bottom parameter knobs (CC#61-63)." : "")
+           + " Left out: the Practice Tool CCs (CC#102-117), a play-along player rather than part of a rig."
+           + (m == HeadRushModel::prime ? " midi.guide (community chart) lists only the footswitches, tap, looper and blocks for the Prime."
+                                        : " midi.guide has no chart for this unit.");
 }
 
 const juce::String headrushBlocksNote ("Block 1-14 as numbered in the rig (CC#75 and up). Each clip toggles the block: on if it was off, off if it "
@@ -161,6 +265,33 @@ Profile fractalBase (const juce::String& id, const juce::String& model, const ju
     p.usbToThru = 3;
     return p;
 }
+
+// Fractal X/Y switches: 64-127 = X, 0-63 = Y (Axe-Fx II manual, I/O CTRL). Shown on the Models view as X / Y pairs.
+ModelGroup fractalXy (const juce::String& title, std::initializer_list<std::pair<const char*, int>> blocks)
+{
+    ModelGroup g { title, "64-127 = X, 0-63 = Y", {} };
+    int colour = 3;
+    for (const auto& [block, cc] : blocks)
+    {
+        g.actions.push_back ({ juce::String (block) + " X", "CC " + n (cc) + "=127", juce::String (block) + " X (CC#" + n (cc) + " = 64-127).", colour });
+        g.actions.push_back ({ juce::String (block) + " Y", "CC " + n (cc) + "=0", juce::String (block) + " Y (CC#" + n (cc) + " = 0-63).", colour });
+        colour = colour == 3 ? 6 : 3;
+    }
+    return g;
+}
+
+// Global CCs every Fractal page adds (factory defaults): the metronome (CC#122, 0-63 off / 64-127 on) and the looper block's bypass
+// (CC#33). Volume Incr / Decr (CC#35 / 36) are never tiles: the manuals say each one saves the preset, with any other unsaved edits.
+void addFractalGlobals (Profile& p)
+{
+    p.utilities.push_back ({ "Metronome on", "CC 122=127", "Metronome on (CC#122 = 64-127).", 1 });
+    p.utilities.push_back ({ "Metronome off", "CC 122=0", "Metronome off (CC#122 = 0-63).", 9 });
+    p.looper.push_back ({ "Looper on", "CC 33=127", "The looper's bypass (CC#33): on.", 3 });
+    p.looper.push_back ({ "Looper off", "CC 33=0", "The looper's bypass (CC#33): bypassed.", 9 });
+}
+
+const juce::String fractalLeftOut ("Never tiles: Volume Incr / Decr (CC#35 / 36), because the manual says each press saves the preset (with any other "
+                                   "unsaved edits). midi.guide has no chart for this unit, so everything here is from the manual.");
 }
 
 const std::vector<Profile>& all()
@@ -171,7 +302,13 @@ const std::vector<Profile>& all()
 
         // Line 6
         v.push_back (helixBase ("line6.helix-floor", "Helix Floor", "floor", "Helix Owner's Manual, firmware 3.80", true));
-        v.push_back (helixBase ("line6.helix-lt", "Helix LT", "lt", "Helix LT Owner's Manual, firmware 3.80", false));
+        {
+            auto p = helixBase ("line6.helix-lt", "Helix LT", "lt", "Helix LT Owner's Manual, firmware 3.80", false);
+            p.utilities.push_back ({ "Play/Edit view", "CC 73=127", "Toggles between Play and Edit view (CC#73, any value).", 8 });
+            p.notes += "\n\nHelix LT: its table adds CC#73 (Play/Edit view; reserved on Helix Floor and Rack) and lists EXP 1-2 only. "
+                       "midi.guide (community chart) also lists EXP 3 (CC#3) for the LT; the manual doesn't, so it isn't here.";
+            v.push_back (p);
+        }
         {
             auto p = helixBase ("line6.helix-rack", "Helix Rack", "rack control", "Helix Rack/Helix Control Owner's Manual, firmware 3.80", true);
             p.model = "Helix Rack (+ Control)";
@@ -183,14 +320,18 @@ const std::vector<Profile>& all()
             auto p = hxBase ("line6.hx-stomp", "HX Stomp", "stomp", "HX Stomp Owner's Manual, firmware 3.80", Scheme::hxStomp, 3, fs, 0);
             p.switchesNote = fsNote + " FS4 and FS5 are the external footswitch jack (tip and ring).";
             p.sceneNote = line6Buffered + " The manual says HX Stomp has three snapshots per preset (its MIDI table also lists a fourth value).";
+            p.utilities.push_back ({ "Play/Edit view", "CC 73=127", "Toggles between Play and Edit view (CC#73, any value).", 8 });
             p.notes = "Presets: 42 banks of three, 01A-42C = PC 0-125. " + p.notes + "\n\nThe manual says three snapshots per preset, but its MIDI "
-                      "table also lists value 3 = Snapshot 4: this page uses three.";
+                      "table also lists value 3 = Snapshot 4, and midi.guide (community chart) says HX Stomp supports four: this page uses "
+                      "three, as the manual's Snapshots chapter says. Also CC#73 = Play/Edit view.";
             v.push_back (p);
         }
         {
             auto p = hxBase ("line6.hx-stomp-xl", "HX Stomp XL", "stomp xl", "HX Stomp XL Owner's Manual, firmware 3.80", Scheme::hxFour, 4,
                              numbered ("FS", 1, 8, 49), 0);
-            p.notes = "Presets: 32 banks of four, 01A-32D = PC 0-127. " + p.notes;
+            p.utilities.push_back ({ "Play/Edit view", "CC 73=127", "Toggles between Play and Edit view (CC#73, any value).", 8 });
+            p.notes = "Presets: 32 banks of four, 01A-32D = PC 0-127. " + p.notes + " Also CC#73 = Play/Edit view. No looper block CC "
+                      "(CC#67 is reserved on the XL).";
             v.push_back (p);
         }
         {
@@ -203,13 +344,19 @@ const std::vector<Profile>& all()
             Profile p = hxBase ("line6.pod-go", "POD Go", "pod go wireless podgo", "POD Go Owner's Manual 2.50 (also covers POD Go Wireless)",
                                 Scheme::podGo, 4, numbered ("FS", 1, 8, 49), 0);
             p.model = "POD Go / POD Go Wireless";
-            p.utilities = { { "Tuner", "CC 68=127", "Opens or closes the tuner screen. " + toggle, 5 }, { "Tap", "CC 64=127", oneTap, 1 } };
+            p.utilities = { { "Tuner", "CC 68=127", "Opens or closes the tuner screen. " + toggle, 5 }, { "Tap", "CC 64=127", oneTap, 1 },
+                            { "Next snapshot", "CC 69=8", "CC#69 = 8.", 4 }, { "Prev snapshot", "CC 69=9", "CC#69 = 9.", 4 } };
+            p.pedals = { { "EXP 1", 1 }, { "EXP 2", 2 } };   // POD Go's table has no Parameter Knob CCs
+            p.pedalNote = "Moves what the preset assigns to this expression pedal, like a real pedal.";
             p.hasDin = false;
             p.usbToThru = 0;
             p.channelHint = "Must match POD Go: Global Settings > MIDI/Tempo > MIDI Channel (1 out of the box).";
             p.notes = "POD Go takes MIDI over USB only: it has no 5-pin MIDI, so it can't be in a daisy chain or pass MIDI on to another pedal. "
                       "Set its cue track's MIDI output to POD Go (USB).\n\nPresets: PC 0-127 = 01A-32D. With \"Switch to the preset's setlist\" on, "
-                      "each preset also sends its setlist (CC#32: 0 Factory, 1 User).\n\n" + line6Buffered;
+                      "each preset also sends its setlist (CC#32: 0 Factory, 1 User).\n\n" + line6Buffered + "\n\nPOD Go's MIDI table is "
+                      "shorter than Helix's: EXP 1-2, FS1-FS8 (any value is one press), the looper, tap, tuner and snapshots (CC#69 = 0-3, "
+                      "8 next, 9 previous). No mode, page, knob or next/previous preset CCs. midi.guide (community chart) agrees. "
+                      + notCc128;
             v.push_back (p);
         }
         {
@@ -223,18 +370,44 @@ const std::vector<Profile>& all()
             p.switchesNote = "Sets the footswitch mode (CC#37). Stadium has no MIDI CCs that press single footswitches.";
             p.utilities = { { "Tuner", "CC 9=34", "Opens or closes the tuner. " + toggle, 5 }, { "Mute all", "CC 9=24", toggle, 0 },
                             { "Tap", "CC 64=127", oneTap, 1 }, { "Preset up", "CC 9=13", {}, 9 }, { "Preset down", "CC 9=12", {}, 9 },
-                            { "Toe switch", "CC 36=127", toggle, 7 } };
+                            { "Toe switch", "CC 36=127", toggle, 7 },
+                            { "Next snapshot", "CC 69=8", "CC#69 = 8.", 4 }, { "Prev snapshot", "CC 69=9", "CC#69 = 9.", 4 },
+                            { "Home view", "CC 9=0", "CC#9 = 0.", 8 }, { "Song view", "CC 9=1", "CC#9 = 1.", 8 },
+                            { "Page <", "CC 9=5", "CC#9 = 5.", 8 }, { "Page >", "CC 9=6", "CC#9 = 6.", 8 },
+                            { "Preset list", "CC 9=14", "Opens or closes the Preset List (CC#9 = 14).", 8 },
+                            { "Click on/off", "CC 9=23", "Turns the click on or off (CC#9 = 23).", 1 } };
+            // Looper CC#52 is Clear Loop: never a tile. The transport CCs share the second view.
             p.looper = helixLooper (58, 59, 60, 53, 55, 54, 62);
-            p.looper.push_back ({ "Clear", "CC 52=127", {}, 0 });
-            p.pedals = { { "EXP 1", 1 }, { "EXP 2", 2 } };
-            p.pedalNote = "Moves what the preset assigns to this expression pedal, like a real pedal.";
+            p.looperTitle = "Looper & transport";
+            p.looper.push_back ({ "Return to zero", "CC 47=127", "Transport: return to zero (CC#47, any value).", 9 });
+            p.looper.push_back ({ "Play/Pause", "CC 51=127", "Transport: toggles play / pause, or starts a cued song or marker (CC#51).", 3 });
+            p.looper.push_back ({ "Prev song", "CC 49=0", "Cues the previous song (CC#49 = 0-63).", 4 });
+            p.looper.push_back ({ "Next song", "CC 49=127", "Cues the next song (CC#49 = 64-127).", 4 });
+            p.looper.push_back ({ "Prev marker", "CC 50=0", "Cues the previous marker (CC#50 = 0-63).", 6 });
+            p.looper.push_back ({ "Next marker", "CC 50=127", "Cues the next marker (CC#50 = 64-127).", 6 });
+            p.looper.push_back ({ "Cycle on/off", "CC 48=127", "Like pressing the Cycle switch (CC#48 = 64-127).", 7 });
+            p.pedals = { { "EXP 1", 1 }, { "EXP 2", 2 }, { "XY: X axis", 7 }, { "XY: Y axis", 8 } };
+            for (int i = 0; i < 8; ++i)
+                p.pedals.push_back ({ "Knob " + n (i + 1), 38 + i });
+            p.pedalNote = "EXP moves what the preset assigns to that expression pedal, like a real pedal. XY moves the XY Controller "
+                          "(CC#7 / 8); Knob 1-8 emulate the knobs (CC#38-45).";
             p.tunerOn = "CC 9=34"; p.tunerOff = "CC 9=34";
             p.channelHint = "Must match Stadium's Global MIDI Channel (Global Settings > MIDI, 1 out of the box).";
             p.usbToThru = 2; p.usbThruSetting = "MIDI Over USB C";
             p.notes = "Stadium uses a different MIDI map from older Helix units.\n\nPresets: with \"Switch to the preset's setlist\" on, each preset sends "
                       "CC#32 first: 0 = FACTORY PRESETS, 1-4 = the USER PRESETS groups (1A-32D, 33A-64D, 65A-96D, 97A-128D), 5 and up = your setlists. "
                       "Then PC 0-127.\n\n" + line6Buffered + "\n\nChannels: this page uses the Global MIDI Channel. Block bypass and parameter control use "
-                      "a separate Bypass/Ctrl channel (2 out of the box), which this page doesn't cover.\n\nWith MIDI Thru on, Stadium passes on MIDI from "
+                      "a separate Bypass/Ctrl channel (2 out of the box), which this page doesn't cover.\n\n"
+                      "Utilities: CC#9 presses a top-panel button or screen icon; this page has Home (0), Song view (1), Page < / > (5 / 6), "
+                      "Preset list (14), Click (23), Mute all (24), Preset down / up (12 / 13) and Tuner (34), plus next / previous snapshot "
+                      "(CC#69 = 8 / 9). Left out: Save screen (3, never a save tile), Undo / Redo (10 / 11, edit history), and the other "
+                      "screens (Amp, XY, Matrix, Info, Preset Clip, Stopwatch, Focus, Song / Flag lists, Song settings): use a custom MIDI "
+                      "device for those.\n\nLooper & transport: the looper CCs (CC#52 Clear Loop is left out so a clip can't erase a loop), "
+                      "Return to zero (47), Play/Pause (51), previous / next song (49) and marker (50), Cycle (48 = 64-127; 0-63 clears or "
+                      "creates a cycle, left out). Cueing a song (CC#10), a playlist (CC#63) or a marker (CC#46) by number isn't a tile: use a "
+                      "custom MIDI device.\n\nExpression: EXP 1-2, the XY Controller (CC#7 X, CC#8 Y) and Knobs 1-8 (CC#38-45). Footswitch "
+                      "mode: CC#37 (5 = Unassigned isn't a tile). midi.guide has no Stadium chart, so these come from the online manual only. "
+                      "Its table also ends with a joke \"CC#128\" line.\n\nWith MIDI Thru on, Stadium passes on MIDI from "
                       "its MIDI In and from USB-C (with MIDI Over USB C on).";
             v.push_back (p);
         }
@@ -253,9 +426,11 @@ const std::vector<Profile>& all()
             p.tunerOn = "CC 92=127"; p.tunerOff = "CC 92=127";
             p.notes = "Presets: each rig has a MIDI PROG number (Rig settings, shown 1-128 = Program Change 0-127). Set it on the rig, then enter the "
                       "same number here. HeadRush doesn't use bank select or setlists over MIDI.\n\nScenes: 10 per rig, CC#21-30.\n\n"
-                      + headrushBlocksNote + "\n\nThe footswitch CCs (CC#49-53) aren't tiles: they do what each footswitch does in the current "
-                      "mode, and need a press and a release.\n\nConnection: 5-pin MIDI In and MIDI Out / Thru. The manual doesn't mention MIDI over USB "
+                      + headrushBlocksNote + "\n\nFootswitches FS1-FS5 (CC#49-53) are press tiles after the blocks: 127, then 0 1/16 later. They do what "
+                      "that footswitch does in the current mode.\n\nConnection: 5-pin MIDI In and MIDI Out / Thru. The manual doesn't mention MIDI over USB "
                       "from a computer, so use a MIDI cable from your interface. MIDI Thru passes on what arrives at the MIDI In.";
+            p.notes += headrushExtrasNote (HeadRushModel::core);
+            addHeadRushExtras (p, HeadRushModel::core);
             v.push_back (p);
         }
         {
@@ -267,13 +442,19 @@ const std::vector<Profile>& all()
                             { "Rig mode", "CC 97=127", "Footswitches load rigs.", 8 }, { "Stomp mode", "CC 94=127", "Footswitches switch blocks.", 8 } };
             p.looper = headrushLooper (true);
             p.pedals = { { "Built-in pedal", 1 }, { "External pedal", 2 } };
-            p.pedalNote = "Moves what the rig assigns to this expression pedal (CC#1 built-in, CC#2 external), like a real pedal.";
+            p.pedalNote = "Moves what the rig assigns to this expression pedal (CC#1 built-in, CC#2 external), like a real pedal. The knobs "
+                          "(CC#61-63) set the Top / Middle / Bottom parameter knobs.";
             p.tunerOn = "CC 92=127"; p.tunerOff = "CC 92=127";
             p.notes = "Presets: each rig has a MIDI PROG number (Rig settings, shown 1-128 = Program Change 0-127). Set it on the rig, then enter the "
                       "same number here. HeadRush doesn't use bank select or setlists over MIDI.\n\nScenes: 8 per rig, CC#21-28.\n\n"
-                      + headrushBlocksNote + "\n\nThe footswitch CCs (CC#49-60) aren't tiles: they do what each footswitch does in the current "
-                      "mode, and need a press and a release.\n\nConnection: 5-pin MIDI In and MIDI Out / Thru. The manual doesn't mention MIDI over USB "
+                      + headrushBlocksNote + "\n\nFootswitches FS1-FS12 (CC#49-60) are press tiles after the blocks: 127, then 0 1/16 later. They do what "
+                      "that footswitch does in the current mode.\n\nConnection: 5-pin MIDI In and MIDI Out / Thru. The manual doesn't mention MIDI over USB "
                       "from a computer, so use a MIDI cable from your interface. MIDI Thru passes on what arrives at the MIDI In.";
+            p.notes += headrushExtrasNote (HeadRushModel::prime);
+            addHeadRushExtras (p, HeadRushModel::prime);
+            p.pedals.push_back ({ "Top knob", 61 });
+            p.pedals.push_back ({ "Middle knob", 62 });
+            p.pedals.push_back ({ "Bottom knob", 63 });
             v.push_back (p);
         }
         {
@@ -290,9 +471,11 @@ const std::vector<Profile>& all()
             p.midiIn = "TRS MIDI In";
             p.notes = "Presets: each rig has a MIDI PROG number (Rig settings, shown 1-128 = Program Change 0-127). Set it on the rig, then enter the "
                       "same number here. HeadRush doesn't use bank select or setlists over MIDI.\n\nScenes: 6 per rig, CC#21-26.\n\n"
-                      + headrushBlocksNote + "\n\nThe footswitch CCs (CC#49-51) aren't tiles: they do what each footswitch does in the current "
-                      "mode, and need a press and a release.\n\nConnection: 3.5 mm TRS MIDI In and MIDI Out / Thru (Type A): use a TRS MIDI cable or a "
+                      + headrushBlocksNote + "\n\nFootswitches FS1-FS3 (CC#49-51) are press tiles after the blocks: 127, then 0 1/16 later. They do what "
+                      "that footswitch does in the current mode.\n\nConnection: 3.5 mm TRS MIDI In and MIDI Out / Thru (Type A): use a TRS MIDI cable or a "
                       "5-pin to TRS adapter. The manual doesn't clearly cover MIDI over USB from a computer, so use a MIDI cable from your interface.";
+            p.notes += headrushExtrasNote (HeadRushModel::flex);
+            addHeadRushExtras (p, HeadRushModel::flex);
             v.push_back (p);
         }
         for (const auto& [id, model, aliases, manual, blocks, trs, fsCcs] : {
@@ -310,7 +493,9 @@ const std::vector<Profile>& all()
                 p.midiIn = "TRS MIDI In";
             p.notes = "Presets: each rig has a MIDI Prog number (0-127 = Program Change 0-127). Set it on the rig, then enter the same number here. "
                       "No bank select, setlists or scenes over MIDI, and no tuner CC.\n\n" + p.switchesNote + "\n\nThe footswitch CCs ("
-                      + juce::String (fsCcs) + ") aren't tiles: they do what each footswitch does in the current mode.\n\n"
+                      + juce::String (fsCcs) + ") aren't tiles: they do what each footswitch does in the current mode, and this guide "
+                      "doesn't say which values they need (the newer Core / Prime guides say 127 then 0). Everything else in the guide's "
+                      "chart (tap, the looper, blocks 1-11) is here; midi.guide (community chart) lists the same.\n\n"
                       + (trs ? "Connection: 3.5 mm TRS MIDI In (Type A): use a TRS MIDI cable or a 5-pin to TRS adapter."
                              : "Connection: 5-pin MIDI In and MIDI Out / Thru.")
                       + " The manual doesn't mention MIDI over USB from a computer, so use a MIDI cable from your interface.";
@@ -342,7 +527,9 @@ const std::vector<Profile>& all()
                       "setlists or scenes over MIDI.\n\nSlots: Input Gate, Capture, Cab/IR and FX 1-5 on or off (CC#34-41). Utilities: tuner "
                       "(CC#43) and tap (CC#42). Expression: CC#1.\n\nConnection: USB-C MIDI, or TRS MIDI Type A into the EXP/MIDI jack (set "
                       "EXP/MIDI INPUT MODE to MIDI in the app). The Nano has no MIDI Out, so it can't pass MIDI on to another pedal: give a "
-                      "second pedal its own output. Its MIDI THRU setting only forwards TRS MIDI to USB.";
+                      "second pedal its own output. Its MIDI THRU setting only forwards TRS MIDI to USB.\n\nThat's the manual's whole incoming "
+                      "CC list. midi.guide (community chart) lists the same numbers, but says CC#1 needs the EXP/MIDI operation mode set to "
+                      "Expression Pedal; the manual doesn't say so. If the Expression tiles do nothing over USB, check that setting.";
             v.push_back (p);
         }
 
@@ -363,9 +550,15 @@ const std::vector<Profile>& all()
             p.utilities = { { "Tuner", "CC 86=127", "Enters or exits the tuner. " + toggle, 5 },
                             { "Preset mode", "CC 85=1", {}, 8 }, { "Stomp mode", "CC 85=2", {}, 8 }, { "Scene mode", "CC 85=3", {}, 8 },
                             { "Next preset", "CC 105=127", {}, 9 }, { "Previous preset", "CC 106=127", {}, 9 },
-                            { "Next scene", "CC 108=127", {}, 9 }, { "Previous scene", "CC 109=127", {}, 9 } };
+                            { "Next scene", "CC 108=127", {}, 9 }, { "Previous scene", "CC 109=127", {}, 9 },
+                            { "Next bank", "CC 103=127", "Shows the bank preview for the next bank (CC#103).", 9 },
+                            { "Previous bank", "CC 104=127", "Shows the bank preview for the previous bank (CC#104).", 9 },
+                            { "Default scene", "CC 107=127", "Activates the preset's default scene (CC#107 = 127).", 4 } };
+            // CC#113 (Clear Slot) erases the looper slot: never a tile.
             p.looper = { { "Play/Stop", "CC 111=127", toggle, 3 }, { "Rec/Dub", "CC 112=127", toggle, 0 }, { "Undo", "CC 114=127", {}, 6 },
-                         { "Redo", "CC 115=127", {}, 6 }, { "Clear slot", "CC 113=127", {}, 9 }, { "Looper screen", "CC 110=127", toggle, 8 } };
+                         { "Redo", "CC 115=127", {}, 6 }, { "Looper screen", "CC 110=127", toggle, 8 },
+                         { "Next slot", "CC 117=127", "Loads the next looper slot (CC#117).", 5 },
+                         { "Previous slot", "CC 118=127", "Loads the previous looper slot (CC#118).", 5 } };
             p.pedals = { { "Expression", 89 }, { "Knob 1", 20 }, { "Knob 2", 21 }, { "Knob 3", 22 }, { "Knob 4", 23 }, { "Knob 5", 24 },
                          { "Knob 6", 25 } };
             p.pedalNote = "Moves what the preset binds to the expression pedal (CC#89) or to a knob binding (CC#20-25, the default numbers).";
@@ -379,6 +572,10 @@ const std::vector<Profile>& all()
                       "PedalCues sends 1-3 for the open preset's scenes. Tell us if your Anagram needs something else.\n\n"
                       "The footswitch, knob and expression CCs are the default binding numbers; if you changed them in Bindings > Edit CCs, "
                       "use a custom MIDI device. \"Ignore Redundant PC\" decides whether reloading the open preset does anything.\n\n"
+                      "Also: next / previous bank (CC#103 / 104, the bank preview), the default scene (CC#107 = 127), next / previous looper "
+                      "slot (CC#117 / 118). Left out: Looper Clear Slot (CC#113, it erases the slot), and the numbered selects Bank Select "
+                      "(CC#102 = 1-42) and Looper Select Slot (CC#116 = 1-126): use a custom MIDI device for those. midi.guide (community "
+                      "chart) lists the same numbers.\n\n"
                       "Connection: 3.5 mm TRS MIDI In and Out (Type A), and USB MIDI (turn USB MIDI on). MIDI Through passes incoming MIDI "
                       "on to the ports you choose.";
             v.push_back (p);
@@ -425,7 +622,9 @@ const std::vector<Profile>& all()
                       "CC#6, drive CC#9); FX loop CC#0: 1 = on, 0 = off. Compressor position CC#7, drive mode CC#10 (Leo Bass, Vintage "
                       "Microtubes, B3K, Alpha Omega), IR slot CC#22 (the IR slots view).\n\nUpdate to firmware 1.2 or higher before using MIDI "
                       "with anything other than the Darkglass MIDI Footswitch.\n\nConnection: 5-pin MIDI In on the back panel (the 7-pin "
-                      "connector is only for the Darkglass MIDI Footswitch) or USB MIDI. No MIDI Out, so it can't pass MIDI on to another pedal.";
+                      "connector is only for the Darkglass MIDI Footswitch) or USB MIDI. No MIDI Out, so it can't pass MIDI on to another pedal.\n\n"
+                      "This page has the manual's whole default mapping. Its table names CC#21 \"GEQ slider 6 (3 kHz)\", the same frequency as "
+                      "slider 5 (likely a typo), so the tile is just \"EQ slider 6\". midi.guide has no chart for this amp.";
             v.push_back (p);
         }
         {
@@ -442,7 +641,8 @@ const std::vector<Profile>& all()
                       "use a custom MIDI device instead.\n\nPresets 1-5 = Program Change 2-6; Bypass = PC 0, Mute = PC 1.\n\n"
                       "Quick-Pots A-E = CC#0-4, master volume CC#5 (the Expression view). Footswitches 1-5 = CC#106-110: they switch the "
                       "effect bypasses bound to each Darkglass MIDI Footswitch button in the preset.\n\nConnection: 5-pin MIDI In on the back "
-                      "panel (the 7-pin connector is only for the Darkglass MIDI Footswitch) or USB MIDI. No MIDI Out, so it can't pass MIDI on.";
+                      "panel (the 7-pin connector is only for the Darkglass MIDI Footswitch) or USB MIDI. No MIDI Out, so it can't pass MIDI on.\n\n"
+                      "This page has the manual's whole default mapping. midi.guide has no chart for this amp.";
             v.push_back (p);
         }
 
@@ -454,6 +654,7 @@ const std::vector<Profile>& all()
             p.id = "line6.dl4-mkii"; p.brand = "Line 6"; p.model = "DL4 MkII"; p.shortName = "DL4";
             p.aliases = "dl4 mk2 mkii delay modeler looper stompbox green"; p.colour = juce::Colour (0xff5cb85c);
             p.manual = "DL4 MkII Owner's Manual (Rev D, firmware 1.02)";
+            p.faceplate = juce::Colour (0xff499756);   // enclosure colour measured from the official product photo (line6.com/effects-pedals/dl4-mkii)
             p.pedal = true; p.scheme = Scheme::dl4;
             p.sceneWord = "Scene"; p.sceneCount = 0;
             p.mainTitle = "Controls";
@@ -503,7 +704,10 @@ const std::vector<Profile>& all()
                       "off) of the loaded preset; changing a model clears the preset's pedal assignments.\n\nLooper: CC#60-66 (record/overdub, "
                       "play/stop, play once, undo/redo, reverse, half speed); it answers even outside Classic Looper mode.\n\n"
                       "Connection: 5-pin MIDI In, MIDI Out/Thru and USB MIDI. MIDI THRU is off out of the box: turn it on (Global Settings) "
-                      "to pass MIDI on to another pedal.";
+                      "to pass MIDI on to another pedal.\n\nThis page has every CC in the manual's tables. Left out: the looper's MIDI Note "
+                      "messages (C-1 to B-1), which do the same as the looper CCs. midi.guide (community chart) lists the same CCs, but "
+                      "words CC#4 the other way round (0-63 \"Bypass On\"); the manual says 0-63 enables the preset and 64-127 bypasses it, "
+                      "which this page follows. It also spells reverb 13 \"Hail\" (the manual: Hall).";
             v.push_back (p);
         }
         {
@@ -511,6 +715,7 @@ const std::vector<Profile>& all()
             p.id = "line6.hx-one"; p.brand = "Line 6"; p.model = "HX One"; p.shortName = "HX One";
             p.aliases = "hx one hxone effect stompbox flux"; p.colour = line6Colour;
             p.manual = "HX One Owner's Manual (Rev C, firmware 3.70)";
+            p.faceplate = juce::Colour (0xff181413);   // enclosure colour measured from the official product photo (line6.com/hx-one)
             p.pedal = true; p.scheme = Scheme::hxOne;
             p.sceneWord = "Scene"; p.sceneCount = 0;
             p.mainTitle = "Switches";
@@ -529,6 +734,15 @@ const std::vector<Profile>& all()
                 p.pedals.push_back ({ "Parameter " + n (i), i <= 11 ? 20 + i : 21 + i });   // CC#21-31, 33-45 (32 is reserved)
             p.pedals.push_back ({ "FLUX on time", 46 });
             p.pedals.push_back ({ "FLUX off time", 48 });
+            // FLUX OnCurve / OffCurve (CC#47 / 49 = 0-10): 0-4 Slow 5 to Slow 1, 5 Linear, 6-10 Fast 1 to Fast 5.
+            ModelGroup onCurve { "FLUX on curve", "CC#47 = 0-10", {} }, offCurve { "FLUX off curve", "CC#49 = 0-10", {} };
+            for (int i = 0; i <= 10; ++i)
+            {
+                const auto curve = i < 5 ? "Slow " + n (5 - i) : i == 5 ? juce::String ("Linear") : "Fast " + n (i - 5);
+                onCurve.actions.push_back ({ "On: " + curve, "CC 47=" + n (i), "FLUX OnCurve (CC#47 = " + n (i) + ").", i < 5 ? 6 : i == 5 ? 5 : 3 });
+                offCurve.actions.push_back ({ "Off: " + curve, "CC 49=" + n (i), "FLUX OffCurve (CC#49 = " + n (i) + ").", i < 5 ? 6 : i == 5 ? 5 : 3 });
+            }
+            p.models = { onCurve, offCurve };
             p.pedalNote = "Expression (CC#3) works when Settings > Pedal Jack is ExpFS4. Parameters 1-24 are the loaded effect's parameters "
                           "in order (CC#21-45, no 32).";
             p.testMessage = "PC 0";   // preset 000
@@ -538,7 +752,9 @@ const std::vector<Profile>& all()
                       "Switches: ON (CC#1, any value toggles) and FLUX (CC#2). Engage / Bypass (CC#4) set it whatever it was. Views (CC#5): "
                       "Home, Preset List, Tuner. Tap: CC#93, as in the manual's table (a note elsewhere says TAP uses CC#64; tell us which "
                       "your unit answers).\n\nLooper (Simple Looper models): CC#60-66.\n\nExpression: CC#3 (Pedal Jack = ExpFS4), "
-                      "parameters 1-24 = CC#21-31 and 33-45, FLUX times CC#46 and 48.\n\nConnection: 5-pin MIDI In, MIDI Out/Thru (Thru on "
+                      "parameters 1-24 = CC#21-31 and 33-45, FLUX times CC#46 and 48. FLUX curves (the Models view): OnCurve CC#47 and "
+                      "OffCurve CC#49, 0-4 = Slow 5 to Slow 1, 5 = Linear, 6-10 = Fast 1 to Fast 5. Left out: the MIDI Note messages (bypass, "
+                      "tap, FLUX and the looper), which repeat what the CCs do. midi.guide has no HX One chart.\n\nConnection: 5-pin MIDI In, MIDI Out/Thru (Thru on "
                       "out of the box) and USB MIDI.";
             v.push_back (p);
         }
@@ -548,44 +764,113 @@ const std::vector<Profile>& all()
             auto p = fractalBase ("fractal.axe-fx-2", "Axe-Fx II / XL / XL+", "Axe-Fx II", "axe fx axefx 2 ii xl plus",
                                   "Axe-Fx II Owner's Manual (Doc Q7.0)", Scheme::axeFx2);
             p.switches = { { "Amp 1", 37, 127 }, { "Amp 2", 38, 127 }, { "Cab 1", 39, 127 }, { "Drive 1", 49, 127 }, { "Drive 2", 50, 127 },
-                           { "Delay 1", 47, 127 }, { "Reverb 1", 83, 127 }, { "Chorus 1", 41, 127 }, { "Comp 1", 43, 127 }, { "Wah 1", 97, 127 } };
+                           { "Delay 1", 47, 127 }, { "Reverb 1", 83, 127 }, { "Chorus 1", 41, 127 }, { "Comp 1", 43, 127 }, { "Wah 1", 97, 127 },
+                           // appended (names are kept by index): the second instances and common blocks, as many as the page fits
+                           { "Cab 2", 40, 127 }, { "Delay 2", 48, 127 }, { "Reverb 2", 84, 127 }, { "Chorus 2", 42, 127 }, { "Comp 2", 44, 127 },
+                           { "Wah 2", 98, 127 }, { "Phaser 1", 75, 127 }, { "Pitch 1", 77, 127 }, { "Flanger 1", 56, 127 },
+                           { "Tremolo 1", 90, 127 }, { "FX Loop", 59, 127 } };
             p.utilities = { { "Tuner on", "CC 15=127", {}, 5 }, { "Tuner off", "CC 15=0", {}, 9 }, { "Tap", "CC 14=127", oneTap, 1 },
-                            { "Next scene", "CC 123=127", {}, 9 }, { "Previous scene", "CC 124=127", {}, 9 } };
+                            { "Next scene", "CC 123=127", {}, 9 }, { "Previous scene", "CC 124=127", {}, 9 },
+                            { "Bypass on", "CC 13=127", "The front-panel Bypass (CC#13 = 64-127).", 9 },
+                            { "Bypass off", "CC 13=0", "The front-panel Bypass off (CC#13 = 0-63).", 3 } };
+            addFractalGlobals (p);
             p.pedals = { { "External 1", 16 }, { "External 2", 17 }, { "External 3", 18 }, { "External 4", 19 } };
+            for (int i = 5; i <= 12; ++i)
+                p.pedals.push_back ({ "External " + n (i), 15 + i });   // External 5-12 = CC#20-27
+            p.pedals.push_back ({ "Input volume", 10 });
+            p.pedals.push_back ({ "Out 1 volume", 11 });
+            p.pedals.push_back ({ "Out 2 volume", 12 });
+            p.pedalNote += " Input / Out 1 / Out 2 volume (CC#10-12) are the global volumes.";
+            p.models = { fractalXy ("X/Y: amp, cab, drive, chorus, delay", { { "Amp 1", 100 }, { "Amp 2", 101 }, { "Cab 1", 102 }, { "Cab 2", 103 },
+                                                                           { "Drive 1", 108 }, { "Drive 2", 109 }, { "Chorus 1", 104 }, { "Chorus 2", 105 },
+                                                                           { "Delay 1", 106 }, { "Delay 2", 107 } }),
+                         fractalXy ("X/Y: flanger, phaser, pitch, reverb, wah", { { "Flanger 1", 110 }, { "Flanger 2", 111 }, { "Phaser 1", 112 },
+                                                                                { "Phaser 2", 113 }, { "Pitch 1", 114 }, { "Pitch 2", 115 },
+                                                                                { "Reverb 1", 116 }, { "Reverb 2", 117 }, { "Wah 1", 118 },
+                                                                                { "Wah 2", 119 } }) };
             p.usbToThru = 2; p.usbThruSetting = "USB Adapter Mode (I/O > MIDI)";
             p.notes = "These are the factory default CCs (default table p.194). If you changed them on the unit (I/O > CTRL), use a custom MIDI device "
                       "instead.\n\nPresets: banks A-F of 128 (A-C on the Mark I/II), selected with CC#0 and then the Program Change.\n\n"
                       "\"Ignore Redundant PC\" is off by default, so loading the preset that's already loaded reloads it.\n\n"
-                      "USB: MIDI over USB reaches the 5-pin MIDI Out only with USB Adapter Mode on.";
+                      "USB: MIDI over USB reaches the 5-pin MIDI Out only with USB Adapter Mode on.\n\n"
+                      "Blocks: the 21 most used bypasses fit on the page. The rest of the default table, for a custom MIDI device: Crossover "
+                      "1 / 2 CC#45 / 46, Enhancer 51, Filter 1-4 52-55, Flanger 2 57, Formant 58, Gate/Expander 1 / 2 60 / 61, Graphic EQ 1-4 "
+                      "62-65, Megatap 66, Multiband Comp 1 / 2 67 / 68, Multi-Delay 69 / 70 (the table names both \"Multi-Delay 2\"), "
+                      "Parametric EQ 1-4 71-74, Phaser 2 76, Pitch 2 78, Quad Chorus 1 / 2 79 / 80, Resonator 1 / 2 81 / 82, Ring Mod 85, "
+                      "Rotary 1 / 2 86 / 87, Synth 1 / 2 88 / 89, Tremolo 2 91, Vocoder 92, Volume/Pan 1-4 93-96, Tone Matching 99.\n\n"
+                      "Also: front-panel Bypass (CC#13), metronome (CC#122), looper bypass (CC#33, Looper view), External 5-12 (CC#20-27) and "
+                      "the global volumes (CC#10-12) on the Expression view, and the X/Y switches (CC#100-119) on the Models view. " + fractalLeftOut;
             v.push_back (p);
         }
         {
             auto p = fractalBase ("fractal.ax8", "AX8", "AX8", "ax8 ax 8", "AX8 Owner's Manual (default CCs p.99)", Scheme::ax8);
             p.switches = { { "Drive 1", 49, 127 }, { "Drive 2", 50, 127 }, { "Delay 1", 47, 127 }, { "Delay 2", 48, 127 }, { "Reverb", 83, 127 },
-                           { "Chorus", 41, 127 }, { "Comp", 43, 127 }, { "Wah", 97, 127 }, { "Pitch", 77, 127 }, { "Flanger", 56, 127 } };
+                           { "Chorus", 41, 127 }, { "Comp", 43, 127 }, { "Wah", 97, 127 }, { "Pitch", 77, 127 }, { "Flanger", 56, 127 },
+                           // appended (names are kept by index)
+                           { "Phaser", 75, 127 }, { "Rotary", 86, 127 }, { "Trem/Pan", 90, 127 }, { "Filter 1", 52, 127 }, { "Gate", 60, 127 },
+                           { "Enhancer", 51, 127 }, { "Formant", 58, 127 }, { "Graphic EQ 1", 62, 127 }, { "Param EQ 1", 71, 127 },
+                           { "Multidelay", 69, 127 }, { "Vol/Pan 1", 93, 127 } };
             p.switchesNote += " The AX8 manual doesn't state the 0-63 / 64-127 rule; it's the Axe-Fx II's. No default CC for Amp or Cab bypass.";
             p.utilities = { { "Tuner", "CC 15=127", "Enters or exits the tuner (CC#15).", 5 }, { "Tap", "CC 14=127", oneTap, 1 },
                             { "Next scene", "CC 123=127", {}, 9 }, { "Previous scene", "CC 124=127", {}, 9 } };
+            addFractalGlobals (p);
             p.pedals = { { "External 5", 20 }, { "External 6", 21 }, { "External 7", 22 }, { "External 8", 23 } };
-            p.pedalNote += " Externals 1-4 default to the pedal jacks, so these use 5-8.";
+            for (int i = 9; i <= 12; ++i)
+                p.pedals.push_back ({ "External " + n (i), 15 + i });   // External 9-12 = CC#24-27
+            p.pedals.push_back ({ "In 1 volume", 10 });
+            p.pedals.push_back ({ "Out 1 volume", 11 });
+            p.pedals.push_back ({ "Out 2 volume", 12 });
+            p.pedalNote += " Externals 1-4 default to the pedal jacks, so these use 5-12. In 1 / Out 1 (Main) / Out 2 (FX Send) volume: CC#10-12.";
+            p.models = { fractalXy ("X/Y: drive, delay, chorus, flanger, phaser", { { "Drive 1", 108 }, { "Drive 2", 109 }, { "Delay 1", 106 },
+                                                                                  { "Delay 2", 107 }, { "Chorus", 104 }, { "Flanger", 110 },
+                                                                                  { "Phaser", 112 } }),
+                         fractalXy ("X/Y: pitch, rotary, reverb, wah", { { "Pitch", 114 }, { "Rotary", 125 }, { "Reverb", 116 }, { "Wah", 118 } }) };
             p.tunerOff = "CC 15=127";
             p.notes = "These are the factory default CCs (p.99). If you changed them on the unit, use a custom MIDI device instead.\n\n"
                       "Presets: 512 in 64 banks of 8, shown 01:1-64:8 (CC#0 = 0 for banks 01-16, 1 for 17-32, ...; then the Program Change).\n\n"
-                      "No default CC for Amp or Cab bypass.";
+                      "No default CC for Amp or Cab bypass.\n\nBlocks: 21 fit on the page. The rest of the default table, for a custom MIDI device: "
+                      "Filter 2 CC#53, Graphic EQ 2 63, Parametric EQ 2 72, Ring Mod 85, Synth 88, Volume/Pan 2 94. No default X/Y CC for "
+                      "Filter 1 / 2, Gate, Multidelay or Trem/Pan. The AX8 manual doesn't give the X/Y values: the tiles use the Axe-Fx II's "
+                      "(64-127 = X, 0-63 = Y).\n\nAlso: metronome (CC#122), looper bypass (CC#33, Looper view), External 9-12 (CC#24-27) and "
+                      "the In 1 / Out 1 / Out 2 volumes (CC#10-12) on the Expression view, X/Y switches on the Models view. " + fractalLeftOut;
             v.push_back (p);
         }
         {
             auto p = fractalBase ("fractal.fx8", "FX8 (Mark I / II)", "FX8", "fx8 fx 8", "FX8 Owner's Manual (default CC table)", Scheme::fx8);
             p.switches = { { "Drive 1", 49, 127 }, { "Drive 2", 50, 127 }, { "Delay 1", 47, 127 }, { "Delay 2", 48, 127 }, { "Reverb 1", 83, 127 },
-                           { "Chorus 1", 41, 127 }, { "Comp 1", 43, 127 }, { "Wah 1", 97, 127 }, { "Pitch", 77, 127 }, { "Phaser 1", 75, 127 } };
+                           { "Chorus 1", 41, 127 }, { "Comp 1", 43, 127 }, { "Wah 1", 97, 127 }, { "Pitch", 77, 127 }, { "Phaser 1", 75, 127 },
+                           // appended (names are kept by index)
+                           { "Reverb 2", 84, 127 }, { "Chorus 2", 42, 127 }, { "Comp 2", 44, 127 }, { "Phaser 2", 76, 127 },
+                           { "Flanger 1", 56, 127 }, { "Flanger 2", 57, 127 }, { "Wah 2", 98, 127 }, { "Rotary", 86, 127 },
+                           { "Trem/Pan", 90, 127 }, { "Filter 1", 52, 127 }, { "Relay 2", 126, 127 } };
             p.switchesNote += " The FX8 manual doesn't state the 0-63 / 64-127 rule; it's the Axe-Fx II's.";
             p.utilities = { { "Tuner", "CC 15=127", "Enters or exits the tuner (CC#15).", 5 }, { "Tap", "CC 14=127", oneTap, 1 },
                             { "Bypass (unit)", "CC 13=127", "The front-panel Bypass (CC#13).", 9 },
                             { "Next scene", "CC 123=127", {}, 9 }, { "Previous scene", "CC 124=127", {}, 9 } };
+            addFractalGlobals (p);
             p.pedals = { { "External 1", 16 }, { "External 2", 17 }, { "External 3", 18 }, { "External 4", 19 } };
+            for (int i = 5; i <= 12; ++i)
+                p.pedals.push_back ({ "External " + n (i), 15 + i });   // External 5-12 = CC#20-27
+            p.pedals.push_back ({ "In 1 Pre volume", 10 });
+            p.pedals.push_back ({ "Out 1 Pre volume", 11 });
+            p.pedals.push_back ({ "In 2 Post volume", 9 });
+            p.pedals.push_back ({ "Out 2 Post volume", 12 });
+            p.pedalNote += " The Pre / Post in and out volumes are CC#9-12.";
+            p.models = { fractalXy ("X/Y: chorus, delay, drive, flanger", { { "Chorus 1", 104 }, { "Chorus 2", 105 }, { "Delay 1", 106 },
+                                                                          { "Delay 2", 107 }, { "Drive 1", 108 }, { "Drive 2", 109 },
+                                                                          { "Flanger 1", 110 }, { "Flanger 2", 111 } }),
+                         fractalXy ("X/Y: phaser, pitch, reverb, wah", { { "Phaser 1", 112 }, { "Phaser 2", 113 }, { "Pitch", 114 },
+                                                                       { "Reverb 1", 116 }, { "Reverb 2", 117 }, { "Wah 1", 118 }, { "Wah 2", 119 } }) };
             p.tunerOff = "CC 15=127";
             p.notes = "These are the factory default CCs. If you changed them on the unit, use a custom MIDI device instead. Mark I needs firmware 3.0 "
-                      "or newer.\n\nPresets: 128, A1-P8 = Program Change 0-127. The FX8 doesn't respond to bank select.";
+                      "or newer.\n\nPresets: 128, A1-P8 = Program Change 0-127. The FX8 doesn't respond to bank select.\n\n"
+                      "Blocks: 21 fit on the page. The rest of the default table, for a custom MIDI device: Crossover 1 / 2 CC#45 / 46, "
+                      "Enhancer 51, Filter 2 53, Formant 58, Gate/Expander 60, Graphic EQ 1 / 2 62 / 63, Megatap 66, Multi-Delay 69, "
+                      "Parametric EQ 1 / 2 71 / 72, Ring Mod 85, Synth 88, Tremolo 2 91, Volume/Pan 93. Left out: Relay 1 and Rotary X/Y, "
+                      "which the table both lists as CC#125 (one of them must be wrong). The FX8 manual doesn't give the X/Y values: the "
+                      "tiles use the Axe-Fx II's (64-127 = X, 0-63 = Y).\n\nAlso: metronome (CC#122), looper bypass (CC#33, Looper view), "
+                      "External 5-12 (CC#20-27) and the Pre / Post volumes (CC#9-12) on the Expression view, X/Y switches on the Models "
+                      "view. " + fractalLeftOut;
             v.push_back (p);
         }
         // Effect pedals with fixed MIDI charts, one file per brand group (the Effects & Pedals tab).
@@ -729,7 +1014,7 @@ juce::String presetLabel (const Profile& p, int setlist, int index)
         for (const auto& [reserved, name] : p.reservedPrograms)
             if (reserved == index)
                 return name;   // "Manual mode", "Bypass"...
-        return "Preset " + n (index + p.labelFrom);
+        return p.presetWord + " " + n (index + p.labelFrom);
     }
     const auto per = slotsPerBank (p);
     const auto banks = bankNames (p, setlist);
