@@ -1,6 +1,6 @@
 # PedalCues: notes for Claude
 
-JUCE plugin (VST3 / AU on macOS / LV2 on Linux / Standalone; Windows, macOS (universal: Intel from 10.13, Apple Silicon from 11; `CMAKE_OSX_DEPLOYMENT_TARGET` 10.13 and the pkg's `os-version min`) and Linux; tested in Reaper, DAW-neutral wording elsewhere) that turns MIDI changes for the Quad Cortex / QC Mini / Nano Cortex, Kemper, Fractal, Line 6, HeadRush, Darkglass, Boss, Strymon, Meris, Chase Bliss, Walrus, Source Audio, EHX, Eventide and Whammy V / DT, and tiles for any other MIDI device (custom MIDI devices, beta), into drag-and-drop tiles. The website headline lists the brands, ending "& more amp modellers, effects & pedals, or any MIDI device" (`docs/index.html` h1, title and meta descriptions), and so does the README intro: update both when a brand is added (the GitHub About text is the author's; don't change it). Every site page resets the scroll to the top on reload (`history.scrollRestoration = 'manual'`, kept in `Tools/make_site_pages.py` for the generated pages). The author is Thanasis Kostopoulos (GitHub `thankost`). The repo is public: https://github.com/thankost/pedal-cues. The download site is https://thankost.github.io/pedal-cues/, served from `docs/` on `main`.
+JUCE plugin (VST3 / AU on macOS / LV2 on Linux / Standalone; Windows, macOS (universal: Intel from 10.13, Apple Silicon from 11; `CMAKE_OSX_DEPLOYMENT_TARGET` 10.13 and the pkg's `os-version min`) and Linux; tested in Reaper, DAW-neutral wording elsewhere) that turns MIDI changes for the Quad Cortex / QC Mini / Nano Cortex, Kemper, Fractal, Line 6, HeadRush, Darkglass, Boss, Strymon, Meris, Chase Bliss, Walrus, Source Audio, EHX, Eventide and Whammy V / DT, and tiles for any other MIDI device (custom MIDI devices, beta), into drag-and-drop tiles. The website headline lists the brands, ending "& more amp modellers, effects & pedals, or any MIDI device" (`docs/index.html` h1, title and meta descriptions), and so does the README intro: update both when a brand is added. Every site page resets the scroll to the top on reload (`history.scrollRestoration = 'manual'`, kept in `Tools/make_site_pages.py` for the generated pages). The author is Thanasis Kostopoulos (GitHub `thankost`). The repo is public: https://github.com/thankost/pedal-cues. The download site is https://thankost.github.io/pedal-cues/, served from `docs/` on `main`.
 
 ## Build and test
 
@@ -31,7 +31,7 @@ Update everything that describes it in the same commit:
 - the quick tour (`Source/Tour.cpp`). Inserting a step shifts the indices in DocShots' `tourShots`.
 - screenshots: run DocShots into `docs/images`, then look at the changed images before committing.
 - the website's headline, title and meta descriptions in `docs/index.html` and the README intro when a brand or a headline
-  feature changes. **Never change the GitHub About text**: the author manages it.
+  feature changes.
 - `CHANGELOG.md` (the next version's section, "(unreleased)" until the release) and CLAUDE.md's own facts
 - a quick grep for wording the change made stale (old tab, button or setting names) across README, docs/, Source/ and Tests/
 

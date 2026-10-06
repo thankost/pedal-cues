@@ -1,6 +1,6 @@
 ---
 name: docs-check
-description: Run before every commit that touches the UI or behaviour, before showing the author the app as "done", and as step 1 of every release. Updates and checks every place that describes PedalCues (docs, tour, screenshots, site, changelog; never the GitHub About text) and reports what was updated.
+description: Run before every commit that touches the UI or behaviour, before showing the author the app as "done", and as step 1 of every release. Updates and checks every place that describes PedalCues (docs, tour, screenshots, site, changelog) and reports what was updated.
 ---
 
 # Docs check (PedalCues)

@@ -19,7 +19,7 @@ reason = """Docs check first (the author's standing rule, .claude/skills/docs-ch
 Before committing a change to the UI or behaviour, update and check:
 - README.md; docs/GUIDE.md then python3 Tools/make_site_pages.py; docs/index.html (headline, title, meta, cards, captions); docs/help.html
 - Source/Tour.cpp; Tools/DocShots.cpp shots; DocShots into docs/images and LOOK at the images
-- CHANGELOG.md (next version, "(unreleased)"); .github/ISSUE_TEMPLATE; CLAUDE.md facts (never the GitHub About text)
+- CHANGELOG.md (next version, "(unreleased)"); .github/ISSUE_TEMPLATE; CLAUDE.md facts
 - grep for stale names; build + PedalCuesTests "All tests passed"
 Then report what was updated, and commit again with DOCS_CHECKED=1 at the start of the command
 (e.g. DOCS_CHECKED=1 git commit ...). Docs-only or no-UI commits: say so and use the same prefix."""
