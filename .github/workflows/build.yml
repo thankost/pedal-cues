@@ -47,7 +47,7 @@ jobs:
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DPEDALCUES_COPY_PLUGIN=OFF $extra
 
       - name: Build
-        run: cmake --build build --config Release --parallel
+        run: cmake --build build --config Release --parallel 4   # unbounded make -j ran the Linux runner out of memory (v0.9.1, v0.9.2 tag builds)
 
       - name: Test
         run: |
