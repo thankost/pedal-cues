@@ -5,6 +5,8 @@
 #include "../Source/Fuzzy.h"
 #include "../Source/DeviceTemplates.h"
 #include "../Source/Modellers.h"
+#include "../Source/HelixImport.h"
+#include "../Source/MidiNameSync.h"
 
 #include <cstdio>
 
@@ -376,9 +378,23 @@ int main (int argc, char** argv)
                && hxOne.pedals[11].cc == 31 && hxOne.pedals[12].cc == 33 && hxOne.pedals[24].cc == 45);
         CHECK (! find ("line6.helix-floor")->pedal);
         // The effect pedal pages, one checks file per brand group (numbers from the makers' charts).
+        {
+            // A footswitch press tile sends down, then up 1/16 later, and is never repeated as padding.
+            Profile fs;
+            fs.id = "test.fs"; fs.shortName = "T";
+            fs.switches = { { "A", 80, 0, 127, true } };
+            const auto c = switchCue (fs, 3, 0, true, {});
+            CHECK (c.events.size() == 2 && isCC (c.events[0].second, 3, 80, 0) && isCC (c.events[1].second, 3, 80, 127)
+                   && std::abs (c.events[1].first - 0.25) < 1.0e-9 && c.toggles);
+            Control boost { "Boost", 23 };
+            boost.max = 60;
+            CHECK (boost.max == 60 && boost.press == false && boost.value == 127);
+        }
         #include "StrymonChecks.inc"
         #include "BossChecks.inc"
         #include "BoutiqueChecks.inc"
+        #include "HelixImportChecks.inc"
+        #include "MidiNameSyncChecks.inc"
         const auto& fx8 = *find ("fractal.fx8");
         CHECK (presetLabel (fx8, -1, 9) == "B2" && preset (fx8, 1, -1, 9, true, {}).events.size() == 1);   // no bank select
     }

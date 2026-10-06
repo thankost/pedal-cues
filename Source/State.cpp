@@ -577,6 +577,8 @@ void sanitise (juce::ValueTree& root)
     if ((int) root[IDs::ampUnit] == customAmpUnit && units.getNumChildren() == 0)
         root.setProperty (IDs::ampUnit, 0, nullptr);
     // The Effects & Pedals tab: the Whammy, no pedal, a custom device that exists or a known pedal page (anything else: the Whammy).
+    if ((int) root[IDs::fxUnit] == fxNone)
+        root.setProperty (IDs::fxUnit, fxWhammy, nullptr);   // v0.9.0 started new setups empty; since v0.9.1 the tab always shows a device
     const auto fx = (int) root[IDs::fxUnit];
     const auto* fxPage = modellers::find (root[IDs::fxProfile].toString());
     if ((fx != fxWhammy && fx != fxNone && fx != fxCustom && fx != fxModeller)
@@ -648,7 +650,6 @@ void sanitise (juce::ValueTree& root)
 juce::ValueTree createDefault()
 {
     juce::ValueTree root (IDs::PedalCues);
-    root.setProperty (IDs::fxUnit, fxNone, nullptr);   // a new setup: no pedal until one is picked (older state without fxUnit: the Whammy)
     sanitise (root);
     return root;
 }

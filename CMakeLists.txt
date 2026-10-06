@@ -90,6 +90,10 @@ target_sources(PedalCues PRIVATE
     Source/Update.cpp
     Source/QcUsb.cpp
     Source/QcSyncDialog.cpp
+    Source/HelixImport.cpp
+    Source/HelixImportDialog.cpp
+    Source/MidiNameSync.cpp
+    Source/MidiNameSyncDialog.cpp
     Source/StandaloneApp.cpp)
 
 target_compile_definitions(PedalCues PUBLIC
@@ -110,7 +114,7 @@ target_link_libraries(PedalCues
 option(PEDALCUES_BUILD_TESTS "Build the CueModel tests" ON)
 if(PEDALCUES_BUILD_TESTS)
     juce_add_console_app(PedalCuesTests PRODUCT_NAME "PedalCuesTests")
-    target_sources(PedalCuesTests PRIVATE Tests/CueModelTests.cpp Source/CueModel.cpp Source/State.cpp Source/DeviceTemplates.cpp Source/Modellers.cpp Source/PedalsStrymon.cpp Source/PedalsBoss.cpp Source/PedalsBoutique.cpp Source/Update.cpp Source/QcUsb.cpp)
+    target_sources(PedalCuesTests PRIVATE Tests/CueModelTests.cpp Source/CueModel.cpp Source/State.cpp Source/DeviceTemplates.cpp Source/Modellers.cpp Source/PedalsStrymon.cpp Source/PedalsBoss.cpp Source/PedalsBoutique.cpp Source/Update.cpp Source/QcUsb.cpp Source/HelixImport.cpp Source/MidiNameSync.cpp)
     target_compile_definitions(PedalCuesTests PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0
         JucePlugin_VersionString="${PROJECT_VERSION}"
         PEDALCUES_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/Tests/fixtures")
@@ -148,7 +152,11 @@ if(PEDALCUES_BUILD_DOCS)
         Source/PluginEditor.cpp
         Source/Update.cpp
         Source/QcUsb.cpp
-        Source/QcSyncDialog.cpp)
+        Source/QcSyncDialog.cpp
+        Source/HelixImport.cpp
+        Source/HelixImportDialog.cpp
+        Source/MidiNameSync.cpp
+        Source/MidiNameSyncDialog.cpp)
     target_compile_definitions(DocShots PRIVATE
         JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0
         JucePlugin_Name="PedalCues"

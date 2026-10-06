@@ -6,6 +6,15 @@ Download the latest version from the [PedalCues website](https://thankost.github
 
 - **Import MIDI... in Draw (new):** load a move from a MIDI file, like a treadle bend or an expression swell you drew as CC automation in your DAW, and reuse it in any song. Click **Import MIDI...** next to Wave... (or drop the .mid file on the card): it keeps the clip's timing, then saves it in My drawings. In every Draw mode: the Whammy, the Quad Cortex, Kemper and modeller expression, and your own devices.
 - **Moves up to 8 bars:** Length now goes to 6 and 8 bars.
+- **Import from HX Edit (new):** on the Helix, HX Stomp and HX Effects pages, read preset names, setlists and snapshot names and colours from an HX Edit export (.hls, .hlb or .hlx). It only reads the file.
+- **Read preset names from the unit (new, beta):** Strymon TimeLine / BigSky / Mobius, Boss DD-500 / RV-500 / MD-500 and the GT-1000, Axe-Fx III, FM9, FM3 and VP4 devices can fill in their preset names over MIDI. PedalCues only sends read requests; nothing on the unit changes. Not tested on hardware yet: please tell us if it works.
+- **54 new pedal pages (new, beta)** on Effects & Pedals, built from the makers' MIDI charts: **Strymon** (TimeLine, BigSky, Mobius, TimeLine MX, BigSky MX, Volante, Sunset, Riverside, Compadre, Iridium, cloudburst, the V2 series, Brig, Olivera, Ultraviolet, Zelzah), **Boss** DD-500, RV-500, MD-500, **Meris** (Mercury7, Ottobit Jr., Polymoon, Enzo, Hedra, LVX, MercuryX, Enzo X, Ottobit X), **Chase Bliss** (MOOD MKII, Blooper, Dark World, Thermae, Habit, CXM 1978, Preamp MKII, Gen Loss MKII, Lossy, Brothers AM, Onward, Clean), **Walrus Audio** MAKO D1 / R1 / M1 / ACS1, **Source Audio** Nemesis / Ventris / Collider and **EHX** POG3 / Oceans Abyss. Presets, controls, loopers, expression moves on every knob, and model / type lists where the maker documents them. Not tested on hardware yet: please tell us what works.
+- **New templates:** Eventide H9 and H90, Boss RC-500 and RC-600 (you assign the CCs on the pedal; the preset tiles work right away).
+- **Delete your devices from the list:** an **x** next to each of your MIDI devices (or right-click), with a check first. Clips already in your songs keep working.
+- **Effects & Pedals always shows a device:** new setups and deleted pedals show the Whammy V again instead of an empty tab.
+- **Pages show only the views they have:** no greyed-out Looper or Expression buttons, and utilities sit right under the switches.
+- **How to connect:** one cue track per device, "add the next one the same way".
+- **Fix:** on pages without scenes (effect pedals, the Nano Cortex), on/off tiles no longer load a preset first.
 
 ## 0.9.0 (2026-10-06)
 

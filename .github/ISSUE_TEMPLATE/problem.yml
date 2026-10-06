@@ -95,9 +95,14 @@ body:
         - Whammy DT
         - Line 6 DL4 MkII (beta)
         - Line 6 HX One (beta)
-        - A template (VP4, Microtubes Infinity), name it above
+        - Strymon (beta), name the model above
+        - Boss DD-500 / RV-500 / MD-500 (beta)
+        - Meris (beta), name the model above
+        - Chase Bliss (beta), name the model above
+        - Walrus Audio, Source Audio or EHX (beta), name the model above
+        - A template (VP4, Microtubes Infinity, Eventide H9 / H90, Boss RC-500 / RC-600), name it above
         - Custom MIDI device (beta), name it above
-        - No pedal
+        - None
   - type: textarea
     id: extra
     attributes:

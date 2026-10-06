@@ -1,6 +1,6 @@
 # PedalCues
 
-Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex, QC Mini and Nano Cortex**, the **Kemper Profiler / Kemper Player**, **Fractal Audio** (Axe-Fx, FM, AX8, FX8, VP4), **Line 6** (Helix, HX, POD Go, Helix Stadium, DL4 MkII, HX One), **HeadRush** (Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5), **Darkglass** (Anagram, Infinity 500 Combo, Exponent 500, Microtubes Infinity) and **Boss** (GT-1000) units (beta), and the **DigiTech Whammy V / Whammy DT** & more amp modellers, effects and pedals, plus **any other MIDI device** with tiles you make yourself (beta).
+Drag-and-drop MIDI cues for the **Neural DSP Quad Cortex, QC Mini and Nano Cortex**, the **Kemper Profiler / Kemper Player**, **Fractal Audio** (Axe-Fx, FM, AX8, FX8, VP4), **Line 6** (Helix, HX, POD Go, Helix Stadium, DL4 MkII, HX One), **HeadRush** (Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5), **Darkglass** (Anagram, Infinity 500 Combo, Exponent 500, Microtubes Infinity) and **Boss** (GT-1000) units (beta), the **DigiTech Whammy V / Whammy DT**, and effect pedals from **Strymon** (TimeLine, BigSky, Mobius, MX, Volante, the V2 series...), **Boss** (DD-500, RV-500, MD-500), **Meris**, **Chase Bliss**, **Walrus Audio**, **Source Audio** and **EHX** (beta) & more amp modellers, effects and pedals, plus **any other MIDI device** with tiles you make yourself (beta).
 A VST3 / AU / LV2 / Standalone plugin (JUCE) for Windows, macOS and Linux. Tested in Reaper; it should work in any DAW that accepts dragged MIDI files and can send a MIDI track to a hardware output (Ableton Live, Cubase, Bitwig, Studio One; in Logic the clips work on an External MIDI track).
 
 **[Download for Windows, macOS and Linux](https://thankost.github.io/pedal-cues/)**
@@ -81,7 +81,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - MIDI passes through, so the dropped items and the live preview share one track and one route
 - **A MIDI strip at the top of each page:** the device's own MIDI channel (every device keeps its own, saved with your setup), **Test** and **How to connect**. How to connect asks how your devices are connected only when you have two, lists the cue tracks with your devices as examples, and shows where your DAW sets a track's MIDI output; in the standalone app it also picks the MIDI port
 
-Preset and scene names are entered in the plugin (double-click to rename, right-click for colour/reorder), or read from the Quad Cortex with **Sync from QC (USB)**.
+Preset and scene names are entered in the plugin (double-click to rename, right-click for colour/reorder), read from the Quad Cortex with **Sync from QC (USB)**, imported from an **HX Edit** export on the Helix / HX pages, or (beta) read over MIDI from Strymon TimeLine / BigSky / Mobius, Boss DD/RV/MD-500, GT-1000 and Fractal Axe-Fx III / FM9 / FM3 / VP4.
 
 ## Install (no code needed)
 

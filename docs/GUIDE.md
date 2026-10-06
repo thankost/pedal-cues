@@ -17,7 +17,7 @@ PedalCues turns pedal changes into **drag and drop**. Each tile in the plugin is
 7. [Fractal, Line 6, HeadRush, Darkglass and more (beta)](#7-fractal-line-6-headrush-darkglass-and-more-beta)
 8. [Custom MIDI devices (beta)](#8-custom-midi-devices-beta)
 9. [Build a song, step by step](#9-build-a-song-step-by-step)
-10. [Effects & Pedals: Whammy V / DT, DL4 MkII, HX One and your devices](#10-effects--pedals-whammy-v--dt-dl4-mkii-hx-one-and-your-devices)
+10. [Effects & Pedals: Whammy, Strymon, Line 6, Boss, Meris, Chase Bliss and more](#10-effects--pedals-whammy-strymon-line-6-boss-meris-chase-bliss-and-more)
 11. [MIDI channels, How to connect and your setup](#11-midi-channels-how-to-connect-and-your-setup)
 12. [Troubleshooting](#12-troubleshooting)
 
@@ -405,6 +405,19 @@ The Axe-Fx III, FM9, FM3 and VP4 have no default MIDI numbers, so they come as [
 - **Helix Stadium** uses a different MIDI map from older Helix units, and a second MIDI channel for block bypass that this page doesn't cover. With MIDI Over USB C on, its MIDI Thru also passes on USB MIDI.
 - **Fractal** pages use the **factory default** CCs. If you changed them on your unit, use a [custom MIDI device](#8-custom-midi-devices-beta) instead. On the Axe-Fx II, "Ignore Redundant PC" is off by default, so loading the preset that's already loaded reloads it. MIDI over USB reaches the 5-pin MIDI Out only with USB Adapter Mode on.
 
+### Preset names from HX Edit (Helix, HX Stomp, HX Effects)
+
+On a Helix Floor / LT / Rack, HX Stomp, HX Stomp XL or HX Effects page, **Import from HX Edit...** (under the preset list) reads a file you exported in HX Edit: a **setlist** (`.hls`), a **bundle** (`.hlb`, all setlists) or a single **preset** (`.hlx`). Pick which setlist from the file goes to which setlist on the page; PedalCues fills in the preset names in their slots and each preset's **snapshot names and colours** (from the snapshot LEDs). Empty "New Preset" slots are skipped unless you untick that. It only reads the file: nothing is sent to your unit, and footswitch names stay as they are.
+
+### Read preset names from the unit (beta)
+
+Some units answer a read-only MIDI request with their preset names. **Read names from the unit (beta)...** asks for them and fills in the list:
+
+- **Pages:** Strymon **TimeLine, BigSky, Mobius** and Boss **DD-500, RV-500, MD-500** (the button is under the preset list).
+- **Template devices:** Boss **GT-1000**, Fractal **Axe-Fx III, FM9, FM3, VP4**: in the device's **...** menu (it adds or renames a tile per named preset; on the Axe-Fx III family it can also show the loaded preset's scene names).
+
+Pick the MIDI Out *and* the MIDI In your unit is on (it has to answer), then **Read**. PedalCues only sends read requests (Roland *RQ1*, Fractal's name queries, Strymon's preset request): nothing is loaded, saved or changed on the unit, and you can cancel at any time. Choose **Only presets with names** (on) and, on pages, whether to replace your list. These reads come from the makers' documents and Strymon's open-source librarian but aren't tested on hardware yet: please tell us if it works with yours. The Kemper, HeadRush, Darkglass, Nano Cortex and most pedals don't report their preset names, so type them in.
+
 ### HeadRush (beta)
 
 ![HeadRush Core page](images/headrush-core.png)
@@ -559,18 +572,18 @@ This example covers a song with a clean verse, a crunchy chorus and a Whammy sol
 
 ---
 
-## 10. Effects & Pedals: Whammy V / DT, DL4 MkII, HX One and your devices
+## 10. Effects & Pedals: Whammy, Strymon, Line 6, Boss, Meris, Chase Bliss and more
 
-The first tab, **Amps & Modellers**, is for your amp modeller; the second, **Effects & Pedals**, for an effect or pedal. New setups start with **No pedal** there; click the **▾** on the tab (or the tab itself again) to pick yours:
+The first tab, **Amps & Modellers**, is for your amp modeller; the second, **Effects & Pedals**, for an effect or pedal. It shows the **DigiTech Whammy V** until you pick another device: click the **▾** on the tab (or the tab itself again):
 
-| The Effects & Pedals list | A MIDI device there | Only one device |
-|---|---|---|
-| ![The Effects & Pedals device list](images/pedal-picker.png) | ![A looper on the Effects & Pedals tab](images/pedal-custom.png) | ![No pedal](images/pedal-none.png) |
+| The Effects & Pedals list | A MIDI device there |
+|---|---|
+| ![The Effects & Pedals device list](images/pedal-picker.png) | ![A looper on the Effects & Pedals tab](images/pedal-custom.png) |
 
-- **No pedal:** not using one? Leave the tab empty: it shows how to add one later, and How to connect shows one device and one cue track. New setups start empty.
 - **Whammy V** and **Whammy DT** (DigiTech): two devices sharing one page, described below. The DT adds Drop Tune and has no Chords.
 - **Line 6 DL4 MkII** and **HX One** (beta): ready-made pages, [below](#line-6-dl4-mkii-and-hx-one-beta).
-- **Templates** for effect pedals: the Fractal **VP4** and the Darkglass **Microtubes Infinity** ([templates](#templates-beta)). Templates for amp modellers stay in the Amps & Modellers list.
+- **Strymon, Boss, Meris, Chase Bliss, Walrus, Source Audio and EHX** (beta): ready-made pages, [below](#strymon-boss-meris-chase-bliss-walrus-source-audio-and-ehx-beta).
+- **Templates** for effect pedals: the Fractal **VP4**, the Darkglass **Microtubes Infinity**, the **Eventide H9 / H90** and the **Boss RC-500 / RC-600** ([templates](#templates-beta)). Templates for amp modellers stay in the Amps & Modellers list.
 - **Your MIDI devices:** any [custom MIDI device](#8-custom-midi-devices-beta) (a delay, a looper, a synth...), with its tiles and expression moves, or **+ New MIDI device** / **Import device...** under the list. A device belongs to one tab: to move it, use **Move to Amps & Modellers** (or **Move to Effects & Pedals**) in the device's **...** menu.
 - The tab takes the pedal's name and colour. Each pedal keeps **its own MIDI channel**, set at the top of its page and saved with your setup.
 
@@ -586,6 +599,22 @@ Laid out like the [Fractal and Line 6 pages](#7-fractal-line-6-headrush-darkglas
 - **DL4 MkII:** presets **A-F** (Program Change 0-5) and **7-128** (PC 6-127, only reachable over MIDI). **Controls:** the delay's note value (CC#12), preset on / bypass, tap, Classic Looper mode on / off and the reverb-delay routing. **Looper:** record, overdub, play, stop, play once, undo, redo, reverse, half speed (CC#60-66). **Expression:** the expression pedal (CC#3; make the assignment first with a pedal on the EXP PEDAL jack) and the knobs (time, repeats, tweak, tweez, mix, reverb decay, predelay and mix). **Models:** the 15 MkII and 15 Legacy delays (CC#1) and the 15 secret reverbs plus Reverb off (CC#2) of the loaded preset. Changing a model clears the preset's pedal assignments, as on the pedal.
 - **HX One:** presets **000-127** (PC 0-127). **Switches:** ON (toggles) and FLUX; Engage / Bypass, tap (CC#93, as in the manual's table), Home, Preset List and Tuner. **Looper** (Simple Looper models) and **Expression** on the pedal (CC#3, with Pedal Jack set to ExpFS4), parameters 1-24 and the FLUX times.
 - Both use MIDI channel 1 out of the box, the same as most amp modellers: set the pedal to another channel (PedalCues suggests 3) and pick the same at the top of its page. The DL4 MkII's MIDI Thru is off out of the box; turn it on in its Global Settings if another device is after it.
+
+### Strymon, Boss, Meris, Chase Bliss, Walrus, Source Audio and EHX (beta)
+
+| Strymon TimeLine MX | Chase Bliss MOOD MKII | Meris LVX |
+|---|---|---|
+| ![TimeLine MX models](images/strymon-timeline-mx-models.png) | ![MOOD MKII](images/chase-bliss-mood.png) | ![LVX](images/meris-lvx.png) |
+
+Ready-made pages from each maker's MIDI chart, on the Effects & Pedals tab (pick them with the **▾**). They're built from the manuals and not tested on hardware yet; **About this unit** on each page lists every number, what each tile sends and what the manual doesn't say.
+
+- **Strymon:** TimeLine, BigSky, Mobius (presets 00A-99B / 00A-99C), TimeLine MX and BigSky MX (000A-149B), Volante, Sunset, Riverside, Compadre, Iridium, cloudburst, Flint V2, El Capistan V2, Deco V2, DIG V2, Lex V2, blueSky V2, Brig, Olivera, Ultraviolet and Zelzah (presets 0-299). Every preset clip sends its bank (CC#0) and Program Change. The small pedals' fixed programs show their meaning: *Manual mode* (PC 127), *Favorite* and the *MultiSwitch* presets. Controls: bypass, tap, on/off for each effect side, infinite / hold; **Looper** on the TimeLine (MX); **Expression** on CC#100 and the knobs; **Models** where Strymon documents the order (TimeLine MX delay types and dual mode).
+- **Boss DD-500, RV-500, MD-500:** patches 01A-99C, effect on / bypass, the DD-500's phrase loop, and the knobs as expression moves. The CC numbers are the ones in Boss's tables: if you changed them in the pedal's MIDI menu, use a custom device. If a preset tile loads another patch, check the pedal's *PC MAP*.
+- **Meris:** Mercury7, Ottobit Jr., Polymoon, Enzo, Hedra (16 presets; PC 0 = bypass), and the X series LVX, MercuryX, Enzo X, Ottobit X (with their block types under Models).
+- **Chase Bliss:** MOOD MKII, Blooper, Dark World, Thermae, Habit, CXM 1978, Preamp MKII, Generation Loss MKII, Lossy, Brothers AM, Onward, Clean. *Live* (PC 0) returns to the knobs. PedalCues never sends their factory-reset or save commands.
+- **Walrus Audio MAKO D1, R1, M1, ACS1** (MKII; the MKI pedals use different numbers), **Source Audio Nemesis, Ventris, Collider**, and **EHX POG3, Oceans Abyss**.
+- **Templates** (you assign the CCs on the pedal): **Eventide H9 and H90**, **Boss RC-500 and RC-600** loopers. Their preset tiles work right away.
+- Set each pedal's MIDI channel on the pedal and at the top of its page. Several of these take MIDI on a TRS jack (the EXP jack on Meris and some Strymon pedals, a MIDIBox for Chase Bliss): **About this unit** says which cable.
 
 Switching pedals doesn't change clips already on the timeline: each keeps the pedal and channel it was dragged with.
 
@@ -715,7 +744,7 @@ My drawings are saved **on your computer**, not in one project, so every project
 
 **Connect your rig:**
 - **Test your devices** (standalone app only): the MIDI port the app sends to (a port you plug in appears by itself) and **Test all**, which tests both devices at once.
-- **Set up your DAW:** with two devices, pick how they're connected: **Each device on its own output** (the simplest) or **One cable through the amp modeller** (a daisy chain through its MIDI Thru; only offered when it has one). The daisy chain needs a MIDI cable into the amp modeller, not USB: an amber note says what your unit does with USB MIDI (the QC and Kemper never pass it on to their Thru; some units do only with a setting, named there; a few always do). With one device there's nothing to choose. The steps use generic tracks, an amp modeller track and a pedal track, with your devices as examples. Pick **Your DAW** (Reaper, Ableton Live, Cubase / Nuendo, Logic Pro or Other) to see where that DAW sets a track's MIDI output. **Wiring guide: cables and diagrams** opens the wiring guide: one device, a daisy chain or separate outputs, with the cables and signal flow for each and the setup that doesn't work.
+- **Set up your DAW:** with two devices, pick how they're connected: **Each device on its own output** (the simplest) or **One cable through the amp modeller** (a daisy chain through its MIDI Thru; only offered when it has one). The daisy chain needs a MIDI cable into the amp modeller, not USB: an amber note says what your unit does with USB MIDI (the QC and Kemper never pass it on to their Thru; some units do only with a setting, named there; a few always do). With one device there's nothing to choose. The steps make one cue track per device (add more the same way), with your devices as examples. Pick **Your DAW** (Reaper, Ableton Live, Cubase / Nuendo, Logic Pro or Other) to see where that DAW sets a track's MIDI output. **Wiring guide: cables and diagrams** opens the wiring guide: one device, a daisy chain or separate outputs, with the cables and signal flow for each and the setup that doesn't work.
 
 ### Your setup: save, share, start new projects with it
 

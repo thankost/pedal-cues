@@ -70,7 +70,8 @@ PedalInfo pedalInfo (const juce::ValueTree& state);
 std::unique_ptr<Page> makeCustomPage (PedalCuesProcessor&, bool pedalsTab);   // a custom MIDI device (beta), on the first tab or the pedals tab
 std::unique_ptr<Page> makePedalPage (PedalCuesProcessor&);    // the second tab: the Whammy or a custom MIDI device
 std::unique_ptr<Page> makeModellerPage (PedalCuesProcessor&, bool pedalsTab = false); // a unit with defined MIDI numbers, on the first tab or the pedals tab (DL4 MkII)
-void newCustomUnit (juce::ValueTree state, bool pedalsTab = false);      // adds one with example tiles, shows it on that tab, asks its name
+void newCustomUnit (juce::ValueTree state, bool pedalsTab = false);
+void confirmDeleteDevice (juce::ValueTree state, juce::ValueTree unit, std::function<void()> deleted);   // asks, then deletes      // adds one with example tiles, shows it on that tab, asks its name
 void importCustomUnit (juce::ValueTree state, bool pedalsTab = false);   // Import device: a .pedalcues-device file, onto that tab
 void exportCustomUnit (juce::ValueTree unit);
 // The hover text for "Switch to the preset's setlist" (Quad Cortex, Helix, POD Go, Stadium pages).

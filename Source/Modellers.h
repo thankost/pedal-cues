@@ -36,7 +36,10 @@ enum class Scheme
 };
 
 struct Action { juce::String name, messages, note; int colour = 5; };   // messages in cues::custom syntax
-struct Control { juce::String name; int cc = 0; int value = 127; int offValue = 0; };   // value: what a press / ON sends; offValue: OFF
+// value: what a press / ON sends; offValue: OFF. press: a footswitch press, value then offValue 1/16 later (Strymon A / B / Tap
+// down = 0, up = 127; MX press = 0, release = 127). max: a parameter's top value on the Expression view (Boost 0-60, Low end
+// 0-20): its moves and Set to tiles run from 0 to max instead of 0-127.
+struct Control { juce::String name; int cc = 0; int value = 127; int offValue = 0; bool press = false; int max = 127; };
 struct ModelGroup { juce::String title, hint; std::vector<Action> actions; };   // the Models view: "MkII delays" (CC#1 = 0-14)
 
 struct Profile

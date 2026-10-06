@@ -306,23 +306,14 @@ private:
         if (! unit.isValid())
             return;
         juce::Component::SafePointer<UnitPicker> safe (this);
-        juce::AlertWindow::showAsync (juce::MessageBoxOptions()
-                                          .withIconType (juce::MessageBoxIconType::QuestionIcon)
-                                          .withTitle ("Delete \"" + unit[IDs::name].toString() + "\"?")
-                                          .withMessage ("Its tiles and notes are removed from PedalCues (Export device first to keep a copy). "
-                                                        "Clips already in your songs keep working.")
-                                          .withButton ("Delete")
-                                          .withButton ("Cancel"),
-                                      [safe, unit] (int result)
-                                      {
-                                          if (safe == nullptr || result != 1)
-                                              return;
-                                          auto root = safe->state;
-                                          state::removeCustomUnit (root, unit);
-                                          safe->entries.clear();
-                                          safe->build();
-                                          safe->filter();
-                                      });
+        confirmDeleteDevice (state, unit, [safe]
+        {
+            if (safe == nullptr)
+                return;
+            safe->entries.clear();
+            safe->build();
+            safe->filter();
+        });
     }
 
     static constexpr int deleteWidth = 40;

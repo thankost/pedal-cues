@@ -1,4 +1,5 @@
 #include "EditorCommon.h"
+#include "MidiNameSync.h"
 #include "DeviceTemplates.h"
 #include "MovesPanel.h"
 
@@ -922,6 +923,11 @@ private:
         m.addItem (6, "New MIDI device...");
         m.addSeparator();
         m.addItem (7, fx ? "Move to Amps & Modellers" : "Move to Effects & Pedals");
+        if (namesync::targetFor (u[IDs::templateId].toString()).has_value())   // GT-1000, Axe-Fx III, FM9, FM3, VP4
+        {
+            m.addSeparator();
+            m.addItem (8, "Read preset names from the unit (beta)...");
+        }
 
         juce::Component::SafePointer<CustomPage> safe (this);
         const auto pedals = fx;
@@ -937,22 +943,15 @@ private:
             else if (result == 2)
                 state::addCustomUnit (root, u.createCopy(), pedals);
             else if (result == 3)
-                juce::AlertWindow::showOkCancelBox (juce::MessageBoxIconType::NoIcon, "Delete device",
-                                                    "Delete \"" + u[IDs::name].toString() + "\" with all its tiles and notes? "
-                                                    "Export it first if you might want it back.",
-                                                    "Delete", "Cancel", nullptr,
-                                                    juce::ModalCallbackFunction::create ([root, u] (int ok) mutable
-                                                    {
-                                                        if (ok != 1)
-                                                            return;
-                                                        state::removeCustomUnit (root, u);   // its tab falls back to the Quad Cortex / the Whammy
-                                                    }));
+                confirmDeleteDevice (root, u, {});
             else if (result == 4)
                 exportCustomUnit (u);
             else if (result == 5)
                 importCustomUnit (root, pedals);
             else if (result == 6)
                 newCustomUnit (root, pedals);
+            else if (result == 8)
+                namesync::showMidiNameSync (root, u[IDs::templateId].toString(), u);
             else if (result == 7)
             {
                 // The device changes tab: it's shown there, and this tab goes back to the Quad Cortex / the Whammy.
@@ -995,6 +994,23 @@ std::unique_ptr<juce::Component> makeTileEditor (PedalCuesProcessor& p, juce::Va
 std::unique_ptr<Page> makeCustomPage (PedalCuesProcessor& p, bool pedalsTab)
 {
     return std::make_unique<CustomPage> (p, pedalsTab);
+}
+
+// The one delete dialog for your devices (the device's ... menu and the x in the device list).
+void confirmDeleteDevice (juce::ValueTree state, juce::ValueTree unit, std::function<void()> deleted)
+{
+    juce::AlertWindow::showOkCancelBox (juce::MessageBoxIconType::NoIcon, "Delete device",
+                                        "Delete \"" + unit[IDs::name].toString() + "\" with all its tiles and notes? "
+                                        "Export it first if you might want it back.",
+                                        "Delete", "Cancel", nullptr,
+                                        juce::ModalCallbackFunction::create ([state, unit, deleted] (int ok) mutable
+                                        {
+                                            if (ok != 1)
+                                                return;
+                                            state::removeCustomUnit (state, unit);   // its tab falls back to the Quad Cortex / the Whammy
+                                            if (deleted)
+                                                deleted();
+                                        }));
 }
 
 void newCustomUnit (juce::ValueTree state, bool pedalsTab)

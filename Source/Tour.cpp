@@ -15,7 +15,8 @@ const std::vector<TourStep>& tourSteps()
           "First, pick what you play through: click the arrow on the first tab and choose your device. Quad Cortex (or Mini), "
           "Kemper Profiler or Player, a Nano Cortex, a Fractal, Line 6, HeadRush or Darkglass unit (ready-made from their manuals, beta), or any other MIDI device: "
           "start from a template (Axe-Fx III, Boss GT-1000...) or make your own tiles. Type in the list to search. The tab, its page and "
-          "the MIDI it sends follow your choice. The next steps show the Quad Cortex page; the other pages work "
+          "the MIDI it sends follow your choice. The second tab, Effects & Pedals, does the same for a pedal: a Whammy, Strymon, Line 6 "
+          "DL4, Boss, Meris, Chase Bliss and more. The next steps show the Quad Cortex page; the other pages work "
           "the same way.", false, false, true },
         { 0, { "qc.presetList" }, "1. Add your presets",
           "Add each Quad Cortex preset (a whole rig, often one per song) with '+ Preset', or read them all from the pedal with "

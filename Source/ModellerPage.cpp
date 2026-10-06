@@ -1,6 +1,8 @@
 #include "EditorCommon.h"
 #include "Modellers.h"
 #include "MovesPanel.h"
+#include "HelixImport.h"
+#include "MidiNameSync.h"
 
 using namespace theme;
 
@@ -47,16 +49,20 @@ public:
             return;
         }
         for (int i = 0; i < (int) p->pedals.size(); ++i)
-            pedalBox.addItem (p->pedals[(size_t) i].name + " (CC#" + juce::String (p->pedals[(size_t) i].cc) + ")", i + 1);
+        {
+            const auto& c = p->pedals[(size_t) i];
+            pedalBox.addItem (c.name + " (CC#" + juce::String (c.cc) + (c.max != 127 ? ", 0-" + juce::String (c.max) : juce::String()) + ")", i + 1);
+        }
         pedalBox.setSelectedId (pedalIndex() + 1, juce::dontSendNotification);
         pedalBox.setTooltip (p->pedalNote);
-        moves.setHint ("CC#" + juce::String (controller()) + "  -  the loaded preset");
+        moves.setHint ("CC#" + juce::String (controller()) + (controlMax() != 127 ? " = 0-" + juce::String (controlMax()) : juce::String())
+                       + "  -  the loaded preset");
 
         setTiles.clear();
         static const std::pair<float, const char*> positions[] = { { 0.0f, "Heel" }, { 0.25f, "25%" }, { 0.5f, "Half" }, { 0.75f, "75%" }, { 1.0f, "Toe" } };
         for (const auto& [pos, label] : positions)
         {
-            const auto value = juce::roundToInt (pos * 127.0f);
+            const auto value = juce::roundToInt (pos * (float) controlMax());   // 0-127, or the parameter's own range (0-20...)
             auto* t = setTiles.add (new Tile (proc, Tile::Look::utility));
             t->title = label;
             t->subtitle = "CC#" + juce::String (controller()) + " = " + juce::String (value);
@@ -96,6 +102,11 @@ private:
     {
         const auto* p = profile();
         return p == nullptr || p->pedals.empty() ? 1 : p->pedals[(size_t) pedalIndex()].cc;
+    }
+    int controlMax() const
+    {
+        const auto* p = profile();
+        return p == nullptr || p->pedals.empty() ? 127 : juce::jlimit (1, 127, p->pedals[(size_t) pedalIndex()].max);
     }
 
     // "Helix Floor EXP 1"; units without pedals (older HeadRush) never show this panel.
@@ -146,6 +157,18 @@ private:
                                          (double) state[beats], (double) state[curve], (bool) state[reset]);
         };
         c.controller = [this] { return controller(); };
+        // A parameter with a smaller range (Boost 0-60, Low end 0-20): the move runs over its own range, heel 0 to toe max.
+        c.finish = [this] (cues::Cue cue)
+        {
+            const auto max = controlMax();
+            if (max == 127)
+                return cue;
+            for (auto& [beat, m] : cue.events)
+                if (m.isController() && m.getControllerNumber() == controller())
+                    m = juce::MidiMessage::controllerEvent (m.getChannel(), m.getControllerNumber(),
+                                                            juce::roundToInt (m.getControllerValue() * max / 127.0));
+            return cue;
+        };
         c.makeDrawn = [this, beats, reset] (const std::vector<float>& points, const juce::String& name)
         {
             return cues::qc::drawnMove (pedalLabel() + " "
@@ -201,6 +224,16 @@ public:
         setlistWarning.setColour (juce::TextButton::textColourOffId, accent);
         setlistWarning.onClick = [this] { state.setProperty (IDs::mdSendSetlist, true, nullptr); };
         addChildComponent (setlistWarning);
+        // Helix family: preset, setlist and snapshot names from an HX Edit export (reads the file only).
+        importButton.setTooltip ("Read preset names, setlists and snapshot names / colours from a file you exported in HX Edit (.hls setlist, "
+                                 ".hlb bundle or .hlx preset). Nothing is sent to your unit.");
+        importButton.onClick = [this] { if (const auto* p = profile()) showHelixImport (state, p->id); };
+        addChildComponent (importButton);
+        // Strymon TimeLine / BigSky / Mobius, Boss DD/RV/MD-500: preset names read over MIDI (read-only requests, beta).
+        readNamesButton.setTooltip ("Ask the unit for its preset names over MIDI and fill in this list. It only sends read requests: "
+                                    "nothing is changed on your unit. Not tested on hardware yet.");
+        readNamesButton.onClick = [this] { if (const auto* p = profile()) namesync::showMidiNameSync (state, p->id, {}); };
+        addChildComponent (readNamesButton);
 
         loadFirstToggle.onClick = [this] { state.setProperty (IDs::mdLoadFirst, loadFirstToggle.getToggleState(), nullptr); };
         addChildComponent (loadFirstToggle);
@@ -254,10 +287,10 @@ public:
         for (auto* b : viewButtons)
             b->setColour (juce::TextButton::buttonOnColourId, p->colour);
         viewButtons[view]->setToggleState (true, juce::dontSendNotification);
-        viewButtons[1]->setEnabled (! p->looper.empty());   // Nano Cortex: no looper over MIDI
+        viewButtons[1]->setVisible (! p->looper.empty());   // Nano Cortex, most pedals: no looper over MIDI, so no Looper view
         viewButtons[1]->setButtonText (p->looperTitle);     // Infinity 500 Combo: IR slots
         looperSection.title = p->looperTitle;
-        viewButtons[2]->setEnabled (! p->pedals.empty());
+        viewButtons[2]->setVisible (! p->pedals.empty());
         viewButtons[0]->setButtonText (p->mainTitle);       // DL4 MkII: "Controls"
         viewButtons[3]->setVisible (! p->models.empty());   // DL4 MkII: delay and reverb models
         viewButtons[0]->setVisible (hasControls (*p));       // a pedal with only a looper / expression: no empty Controls view
@@ -282,6 +315,8 @@ public:
         for (auto c : data)
             if (c.hasType (IDs::ModPreset))
                 usedSetlists.add ((int) c[IDs::setlist]);
+        importButton.setVisible (helix::supports (*p));
+        readNamesButton.setVisible (namesync::targetFor (p->id).has_value());
         const auto sendSetlist = (bool) state[IDs::mdSendSetlist];
         setlistToggle.setVisible (setlists);
         setlistToggle.setToggleState (sendSetlist, juce::dontSendNotification);
@@ -443,6 +478,12 @@ public:
         addButton.setBounds (presetsSection.headerArea().removeFromRight (86));
         {
             auto content = presetsSection.contentArea();
+            for (auto* b : { &importButton, &readNamesButton })
+                if (b->isVisible())
+                {
+                    b->setBounds (content.removeFromBottom (34).reduced (2, 0));
+                    content.removeFromBottom (8);
+                }
             if (setlistWarning.isVisible())
             {
                 setlistWarning.setBounds (content.removeFromBottom (30).reduced (2, 0));
@@ -821,6 +862,8 @@ private:
     juce::Component presetList;
     juce::ToggleButton setlistToggle;
     juce::TextButton setlistWarning;
+    juce::TextButton importButton { "Import from HX Edit..." };
+    juce::TextButton readNamesButton { "Read names from the unit (beta)..." };
     juce::ToggleButton loadFirstToggle, switchOnToggle;
     juce::Component viewChoice;
     juce::OwnedArray<juce::TextButton> viewButtons;

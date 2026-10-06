@@ -503,7 +503,7 @@ juce::String ampChannelHint (const juce::ValueTree& state)
 juce::String pedalChannelHint (const juce::ValueTree& state)
 {
     const auto pedal = pedalInfo (state);
-    const auto other = " Use a different channel from the " + ampInfo (state).shortName + ".";
+    const juce::String other (" With several devices, give each its own channel.");
     return pedal.page != nullptr ? pedal.page->channelHint + other
          : pedal.isCustom ? "Set the same channel on your " + pedal.name + " (see its manual)." + other
                           : "Set the same channel on your Whammy (see its manual)." + other;

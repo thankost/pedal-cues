@@ -824,7 +824,9 @@ cues::Cue switchCue (const Profile& p, int channel, int switchIndex, bool on, co
     const auto label = name.isNotEmpty() ? name : s.name;
     c.name = p.shortName + " " + label + (p.switchesOnOff ? (on ? " On" : " Off") : juce::String());
     c.add (0.0, juce::MidiMessage::controllerEvent (channelOf (channel), s.cc, p.switchesOnOff ? (on ? s.value : s.offValue) : s.value));
-    c.toggles = ! p.switchesOnOff;   // a press or a toggle
+    if (s.press)   // a footswitch: down, then up 1/16 later, like a foot
+        c.add (0.25, juce::MidiMessage::controllerEvent (channelOf (channel), s.cc, s.offValue));
+    c.toggles = ! p.switchesOnOff || s.press;   // a press or a toggle
     c.cc0IsControl = p.cc0IsControl;
     c.padCc = p.padCc;
     return c;
