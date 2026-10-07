@@ -12,8 +12,8 @@ PedalCues turns pedal changes into **drag and drop**. Each tile in the plugin is
 2. [Connect your rig](#2-connect-your-rig)
 3. [Set up your DAW (once)](#3-set-up-your-daw-once)
 4. [First launch: the quick tour](#4-first-launch-the-quick-tour)
-5. [Quad Cortex page](#5-quad-cortex-page)
-6. [Kemper page](#6-kemper-page)
+5. [Quad Cortex](#5-quad-cortex)
+6. [Kemper](#6-kemper)
 7. [Fractal, Line 6, HeadRush, Darkglass and more (beta)](#7-fractal-line-6-headrush-darkglass-and-more-beta)
 8. [Custom MIDI devices (beta)](#8-custom-midi-devices-beta)
 9. [Build a song, step by step](#9-build-a-song-step-by-step)
@@ -177,11 +177,11 @@ An early step, **Choose your device**, shows where to pick what you play through
 
 ---
 
-## 5. Quad Cortex page
+## 5. Quad Cortex
 
 ![Quad Cortex page](images/quad-cortex.png)
 
-The first tab is named after your amp modeler. Click the **▾** on it (or the tab itself again) to open the device list: **Quad Cortex**, [**Quad Cortex Mini**](#quad-cortex-mini), **Kemper Profiler**, **Kemper Player**, [Fractal, Line 6, HeadRush, Darkglass units and the Nano Cortex](#7-fractal-line-6-headrush-darkglass-and-more-beta), [templates](#templates-beta) such as the Boss GT-1000, and your own [MIDI devices](#8-custom-midi-devices-beta), in that order. Type to search it. With a Kemper, the tab turns green and shows the [Kemper page](#6-kemper-page) instead. Your QC presets stay in the project, so you can switch back any time.
+The first tab is named after your amp modeler. Click the **▾** on it (or the tab itself again) to open the device list: **Quad Cortex**, [**Quad Cortex Mini**](#quad-cortex-mini), [**Nano Cortex**](#nano-cortex), **Kemper Profiler**, **Kemper Player**, [Fractal, Line 6, HeadRush and Darkglass units](#7-fractal-line-6-headrush-darkglass-and-more-beta), [templates](#templates-beta) such as the Boss GT-1000, your own [MIDI devices](#8-custom-midi-devices-beta) and more. Type to search it. Effect pedals (Whammy, Strymon, Boss, Meris, Chase Bliss and more) are on the [Effects & Pedals](#10-effects--pedals-whammy-strymon-line-6-boss-meris-chase-bliss-and-more) tab. With a Kemper, the tab turns green and shows the [Kemper page](#6-kemper) instead. Your QC presets stay in the project, so you can switch back any time.
 
 **Presets vs scenes:** a *preset* is a whole rig on the QC (often one per song), such as *Clean Rig* or *Drop C Heavy*. *Scenes* are the parts of the song inside that preset, such as *Intro*, *Verse* and *Chorus*. Load the preset once where the song starts, then switch scenes as the song moves on.
 
@@ -326,9 +326,21 @@ The QC Mini has four footswitches, A-D, on two **footswitch pages**. Each preset
 
 Everything else (presets, setlists, Load 1A first, Looper, Expression, tuner, tap, Gig View, footswitch mode, Sync from QC) works as on the Quad Cortex. The Mini has one EXP jack; Expression 2 works over MIDI only. The numbers come from Neural DSP's QC Mini manual, which lists the same MIDI as the Quad Cortex's.
 
+### Nano Cortex
+
+![Nano Cortex page](images/nano-cortex.png)
+
+Built from the Nano Cortex User Manual 2.2.0 (*Incoming MIDI CC List*). Pick **Nano Cortex** under *Neural DSP* in the device list.
+
+- **Presets:** the 64 slots under *ALL PRESETS* are **Program Change 0-63** (the app's *PC/CC* button shows the numbers). No banks, setlists or scenes over MIDI.
+- **Slots:** Input Gate, Capture, Cab/IR and FX 1-5 on or off (CC#34-41).
+- **Utilities:** tuner on / off (CC#43) and tap (CC#42). **Expression:** CC#1, with the shapes, Set to tiles, Draw and Wave. There's no looper over MIDI.
+- **Connection:** USB-C MIDI, or **TRS MIDI Type A** into the **EXP/MIDI** jack: set *EXP/MIDI INPUT MODE* to *MIDI* in the Cortex Cloud app (then the jack can't take a real pedal, which is where the Expression view helps). Set *MIDI CHANNEL* there to the channel at the top of its page.
+- The Nano has **no MIDI Out**, so it can't pass MIDI on to a second pedal: give a Whammy or other pedal its own MIDI output (the wiring guide shows *Separate outputs*).
+
 ---
 
-## 6. Kemper page
+## 6. Kemper
 
 ![Kemper page](images/kemper.png)
 
@@ -372,13 +384,13 @@ Type the performance and slot names in PedalCues, as they're shown on the Kemper
 |---|---|
 | ![Helix Floor page](images/helix.png) | ![Axe-Fx II page](images/axe-fx-2.png) |
 
-These units have their MIDI numbers defined, by Line 6, HeadRush, Darkglass and Neural DSP or as Fractal's factory defaults, so each gets a page like the Quad Cortex: your presets in a list, scenes or snapshots named per preset, and the unit's own footswitches or blocks, utilities, looper and expression. Pick yours from the device list (the **▾** on the first tab; type to search).
+These units have their MIDI numbers defined, by Line 6, HeadRush and Darkglass or as Fractal's factory defaults, so each gets a page like the Quad Cortex: your presets in a list, scenes or snapshots named per preset, and the unit's own footswitches or blocks, utilities, looper and expression. Pick yours from the device list (the **▾** on the first tab; type to search).
 
 ![The device list, searching for Helix](images/unit-picker-search.png)
 
-| Line 6 | Fractal Audio | HeadRush | Darkglass | Neural DSP |
-|---|---|---|---|---|
-| Helix Floor, Helix LT, Helix Rack (+ Control), HX Stomp, HX Stomp XL, HX Effects, POD Go / POD Go Wireless, Helix Stadium / Stadium XL | Axe-Fx II / XL / XL+, AX8, FX8 (Mark I / II) | Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5 ([details](#headrush-beta)) | Anagram ([details](#darkglass-anagram-beta)), Infinity 500 Combo, Exponent 500 ([details](#darkglass-infinity-500-combo-and-exponent-500-beta)) | Nano Cortex ([details](#nano-cortex)) |
+| Line 6 | Fractal Audio | HeadRush | Darkglass |
+|---|---|---|---|
+| Helix Floor, Helix LT, Helix Rack (+ Control), HX Stomp, HX Stomp XL, HX Effects, POD Go / POD Go Wireless, Helix Stadium / Stadium XL | Axe-Fx II / XL / XL+, AX8, FX8 (Mark I / II) | Core, Prime, Flex Prime, Pedalboard, Gigboard, MX5 ([details](#headrush-beta)) | Anagram ([details](#darkglass-anagram-beta)), Infinity 500 Combo, Exponent 500 ([details](#darkglass-infinity-500-combo-and-exponent-500-beta)) |
 
 The Axe-Fx III, FM9, FM3 and VP4 have no default MIDI numbers, so they come as [templates](#templates-beta) instead.
 
@@ -462,18 +474,6 @@ Both amps' manuals publish a default MIDI mapping, so they get pages. If you cha
 - **Connection:** the back-panel MIDI In takes a 5-pin cable (the 7-pin connector is only for the Darkglass MIDI Footswitch), or USB MIDI. They listen on every channel (Omni) out of the box. Neither has a MIDI Out, so a second pedal needs its own output.
 
 The **Microtubes Infinity** pedal has a [template](#templates-beta) from a community chart. The **ADAM** and **Alpha·Omega Photon** pedals take MIDI (TRS Type B, USB), but Darkglass publishes no MIDI chart for them, so use a custom MIDI device and its manual or the Darkglass Suite.
-
-### Nano Cortex
-
-![Nano Cortex page](images/nano-cortex.png)
-
-Built from the Nano Cortex User Manual 2.2.0 (*Incoming MIDI CC List*). Pick **Nano Cortex** under *Neural DSP* in the device list.
-
-- **Presets:** the 64 slots under *ALL PRESETS* are **Program Change 0-63** (the app's *PC/CC* button shows the numbers). No banks, setlists or scenes over MIDI.
-- **Slots:** Input Gate, Capture, Cab/IR and FX 1-5 on or off (CC#34-41).
-- **Utilities:** tuner on / off (CC#43) and tap (CC#42). **Expression:** CC#1, with the shapes, Set to tiles, Draw and Wave. There's no looper over MIDI.
-- **Connection:** USB-C MIDI, or **TRS MIDI Type A** into the **EXP/MIDI** jack: set *EXP/MIDI INPUT MODE* to *MIDI* in the Cortex Cloud app (then the jack can't take a real pedal, which is where the Expression view helps). Set *MIDI CHANNEL* there to the channel at the top of its page.
-- The Nano has **no MIDI Out**, so it can't pass MIDI on to a second pedal: give a Whammy or other pedal its own MIDI output (the wiring guide shows *Separate outputs*).
 
 ---
 
@@ -637,7 +637,7 @@ The 21 Whammy modes are laid out like the pedal's panel (the Whammy DT has the s
 - **Middle row:** each **Harmony** mode sits right below the Whammy mode that shares its row on the pedal (Oct Up/Oct Down below 2 Oct Up, and so on).
 - **Bottom row:** **Detune** Shallow and Deep, on their own row as at the bottom of the pedal.
 
-Colours match the pedal: **Whammy** (red), **Harmony** (green), **Detune** (blue). Each tile shows its Program Change number from the DigiTech manual. Drag a mode tile to switch the Whammy.
+The modes are grouped by colour: **Whammy** (red), **Harmony** (green), **Detune** (blue). Each tile shows its Program Change number from the DigiTech manual. Drag a mode tile to switch the Whammy.
 
 - **...** (Modes header): **Program numbering**. Leave it on *As printed in the manual (1 = first)*; switch to *Zero-based* only if every mode lands one position off on your Whammy.
 - **Chords** (Whammy V only): uses the polyphonic *Chords* program range (43-84) instead of *Classic* (1-42). The Whammy DT has no Chords mode, and on the DT those numbers select Drop Tune, so the switch is hidden there.
