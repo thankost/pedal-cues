@@ -7,6 +7,7 @@
 #include "../Source/DeviceTemplates.h"
 #include "../Source/Modellers.h"
 #include "../Source/MovesPanel.h"
+#include "../Source/Songs.h"
 
 using namespace theme;
 
@@ -540,6 +541,7 @@ int main (int argc, char** argv)
     const auto channelsWereConfirmed = state::getFlag (ui::channelsConfirmedFlag);
     state::setFlag (ui::channelsConfirmedFlag, false);
     {
+        ui::SaveIndicator::settledForScreenshots = true;   // the resting "In your project", not a save in progress
         PedalCuesEditor editor (proc, false);
         editor.setSize (1120, 760);
         editor.refreshNow();
@@ -555,6 +557,56 @@ int main (int argc, char** argv)
 
         editor.showPage (0);
         save (snapshot (editor), outDir.getChildFile ("quad-cortex.png"));
+
+        // Song Builder (beta): a song with sections (a 7/8 bridge at 140), two players' Quad Cortex tracks and a Whammy,
+        // and its Export window. Demo songs are removed again afterwards.
+        {
+            auto song = songs::createSong ("Breathe");
+            song.removeAllChildren (nullptr);
+            for (auto [n, b, num, den, bpm] : { std::tuple<const char*, int, int, int, double> { "Intro", 4, 4, 4, 120.0 }, { "Verse", 8, 4, 4, 120.0 },
+                                               { "Chorus", 8, 4, 4, 120.0 }, { "Bridge", 4, 7, 8, 140.0 }, { "Solo", 8, 4, 4, 120.0 },
+                                               { "Outro", 4, 4, 4, 120.0 } })
+                song.appendChild (songs::createSection (n, b, num, den, bpm), nullptr);
+            auto list = songs::songsNode (proc.state);
+            list.appendChild (song, nullptr);
+            list.appendChild (songs::createSong ("Ghost Light"), nullptr);
+            list.appendChild (songs::createSong ("Monolith"), nullptr);
+            proc.state.setProperty (IDs::selectedSong, song[IDs::uid], nullptr);
+            auto qc = songs::addTrack (song, "Quad Cortex (Thanasis)", theme::qcBlue);
+            auto wh = songs::addTrack (song, "Whammy V", theme::whammyRed);
+            const auto mk = [] (const juce::String& name, std::initializer_list<juce::MidiMessage> ms, double len = 1.0)
+            {
+                cues::Cue c;
+                c.name = name;
+                c.lengthBeats = len;
+                double b = 0.0;
+                for (auto m : ms) { c.add (b, m); b += 0.25; }
+                return c;
+            };
+            using M = juce::MidiMessage;
+            songs::placeCue (song, qc, 0.0, mk ("Clean Rig", { M::programChange (1, 0) }), juce::Colour (0xff2ec4b6));
+            songs::placeCue (song, qc, 16.0, mk ("Verse", { M::controllerEvent (1, 43, 1) }), juce::Colour (0xff2ec4b6));
+            songs::placeCue (song, qc, 48.0, mk ("Lead Rig", { M::programChange (1, 2) }), juce::Colour (0xffe63946));
+            songs::placeCue (song, qc, 64.0, mk ("Swell In", { M::controllerEvent (1, 1, 0) }, 8.0), theme::qcBlue);
+            songs::placeCue (song, qc, 78.0, mk ("Solo", { M::controllerEvent (1, 43, 5) }), juce::Colour (0xffe63946));
+            songs::placeCue (song, qc, 110.0, mk ("Outro", { M::controllerEvent (1, 43, 7) }), juce::Colour (0xff8a909c));
+            songs::placeCue (song, wh, 0.0, mk ("Bypass", { M::programChange (2, 22) }), juce::Colour (0xff8a909c));
+            songs::placeCue (song, wh, 48.0, mk ("Oct Up", { M::programChange (2, 1) }), theme::whammyRed);
+            songs::placeCue (song, wh, 50.0, mk ("Ramp Up", { M::controllerEvent (2, 11, 0) }, 4.0), theme::whammyRed);
+            songs::placeCue (song, wh, 78.0, mk ("Dive Bomb", { M::programChange (2, 9) }), theme::whammyRed);
+            auto leo = songs::duplicateTrack (song, qc);
+            leo.setProperty (IDs::name, "Quad Cortex (Leo)", nullptr);
+            leo.setProperty (IDs::colour, juce::Colour (0xff9b87f5).toString(), nullptr);
+            songs::setTrackChannel (song, leo, 3);
+            auto builder = ui::makeSongBuilder (proc, [] { return juce::String ("Quad Cortex"); });
+            builder->setSize (1180, 640);
+            save (snapshot (*builder), outDir.getChildFile ("song-builder.png"));
+            auto panel = ui::makeSongExportPanel (song);
+            save (snapshot (*panel), outDir.getChildFile ("song-builder-export.png"));
+            builder.reset();
+            proc.state.removeChild (proc.state.getChildWithName (IDs::Songs), nullptr);
+            proc.state.removeProperty (IDs::selectedSong, nullptr);
+        }
 
         // The preset search in use ("rig": Clean Rig and Lead Rig).
         {

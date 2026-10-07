@@ -2,6 +2,13 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.10.0 (2026-10-07)
+
+- **Song Builder (new, beta):** build a whole song once. Click **Song Builder** at the top right: sections along the top (name, bars, time signature, tempo), a track per device, and cues dragged in from the Amps & Modelers and Effects & Pedals tabs (or `.mid` clips). Copy, paste and duplicate cues, play the song to your rig, then drag it into your DAW as one MIDI file with the tempo map, time signatures and section markers, or export one file or a file per track for a backing-track player.
+- **A channel per track:** put every cue on a track on one channel, and duplicate a track to give the same changes to a second player's rig.
+- **Song files and import:** save a song as a file to keep or share, and import songs from song files or from a MIDI file (with its cues, or just its markers, tempo and time signatures).
+- **Saved automatically:** the MIDI strip shows when your changes are saved. The standalone app now saves a moment after every change, not only when you quit; the plugin tells your DAW the project changed.
+
 ## 0.9.3 (2026-10-06)
 
 - Improved texts across the app.

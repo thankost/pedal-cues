@@ -41,6 +41,9 @@ public:
 
     // Sends a cue out of the plugin's MIDI output right now (tempo-scaled), for auditioning.
     void preview (const cues::Cue&);
+    // Song Builder playback: messages at seconds from now (the song's own tempo map), and Stop clearing what's still queued.
+    void previewTimed (const std::vector<std::pair<double, juce::MidiMessage>>& secondsAndMessages);
+    void stopPreview();
 
     double getHostBpm() const { return hostBpm.load(); }
 
@@ -57,6 +60,39 @@ public:
     void setManualBpm (double bpm);
 
     juce::ValueTree state { state::createDefault() };
+
+    // Automatic save: a moment after every change, the standalone app writes its state (saveNow, set by the app) and the
+    // plugin tells the DAW its project changed (the DAW keeps it when the project is saved). The save icons read it.
+    struct AutoSave final : private juce::ValueTree::Listener, private juce::Timer
+    {
+        explicit AutoSave (PedalCuesProcessor& p) : owner (p) { owner.state.addListener (this); }
+        ~AutoSave() override { owner.state.removeListener (this); }
+
+        std::function<void()> saveNow;   // standalone only
+        bool isPending() const { return pending; }
+        bool writesToDisk() const { return saveNow != nullptr; }
+        bool loading = false;            // a project being opened isn't a change
+
+    private:
+        void changed() { if (loading) return; pending = true; startTimer (800); }
+        void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override { changed(); }
+        void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override { changed(); }
+        void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override { changed(); }
+        void valueTreeChildOrderChanged (juce::ValueTree&, int, int) override { changed(); }
+        void timerCallback() override
+        {
+            stopTimer();
+            if (saveNow)
+                saveNow();
+            else
+                owner.updateHostDisplay (juce::AudioProcessorListener::ChangeDetails().withNonParameterStateChanged (true));
+            pending = false;
+        }
+
+        PedalCuesProcessor& owner;
+        bool pending = false;
+    };
+    AutoSave autoSave { *this };
 
 private:
     struct Scheduled

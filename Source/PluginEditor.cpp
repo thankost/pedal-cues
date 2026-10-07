@@ -4,7 +4,7 @@ using namespace theme;
 
 namespace
 {
-const juce::Colour tabColours[] = { qcBlue, whammyRed };   // the first tab is Kemper green for a Kemper
+const juce::Colour tabColours[] = { qcBlue, whammyRed };   // the first tab is Kemper green for a Kemper   // the first tab is Kemper green for a Kemper
 
 // Text on a tab: white on the Whammy's red, black on lighter colours (a custom pedal's own colour).
 juce::Colour textOn (juce::Colour tab)
@@ -86,6 +86,12 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     addAndMakeVisible (updateBadge);
     checkForUpdates (false);
 
+    songButton.setComponentID ("hdr.songs");
+    songButton.setTooltip ("Song Builder (beta): drag tiles in from the tabs to build a whole song, then drag it into the DAW "
+                           "or export it");
+    songButton.onClick = [this] { openSongBuilder(); };
+    addAndMakeVisible (songButton);
+
     helpButton.setComponentID ("hdr.help");
     helpButton.setTooltip ("Menu: quick tour, guide, save or share your setup, updates");
     helpButton.onClick = [this] { showHelpMenu (&helpButton); };
@@ -108,7 +114,7 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
     setWantsKeyboardFocus (true);
     for (auto* b : tabButtons)
         b->setWantsKeyboardFocus (false);
-    for (auto* b : std::initializer_list<juce::Component*> { &unitMenuButton, &pedalMenuButton, &helpButton, &updateBadge })
+    for (auto* b : std::initializer_list<juce::Component*> { &unitMenuButton, &pedalMenuButton, &helpButton, &songButton, &updateBadge })
         b->setWantsKeyboardFocus (false);
 
     setResizable (true, true);
@@ -133,11 +139,50 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
 PedalCuesEditor::~PedalCuesEditor()
 {
     state.removeListener (this);
+    songWindow.reset();
     tour.reset();
     setLookAndFeel (nullptr);
 
     if (--liveEditors == 0)
         juce::LookAndFeel::setDefaultLookAndFeel (nullptr);
+}
+
+void PedalCuesEditor::openSongBuilder()
+{
+    if (songWindow == nullptr)
+        songWindow = ui::makeSongBuilderWindow (pedalProcessor, [this]
+        {
+            return currentPage == 0 ? ui::ampInfo (state).name : ui::pedalInfo (state).name;   // the tab a tile is dragged from
+        });
+    songWindow->setVisible (true);
+    songWindow->toFront (true);
+}
+
+void PedalCuesEditor::SongButton::paintButton (juce::Graphics& g, bool over, bool down)
+{
+    // Three staggered blocks on lanes (an arrangement), and its name when there's room, outlined in violet to stand out.
+    const juce::Colour violet (0xff9b87f5);
+    auto b = getLocalBounds().toFloat().reduced (0.5f);
+    const auto radius = b.getHeight() * 0.5f;   // a pill, like the tempo next to it
+    g.setColour (down ? violet.withAlpha (0.30f) : over ? violet.withAlpha (0.22f) : violet.withAlpha (0.12f));
+    g.fillRoundedRectangle (b, radius);
+    g.setColour (violet.withAlpha (over ? 0.9f : 0.6f));
+    g.drawRoundedRectangle (b.reduced (0.5f), radius, 1.2f);
+    auto icon = b.withWidth (showLabel ? 36.0f : b.getWidth()).withTrimmedLeft (showLabel ? 4.0f : 0.0f);
+    if (showLabel)
+    {
+        g.setColour (theme::text);
+        g.setFont (font (14.0f, true));
+        g.drawText ("Song Builder", b.withTrimmedLeft (32.0f).withTrimmedRight (8.0f), juce::Justification::centred, false);
+    }
+    const auto c = icon.withSizeKeepingCentre (18.0f, 13.0f);
+    const auto lane = c.getHeight() / 3.0f;
+    g.setColour (violet);
+    g.fillRoundedRectangle (c.getX(), c.getY(), c.getWidth() * 0.55f, lane - 2.0f, 1.5f);
+    g.setColour (violet.withAlpha (0.75f));
+    g.fillRoundedRectangle (c.getX() + c.getWidth() * 0.3f, c.getY() + lane, c.getWidth() * 0.7f, lane - 2.0f, 1.5f);
+    g.setColour (violet.withAlpha (0.5f));
+    g.fillRoundedRectangle (c.getX() + c.getWidth() * 0.12f, c.getY() + 2 * lane, c.getWidth() * 0.5f, lane - 2.0f, 1.5f);
 }
 
 void PedalCuesEditor::showPage (int index)
@@ -353,6 +398,8 @@ void PedalCuesEditor::showHelpMenu (juce::Component* target, const juce::String&
 {
     juce::PopupMenu m;
     m.addSectionHeader ("PedalCues " JucePlugin_VersionString);
+    m.addItem (18, "Song Builder (beta)...");
+    m.addSeparator();
     m.addItem (1, "Quick tour");
     m.addItem (2, "User guide");
     m.addItem (17, "How to connect (wiring and DAW tracks)");
@@ -384,6 +431,7 @@ void PedalCuesEditor::showHelpMenu (juce::Component* target, const juce::String&
             return;
         switch (result)
         {
+            case 18: safe->openSongBuilder(); break;
             case 1:  safe->startTour (0); break;
             case 2:  juce::URL (ui::guideUrl).launchInDefaultBrowser(); break;
             case 3:  safe->showAboutDialog(); break;
@@ -875,7 +923,7 @@ void PedalCuesEditor::paint (juce::Graphics& g)
 juce::Rectangle<float> PedalCuesEditor::tempoPill() const
 {
     auto right = getLocalBounds().removeFromTop (64).reduced (18, 0);
-    right.removeFromRight (44);
+    right.removeFromRight (44 + songButtonWidth + 14);   // the ☰ menu, the Song Builder button and the gap before it
     return right.removeFromRight (190).withSizeKeepingCentre (190, 30).toFloat();
 }
 
@@ -988,12 +1036,25 @@ void PedalCuesEditor::resized()
     auto header = getLocalBounds().removeFromTop (64).reduced (18, 13);
 
     helpButton.setBounds (header.removeFromRight (38).withSizeKeepingCentre (34, 34));
-    updateBadge.setBounds (18 + 40 + 10, 36, 270, 20);
+    updateBadge.setBounds (18 + 40 + 10, 36, 240, 20);
 
-    // The amp tab is wider: it holds names like "HeadRush Pedalboard" plus its ▾ unit menu.
-    const int tabWidths[] = { 188, 152 };   // the pedals tab has a ▾ too
+    // The amp tab is wider: it holds its ▾ unit menu; the pedals tab has a ▾ too.
+    const int tabWidths[] = { 188, 152 };
     const auto tabsWidth = tabWidths[0] + tabWidths[1] + 8;
-    tabBar.setBounds (juce::Rectangle<int> (tabsWidth, 38).withCentre ({ getWidth() / 2, header.getCentreY() }));
+    // The Song Builder button shows its name when the tabs still fit between the version badge and the tempo with it.
+    songButtonWidth = 148;
+    songButton.showLabel = juce::roundToInt (tempoPill().getX()) - 8 - (updateBadge.getRight() + 8) >= tabsWidth + 12;
+    if (! songButton.showLabel)
+        songButtonWidth = 34;
+    // Same height and shape as the tempo pill, with its own gap, so the two read as separate controls.
+    const auto pill = tempoPill().toNearestInt();
+    songButton.setBounds (pill.getRight() + 14, pill.getY(), songButtonWidth, pill.getHeight());
+    // Centred in the window, or between the version badge and the tempo when the window is narrow.
+    const auto freeLeft = updateBadge.getRight() + 8, freeRight = juce::roundToInt (tempoPill().getX()) - 8;
+    auto centreX = getWidth() / 2;
+    if (centreX - tabsWidth / 2 < freeLeft || centreX + tabsWidth / 2 > freeRight)
+        centreX = (freeLeft + freeRight) / 2;
+    tabBar.setBounds (juce::Rectangle<int> (tabsWidth, 38).withCentre ({ centreX, header.getCentreY() }));
     auto t = tabBar.getLocalBounds().reduced (4);
     for (int i = 0; i < tabButtons.size(); ++i)
         tabButtons[i]->setBounds (t.removeFromLeft (tabWidths[i]));

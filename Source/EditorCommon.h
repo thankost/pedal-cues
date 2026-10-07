@@ -91,7 +91,12 @@ std::unique_ptr<juce::Component> makeTileEditor (PedalCuesProcessor&, juce::Valu
 std::unique_ptr<Page> makeQcExpression (PedalCuesProcessor&);   // Quad Cortex page > Expression
 std::unique_ptr<Page> makeWhammyPage   (PedalCuesProcessor&);
 std::unique_ptr<Page> makeSettingsPage (PedalCuesProcessor&);   // the Connect your rig panel (devices, wiring, DAW tracks, standalone port)
-std::unique_ptr<Page> makeMidiStrip (PedalCuesProcessor&, bool pedalTab);   // above each device page: channel, Done, Test, How to connect
+std::unique_ptr<Page> makeMidiStrip (PedalCuesProcessor&, bool pedalTab);
+// Song Builder (beta): its own window, where tiles dragged from the tabs become a song. deviceName: the device on the
+// tab being dragged from, to name a new track. makeSongBuilder is the window's content alone (DocShots).
+std::unique_ptr<juce::DocumentWindow> makeSongBuilderWindow (PedalCuesProcessor&, std::function<juce::String()> deviceName);
+std::unique_ptr<juce::Component> makeSongBuilder (PedalCuesProcessor&, std::function<juce::String()> deviceName);
+std::unique_ptr<juce::Component> makeSongExportPanel (juce::ValueTree song);   // the Export MIDI file window's content (DocShots)   // above each device page: channel, Done, Test, How to connect
 void showConnectDialog (PedalCuesProcessor&);                               // How to connect: the Connect your rig window
 void showWiringGuide (const juce::ValueTree& state);   // Help > Wiring guide, for the unit on the first tab
 void showQcSyncDialog (juce::ValueTree state);   // Quad Cortex page > Sync from QC (USB)
@@ -141,6 +146,27 @@ public:
     juce::Colour hintColour { theme::dim };   // amber for a warning ("Strymon doesn't publish the order...")
     juce::Colour accentColour;
     juce::Colour fill { theme::surface.withAlpha (0.55f) };
+};
+
+//==============================================================================
+// The automatic-save status: "Saving..." for a moment after a change, then "Saved" (standalone: written on this
+// computer) or "In your project" (plugin: the DAW keeps it with the project), bright for two seconds, then dim; it
+// stays in view so a missed save can still be checked. Hover it for what it means. compact: the icon only.
+class SaveIndicator final : public juce::Component, public juce::SettableTooltipClient, private juce::Timer
+{
+public:
+    explicit SaveIndicator (PedalCuesProcessor&);
+    bool compact = false;
+    bool alignRight = false;   // in a window's bottom-right corner: the words end at the right edge
+    static inline bool settledForScreenshots = false;   // DocShots: show the resting state, not the save it never gets to finish
+    void paint (juce::Graphics&) override;
+
+private:
+    void timerCallback() override;
+    PedalCuesProcessor& proc;
+    bool shownPending = false;
+    double savedAt = 0.0;   // when the last save finished: the words show for a moment, then fade to a dim tick
+    float wordsAlpha() const;
 };
 
 //==============================================================================

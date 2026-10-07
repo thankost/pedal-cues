@@ -514,7 +514,7 @@ juce::String pedalChannelHint (const juce::ValueTree& state)
 class MidiStrip final : public Page, private juce::Timer
 {
 public:
-    MidiStrip (PedalCuesProcessor& p, bool pedalTab) : proc (p), state (p.state), pedal (pedalTab), tests (p, p.state)
+    MidiStrip (PedalCuesProcessor& p, bool pedalTab) : proc (p), state (p.state), pedal (pedalTab), tests (p, p.state), saved (p)
     {
         setComponentID (pedal ? "strip.pedal" : "strip.amp");
         name.setFont (font (14.0f, true));
@@ -538,7 +538,8 @@ public:
         connectButton.setColour (juce::TextButton::textColourOffId, qcBlue);
         connectButton.setTooltip ("Cables, daisy chain or separate outputs, and your DAW tracks, with examples");
         connectButton.onClick = [this] { showConnectDialog (proc); };
-        for (auto* c : std::initializer_list<juce::Component*> { &name, &channelLabel, &channelBox, &hint, &doneButton, &testButton, &connectButton })
+        // The save status at the strip's right end, starting where its box starts so the gap before it is the real gap.
+        for (auto* c : std::initializer_list<juce::Component*> { &name, &channelLabel, &channelBox, &hint, &doneButton, &testButton, &connectButton, &saved })
             addAndMakeVisible (c);
         refresh();
     }
@@ -582,16 +583,27 @@ public:
         channelLabel.setBounds (r.removeFromLeft (96));
         channelBox.setBounds (r.removeFromLeft (122).withSizeKeepingCentre (122, 28));
         r.removeFromLeft (12);
-        connectButton.setBounds (r.removeFromRight (140));
-        r.removeFromRight (6);
-        testButton.setBounds (r.removeFromRight (84).withSizeKeepingCentre (84, 28));
-        r.removeFromRight (8);
+        const auto savedWidth = proc.autoSave.writesToDisk() ? 78 : 118;
+        saved.setBounds (r.removeFromRight (savedWidth).withSizeKeepingCentre (savedWidth, 20));
+
+        // [hint]  gap  [Done] [Test] [How to connect >]  gap  [Saved]: the buttons sit midway between the end of the
+        // hint text and Saved; a long hint wraps to two lines and keeps at least 16 px either side.
+        const auto connectWidth = juce::GlyphArrangement::getStringWidthInt (font (15.0f, true), connectButton.getButtonText()) + 20;
+        const auto groupWidth = (doneButton.isVisible() ? 84 + 10 : 0) + 84 + 6 + connectWidth;
+        const auto natural = juce::GlyphArrangement::getStringWidthInt (hint.getFont(), hint.getText())
+                           + hint.getBorderSize().getLeftAndRight() + 4;
+        const auto hintWidth = juce::jmax (0, juce::jmin (natural, r.getWidth() - groupWidth - 32));
+        const auto gap = juce::jmax (16, (r.getWidth() - hintWidth - groupWidth) / 2);
+        hint.setBounds (r.removeFromLeft (hintWidth));
+        r.removeFromLeft (gap);
         if (doneButton.isVisible())
         {
-            doneButton.setBounds (r.removeFromRight (84).withSizeKeepingCentre (84, 28));
-            r.removeFromRight (10);
+            doneButton.setBounds (r.removeFromLeft (84).withSizeKeepingCentre (84, 28));
+            r.removeFromLeft (10);
         }
-        hint.setBounds (r);
+        testButton.setBounds (r.removeFromLeft (84).withSizeKeepingCentre (84, 28));
+        r.removeFromLeft (6);
+        connectButton.setBounds (r.removeFromLeft (connectWidth));
     }
 
 private:
@@ -631,6 +643,7 @@ private:
     juce::Label name, channelLabel, hint;
     juce::ComboBox channelBox;
     juce::TextButton doneButton { "Done" }, testButton { juce::CharPointer_UTF8 ("\xe2\x96\xb6  Test") }, connectButton { "How to connect >" };
+    SaveIndicator saved;
 };
 
 class SettingsPage final : public Page, private juce::Timer

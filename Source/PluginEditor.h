@@ -37,6 +37,7 @@ public:
     void closeTour (bool finished) override;
 
     void startTour (int step = 0);
+    void openSongBuilder();   // Song Builder (beta): its own window, kept while the editor is open
     void showSupportDialog();
     void showUpdateDialog (const update::Info&);
 
@@ -130,6 +131,15 @@ private:
         MenuButton() : juce::Button ("Menu") {}
         void paintButton (juce::Graphics&, bool over, bool down) override;
     } helpButton;
+    // Next to ☰: opens the Song Builder window.
+    struct SongButton final : public juce::Button
+    {
+        SongButton() : juce::Button ("Song Builder") {}
+        bool showLabel = true;   // "Song Builder" next to the icon, when the header has room
+        void paintButton (juce::Graphics&, bool over, bool down) override;
+    } songButton;
+    int songButtonWidth = 34;
+    std::unique_ptr<juce::DocumentWindow> songWindow;
     std::unique_ptr<juce::FileChooser> chooser;
 
     UpdateBadge updateBadge;

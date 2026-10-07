@@ -61,6 +61,10 @@ const std::vector<TourStep>& tourSteps()
         { 0, { "strip.connect" }, "9. How to connect",
           "Opens Connect your rig: the cables (one device, a daisy chain or separate outputs) and the cue tracks to make in your DAW, "
           "with your devices as the examples. In the standalone app, pick the MIDI port there too." },
+        { 0, { "hdr.songs" }, "10. Build whole songs (beta)",
+          "Song Builder opens its own window: sections along the top, a track per device. Drag tiles in from these tabs, press Play "
+          "to hear it on your rig, then drag the whole song into your DAW or export it for a backing-track player. Every change "
+          "is saved automatically: the strip above each page says so." },
         { 0, { "hdr.help" }, "You are ready",
           "The menu button (top right) reopens this tour and the user guide, shows what's new, lets you report a problem, "
           "and saves your setup as the default for new projects. In the standalone app these are in the File and Help menus. Have a great show!" },

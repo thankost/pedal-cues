@@ -570,6 +570,29 @@ This example covers a song with a clean verse, a crunchy chorus and a Whammy sol
 
 > Clips are ordinary MIDI items. You can move, copy, split or delete them like any other item. Their names come from your tiles, so renaming a scene before you drag it keeps the timeline readable.
 
+### Song Builder (beta): build the whole song once
+
+Instead of dropping cues into the DAW one by one, you can lay out a whole song in PedalCues and drag it into the DAW in one go, or export it for a backing-track player (no computer on stage). Click **Song Builder** at the top right (or **☰ > Song Builder (beta)...**): it opens in its own window, next to the main one.
+
+![The Song Builder](images/song-builder.png)
+
+1. **+ Song**, then set the **sections** along the top: click a section to edit its name, bars, time signature and tempo (a 7/8 bridge at 140 is fine), recolour, duplicate (with its cues), move or delete it. **+ Section** adds one at the end. Changing a section's length moves everything after it.
+2. **Tracks:** **+ Track** adds one for the device on Amps & Modelers or Effects & Pedals, any other device PedalCues knows (by brand), one of your MIDI devices, or an empty one. Or skip it: drop a tile on **Drop here for a new track** and a track for that device appears.
+3. **Drag tiles in** from the Amps & Modelers and Effects & Pedals tabs, exactly as you'd drag them to the DAW, onto a track. A `.mid` clip from your DAW or Finder works too. Cues snap to the beat (hold **Alt** for 1/16) and keep the MIDI they had when you dropped them.
+4. **Edit:** drag a cue to move it (also onto another track). Click to select (Shift adds), then **⌘C / ⌘V** (Ctrl on Windows and Linux): click a spot on a track first and the cues are pasted there, with their spacing. **⌘D** duplicates, **Delete** deletes, right-click for the same and **Send it to the device now**.
+5. **Play** (or Space) plays the ticked tracks to your devices from the song position (click a spot, or the bar numbers, to move it), following each section's tempo. Start from a spot with a preset cue: the preset before it isn't sent first.
+6. **Get it out:** **Drag song to the DAW** drops one MIDI file with the ticked tracks, the tempo map, time signatures and a marker per section. Drag a **track's name** for that track alone. **Export MIDI file(s)...** saves one file with all the ticked tracks, or **a file per track** in a folder.
+
+**MIDI channels per track.** Each track shows the channel its cues use (*Own channel (1)*). Right-click a track > **MIDI channel** (or pick it in the export window) to put every cue on that track on one channel, now and for cues you add later. **Two players with the same changes:** right-click the track > **Duplicate**, then give the copy the other rig's channel.
+
+![Export: tracks, channels, one file or a file per track](images/song-builder-export.png)
+
+**One file or a file per track?** A single file keeps each message's channel. That's all you need when all your devices hang off one MIDI output (a daisy chain, or a backing-track player with one MIDI Out): give each device its own channel. In Reaper, keep the track's MIDI output on *Send to original channels*. If your DAW sends a track on one channel only, or each device is on its own port, use **a file per track** and set each DAW track's output.
+
+**Import song...** adds a song from a **song file** (`.pedalcues-song`, from **Save song...**, e.g. sent by a bandmate), from a **MIDI file with its cues** (the map becomes sections, each MIDI track a track, its messages cues grouped by timing), or a **MIDI file's map only** (markers, tempo and time signatures; export the project from your DAW with the tempo map and markers included). Songs are also saved with your project.
+
+> **Beta:** the Song Builder is new. Please [tell us](https://github.com/thankost/pedal-cues/issues/new?template=problem.yml) how the exported files land in your DAW or player.
+
 ---
 
 ## 10. Effects & Pedals: Whammy, Strymon, Line 6, Boss, Meris, Chase Bliss and more
@@ -753,6 +776,12 @@ My drawings are saved **on your computer**, not in one project, so every project
 **Connect your rig:**
 - **Test your devices** (standalone app only): the MIDI port the app sends to (a port you plug in appears by itself) and **Test all**, which tests both devices at once.
 - **Set up your DAW:** with two devices, pick how they're connected: **Each device on its own output** (the simplest) or **One cable through the amp modeler** (a daisy chain through its MIDI Thru; only offered when it has one). The daisy chain needs a MIDI cable into the amp modeler, not USB: an amber note says what your unit does with USB MIDI (the QC and Kemper never pass it on to their Thru; some units do only with a setting, named there; a few always do). With one device there's nothing to choose. The steps make one cue track per device (add more the same way), with your devices as examples. Pick **Your DAW** (Reaper, Ableton Live, Cubase / Nuendo, Logic Pro or Other) to see where that DAW sets a track's MIDI output. **Wiring guide: cables and diagrams** opens the wiring guide: one device, a daisy chain or separate outputs, with the cables and signal flow for each and the setup that doesn't work.
+
+### Saving: automatic
+
+Every change is saved automatically, a moment after you make it. The right end of each page's MIDI strip (and the Song Builder's song card) shows **Saving...**, then **✓ Saved**, then rests dimmed:
+- **Plugin:** it says **✓ In your project**. Everything is kept in your DAW project, and PedalCues tells the DAW the project changed, so save the project in your DAW as usual.
+- **Standalone app:** it says **✓ Saved**: your changes are written on this computer, not only when you quit.
 
 ### Your setup: save, share, start new projects with it
 

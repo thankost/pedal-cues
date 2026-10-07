@@ -18,6 +18,17 @@ public:
     PedalCuesWindow (const juce::String& title, juce::Colour background, std::unique_ptr<juce::StandalonePluginHolder> holder)
         : StandaloneFilterWindow (title, background, std::move (holder))
     {
+        // Save a moment after every change, not only on quit (the save icons say so).
+        if (auto* p = processor())
+            p->autoSave.saveNow = [this]
+            {
+                if (pluginHolder == nullptr)
+                    return;
+                pluginHolder->savePluginState();
+                if (auto* file = dynamic_cast<juce::PropertiesFile*> (pluginHolder->settings.get()))
+                    file->saveIfNeeded();
+            };
+
         // JUCE's own "Options" button is private: find it and hide it (its items are in the menus now).
         for (auto* child : getChildren())
             if (auto* b = dynamic_cast<juce::TextButton*> (child))
@@ -51,6 +62,8 @@ public:
 
     ~PedalCuesWindow() override
     {
+        if (auto* p = processor())
+            p->autoSave.saveNow = nullptr;
        #if JUCE_MAC
         juce::MenuBarModel::setMacMainMenu (nullptr);
        #else

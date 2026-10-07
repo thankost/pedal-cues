@@ -7,6 +7,7 @@
 #include "../Source/Modellers.h"
 #include "../Source/HelixImport.h"
 #include "../Source/MidiNameSync.h"
+#include "../Source/Songs.h"
 
 #include <cstdio>
 
@@ -396,6 +397,7 @@ int main (int argc, char** argv)
         #include "ModellerChecks.inc"
         #include "HelixImportChecks.inc"
         #include "MidiNameSyncChecks.inc"
+        #include "SongChecks.inc"
         const auto& fx8 = *find ("fractal.fx8");
         CHECK (presetLabel (fx8, -1, 9) == "B2" && preset (fx8, 1, -1, 9, true, {}).events.size() == 1);   // no bank select
     }

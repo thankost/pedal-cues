@@ -116,6 +116,32 @@ void PedalCuesProcessor::preview (const cues::Cue& cue)
         pending.push_back ({ now + (juce::int64) (beat * samplesPerBeat), message });
 }
 
+void PedalCuesProcessor::previewTimed (const std::vector<std::pair<double, juce::MidiMessage>>& events)
+{
+    if (directOut != nullptr)
+    {
+        juce::MidiBuffer block;
+        for (const auto& [seconds, message] : events)
+            block.addEvent (message, juce::roundToInt (seconds * 1000.0));
+        directOut->sendBlockOfMessages (block, juce::Time::getMillisecondCounterHiRes() + 2.0, 1000.0);
+        return;
+    }
+
+    const auto rate = currentSampleRate.load();
+    const auto now = sampleCounter.load();
+    const juce::ScopedLock lock (pendingLock);
+    for (const auto& [seconds, message] : events)
+        pending.push_back ({ now + (juce::int64) (seconds * rate), message });
+}
+
+void PedalCuesProcessor::stopPreview()
+{
+    if (directOut != nullptr)
+        directOut->clearAllPendingMessages();
+    const juce::ScopedLock lock (pendingLock);
+    pending.clear();
+}
+
 void PedalCuesProcessor::getStateInformation (juce::MemoryBlock& dest)
 {
     if (auto xml = state.createXml())
@@ -130,6 +156,7 @@ void PedalCuesProcessor::setStateInformation (const void* data, int sizeInBytes)
         if (loaded.hasType (IDs::PedalCues))
         {
             state::sanitise (loaded);
+            const juce::ScopedValueSetter<bool> opening (autoSave.loading, true);
             state.copyPropertiesAndChildrenFrom (loaded, nullptr);
         }
     }

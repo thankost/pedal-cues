@@ -35,6 +35,76 @@ void Section::paint (juce::Graphics& g)
     g.drawText (hint, header, juce::Justification::centredLeft, true);
 }
 
+SaveIndicator::SaveIndicator (PedalCuesProcessor& p) : proc (p)
+{
+    setInterceptsMouseClicks (true, false);
+    setTooltip (proc.autoSave.writesToDisk()
+                    ? "PedalCues saves every change automatically on this computer, a moment after you make it."
+                    : "PedalCues keeps every change in your DAW project automatically. Save the project in your DAW to "
+                      "keep it on disk, as you do for the rest of the song.");
+    startTimerHz (20);
+}
+
+float SaveIndicator::wordsAlpha() const
+{
+    if (settledForScreenshots)
+        return 0.0f;
+    if (proc.autoSave.isPending())
+        return 1.0f;
+    const auto since = juce::Time::getMillisecondCounterHiRes() - savedAt;
+    if (savedAt <= 0.0 || since > 2600.0)
+        return 0.0f;
+    return since < 2000.0 ? 1.0f : (float) (1.0 - (since - 2000.0) / 600.0);
+}
+
+void SaveIndicator::timerCallback()
+{
+    if (proc.autoSave.isPending() != shownPending)
+    {
+        shownPending = proc.autoSave.isPending();
+        if (! shownPending)
+            savedAt = juce::Time::getMillisecondCounterHiRes();
+        repaint();
+    }
+    if (savedAt > 0.0 && juce::Time::getMillisecondCounterHiRes() - savedAt < 2800.0)
+        repaint();   // the fade
+}
+
+void SaveIndicator::paint (juce::Graphics& g)
+{
+    const auto pending = proc.autoSave.isPending() && ! settledForScreenshots;
+    const auto words = pending ? juce::String ("Saving...")
+                               : proc.autoSave.writesToDisk() ? juce::String ("Saved") : juce::String ("In your project");
+    const auto textFont = juce::Font (theme::font (12.5f));
+    auto b = getLocalBounds().toFloat();
+    if (alignRight && ! compact)   // icon and words together at the right edge
+        b = b.removeFromRight (juce::jmin (b.getWidth(), 24.0f + juce::GlyphArrangement::getStringWidth (textFont, words)));
+    const auto icon = b.removeFromLeft (juce::jmin (b.getHeight(), 18.0f)).withSizeKeepingCentre (14.0f, 14.0f);
+    // Always there, quiet: bright while saving and just after, then dim.
+    const auto emphasis = wordsAlpha();
+    g.setColour (pending ? theme::accent : theme::ledGreen.withAlpha (0.55f + 0.45f * emphasis));
+    if (pending)
+    {
+        // Three dots: saving.
+        for (int i = 0; i < 3; ++i)
+            g.fillEllipse (juce::Rectangle<float> (3.0f, 3.0f).withCentre ({ icon.getX() + 2.5f + i * 4.5f, icon.getCentreY() }));
+    }
+    else
+    {
+        g.drawEllipse (icon.reduced (0.75f), 1.5f);
+        juce::Path tick;
+        tick.startNewSubPath (icon.getX() + 3.8f, icon.getCentreY() + 0.2f);
+        tick.lineTo (icon.getX() + 6.2f, icon.getBottom() - 4.0f);
+        tick.lineTo (icon.getRight() - 3.5f, icon.getY() + 4.2f);
+        g.strokePath (tick, juce::PathStrokeType (1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    }
+    if (compact)
+        return;
+    g.setColour (pending ? theme::accent : theme::dim.withAlpha (0.75f + 0.25f * emphasis));
+    g.setFont (textFont);
+    g.drawText (words, b.withTrimmedLeft (6.0f), juce::Justification::centredLeft, true);
+}
+
 juce::Rectangle<int> Section::headerArea() const
 {
     return getBounds().removeFromTop (headerHeight).reduced (padding, 6).withTrimmedLeft (getWidth() / 2);

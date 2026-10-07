@@ -85,6 +85,15 @@
       <p>Check its MIDI channel (the same at the top of its page and on the device) and the CC numbers and values in its MIDI chart, which
          differ for every device. Use <b>Test on the device</b> in the tile editor. If it loads the preset next to the one you wanted,
          switch <b>Programs count from 0 / 1</b> on the device card.</p></details>
+    <details><summary>Song Builder: a device doesn't follow the song</summary>
+      <p>Each device needs its own MIDI channel, set the same on the device: the channel under each track's name is what's sent
+         (right-click the track &gt; <b>MIDI channel</b> to change it). With one file and one MIDI output (a daisy chain or a
+         backing-track player), keep your DAW track on its original channels (Reaper: <i>Send to original channels</i>). If your DAW
+         sends a track on one channel, or each device is on its own port, export <b>a file per track</b>. See the
+         <a href="guide.html#song-builder-beta-build-the-whole-song-once">guide</a>.</p></details>
+    <details><summary>Are my changes saved?</summary>
+      <p>Yes, automatically. The right end of each page's MIDI strip shows <b>Saving...</b>, then <b>✓ Saved</b> (standalone app,
+         written on this computer) or <b>✓ In your project</b> (plugin: save your DAW project as usual to keep it on disk).</p></details>
     <details><summary>macOS says PedalCues "is damaged"</summary>
       <p>It isn't. macOS blocks apps Apple hasn't notarised. Use the installer (<code>PedalCues-macOS.pkg</code>): if macOS
          says it can't verify it, click <b>Done</b>, then <i>System Settings &gt; Privacy &amp; Security &gt; Open Anyway</i>.

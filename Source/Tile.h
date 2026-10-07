@@ -45,6 +45,11 @@ public:
 
     void sendNow();
 
+    // The tile last dragged out as a MIDI file: when that file lands in the Song Builder window, it takes this cue (with
+    // its flags and the tile's name and colour) instead of reading the file back.
+    struct LastDrag { juce::String path; cues::Cue cue; juce::String title; juce::Colour colour; };
+    static inline LastDrag lastDrag;
+
 private:
     juce::Rectangle<int> playArea() const;
 

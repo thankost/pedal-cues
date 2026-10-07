@@ -423,7 +423,9 @@ void Tile::mouseDrag (const juce::MouseEvent& e)
 
     dragStarted = true;
 
-    const auto file = cues::writeMidiFile (makeCue(), processor.getHostBpm());
+    const auto cue = makeCue();
+    const auto file = cues::writeMidiFile (cue, processor.getHostBpm());
+    lastDrag = { file.getFullPathName(), cue, title.isNotEmpty() ? title : cue.name, colour };
     if (file.existsAsFile())
         juce::DragAndDropContainer::performExternalDragDropOfFiles (juce::StringArray (file.getFullPathName()), false, this);
 }

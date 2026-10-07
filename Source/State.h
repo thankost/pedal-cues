@@ -126,6 +126,27 @@ namespace IDs
     PEDALCUES_ID (expDraw)
     PEDALCUES_ID (expDrawing)
     PEDALCUES_ID (expDrawingName)
+    // Song Builder (beta, Songs.h): Songs > Song > SongSection, SongTrack, SongCue
+    PEDALCUES_ID (Songs)
+    PEDALCUES_ID (Song)
+    PEDALCUES_ID (SongSection)
+    PEDALCUES_ID (SongTrack)
+    PEDALCUES_ID (SongCue)
+    PEDALCUES_ID (track)
+    PEDALCUES_ID (include)
+    PEDALCUES_ID (uid)
+    PEDALCUES_ID (bars)
+    PEDALCUES_ID (timeNum)
+    PEDALCUES_ID (timeDen)
+    PEDALCUES_ID (bpm)
+    PEDALCUES_ID (section)
+    PEDALCUES_ID (beat)
+    PEDALCUES_ID (lengthBeats)
+    PEDALCUES_ID (toggles)
+    PEDALCUES_ID (cc0IsControl)
+    PEDALCUES_ID (padCc)
+    PEDALCUES_ID (events)
+    PEDALCUES_ID (selectedSong)
 #undef PEDALCUES_ID
 }
 

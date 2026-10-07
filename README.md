@@ -73,9 +73,15 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - Moves are written in beats (1/16 to 4 bars), so they follow the project tempo; adjustable curve;
   optional return to heel afterwards
 
+**Song Builder (beta)** (the **Song Builder** button at the top right opens it in its own window)
+- Sections along the top (name, bars, time signature, tempo) and a track per device; drag tiles in from the tabs (or `.mid` clips), copy / paste / duplicate cues
+- **Play** the song to your devices; **drag it into the DAW** as one MIDI file with the tempo map, time signatures and section markers, or **export** one file or a file per track (e.g. for a backing-track player)
+- A MIDI channel per track (rewrites its cues), **Duplicate** a track for a second player; save songs as `.pedalcues-song` files and import songs from MIDI files
+
 **Workflow**
 - **Search every list:** presets on the Quad Cortex, Fractal, Line 6, HeadRush, Darkglass and Nano Cortex pages, Kemper performances, custom device tiles and the device list. Forgiving: letters in order (`drpc` finds *Drop C Heavy*), one typo, or a location like `SL2` / `3B`
 - Update notice: the header shows your version and whether a newer release is out (one GitHub request when it opens; turn it off in the ☰ menu)
+- **Saved automatically:** the MIDI strip shows *Saving... / ✓ Saved* (standalone: written on this computer) or *✓ In your project* (plugin: the DAW is told the project changed).
 - Everything is stored in your DAW project. **☰ > Save as default setup** makes new instances start with your names, colours, MIDI settings and playing preferences
 - **☰ > Export / Import setup** as a file (back it up, move to another computer, share it with the band): your presets, scenes and names for every unit (Quad Cortex, Kemper, Fractal / Line 6 / HeadRush / Darkglass / Nano Cortex pages, custom MIDI devices), MIDI settings, playing preferences, your wiring choice and My drawings
 - MIDI passes through, so the dropped items and the live preview share one track and one route
@@ -164,6 +170,8 @@ Source/UnitPicker.cpp    searchable device list    Source/Fuzzy.h  fuzzy search 
 Source/QcUsb.*, QcSyncDialog.cpp  Sync from QC (USB, read-only)
 Source/WhammyPage.cpp    Whammy V / DT page
 Source/SettingsPage.cpp  MIDI strip (channel, Test), How to connect window (DAW tracks, standalone port) and the wiring guide
+Source/Songs.*           Song Builder model: sections, tracks, cues, song MIDI export, DAW map / song import, song files
+Source/SongBuilder.cpp   Song Builder window (arrangement, export window, playback)
 Source/Tour.*            quick-tour overlay (steps + spotlight)
 Tools/DocShots.cpp       renders docs/images/*.png
 docs/GUIDE.md            user guide
