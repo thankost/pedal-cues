@@ -79,7 +79,7 @@ void editSectionDialog (juce::ValueTree section)
                                      juce::MessageBoxIconType::NoIcon);
     w->addTextEditor ("name", section[IDs::name].toString(), "Name");
     w->addTextEditor ("bars", section[IDs::bars].toString(), "Bars");
-    w->addTextEditor ("meter", meterText (section), "Time signature");
+    w->addTextEditor ("meter", meterText (section), "Time signature (up to 255 / 1, 2, 4, 8, 16, 32 or 64)");
     w->addTextEditor ("bpm", bpmText ((double) section.getProperty (IDs::bpm, 120.0)), "Tempo (BPM)");
     w->addButton ("OK", 1, juce::KeyPress (juce::KeyPress::returnKey));
     w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
@@ -92,9 +92,14 @@ void editSectionDialog (juce::ValueTree section)
             section.setProperty (IDs::name, name, nullptr);
         const auto bars = w->getTextEditorContents ("bars").getIntValue();
         if (bars > 0)
-            section.setProperty (IDs::bars, juce::jlimit (1, 999, bars), nullptr);
+            section.setProperty (IDs::bars, juce::jlimit (1, songs::maxBars, bars), nullptr);
         const auto meter = juce::StringArray::fromTokens (w->getTextEditorContents ("meter"), "/", "");
-        if (meter.size() == 2 && meter[0].getIntValue() > 0 && meter[1].getIntValue() > 0)
+        if (meter.size() == 2 && meter[0].getIntValue() > 0 && ! songs::isNoteValue (meter[1].getIntValue()))
+            juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "Time signature",
+                                                    "The note value (the number under the line) has to be 1, 2, 4, 8, 16, 32 or 64: "
+                                                    "MIDI files, and so your DAW, can't store others. The time signature stayed "
+                                                    + meterText (section) + ".");
+        else if (meter.size() == 2 && meter[0].getIntValue() > 0 && meter[1].getIntValue() > 0)
         {
             const auto fresh = songs::createSection ("x", 1, meter[0].getIntValue(), meter[1].getIntValue(), 120.0);   // clamps
             section.setProperty (IDs::timeNum, fresh[IDs::timeNum], nullptr);
@@ -102,12 +107,14 @@ void editSectionDialog (juce::ValueTree section)
         }
         const auto bpm = w->getTextEditorContents ("bpm").getDoubleValue();
         if (bpm > 0.0)
-            section.setProperty (IDs::bpm, juce::jlimit (20.0, 400.0, bpm), nullptr);
+            section.setProperty (IDs::bpm, juce::jlimit (songs::minBpm, songs::maxBpm, bpm), nullptr);
     }), true);
 }
 
-constexpr int rulerHeight = 42, barsHeight = 18, trackHeight = 58, blockHeight = 23, newLaneHeight = 44;
-int trackTop (int index) { return rulerHeight + barsHeight + index * trackHeight; }
+constexpr int rulerHeight = 42, barsHeight = 18, blockHeight = 23, newLaneHeight = 44, audioHeight = 58;
+constexpr int clickLaneHeight = 30, clickLaneTop = rulerHeight + barsHeight;   // the click track lane, under the bar numbers
+// Track height (the user's, saved as Songs' trackHeight): the default fits two lanes of cues, taller ones more.
+constexpr int defaultTrackHeight = 58, minTrackHeight = 34, maxTrackHeight = 240, labelRowHeight = 58;
 
 //==============================================================================
 // A placed cue: click to select it (Shift adds), drag it along or onto another track, right-click for the menu.
@@ -173,14 +180,22 @@ struct TrackLabel final : public juce::Component, public juce::SettableTooltipCl
 {
     juce::ValueTree song, track;
     std::function<void()> onMenu;
+    std::function<void (int height)> onResize;   // dragging the bottom edge: every track's height
 
     TrackLabel()
     {
-        setTooltip ("Tick to include this track in Drag song and Export. Drag the name to your DAW for this track alone. "
-                    "Right-click to set its MIDI channel, duplicate it for another player, rename, recolour, move or delete it.");
+        setTooltip ("M mutes this track while playing, S plays only the soloed tracks. Tick to include it in Drag song and Export. "
+                    "Drag the name to your DAW for this track alone. Right-click to set its MIDI channel, duplicate it for another "
+                    "player, rename, recolour, move or delete it. Drag its bottom edge to make every track taller or shorter.");
     }
 
-    juce::Rectangle<int> tickArea() const { return getLocalBounds().reduced (0, 4).removeFromRight (30); }
+    // The name, M / S and the tick sit in the top row however tall the track is.
+    juce::Rectangle<int> topRow() const { return getLocalBounds().withHeight (juce::jmin (getHeight(), labelRowHeight)).reduced (0, 4); }
+    juce::Rectangle<int> tickArea() const { return topRow().removeFromRight (30); }
+    // Mute and solo for Play (export follows the tick).
+    juce::Rectangle<int> muteArea() const { return topRow().withTrimmedRight (30).removeFromRight (22).withSizeKeepingCentre (20, 18); }
+    juce::Rectangle<int> soloArea() const { return topRow().withTrimmedRight (52).removeFromRight (22).withSizeKeepingCentre (20, 18); }
+    bool onEdge (juce::Point<int> p) const { return p.y >= getHeight() - 6; }
 
     void paint (juce::Graphics& g) override
     {
@@ -207,9 +222,25 @@ struct TrackLabel final : public juce::Component, public juce::SettableTooltipCl
             g.strokePath (p, juce::PathStrokeType (2.0f));
         }
 
-        auto words = row.reduced (10, 6).withTrimmedRight (26);
+        for (auto [area, letter, prop, colour] : { std::tuple<juce::Rectangle<int>, const char*, juce::Identifier, juce::Colour>
+                                                   { muteArea(), "M", IDs::muted, accent }, { soloArea(), "S", IDs::soloed, ledGreen } })
+        {
+            const auto lit = (bool) track.getProperty (prop, false);
+            g.setColour (lit ? colour : raised);
+            g.fillRoundedRectangle (area.toFloat(), 3.0f);
+            g.setColour (lit ? juce::Colours::black : dim);
+            g.setFont (font (11.0f, true));
+            g.drawText (letter, area, juce::Justification::centred, false);
+        }
+
+        auto words = topRow().withTrimmedLeft (4).reduced (10, 6).withTrimmedRight (74);
         g.setColour (on ? text : dim);
         g.setFont (font (13.0f, true));
+        if (words.getHeight() < 30)   // a short track: the name only
+        {
+            g.drawText (track[IDs::name].toString(), words, juce::Justification::centredLeft, true);
+            return;
+        }
         g.drawText (track[IDs::name].toString(), words.removeFromTop (words.getHeight() / 2 + 2), juce::Justification::bottomLeft, true);
         g.setColour (songs::trackChannel (track) > 0 ? builderViolet : dim);
         g.setFont (font (11.0f));
@@ -218,19 +249,41 @@ struct TrackLabel final : public juce::Component, public juce::SettableTooltipCl
 
     void mouseEnter (const juce::MouseEvent&) override { repaint(); }
     void mouseExit (const juce::MouseEvent&) override { repaint(); }
+    void mouseMove (const juce::MouseEvent& e) override
+    {
+        setMouseCursor (onEdge (e.getPosition()) ? juce::MouseCursor::UpDownResizeCursor : juce::MouseCursor::NormalCursor);
+    }
     void mouseDown (const juce::MouseEvent& e) override
     {
         started = false;
+        resizeFrom = ! e.mods.isPopupMenu() && onEdge (e.getPosition()) ? getHeight() : 0;
         if (e.mods.isPopupMenu() && onMenu)
             onMenu();
     }
     void mouseUp (const juce::MouseEvent& e) override
     {
-        if (! started && ! e.mods.isPopupMenu() && tickArea().contains (e.getPosition()))
+        if (resizeFrom > 0)
+        {
+            resizeFrom = 0;
+            return;
+        }
+        if (started || e.mods.isPopupMenu())
+            return;
+        if (tickArea().contains (e.getPosition()))
             track.setProperty (IDs::include, ! (bool) track.getProperty (IDs::include, true), nullptr);
+        else if (muteArea().contains (e.getPosition()))
+            track.setProperty (IDs::muted, ! (bool) track.getProperty (IDs::muted, false), nullptr);
+        else if (soloArea().contains (e.getPosition()))
+            track.setProperty (IDs::soloed, ! (bool) track.getProperty (IDs::soloed, false), nullptr);
     }
     void mouseDrag (const juce::MouseEvent& e) override
     {
+        if (resizeFrom > 0)
+        {
+            if (onResize)
+                onResize (resizeFrom + e.getDistanceFromDragStartY());
+            return;
+        }
         if (started || e.mods.isPopupMenu() || e.getDistanceFromDragStart() < 6)
             return;
         started = true;
@@ -242,6 +295,7 @@ struct TrackLabel final : public juce::Component, public juce::SettableTooltipCl
 
 private:
     bool started = false;
+    int resizeFrom = 0;   // the height when a bottom-edge drag started
 };
 
 //==============================================================================
@@ -260,19 +314,45 @@ public:
     double cursorBeat = -1.0;                   // the song position: Play starts here, Paste puts cues here
     juce::ValueTree cursorTrack;                // ...on this track
 
+    // Snap to grid, like Reaper: the step from the Grid box, on with Snap; Alt held does the opposite for one move.
+    int gridStep = 0;
+    bool snapOn = true;
+    std::function<void (double factor, int anchorX)> onZoom;   // Alt / Option + mouse wheel
+    std::function<void (int steps)> onTrackHeight;               // Cmd / Ctrl + mouse wheel (onZoom: Alt / Option)
+    int trackHeight = defaultTrackHeight;
+    int trackTop (int index) const { return clickLaneTop + clickLaneHeight + index * trackHeight; }
+
+    // The backing track: drawn under the tracks; drag it sideways to line it up with bar 1.
+    juce::AudioThumbnail* thumbnail = nullptr;
+    std::function<void()> onAddAudio;
+    std::function<void (int x)> onAudioMenu;
+    std::function<void (double beat)> onPlayFrom;
+    std::function<void (juce::ValueTree section)> onTapTempo;
+
     double beatAt (int x) const { return juce::jmax (0.0, x / pixelsPerBeat); }
     int xOf (double beat) const { return juce::roundToInt (beat * pixelsPerBeat); }
-    int contentHeight() const { return trackTop ((int) songs::tracks (song).size()) + newLaneHeight + 4; }
+    int audioTop() const { return trackTop ((int) songs::tracks (song).size()); }
+    int newLaneTop() const { return audioTop() + audioHeight; }
+    int contentHeight() const { return newLaneTop() + newLaneHeight + 4; }
 
-    // To the section's beat (an eighth in 7/8), or a 1/16 with Alt held.
     double snap (double beat) const
     {
-        const auto section = songs::sectionAt (song, beat);
-        if (! section.isValid())
+        if (! song.isValid())
             return 0.0;
-        const auto start = songs::sectionStartBeat (song, section);
-        const auto unit = juce::ModifierKeys::currentModifiers.isAltDown() ? 0.25 : 4.0 / juce::jmax (1, (int) section.getProperty (IDs::timeDen, 4));
-        return start + std::round ((beat - start) / unit) * unit;
+        const auto on = snapOn != juce::ModifierKeys::currentModifiers.isAltDown();
+        return on ? songs::snapBeat (song, beat, gridStep) : juce::jmax (0.0, std::round (beat * 96.0) / 96.0);
+    }
+
+    void mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& wheel) override
+    {
+        // Like Reaper: Cmd / Ctrl + wheel = track height, Alt / Option + wheel = zoom.
+        const auto delta = wheel.deltaY != 0.0f ? wheel.deltaY : wheel.deltaX;   // some systems turn a modified wheel sideways
+        if ((e.mods.isCommandDown() || e.mods.isCtrlDown()) && onTrackHeight)
+            onTrackHeight (delta > 0 ? 1 : -1);
+        else if (e.mods.isAltDown() && onZoom)
+            onZoom (delta > 0 ? 1.25 : 0.8, e.x);
+        else
+            juce::Component::mouseWheelMove (e, wheel);   // the viewport scrolls
     }
 
     void rebuild()
@@ -292,8 +372,9 @@ public:
         std::sort (cuesInOrder.begin(), cuesInOrder.end(), [this] (const auto& a, const auto& b)
                    { return songs::cueBeat (song, a) < songs::cueBeat (song, b); });
 
-        // Two lanes per track, so cues close together don't hide each other.
-        std::vector<std::array<int, 2>> laneEnds (list.size(), { -1000, -1000 });
+        // Lanes per track (two at the default height, more when taller), so cues close together don't hide each other.
+        const auto lanes = (size_t) juce::jmax (1, (trackHeight - 8) / (blockHeight + 2));
+        std::vector<std::vector<int>> laneEnds (list.size(), std::vector<int> (lanes, -1000));
         for (auto c : cuesInOrder)
         {
             const auto beat = songs::cueBeat (song, c);
@@ -304,11 +385,14 @@ public:
             auto* b = blocks.add (new CueBlock());
             b->cue = c;
             b->setTooltip (c[IDs::name].toString() + " at " + songs::barLabel (song, beat)
-                           + ". Click to select (Shift adds), then Copy / Paste. Drag to move it (Alt: 1/16); right-click for more.");
+                           + ". Click to select (Shift adds), then Copy / Paste. Drag to move it (hold Alt to switch snapping for the move); right-click for more.");
             const auto x = xOf (beat);
             const auto width = juce::jmax (juce::roundToInt (juce::jmax (1.0, (double) c.getProperty (IDs::lengthBeats, 1.0)) * pixelsPerBeat), 74);
+            // The first lane that's free here, else the one that frees up first.
             auto& ends = laneEnds[(size_t) index];
-            const int lane = x >= ends[0] ? 0 : (x >= ends[1] ? 1 : (ends[0] <= ends[1] ? 0 : 1));
+            auto lane = (int) (std::find_if (ends.begin(), ends.end(), [x] (int end) { return x >= end; }) - ends.begin());
+            if (lane == (int) ends.size())
+                lane = (int) (std::min_element (ends.begin(), ends.end()) - ends.begin());
             ends[(size_t) lane] = x + width + 2;
             b->setBounds (x, trackTop (index) + 5 + lane * (blockHeight + 2), width, blockHeight);
             b->selected = isSelected (c);
@@ -331,8 +415,10 @@ public:
             g.setColour (r % 2 == 0 ? surface : surface.brighter (0.03f));
             g.fillRect (0, trackTop (r), w, trackHeight);
         }
+        paintAudio (g);
+
         // The lane for a new track.
-        auto lane = juce::Rectangle<int> (0, trackTop (count) + 4, w, newLaneHeight - 4);
+        auto lane = juce::Rectangle<int> (0, newLaneTop() + 4, w, newLaneHeight - 4);
         g.setColour (dropBeat >= 0.0 && dropTrack < 0 ? builderViolet.withAlpha (0.18f) : surface.withAlpha (0.5f));
         g.fillRoundedRectangle (lane.toFloat(), 6.0f);
         g.setColour (outline);
@@ -366,8 +452,24 @@ public:
             g.drawText (s[IDs::bars].toString() + " bars  " + meterText (s) + "  " + bpmText ((double) s.getProperty (IDs::bpm, 120.0)) + " BPM",
                         label, juce::Justification::topLeft, true);
 
+            if (song[IDs::loopSection].toString() == s[IDs::uid].toString())   // the looped section: a band over its bar numbers
+            {
+                g.setColour (ledGreen.withAlpha (0.25f));
+                g.fillRect (x0, rulerHeight, x1 - x0, barsHeight);
+                g.setColour (ledGreen);
+                g.fillRect (x0, rulerHeight + barsHeight - 2, x1 - x0, 2);
+            }
             const auto bb = songs::barBeats (s);
             const auto bars = juce::jmax (1, (int) s.getProperty (IDs::bars, 1));
+            // Grid lines at the grid step, when they're far enough apart to read.
+            const auto step = songs::gridStepBeats (gridStep, s);
+            if (step * pixelsPerBeat >= 6.0 && step < bb - 1.0e-9)
+            {
+                g.setColour (outline.withAlpha (0.28f));
+                for (double b = step; b < length - 1.0e-9; b += step)
+                    if (std::fmod (b, bb) > 1.0e-6 && bb - std::fmod (b, bb) > 1.0e-6)
+                        g.drawVerticalLine (xOf (start + b), (float) trackTop (0), (float) audioTop());
+            }
             for (int i = 0; i < bars; ++i, ++bar)
             {
                 const auto x = xOf (start + i * bb);
@@ -380,6 +482,7 @@ public:
                     g.drawText (juce::String (bar), x + 3, rulerHeight, 40, barsHeight, juce::Justification::centredLeft, false);
                 }
             }
+            paintClickLane (g, s, start, length, colour);
             start += length;
         }
         g.setColour (outline.brighter (0.4f));
@@ -390,7 +493,7 @@ public:
         {
             const auto x = (float) xOf (cursorBeat);
             g.setColour (builderViolet);
-            g.fillRect (x - 0.5f, (float) rulerHeight, 2.0f, (float) (trackTop (count) - rulerHeight));
+            g.fillRect (x - 0.5f, (float) rulerHeight, 2.0f, (float) (newLaneTop() - rulerHeight));
             juce::Path marker;
             marker.addTriangle (x - 5.0f, (float) rulerHeight, x + 6.0f, (float) rulerHeight, x + 0.5f, (float) rulerHeight + 7.0f);
             g.fillPath (marker);
@@ -405,19 +508,135 @@ public:
         if (playBeat >= 0.0)
         {
             g.setColour (accent);
-            g.fillRect ((float) xOf (playBeat) - 0.5f, (float) rulerHeight, 2.0f, (float) (trackTop (count) - rulerHeight));
+            g.fillRect ((float) xOf (playBeat) - 0.5f, (float) rulerHeight, 2.0f, (float) (newLaneTop() - rulerHeight));
         }
 
         if (dropBeat >= 0.0)
         {
             const auto x = xOf (dropBeat);
-            const auto top = dropTrack >= 0 ? trackTop (dropTrack) : trackTop (count) + 4;
+            const auto top = dropTrack >= 0 ? trackTop (dropTrack) : newLaneTop() + 4;
             const auto h = dropTrack >= 0 ? trackHeight : newLaneHeight - 4;
             g.setColour (accent);
             g.fillRect (x - 1, top, 3, h);
             g.setFont (font (11.0f, true));
             g.drawText (songs::barLabel (song, dropBeat), x + 5, top + h - 17, 140, 15, juce::Justification::centredLeft, false);
         }
+    }
+
+    // The click track lane: a block per section with its count, and a tick per click (bars tallest, subdivisions shortest).
+    void paintClickLane (juce::Graphics& g, const juce::ValueTree& s, double start, double length, juce::Colour colour)
+    {
+        const auto x0 = xOf (start), x1 = xOf (start + length);
+        auto lane = juce::Rectangle<int> (x0, clickLaneTop, x1 - x0, clickLaneHeight).reduced (1, 3);
+        g.setColour (colour.withAlpha (0.10f));
+        g.fillRoundedRectangle (lane.toFloat(), 4.0f);
+        const auto bb = songs::barBeats (s);
+        const auto beatUnit = 4.0 / juce::jmax (1, (int) s.getProperty (IDs::timeDen, 4));
+        auto step = songs::clickStepBeats (s);
+        if (step > 0.0 && step * pixelsPerBeat < 2.5)   // too dense to draw at this zoom: the beats, or the bars
+            step = beatUnit * pixelsPerBeat >= 2.5 ? juce::jmax (step, beatUnit) : bb;
+        if (step > 0.0)
+            for (int k = 0; k * step < length - 1.0e-9; ++k)
+            {
+                const auto b = k * step;
+                const auto inBar = std::fmod (b, bb);
+                const auto onBar = inBar < 1.0e-6 || bb - inBar < 1.0e-6;
+                const auto inBeat = std::fmod (inBar, beatUnit);
+                const auto onBeat = inBeat < 1.0e-6 || beatUnit - inBeat < 1.0e-6;
+                const auto h = onBar ? lane.getHeight() - 4 : onBeat ? lane.getHeight() / 2 : lane.getHeight() / 4;
+                g.setColour (onBar ? text.withAlpha (0.85f) : dim.withAlpha (onBeat ? 0.8f : 0.5f));
+                g.fillRect (xOf (start + b), lane.getBottom() - 2 - h, 1, h);
+            }
+        if (lane.getWidth() > 46)
+        {
+            const auto label = songs::clickDivNames()[juce::jlimit (0, 7, (int) s.getProperty (IDs::clickDiv, 0))];
+            g.setFont (font (10.5f, true));
+            const auto w = juce::GlyphArrangement::getStringWidthInt (g.getCurrentFont(), label) + 8;
+            auto tag = lane.withWidth (w).withTrimmedLeft (3).withSizeKeepingCentre (w, 15).translated (3, 0);
+            g.setColour (surface.withAlpha (0.9f));
+            g.fillRoundedRectangle (tag.toFloat(), 3.0f);
+            g.setColour (text);
+            g.drawText (label, tag, juce::Justification::centred, false);
+        }
+    }
+
+    void clickLaneMenu (juce::ValueTree section)
+    {
+        if (! section.isValid())
+            return;
+        const auto div = (int) section.getProperty (IDs::clickDiv, 0);
+        juce::PopupMenu m, all;
+        m.addSectionHeader ("Click in " + section[IDs::name].toString());
+        const auto names = songs::clickDivNames();
+        for (int i = 0; i < names.size(); ++i)
+        {
+            m.addItem (1 + i, names[i] + (i == 0 ? "  (" + meterText (section) + ")" : juce::String()), true, div == i);
+            all.addItem (101 + i, names[i]);
+        }
+        m.addSeparator();
+        m.addSubMenu ("Every section", all);
+        auto songTree = song;
+        m.showMenuAsync (juce::PopupMenu::Options(), [songTree, section] (int r) mutable
+        {
+            if (r >= 1 && r <= 8)
+                section.setProperty (IDs::clickDiv, r - 1, nullptr);
+            else if (r >= 101 && r <= 108)
+                for (auto sTree : songTree)
+                    if (sTree.hasType (IDs::SongSection))
+                        sTree.setProperty (IDs::clickDiv, r - 101, nullptr);
+        });
+    }
+
+    void paintAudio (juce::Graphics& g)
+    {
+        auto lane = juce::Rectangle<int> (0, audioTop() + 4, getWidth(), audioHeight - 8);
+        g.setColour (surface.withAlpha (0.7f));
+        g.fillRoundedRectangle (lane.toFloat(), 6.0f);
+        const auto file = song[IDs::audioFile].toString();
+        if (file.isEmpty() || thumbnail == nullptr || thumbnail->getTotalLength() <= 0.0)
+        {
+            g.setColour (outline);
+            g.drawRoundedRectangle (lane.toFloat().reduced (0.5f), 6.0f, 1.0f);
+            g.setColour (dim);
+            g.setFont (font (12.5f));
+            g.drawText (file.isEmpty() ? juce::String ("Click to add a backing track (MP3, WAV, AIFF, FLAC) to play along")
+                                       : "Can't read " + juce::File (file).getFileName() + ": right-click to replace it",
+                        lane.reduced (12, 0), juce::Justification::centredLeft, true);
+            return;
+        }
+        // The waveform, section by section (each has its own tempo): song time + offset = time in the file.
+        const auto offset = dragging ? dragOffset : (double) song.getProperty (IDs::audioOffset, 0.0);
+        g.setColour (juce::Colour (0xff9b87f5).withAlpha (0.75f));
+        double start = 0.0;
+        for (const auto& s : song)
+        {
+            if (! s.hasType (IDs::SongSection))
+                continue;
+            const auto length = songs::sectionLengthBeats (s);
+            const auto t0 = songs::beatToSeconds (song, start) + offset, t1 = songs::beatToSeconds (song, start + length) + offset;
+            const auto x0 = xOf (start), x1 = xOf (start + length);
+            const auto a = juce::jlimit (0.0, thumbnail->getTotalLength(), t0), b = juce::jlimit (0.0, thumbnail->getTotalLength(), t1);
+            if (b > a && t1 > t0)
+            {
+                const auto px0 = x0 + juce::roundToInt ((a - t0) / (t1 - t0) * (x1 - x0));
+                const auto px1 = x0 + juce::roundToInt ((b - t0) / (t1 - t0) * (x1 - x0));
+                thumbnail->drawChannels (g, { px0, lane.getY() + 2, juce::jmax (1, px1 - px0), lane.getHeight() - 4 }, a, b, 0.9f);
+            }
+            start += length;
+        }
+        g.setColour (dim);
+        g.setFont (font (11.0f));
+        g.drawText (juce::File (file).getFileName() + (std::abs (offset) > 1.0e-3 ? "  (bar 1 at " + juce::String (offset, 2) + " s)" : juce::String()),
+                    lane.reduced (8, 3), juce::Justification::topLeft, true);
+    }
+
+    void mouseDrag (const juce::MouseEvent& e) override
+    {
+        if (! dragging)
+            return;
+        // Dragging right moves the audio later: bar 1 lands earlier in the file.
+        dragOffset = dragStartOffset - (songs::beatToSeconds (song, beatAt (e.x)) - songs::beatToSeconds (song, beatAt (e.getMouseDownX())));
+        repaint();
     }
 
     void mouseMove (const juce::MouseEvent& e) override
@@ -436,6 +655,30 @@ public:
         grabKeyboardFocus();
         if (e.y < rulerHeight || ! song.isValid())
             return;
+        if (e.y >= audioTop() && e.y < newLaneTop())   // the backing-track lane
+        {
+            if (e.mods.isPopupMenu())
+            {
+                if (onAudioMenu)
+                    onAudioMenu (e.x);
+            }
+            else if (song[IDs::audioFile].toString().isEmpty() || thumbnail == nullptr || thumbnail->getTotalLength() <= 0.0)
+            {
+                if (onAddAudio)
+                    onAddAudio();
+            }
+            else
+            {
+                dragging = true;
+                dragStartOffset = dragOffset = (double) song.getProperty (IDs::audioOffset, 0.0);
+            }
+            return;
+        }
+        if (e.y >= clickLaneTop && e.y < trackTop (0))   // the click lane: how this section counts
+        {
+            clickLaneMenu (songs::sectionAt (song, beatAt (e.x)));
+            return;
+        }
         if (e.y < trackTop (0))   // the bar numbers: move the song position only
         {
             cursorBeat = snap (beatAt (e.x));
@@ -456,6 +699,13 @@ public:
     }
     void mouseUp (const juce::MouseEvent& e) override
     {
+        if (dragging)
+        {
+            dragging = false;
+            auto songTree = song;
+            songTree.setProperty (IDs::audioOffset, std::round (dragOffset * 1000.0) / 1000.0, nullptr);
+            return;
+        }
         if (e.y < rulerHeight && song.isValid() && beatAt (e.x) < songs::songLengthBeats (song))
             sectionMenu (songs::sectionAt (song, beatAt (e.x)));
     }
@@ -716,11 +966,23 @@ private:
         m.addItem (5, "Move later", ordinal < count - 1);
         m.addSeparator();
         m.addItem (6, "Delete it and its cues", count > 1);
+        m.addSeparator();
+        m.addItem (7, "Play from here");
+        m.addItem (8, "Loop this section while playing", true, song[IDs::loopSection].toString() == section[IDs::uid].toString());
+        m.addItem (9, "Tap its tempo...");
         auto songTree = song;
-        m.showMenuAsync (juce::PopupMenu::Options(), [songTree, section] (int r) mutable
+        juce::Component::SafePointer<SongGrid> safe (this);
+        m.showMenuAsync (juce::PopupMenu::Options(), [songTree, section, safe] (int r) mutable
         {
             const auto index = songTree.indexOf (section);
-            if (r == 1)
+            if (r == 7 && safe != nullptr && safe->onPlayFrom)
+                safe->onPlayFrom (songs::sectionStartBeat (songTree, section));
+            else if (r == 8)
+                songTree.setProperty (IDs::loopSection, songTree[IDs::loopSection].toString() == section[IDs::uid].toString()
+                                                            ? juce::var() : section[IDs::uid], nullptr);
+            else if (r == 9 && safe != nullptr && safe->onTapTempo)
+                safe->onTapTempo (section);
+            else if (r == 1)
                 editSectionDialog (section);
             else if (r >= 100 && r < 164)
                 section.setProperty (IDs::colour, paletteColour (r - 100).toString(), nullptr);
@@ -766,22 +1028,25 @@ private:
     double dropBeat = -1.0;
     int dropTrack = -1;
     std::vector<juce::ValueTree> selection;
+    bool dragging = false;   // the backing track, sideways
+    double dragOffset = 0.0, dragStartOffset = 0.0;
     static inline std::vector<songs::ClipCue> clipboard;   // shared by every song, so cues can be pasted into another song
 };
 
 //==============================================================================
-// Drag the song (the ticked tracks) into the DAW as one MIDI file.
+// Drag the song into the DAW: the ticked tracks as one MIDI file, and the click track and backing track as WAVs when ticked,
+// all starting at bar 1.
 struct DragSongButton final : public juce::TextButton
 {
-    std::function<juce::File()> makeFile;
+    std::function<juce::StringArray()> makeFiles;
     void mouseDrag (const juce::MouseEvent& e) override
     {
-        if (started || e.getDistanceFromDragStart() < 6 || ! makeFile)
+        if (started || e.getDistanceFromDragStart() < 6 || ! makeFiles)
             return;
         started = true;
-        const auto f = makeFile();
-        if (f.existsAsFile())
-            juce::DragAndDropContainer::performExternalDragDropOfFiles (juce::StringArray (f.getFullPathName()), false, this);
+        const auto files = makeFiles();
+        if (! files.isEmpty())
+            juce::DragAndDropContainer::performExternalDragDropOfFiles (files, false, this);
     }
     void mouseDown (const juce::MouseEvent& e) override { started = false; juce::TextButton::mouseDown (e); }
 
@@ -794,8 +1059,9 @@ private:
 class ExportPanel final : public juce::Component
 {
 public:
-    ExportPanel (juce::ValueTree s, std::function<void (bool filePerTrack)> onExportChosen)
-        : song (std::move (s)), onExport (std::move (onExportChosen))
+    // mode: 0 one MIDI file, 1 a MIDI file per track, 2 a song package (MIDI + click WAV + backing WAV) for a player.
+    ExportPanel (juce::ValueTree s, int countInBars, std::function<void (int mode, bool withCountIn)> onExportChosen)
+        : song (std::move (s)), bars (countInBars), onExport (std::move (onExportChosen))
     {
         intro.setText ("Pick the tracks to export and each one's MIDI channel. Picking a channel moves every cue on that track "
                        "to it (and the ones you add later); \"Own channels\" leaves the cues as they are. Two players with "
@@ -825,10 +1091,40 @@ public:
         exportButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
         oneFile.setButtonText ("One file, all tracks");
         perTrack.setButtonText ("A file per track");
-        perTrack.setTooltip ("Saves each ticked track as \"Song - Track.mid\" in the folder you pick, each with the tempo map, "
-                             "time signatures and section markers");
-        oneFile.setTooltip ("One MIDI file: the tempo map and markers, then a track per ticked track");
-        for (auto* b : { &oneFile, &perTrack })
+        package.setButtonText ("Song package");
+        // What each choice writes, named as the files will be.
+        const auto songName = juce::File::createLegalFileName (song[IDs::name].toString());
+        juce::StringArray trackFiles;
+        for (auto track : songs::tracks (song))
+            if ((bool) track.getProperty (IDs::include, true))
+                trackFiles.add ("\"" + juce::File::createLegalFileName (song[IDs::name].toString() + " - " + track[IDs::name].toString()) + ".mid\"");
+        // Plain-ASCII literals: a non-ASCII character in a char* string shows as junk, so the bullet is made here.
+        const auto bullet = juce::String::charToString ((juce::juce_wchar) 0x2022) + " ";
+        oneFile.setTooltip ("Saves one MIDI file, \"" + songName + ".mid\", with:\n"
+                            + bullet + "the tempo map, time signatures and section markers\n"
+                            + bullet + "a MIDI track for each ticked track, every cue on its own MIDI channel\n"
+                              "In your DAW, one track that sends on the original channels reaches every device on that MIDI output.");
+        juce::String perTrackList;
+        for (const auto& f : trackFiles)
+            perTrackList << "\n" << bullet << f << ": that track's cues";
+        perTrack.setTooltip ("Saves a MIDI file for each ticked track, in the folder you pick:"
+                             + (perTrackList.isEmpty() ? juce::String ("\n(no tracks ticked)") : perTrackList)
+                             + "\nEach file also has the tempo map, time signatures and section markers. Use this when your "
+                               "devices are on different MIDI outputs: one DAW track per device.");
+        const auto hasBacking = song[IDs::audioFile].toString().isNotEmpty();
+        package.setTooltip ("Saves a folder, \"" + songName + "\", for a backing-track player, with:\n"
+                            + bullet + "\"" + songName + " - cues.mid\": the ticked tracks' cues, with the tempo map and section markers\n"
+                            + bullet + "\"" + songName + " - click.wav\": the click track, as set in the click lane\n"
+                            + (hasBacking ? bullet + "\"" + songName + " - backing.wav\": the backing track, lined up with bar 1\n"
+                                          : bullet + "No backing track WAV: this song has no backing track\n")
+                            + "All the files start at the same moment. The WAVs are 48 kHz, 24-bit.");
+        countIn.setButtonText ("Start with a count-in (" + juce::String (bars) + (bars == 1 ? " bar)" : " bars)"));
+        countIn.setTooltip ("The files start with " + juce::String (bars) + (bars == 1 ? " bar" : " bars")
+                            + " of count-in: the MIDI and the backing track that much later, the click counting in. "
+                              "The length follows Count-in on the song card (1 bar when it's off).");
+        countIn.setToggleState (lastCountIn, juce::dontSendNotification);
+        addAndMakeVisible (countIn);
+        for (auto* b : { &oneFile, &perTrack, &package })
         {
             b->setClickingTogglesState (true);
             b->setRadioGroupId (3301);
@@ -840,23 +1136,26 @@ public:
         filesLabel.setColour (juce::Label::textColourId, dim);
         filesLabel.setFont (font (13.0f));
         addAndMakeVisible (filesLabel);
-        oneFile.setToggleState (! lastFilePerTrack, juce::dontSendNotification);
-        perTrack.setToggleState (lastFilePerTrack, juce::dontSendNotification);
+        oneFile.setToggleState (lastMode == 0, juce::dontSendNotification);
+        perTrack.setToggleState (lastMode == 1, juce::dontSendNotification);
+        package.setToggleState (lastMode == 2, juce::dontSendNotification);
         exportButton.onClick = [this]
         {
             apply();
-            lastFilePerTrack = perTrack.getToggleState();
-            const auto each = lastFilePerTrack;
+            lastMode = package.getToggleState() ? 2 : perTrack.getToggleState() ? 1 : 0;
+            lastCountIn = countIn.getToggleState();
+            const auto mode = lastMode;
+            const auto lead = lastCountIn;
             auto done = onExport;
             close();
             if (done)
-                done (each);
+                done (mode, lead);
         };
         addAndMakeVisible (exportButton);
         cancel.onClick = [this] { close(); };
         addAndMakeVisible (cancel);
 
-        setSize (560, 150 + rows.size() * 36 + 40);
+        setSize (640, 150 + rows.size() * 36 + 76);
     }
 
     void paint (juce::Graphics& g) override { g.fillAll (background); }
@@ -875,8 +1174,11 @@ public:
         r.removeFromTop (10);
         auto choice = r.removeFromTop (32);
         filesLabel.setBounds (choice.removeFromLeft (70));
-        oneFile.setBounds (choice.removeFromLeft (190));
-        perTrack.setBounds (choice.removeFromLeft (190).withTrimmedLeft (4));
+        oneFile.setBounds (choice.removeFromLeft (180));
+        perTrack.setBounds (choice.removeFromLeft (172).withTrimmedLeft (4));
+        package.setBounds (choice.removeFromLeft (172).withTrimmedLeft (4));
+        r.removeFromTop (6);
+        countIn.setBounds (r.removeFromTop (28).withTrimmedLeft (70));
         auto buttons = r.removeFromBottom (34);
         cancel.setBounds (buttons.removeFromRight (100));
         buttons.removeFromRight (8);
@@ -903,17 +1205,389 @@ private:
     }
 
     juce::ValueTree song;
-    std::function<void (bool)> onExport;
-    juce::TextButton oneFile, perTrack;
+    int bars = 0;
+    std::function<void (int, bool)> onExport;
+    juce::TextButton oneFile, perTrack, package;
+    juce::ToggleButton countIn;
     juce::Label filesLabel;
-    static inline bool lastFilePerTrack = false;   // remembered while the app runs
+    static inline int lastMode = 0;           // remembered while the app runs
+    static inline bool lastCountIn = false;
     juce::Label intro;
     juce::OwnedArray<Row> rows;
     juce::TextButton exportButton { "Export..." }, cancel { "Cancel" };
 };
 
 //==============================================================================
-class SongBuilder final : public juce::Component, public juce::DragAndDropContainer,
+// Click... : the metronome's sound, accent, volume and where it plays, and the gap between songs in a setlist.
+class ClickPanel final : public juce::Component
+{
+public:
+    std::function<void (float gain)> onLiveGain;   // the volume while it's dragged (saved when you let go)
+    explicit ClickPanel (juce::ValueTree songsNode) : node (std::move (songsNode))
+    {
+        const auto c = songs::clickSettings (node);
+        sound.addItemList (songs::clickSoundNames(), 1);
+        sound.setSelectedId (c.sound + 1, juce::dontSendNotification);
+        sound.onChange = [this] { node.setProperty (IDs::clickSound, sound.getSelectedId() - 1, nullptr); };
+        accentToggle.setButtonText ("Accent the first beat of each bar");
+        accentToggle.setToggleState (c.accent, juce::dontSendNotification);
+        accentToggle.onClick = [this] { node.setProperty (IDs::clickAccent, accentToggle.getToggleState(), nullptr); };
+        volume.setRange (0.0, 1.0, 0.01);
+        volume.setValue (c.gain, juce::dontSendNotification);
+        volume.setColour (juce::Slider::trackColourId, builderViolet);
+        volume.onDragEnd = [this] { node.setProperty (IDs::clickGain, volume.getValue(), nullptr); };
+        volume.onValueChange = [this] { if (onLiveGain) onLiveGain ((float) volume.getValue()); };   // heard while dragging
+        route.addItemList ({ "Click and backing track on both sides", "Click left, backing track right",
+                             "Click right, backing track left" }, 1);
+        route.setSelectedId ((int) node.getProperty (IDs::clickRoute, 0) + 1, juce::dontSendNotification);
+        route.setTooltip ("Where Play sends the click and the backing track. Both sides: mixed together in both ears. Click left / "
+                          "backing track right (or the reverse): each on its own side of the output, e.g. the click to a "
+                          "drummer's or your in-ears on one channel and the backing track to the front of house on the other. "
+                          "Only for playing in PedalCues; exported WAVs are separate files.");
+        route.onChange = [this] { node.setProperty (IDs::clickRoute, route.getSelectedId() - 1, nullptr); };
+        for (auto [label, text] : { std::pair<juce::Label*, const char*> { &soundLabel, "SOUND" }, { &volumeLabel, "VOLUME" },
+                                    { &routeLabel, "OUTPUT" } })
+        {
+            styleCaption (*label, text);
+            addAndMakeVisible (label);
+        }
+        routeLabel.setTooltip (route.getTooltip());
+        for (auto [button, id, what] : { std::tuple<juce::TextButton*, juce::Identifier, const char*> { &accentFile, IDs::clickFileAccent, "Accent" },
+                                                                                                    { &beatFile, IDs::clickFileBeat, "Beat" } })
+        {
+            const auto path = node[id].toString();
+            button->setButtonText (juce::String (what) + ": " + (path.isNotEmpty() ? juce::File (path).getFileName() : juce::String ("pick a WAV...")));
+            button->setTooltip ("Your own click sound (WAV, AIFF, FLAC, MP3) for the " + juce::String (what).toLowerCase()
+                                + (id == IDs::clickFileAccent ? " (each bar's first beat)" : " (the other beats; softer for subdivisions)"));
+            button->onClick = [this, id = id, button = button]
+            {
+                chooser = std::make_unique<juce::FileChooser> ("Pick a click sound", juce::File(), "*.wav;*.aif;*.aiff;*.flac;*.mp3");
+                chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                                      [this, id, button] (const juce::FileChooser& fc)
+                {
+                    if (fc.getResult() == juce::File())
+                        return;
+                    node.setProperty (id, fc.getResult().getFullPathName(), nullptr);
+                    node.setProperty (IDs::clickSound, 4, nullptr);
+                    sound.setSelectedId (5, juce::dontSendNotification);
+                    button->setButtonText (button->getButtonText().upToFirstOccurrenceOf (":", false, false) + ": " + fc.getResult().getFileName());
+                });
+            };
+        }
+        for (auto* c2 : std::initializer_list<juce::Component*> { &sound, &accentToggle, &volume, &route, &accentFile, &beatFile })
+            addAndMakeVisible (c2);
+        setSize (440, 196);
+    }
+
+    void resized() override
+    {
+        auto r = getLocalBounds().reduced (14, 10);
+        const auto row = [&] (juce::Label& l, juce::Component& c)
+        {
+            auto line = r.removeFromTop (34);
+            l.setBounds (line.removeFromLeft (100));
+            c.setBounds (line.reduced (0, 3));
+        };
+        row (soundLabel, sound);
+        auto files = r.removeFromTop (32).withTrimmedLeft (100).reduced (0, 2);
+        accentFile.setBounds (files.removeFromLeft (files.getWidth() / 2).withTrimmedRight (3));
+        beatFile.setBounds (files.withTrimmedLeft (3));
+        accentToggle.setBounds (r.removeFromTop (30).withTrimmedLeft (100));
+        row (volumeLabel, volume);
+        row (routeLabel, route);
+    }
+
+private:
+    juce::ValueTree node;
+    juce::ComboBox sound, route;
+    juce::ToggleButton accentToggle;
+    juce::Slider volume { juce::Slider::LinearHorizontal, juce::Slider::NoTextBox };
+    juce::Label soundLabel, volumeLabel, routeLabel;
+    juce::TextButton accentFile, beatFile;
+    std::unique_ptr<juce::FileChooser> chooser;
+};
+
+// Tap tempo: tap the button (or T / Space) along with the song, then set the section's tempo, or every section's.
+class TapPanel final : public juce::Component
+{
+public:
+    TapPanel (juce::ValueTree s, juce::ValueTree sec) : song (std::move (s)), section (std::move (sec))
+    {
+        setWantsKeyboardFocus (true);
+        tap.setButtonText ("Tap");
+        tap.setColour (juce::TextButton::buttonColourId, builderViolet);
+        tap.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
+        tap.setTriggeredOnMouseDown (true);
+        tap.onClick = [this] { addTap(); };
+        addAndMakeVisible (tap);
+        bpm.setJustificationType (juce::Justification::centred);
+        bpm.setFont (font (28.0f, true));
+        bpm.setColour (juce::Label::textColourId, text);
+        addAndMakeVisible (bpm);
+        hint.setText ("Tap along with the song (or press T / Space). Taps more than 2 s apart start over.", juce::dontSendNotification);
+        hint.setColour (juce::Label::textColourId, dim);
+        hint.setFont (font (12.0f));
+        hint.setJustificationType (juce::Justification::centred);
+        addAndMakeVisible (hint);
+        setThis.setButtonText ("Set " + section[IDs::name].toString());
+        setAll.setButtonText ("Set every section");
+        setThis.onClick = [this] { apply (false); };
+        setAll.onClick = [this] { apply (true); };
+        addAndMakeVisible (setThis);
+        addAndMakeVisible (setAll);
+        update();
+        setSize (380, 230);
+    }
+
+    void paint (juce::Graphics& g) override { g.fillAll (background); }
+    void resized() override
+    {
+        auto r = getLocalBounds().reduced (16, 12);
+        tap.setBounds (r.removeFromTop (64));
+        r.removeFromTop (6);
+        bpm.setBounds (r.removeFromTop (40));
+        hint.setBounds (r.removeFromTop (34));
+        auto buttons = r.removeFromBottom (32);
+        setAll.setBounds (buttons.removeFromRight (buttons.getWidth() / 2).withTrimmedLeft (4));
+        setThis.setBounds (buttons.withTrimmedRight (4));
+    }
+    bool keyPressed (const juce::KeyPress& k) override
+    {
+        if (k.getTextCharacter() == 't' || k.getTextCharacter() == 'T' || k == juce::KeyPress::spaceKey)
+        {
+            addTap();
+            return true;
+        }
+        return false;
+    }
+    void parentHierarchyChanged() override { if (isShowing()) grabKeyboardFocus(); }
+
+private:
+    void addTap()
+    {
+        const auto now = juce::Time::getMillisecondCounterHiRes() / 1000.0;
+        if (! taps.empty() && now - taps.back() > 2.0)
+            taps.clear();
+        taps.push_back (now);
+        if (taps.size() > 16)
+            taps.erase (taps.begin());
+        update();
+    }
+    void update()
+    {
+        const auto t = songs::tempoFromTaps (taps);
+        bpm.setText (t > 0.0 ? juce::String (t, 1) + " BPM" : juce::String ("-"), juce::dontSendNotification);
+        setThis.setEnabled (t > 0.0);
+        setAll.setEnabled (t > 0.0);
+    }
+    void apply (bool all)
+    {
+        const auto t = songs::tempoFromTaps (taps);
+        if (t <= 0.0)
+            return;
+        for (auto sTree : song)
+            if (sTree.hasType (IDs::SongSection) && (all || sTree == section))
+                sTree.setProperty (IDs::bpm, t, nullptr);
+        if (auto* w = findParentComponentOfClass<juce::DialogWindow>())
+            w->exitModalState (0);
+    }
+
+    juce::ValueTree song, section;
+    std::vector<double> taps;
+    juce::TextButton tap, setThis, setAll;
+    juce::Label bpm, hint;
+};
+
+//==============================================================================
+// "Click track" next to its lane: M switches the metronome while playing, the tick sends it along with Drag song, and
+// dragging the name drops the click track (a WAV of the whole song) into the DAW.
+struct ClickLabel final : public juce::Component, public juce::SettableTooltipClient
+{
+    juce::ValueTree song, settings;
+    std::function<juce::File()> makeFile;
+
+    ClickLabel()
+    {
+        setTooltip ("The click track: set how each section counts in its lane. Drag this name into your DAW for the click as a "
+                    "WAV (the whole song from bar 1). The tick sends it along with Drag song; M mutes the click while playing.");
+    }
+    juce::Rectangle<int> tickArea() const { return getLocalBounds().reduced (0, 2).removeFromRight (30); }
+    juce::Rectangle<int> muteArea() const { return getLocalBounds().reduced (0, 2).withTrimmedRight (30).removeFromRight (22).withSizeKeepingCentre (20, 18); }
+
+    void paint (juce::Graphics& g) override
+    {
+        auto row = getLocalBounds().reduced (0, 2);
+        g.setColour (isMouseOver() ? raised : surfaceHi);
+        g.fillRoundedRectangle (row.toFloat(), 6.0f);
+        g.setColour (text.withAlpha (0.6f));
+        g.fillRoundedRectangle (row.removeFromLeft (4).toFloat(), 2.0f);
+        g.setColour (text);
+        g.setFont (font (13.0f, true));
+        g.drawText ("Click track", row.reduced (10, 0).withTrimmedRight (56), juce::Justification::centredLeft, true);
+        paintTick (g, tickArea(), (bool) song.getProperty (IDs::clickInclude, true));
+        const auto muted = ! (bool) settings.getProperty (IDs::metronome, true);
+        g.setColour (muted ? accent : raised);
+        g.fillRoundedRectangle (muteArea().toFloat(), 3.0f);
+        g.setColour (muted ? juce::Colours::black : dim);
+        g.setFont (font (11.0f, true));
+        g.drawText ("M", muteArea(), juce::Justification::centred, false);
+    }
+
+    static void paintTick (juce::Graphics& g, juce::Rectangle<int> area, bool on)
+    {
+        auto tick = area.withSizeKeepingCentre (16, 16).toFloat();
+        g.setColour (on ? builderViolet : outline.brighter (0.3f));
+        if (on)
+        {
+            g.fillRoundedRectangle (tick, 3.0f);
+            juce::Path p;
+            p.startNewSubPath (tick.getX() + 3.5f, tick.getCentreY());
+            p.lineTo (tick.getX() + 7.0f, tick.getBottom() - 4.0f);
+            p.lineTo (tick.getRight() - 3.5f, tick.getY() + 4.0f);
+            g.setColour (juce::Colours::black);
+            g.strokePath (p, juce::PathStrokeType (2.0f));
+        }
+        else
+            g.drawRoundedRectangle (tick, 3.0f, 1.5f);
+    }
+
+    void mouseEnter (const juce::MouseEvent&) override { repaint(); }
+    void mouseExit (const juce::MouseEvent&) override { repaint(); }
+    void mouseDown (const juce::MouseEvent&) override { started = false; }
+    void mouseUp (const juce::MouseEvent& e) override
+    {
+        if (started)
+            return;
+        if (tickArea().contains (e.getPosition()))
+            song.setProperty (IDs::clickInclude, ! (bool) song.getProperty (IDs::clickInclude, true), nullptr);
+        else if (muteArea().contains (e.getPosition()))
+            settings.setProperty (IDs::metronome, ! (bool) settings.getProperty (IDs::metronome, true), nullptr);
+        repaint();
+    }
+    void mouseDrag (const juce::MouseEvent& e) override
+    {
+        if (started || e.getDistanceFromDragStart() < 6 || ! makeFile)
+            return;
+        started = true;
+        const auto f = makeFile();
+        if (f.existsAsFile())
+            juce::DragAndDropContainer::performExternalDragDropOfFiles (juce::StringArray (f.getFullPathName()), false, this);
+    }
+
+private:
+    bool started = false;
+};
+
+//==============================================================================
+// The backing track's name next to its lane, with its volume.
+struct AudioLabel final : public juce::Component, public juce::SettableTooltipClient
+{
+    juce::ValueTree song;
+    juce::Slider volume { juce::Slider::LinearHorizontal, juce::Slider::NoTextBox };
+    std::function<void()> onMenu, onAdd;
+    std::function<void (float gain)> onLiveVolume;   // the volume while it's dragged (saved when you let go)
+    std::function<juce::File()> makeFile;   // the backing track lined up with bar 1, as a WAV, for dragging into the DAW
+    bool started = false;
+    juce::Rectangle<int> tickArea() const { return getLocalBounds().reduced (0, 4).removeFromTop (26).removeFromRight (30); }
+
+    AudioLabel()
+    {
+        volume.setRange (0.0, 1.0, 0.01);
+        volume.setColour (juce::Slider::trackColourId, juce::Colour (0xff9b87f5));
+        volume.setTooltip ("The backing track's volume");
+        volume.onDragEnd = [this] { auto sTree = song; sTree.setProperty (IDs::audioGain, volume.getValue(), nullptr); };
+        volume.onValueChange = [this] { if (onLiveVolume) onLiveVolume ((float) volume.getValue()); };   // heard while dragging
+        addAndMakeVisible (volume);
+        setTooltip ("The backing track: plays with Play, after the count-in. Drag its waveform sideways to line it up with "
+                    "bar 1. Drag this name into your DAW for it as a WAV lined up with bar 1; the tick sends it along with "
+                    "Drag song. Right-click for volume, offset, fitting the tempo, replace or remove.");
+    }
+
+    void refresh()
+    {
+        const auto has = song[IDs::audioFile].toString().isNotEmpty();
+        volume.setVisible (has);
+        volume.setValue ((double) song.getProperty (IDs::audioGain, 0.8), juce::dontSendNotification);
+        repaint();
+    }
+
+    void paint (juce::Graphics& g) override
+    {
+        auto row = getLocalBounds().reduced (0, 4);
+        g.setColour (isMouseOver() ? raised : surfaceHi);
+        g.fillRoundedRectangle (row.toFloat(), 6.0f);
+        g.setColour (juce::Colour (0xff9b87f5));
+        g.fillRoundedRectangle (row.removeFromLeft (4).toFloat(), 2.0f);
+        auto words = row.reduced (10, 5);
+        g.setColour (text);
+        g.setFont (font (13.0f, true));
+        g.drawText ("Backing track", words.removeFromTop (18), juce::Justification::centredLeft, true);
+        if (song[IDs::audioFile].toString().isEmpty())
+        {
+            g.setColour (dim);
+            g.setFont (font (11.0f));
+            g.drawText ("+ Add audio...", words, juce::Justification::centredLeft, true);
+        }
+    }
+
+    juce::Rectangle<int> muteArea() const { return getLocalBounds().reduced (0, 4).removeFromTop (26).withTrimmedRight (30).removeFromRight (22).withSizeKeepingCentre (20, 18); }
+    void paintOverChildren (juce::Graphics& g) override
+    {
+        if (song[IDs::audioFile].toString().isEmpty())
+            return;
+        const auto lit = (bool) song.getProperty (IDs::audioMuted, false);
+        g.setColour (lit ? accent : raised);
+        g.fillRoundedRectangle (muteArea().toFloat(), 3.0f);
+        g.setColour (lit ? juce::Colours::black : dim);
+        g.setFont (font (11.0f, true));
+        g.drawText ("M", muteArea(), juce::Justification::centred, false);
+        ClickLabel::paintTick (g, tickArea(), (bool) song.getProperty (IDs::audioInclude, true));
+    }
+    void mouseDrag (const juce::MouseEvent& e) override
+    {
+        if (started || e.getDistanceFromDragStart() < 6 || ! makeFile || song[IDs::audioFile].toString().isEmpty())
+            return;
+        started = true;
+        const auto f = makeFile();
+        if (f.existsAsFile())
+            juce::DragAndDropContainer::performExternalDragDropOfFiles (juce::StringArray (f.getFullPathName()), false, this);
+    }
+    void resized() override { volume.setBounds (getLocalBounds().reduced (0, 4).withTrimmedLeft (10).withTrimmedRight (6).removeFromBottom (24)); }
+    void mouseEnter (const juce::MouseEvent&) override { repaint(); }
+    void mouseExit (const juce::MouseEvent&) override { repaint(); }
+    void mouseDown (const juce::MouseEvent& e) override
+    {
+        started = false;
+        if (e.mods.isPopupMenu() && onMenu)
+            onMenu();
+        else if (song[IDs::audioFile].toString().isEmpty() && onAdd)
+            onAdd();
+        else if (muteArea().contains (e.getPosition()))
+        {
+            auto sTree = song;
+            sTree.setProperty (IDs::audioMuted, ! (bool) sTree.getProperty (IDs::audioMuted, false), nullptr);
+            repaint();
+        }
+        else if (tickArea().contains (e.getPosition()))
+        {
+            auto sTree = song;
+            sTree.setProperty (IDs::audioInclude, ! (bool) sTree.getProperty (IDs::audioInclude, true), nullptr);
+            repaint();
+        }
+    }
+};
+
+// The songs list: click opens a song, ⌘ / Ctrl-click and Shift-click select several; ⌘C ⌘V ⌘D ⌘A and Delete work on
+// the selection (right-click for the same).
+struct SongList final : public juce::Component
+{
+    std::function<bool (const juce::KeyPress&)> onKey;
+    SongList() { setWantsKeyboardFocus (true); }
+    bool keyPressed (const juce::KeyPress& k) override { return onKey != nullptr && onKey (k); }
+};
+
+//==============================================================================
+class SongBuilder final : public juce::Component, public juce::DragAndDropContainer, private juce::ChangeListener,
                           private juce::ValueTree::Listener, private juce::AsyncUpdater, private juce::Timer
 {
 public:
@@ -923,6 +1597,88 @@ public:
         addAndMakeVisible (saved);
         grid.deviceName = std::move (deviceName);
         grid.onTogglePlay = [this] { togglePlay(); };
+        grid.thumbnail = &thumbnail;
+        grid.onAddAudio = [this] { chooseAudio(); };
+        grid.onAudioMenu = [this] (int x) { audioMenu (x); };
+        grid.onPlayFrom = [this] (double beat)
+        {
+            stopPlaying();
+            grid.cursorBeat = beat;
+            togglePlay();
+        };
+        grid.onTapTempo = [this] (juce::ValueTree section) { openTapTempo (section); };
+        clickButton.setButtonText ("Click...");
+        clickButton.setTooltip ("The click's sound, accent, volume and output (e.g. click left, backing track right)");
+        clickButton.onClick = [this]
+        {
+            auto panel = std::make_unique<ClickPanel> (songs::songsNode (state));
+            juce::Component::SafePointer<SongBuilder> safe (this);
+            panel->onLiveGain = [safe] (float gain)
+            {
+                if (safe != nullptr && safe->isTimerRunning())
+                {
+                    auto c = safe->clickSound();
+                    c.gain = gain;
+                    safe->proc.songAudio.setSound (c);
+                }
+            };
+            juce::CallOutBox::launchAsynchronously (std::move (panel), clickButton.getScreenBounds(), nullptr);
+        };
+        addChildComponent (clickButton);
+        grid.onZoom = [this] (double factor, int anchorX) { zoomBy (factor, anchorX); };
+        grid.onTrackHeight = [this] (int steps) { setTrackHeight (grid.trackHeight + steps * 12); };
+        thumbnail.addChangeListener (this);
+        audioLabel.onAdd = [this] { chooseAudio(); };
+        audioLabel.onLiveVolume = [this] (float gain) { if (isTimerRunning()) proc.songAudio.setBackingGain (gain); };
+        audioLabel.onMenu = [this] { audioMenu (-1); };
+        labels.addAndMakeVisible (audioLabel);
+        labels.addAndMakeVisible (clickLabel);
+        clickLabel.makeFile = [this] { return clickTrackFile (current()); };
+        audioLabel.makeFile = [this] { return backingTrackFile (current()); };
+
+        listContent.onKey = [this] (const juce::KeyPress& k) { return songKey (k); };
+
+        metronomeToggle.setButtonText ("Metronome");
+        metronomeToggle.setTooltip ("A click on every beat while the song plays (accented on each bar), through your output");
+        metronomeToggle.onClick = [this] { songsNode().setProperty (IDs::metronome, metronomeToggle.getToggleState(), nullptr); };
+        addChildComponent (metronomeToggle);
+        countInBox.addItemList ({ "No count-in", "Count-in 1 bar", "Count-in 2 bars" }, 1);
+        countInBox.setTooltip ("Clicks before the song starts, in its first bar's time signature and tempo");
+        countInBox.onChange = [this] { songsNode().setProperty (IDs::countIn, countInBox.getSelectedId() - 1, nullptr); };
+        addChildComponent (countInBox);
+
+        gridBox.addItemList (songs::gridStepNames(), 1);
+        gridBox.setTooltip ("Grid: where cues snap and the grid lines. Beat follows each section's time signature.");
+        gridBox.onChange = [this] { songsNode().setProperty (IDs::gridStep, gridBox.getSelectedId() - 1, nullptr); };
+        addChildComponent (gridBox);
+        styleCaption (gridLabel, "GRID");
+        addChildComponent (gridLabel);
+        snapToggle.setButtonText ("Snap");
+        snapToggle.setTooltip ("Snap to the grid (hold Alt for the opposite while you drag)");
+        snapToggle.onClick = [this] { songsNode().setProperty (IDs::snap, snapToggle.getToggleState(), nullptr); };
+        addChildComponent (snapToggle);
+        for (auto* b : { &zoomOut, &zoomIn, &zoomFit })
+            addChildComponent (b);
+       #if JUCE_MAC
+        const juce::String cmdKey ("Cmd"), altKey ("Option");
+       #else
+        const juce::String cmdKey ("Ctrl"), altKey ("Alt");
+       #endif
+        zoomOut.setTooltip ("Zoom out (or - , or " + altKey + " + mouse wheel)");
+        zoomIn.setTooltip ("Zoom in (or + , or " + altKey + " + mouse wheel)");
+        zoomFit.setTooltip ("Fit the whole song in the window");
+        zoomOut.onClick = [this] { zoomBy (0.8, -1); };
+        zoomIn.onClick = [this] { zoomBy (1.25, -1); };
+        zoomFit.onClick = [this] { zoom = 1.0; layoutTracks(); };
+        // Track height: in the corner above the track names.
+        styleCaption (heightLabel, "TRACK HEIGHT");
+        for (auto* c : std::initializer_list<juce::Component*> { &shorter, &taller, &heightLabel })
+            labels.addAndMakeVisible (c);
+        shorter.setTooltip ("Shorter tracks (or " + cmdKey + " + - , " + cmdKey + " + mouse wheel, or drag a track name's bottom edge)");
+        taller.setTooltip ("Taller tracks, with room for more cues stacked (or " + cmdKey + " + + , " + cmdKey
+                           + " + mouse wheel, or drag a track name's bottom edge)");
+        shorter.onClick = [this] { setTrackHeight (grid.trackHeight - 12); };
+        taller.onClick = [this] { setTrackHeight (grid.trackHeight + 12); };
 
         addAndMakeVisible (listSection);
         addSong.setColour (juce::TextButton::buttonColourId, accent);
@@ -957,9 +1713,24 @@ public:
         dragSong.setButtonText ("Drag song to the DAW");
         dragSong.setColour (juce::TextButton::buttonColourId, builderViolet);
         dragSong.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
-        dragSong.setTooltip ("Drag onto your DAW's timeline: one MIDI file with the ticked tracks, the tempo map, time "
-                             "signatures and a marker for each section");
-        dragSong.makeFile = [this] { return songs::writeSongFile (current(), songs::includedTracks (current())); };
+        dragSong.setTooltip ("Drag onto your DAW's timeline: the ticked tracks as one MIDI file (with the tempo map, time "
+                             "signatures and a marker per section), plus the click track and the backing track as WAVs when "
+                             "they're ticked, all starting at bar 1");
+        dragSong.makeFiles = [this]
+        {
+            // The ticked tracks as MIDI, then the click and the backing track (when ticked) as WAVs, all from bar 1.
+            const auto song = current();
+            juce::StringArray files;
+            if (const auto midi = songs::writeSongFile (song, songs::includedTracks (song)); midi.existsAsFile())
+                files.add (midi.getFullPathName());
+            if ((bool) song.getProperty (IDs::clickInclude, true))
+                if (const auto click = clickTrackFile (song); click.existsAsFile())
+                    files.add (click.getFullPathName());
+            if ((bool) song.getProperty (IDs::audioInclude, true) && song[IDs::audioFile].toString().isNotEmpty())
+                if (const auto backing = backingTrackFile (song); backing.existsAsFile())
+                    files.add (backing.getFullPathName());
+            return files;
+        };
         addChildComponent (dragSong);
         exportSong.setButtonText ("Export MIDI file(s)...");
         exportSong.setTooltip ("Save the ticked tracks as one MIDI file or a file per track, e.g. for a backing-track player that plays MIDI next to your stems");
@@ -1007,6 +1778,11 @@ public:
         empty.setJustificationType (juce::Justification::centred);
         addChildComponent (empty);
 
+        // Above the cards they sit on (each card's translucent fill would dim them otherwise).
+        for (auto* c : std::initializer_list<juce::Component*> { &metronomeToggle, &countInBox, &clickButton, &gridLabel, &gridBox, &snapToggle,
+                                                                &zoomOut, &zoomIn, &zoomFit })
+            c->toFront (false);
+
         state.addListener (this);
         rebuild();
     }
@@ -1014,6 +1790,7 @@ public:
     ~SongBuilder() override
     {
         stopPlaying();
+        thumbnail.removeChangeListener (this);
         state.removeListener (this);
     }
 
@@ -1023,6 +1800,7 @@ public:
             return;
         stopTimer();
         proc.stopPreview();
+        proc.songAudio.stop();
         grid.playBeat = -1.0;
         grid.repaint();
         play.setButtonText (juce::String::fromUTF8 ("\u25B6  Play"));
@@ -1061,16 +1839,35 @@ public:
         exportSong.setBounds (top);
         buttons.removeFromTop (6);
         auto second = buttons.removeFromTop (30);
-        saveSong.setBounds (second.removeFromRight (exportSong.getWidth()));
+        saveSong.setBounds (second.removeFromRight (160));
+        second.removeFromRight (8);
+        countInBox.setBounds (second.removeFromRight (140));
+        second.removeFromRight (6);
+        clickButton.setBounds (second.removeFromRight (70));
+        second.removeFromRight (6);
+        metronomeToggle.setBounds (second.removeFromRight (120));
         songName.setBounds (sc.removeFromTop (30));
         summary.setBounds (sc.removeFromTop (20));
         r.removeFromTop (12);
 
         gridSection.setBounds (r);
-        auto gh = gridSection.headerArea();
-        addTrack.setBounds (gh.removeFromRight (90).withSizeKeepingCentre (90, 26));
+        // The header row from the right: + Track, + Section, zoom, Snap, Grid (the title and hint keep the left).
+        auto gh = gridSection.getBounds().removeFromTop (Section::headerHeight).reduced (Section::padding, 5);
+        addTrack.setBounds (gh.removeFromRight (86));
         gh.removeFromRight (6);
-        addSection.setBounds (gh.removeFromRight (96).withSizeKeepingCentre (96, 26));
+        addSection.setBounds (gh.removeFromRight (94));
+        gh.removeFromRight (14);
+        zoomFit.setBounds (gh.removeFromRight (40));
+        gh.removeFromRight (3);
+        zoomIn.setBounds (gh.removeFromRight (28));
+        gh.removeFromRight (3);
+        zoomOut.setBounds (gh.removeFromRight (28));
+        gh.removeFromRight (12);
+        snapToggle.setBounds (gh.removeFromRight (78));
+        gh.removeFromRight (4);
+        gridBox.setBounds (gh.removeFromRight (96));
+        gh.removeFromRight (2);
+        gridLabel.setBounds (gh.removeFromRight (42));
         tracksView.setBounds (gridSection.contentArea());
         layoutTracks();
     }
@@ -1078,7 +1875,40 @@ public:
 private:
     juce::ValueTree current() { return songs::selectedSong (state); }
 
-    void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override { triggerAsyncUpdate(); }
+    void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override
+    {
+        applyLiveAudio();   // the metronome, the click and the backing track follow changes while playing
+        triggerAsyncUpdate();
+    }
+
+    // - / + zoom; Cmd / Ctrl + - / + change the track height (= and the keypad's + count as +).
+    bool keyPressed (const juce::KeyPress& key) override
+    {
+        const auto c = key.getTextCharacter();
+        const auto code = key.getKeyCode();
+        const auto plus = c == '+' || c == '=' || code == juce::KeyPress::numberPadAdd;
+        const auto minus = c == '-' || c == '_' || code == juce::KeyPress::numberPadSubtract;
+        if (! plus && ! minus)
+            return false;
+        if (key.getModifiers().isCommandDown())
+            setTrackHeight (grid.trackHeight + (plus ? 12 : -12));
+        else
+            zoomBy (plus ? 1.25 : 0.8, -1);
+        return true;
+    }
+
+    void applyLiveAudio (bool starting = false)
+    {
+        if (! playing.isValid() || ! (starting || isTimerRunning()))
+            return;
+        const auto settings = songs::songsNode (state);
+        auto& audio = proc.songAudio;
+        audio.setSound (clickSound());
+        audio.setRoute ((int) settings.getProperty (IDs::clickRoute, 0));
+        audio.setMetronome ((bool) settings.getProperty (IDs::metronome, true));
+        audio.setBackingGain ((float) (double) playing.getProperty (IDs::audioGain, 0.8));
+        audio.setBackingMuted ((bool) playing.getProperty (IDs::audioMuted, false));
+    }
     void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override { triggerAsyncUpdate(); }
     void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override { triggerAsyncUpdate(); }
     void valueTreeChildOrderChanged (juce::ValueTree&, int, int) override { triggerAsyncUpdate(); }
@@ -1103,6 +1933,7 @@ private:
     {
         if (isTimerRunning())
         {
+            setlistPlaying = false;
             stopPlaying();
             return;
         }
@@ -1110,28 +1941,133 @@ private:
         if (! playing.isValid())
             return;
         playFrom = juce::jlimit (0.0, songs::songLengthBeats (playing), grid.cursorBeat >= 0.0 ? grid.cursorBeat : 0.0);
-        proc.previewTimed (songs::playbackEvents (playing, songs::includedTracks (playing), playFrom));
+        looping = songs::loopRange (playing, loopStart, loopEnd);
+        if (looping && (playFrom < loopStart || playFrom >= loopEnd))
+            playFrom = loopStart;
+
+        // The count-in first (its clicks always sound), then the song's MIDI (the played tracks: ticked, not muted, or the
+        // soloed ones), the metronome if it's on and the backing track (unless muted). A loop ends at its section's end.
+        const auto settings = state.getChildWithName (IDs::Songs);
+        const auto countIn = juce::jlimit (0, 2, (int) settings.getProperty (IDs::countIn, 1));
+        lead = songs::countInSeconds (playing, playFrom, countIn);
+        const auto until = looping ? songs::beatToSeconds (playing, loopEnd) - songs::beatToSeconds (playing, playFrom) : 1.0e9;
+
+        auto events = songs::playbackEvents (playing, songs::playedTracks (playing), playFrom);
+        events.erase (std::remove_if (events.begin(), events.end(), [until] (const auto& ev) { return ev.first >= until - 1.0e-6; }), events.end());
+        for (auto& ev : events)
+            ev.first += lead;
+        proc.previewTimed (events);
+
+        const auto audioPath = playing[IDs::audioFile].toString();
+        if (audioPath.isNotEmpty() && proc.songAudio.backingFile().getFullPathName() != audioPath)
+            proc.songAudio.loadBacking (juce::File (audioPath));
+        else if (audioPath.isEmpty() && proc.songAudio.backingFile() != juce::File())
+            proc.songAudio.clearBacking();
+        proc.songAudio.start (proc.nowSample(), clickSound(), (int) settings.getProperty (IDs::clickRoute, 0),
+                              (float) (double) playing.getProperty (IDs::audioGain, 0.8));
+        applyLiveAudio (true);
+
+        // Every click is scheduled; the metronome switch (live) decides which sound, the count-in's always do.
+        std::vector<SongAudio::Click> clicks;
+        for (const auto& c : songs::metronomeClicks (playing, playFrom, countIn))
+            if (c.seconds < lead - 1.0e-6)
+                clicks.push_back ({ c.seconds, c.accent, c.sub, true });
+            else if (c.seconds - lead < until - 1.0e-6)
+                clicks.push_back ({ c.seconds, c.accent, c.sub, false });
+        proc.songAudio.addClicks (clicks);
+        proc.songAudio.addBacking (lead, (double) playing.getProperty (IDs::audioOffset, 0.0) + songs::beatToSeconds (playing, playFrom));
+
+        nextLoopAt = lead + until;   // seconds from start: when the loop's next pass begins
         playStarted = juce::Time::getMillisecondCounterHiRes();
         play.setButtonText (juce::String::fromUTF8 ("\u25A0  Stop"));
         startTimerHz (30);
+    }
+
+    // The loop's next pass, scheduled a moment before it's due (MIDI, clicks and the backing track restarted at its start).
+    void scheduleLoopPass()
+    {
+        const auto length = songs::beatToSeconds (playing, loopEnd) - songs::beatToSeconds (playing, loopStart);
+        const auto elapsed = (juce::Time::getMillisecondCounterHiRes() - playStarted) / 1000.0;
+        auto events = songs::playbackEvents (playing, songs::playedTracks (playing), loopStart);
+        events.erase (std::remove_if (events.begin(), events.end(), [length] (const auto& ev) { return ev.first >= length - 1.0e-6; }), events.end());
+        for (auto& ev : events)
+            ev.first += nextLoopAt - elapsed;
+        proc.previewTimed (events);
+        std::vector<SongAudio::Click> clicks;
+        for (const auto& c : songs::metronomeClicks (playing, loopStart, 0))
+            if (c.seconds < length - 1.0e-6)
+                clicks.push_back ({ c.seconds, c.accent, c.sub });
+        proc.songAudio.addClicks (clicks, nextLoopAt);
+        proc.songAudio.addBacking (nextLoopAt, (double) playing.getProperty (IDs::audioOffset, 0.0) + songs::beatToSeconds (playing, loopStart));
+        nextLoopAt += length;
     }
 
     void timerCallback() override
     {
         if (current() != playing)   // another song picked
         {
+            setlistPlaying = false;
             stopPlaying();
             return;
         }
         const auto elapsed = (juce::Time::getMillisecondCounterHiRes() - playStarted) / 1000.0;
-        const auto beat = songs::secondsToBeat (playing, songs::beatToSeconds (playing, playFrom) + elapsed);
+        if (looping)
+        {
+            if (elapsed > nextLoopAt - 1.0)
+                scheduleLoopPass();
+            const auto length = songs::beatToSeconds (playing, loopEnd) - songs::beatToSeconds (playing, loopStart);
+            const auto firstPass = songs::beatToSeconds (playing, loopEnd) - songs::beatToSeconds (playing, playFrom);
+            auto t = elapsed - lead;
+            double beat;
+            if (t < firstPass)
+                beat = songs::secondsToBeat (playing, songs::beatToSeconds (playing, playFrom) + juce::jmax (0.0, t));
+            else
+                beat = songs::secondsToBeat (playing, songs::beatToSeconds (playing, loopStart) + std::fmod (t - firstPass, juce::jmax (0.01, length)));
+            grid.playBeat = beat;
+            grid.repaint();
+            return;
+        }
+        const auto t = elapsed - lead;   // negative: counting in
+        const auto beat = songs::secondsToBeat (playing, songs::beatToSeconds (playing, playFrom) + juce::jmax (0.0, t));
         if (beat >= songs::songLengthBeats (playing))
         {
             stopPlaying();
+            if (setlistPlaying)
+                nextInSetlist();
             return;
         }
         grid.playBeat = beat;
         grid.repaint();
+    }
+
+    // A setlist: the songs in the list's order, from the one picked, with the setlist gap between them.
+    void playSetlistFrom (juce::ValueTree song)
+    {
+        stopPlaying();
+        setlistPlaying = true;
+        grid.cursorBeat = 0.0;
+        if (song != current())
+            state.setProperty (IDs::selectedSong, song[IDs::uid], nullptr);
+        juce::Component::SafePointer<SongBuilder> safe (this);
+        juce::MessageManager::callAsync ([safe] { if (safe != nullptr) { safe->rebuild(); safe->togglePlay(); } });
+    }
+
+    void nextInSetlist()
+    {
+        const auto list = state.getChildWithName (IDs::Songs);
+        const auto next = list.getChild (list.indexOf (current()) + 1);
+        if (! next.isValid())
+        {
+            setlistPlaying = false;
+            return;
+        }
+        const auto gap = (double) list.getProperty (IDs::setlistGap, 4.0);
+        juce::Component::SafePointer<SongBuilder> safe (this);
+        juce::Timer::callAfterDelay ((int) (gap * 1000.0), [safe, next]
+        {
+            if (safe != nullptr && safe->setlistPlaying && ! safe->isTimerRunning())
+                safe->playSetlistFrom (next);
+        });
     }
 
     void rebuild()
@@ -1149,18 +2085,47 @@ private:
                 t->title = song[IDs::name].toString();
                 t->badge = juce::String (songs::songBars (song)) + " bars";
                 t->colour = paletteColour (index++);
-                t->highlighted = song == selected;
-                t->setTooltip ("Click to open. Right-click to rename, duplicate or delete.");
-                t->onClick = [this, song] { state.setProperty (IDs::selectedSong, song[IDs::uid], nullptr); };
-                t->onContextMenu = [this, song] { songMenu (song); };
+                t->highlighted = song == selected || isPicked (song);
+                t->setTooltip ("Click to open. Cmd / Ctrl-click or Shift-click to select several, then copy, paste, "
+                               "duplicate or delete them (keys or right-click).");
+                t->onClick = [this, song] { songClicked (song); };
+                t->onContextMenu = [this, song] { if (! isPicked (song)) picked = { song[IDs::uid].toString() }; songMenu (song); };
                 listContent.addAndMakeVisible (t);
             }
 
         const auto has = selected.isValid();
         for (auto* c : std::initializer_list<juce::Component*> { &songSection, &songName, &summary, &dragSong, &exportSong, &saveSong, &play, &saved,
+                                                                &metronomeToggle, &countInBox, &clickButton, &gridBox, &gridLabel, &snapToggle, &zoomOut, &zoomIn, &zoomFit,
                                                                 &gridSection, &addSection, &addTrack, &tracksView })
             c->setVisible (has);
         empty.setVisible (! has);
+
+        // The shared settings: metronome, count-in, grid and snap.
+        const auto settings = state.getChildWithName (IDs::Songs);
+        metronomeToggle.setToggleState ((bool) settings.getProperty (IDs::metronome, true), juce::dontSendNotification);
+        countInBox.setSelectedId ((int) settings.getProperty (IDs::countIn, 1) + 1, juce::dontSendNotification);
+        gridBox.setSelectedId ((int) settings.getProperty (IDs::gridStep, 0) + 1, juce::dontSendNotification);
+        snapToggle.setToggleState ((bool) settings.getProperty (IDs::snap, true), juce::dontSendNotification);
+        grid.trackHeight = juce::jlimit (minTrackHeight, maxTrackHeight, (int) settings.getProperty (IDs::trackHeight, defaultTrackHeight));
+        grid.gridStep = juce::jlimit (0, songs::gridStepNames().size() - 1, (int) settings.getProperty (IDs::gridStep, 0));
+        grid.snapOn = (bool) settings.getProperty (IDs::snap, true);
+
+        // The backing track's waveform (the file itself is opened for playback when Play is pressed).
+        const auto audioPath = selected[IDs::audioFile].toString();
+        if (audioPath != thumbnailFile)
+        {
+            thumbnailFile = audioPath;
+            const juce::File f (audioPath);
+            if (audioPath.isNotEmpty() && f.existsAsFile())
+                thumbnail.setSource (new juce::FileInputSource (f));
+            else
+                thumbnail.clear();
+        }
+        audioLabel.song = selected;
+        audioLabel.refresh();
+        clickLabel.song = selected;
+        clickLabel.settings = songs::songsNode (state);
+        clickLabel.repaint();
 
         trackLabels.clear();
         if (has)
@@ -1194,6 +2159,7 @@ private:
                 l->song = selected;
                 l->track = track;
                 l->onMenu = [this, track] { trackMenu (track); };
+                l->onResize = [this] (int height) { setTrackHeight (height); };
                 labels.addAndMakeVisible (l);
             }
         }
@@ -1221,13 +2187,24 @@ private:
         const auto width = tracksView.getWidth() - tracksView.getScrollBarThickness() - 2;
         const auto height = grid.contentHeight() + gridView.getScrollBarThickness();   // the scroll bar right under the tracks
         tracksArea.setSize (width, height);
-        labels.setBounds (0, 0, 170, height);
+        labels.setBounds (0, 0, 216, height);   // names, S / M and the tick
         for (int i = 0; i < trackLabels.size(); ++i)
-            trackLabels[i]->setBounds (0, trackTop (i), 162, trackHeight);
+            trackLabels[i]->setBounds (0, grid.trackTop (i), 208, grid.trackHeight);
+        audioLabel.setBounds (0, grid.audioTop(), 208, audioHeight);
+        clickLabel.setBounds (0, clickLaneTop, 208, clickLaneHeight);
+        {
+            auto corner = juce::Rectangle<int> (0, rulerHeight - 12, 208, 30);
+            taller.setBounds (corner.removeFromRight (28));
+            corner.removeFromRight (3);
+            shorter.setBounds (corner.removeFromRight (28));
+            heightLabel.setBounds (corner.withTrimmedLeft (8));
+        }
         gridView.setBounds (labels.getRight(), 0, width - labels.getRight(), height);
 
+        // Zoom 1 = the whole song fits (at least 6 px a beat); zoom in from there.
         const auto beats = juce::jmax (1.0, songs::songLengthBeats (grid.song));
-        grid.pixelsPerBeat = juce::jmax (6.0, (gridView.getWidth() - 4) / beats);   // the whole song fits; very long ones scroll
+        const auto fit = juce::jmax (6.0, (gridView.getWidth() - 4) / beats);
+        grid.pixelsPerBeat = juce::jlimit (2.0, 400.0, fit * zoom);
         grid.setSize (juce::jmax (gridView.getWidth(), juce::roundToInt (beats * grid.pixelsPerBeat) + 2),
                       height - gridView.getScrollBarThickness());
         grid.rebuild();
@@ -1398,42 +2375,398 @@ private:
 
     void songMenu (juce::ValueTree song)
     {
+        const auto n = (int) pickedSongs().size();
+        const auto many = n > 1 ? " " + juce::String (n) + " songs" : juce::String();
         juce::PopupMenu m;
-        m.addSectionHeader (song[IDs::name].toString());
-        m.addItem (1, "Rename...");
-        m.addItem (2, "Duplicate");
-        m.addItem (4, "Save as file...");
+        m.addSectionHeader (n > 1 ? juce::String (n) + " songs selected" : song[IDs::name].toString());
+        m.addItem (1, "Rename...", n == 1);
+        m.addItem (2, "Duplicate" + many);
+        m.addItem (5, "Copy" + many);
+        m.addItem (6, songClipboard.size() > 1 ? "Paste " + juce::String ((int) songClipboard.size()) + " songs" : juce::String ("Paste"),
+                   ! songClipboard.empty());
+        m.addItem (4, "Save as file...", n == 1);
         m.addSeparator();
-        m.addItem (3, "Delete...");
+        m.addItem (7, "Play the setlist from here");
+        // The pause between songs when the setlist plays.
+        juce::PopupMenu gaps;
+        const auto gapNow = (double) state.getChildWithName (IDs::Songs).getProperty (IDs::setlistGap, 4.0);
+        for (int g : { 0, 2, 4, 8, 15, 30 })
+            gaps.addItem (200 + g, g == 0 ? juce::String ("None: straight into the next song") : juce::String (g) + " seconds",
+                          true, std::abs (gapNow - g) < 0.5);
+        m.addSubMenu ("Gap between songs", gaps);
+        m.addItem (8, "Export the setlist as song packages...");
+        m.addSeparator();
+        m.addItem (3, "Delete" + many + "...");
         juce::Component::SafePointer<SongBuilder> safe (this);
         m.showMenuAsync (juce::PopupMenu::Options(), [safe, song] (int r) mutable
         {
             if (safe == nullptr)
                 return;
-            auto list = song.getParent();
             if (r == 1)
                 renameNode (song, "Rename song");
             else if (r == 4)
                 safe->chooseSaveSong (song);
-            else if (r == 2)
+            else if (r == 2)   // duplicate the picked songs (without touching the clipboard)
             {
-                auto copy = songs::copySong (song, song[IDs::name].toString() + " (copy)");
-                list.addChild (copy, list.indexOf (song) + 1, nullptr);
-                safe->state.setProperty (IDs::selectedSong, copy[IDs::uid], nullptr);
+                std::vector<juce::ValueTree> copies;
+                for (const auto& sTree : safe->pickedSongs())
+                    copies.push_back (sTree.createCopy());
+                safe->pasteSongs (copies);
             }
+            else if (r == 5)
+                safe->copySongs();
+            else if (r == 6)
+                safe->pasteSongs (songClipboard);
             else if (r == 3)
+                safe->deleteSongs (true);
+            else if (r == 7)
+                safe->playSetlistFrom (song);
+            else if (r >= 200)
+                safe->songsNode().setProperty (IDs::setlistGap, r - 200, nullptr);
+            else if (r == 8)
             {
-                auto* w = new juce::AlertWindow ("Delete song", "Delete \"" + song[IDs::name].toString() + "\" and its cues? "
-                                                 "Clips already in your DAW aren't affected.", juce::MessageBoxIconType::NoIcon);
-                w->addButton ("Delete", 1);
-                w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
-                w->enterModalState (true, juce::ModalCallbackFunction::create ([list, song] (int res) mutable
-                {
-                    if (res == 1)
-                        list.removeChild (song, nullptr);
-                }), true);
+                std::vector<juce::ValueTree> all;
+                for (const auto& sTree : safe->state.getChildWithName (IDs::Songs))
+                    all.push_back (sTree);
+                safe->exportCountIn = juce::jlimit (0, 2, (int) safe->state.getChildWithName (IDs::Songs).getProperty (IDs::countIn, 1));
+                safe->choosePackageFolder (all);
             }
         });
+    }
+
+    juce::ValueTree songsNode() { return songs::songsNode (state); }
+
+    // The click's settings, with the custom samples loaded (kept until their files change).
+    songs::ClickSound clickSound()
+    {
+        const auto settings = songs::songsNode (state);
+        auto c = songs::clickSettings (settings);
+        if (c.sound != 4)
+            return c;
+        const auto key = settings[IDs::clickFileAccent].toString() + "|" + settings[IDs::clickFileBeat].toString();
+        if (key != clickSamplesKey)
+        {
+            clickSamplesKey = key;
+            accentSample = beatSample = nullptr;
+            samplesRate = 0.0;
+            for (auto [id, target] : { std::pair<juce::Identifier, std::shared_ptr<juce::AudioBuffer<float>>*> { IDs::clickFileAccent, &accentSample },
+                                                                                                              { IDs::clickFileBeat, &beatSample } })
+            {
+                std::unique_ptr<juce::AudioFormatReader> reader (proc.songAudio.formats().createReaderFor (juce::File (settings[id].toString())));
+                if (reader == nullptr)
+                    continue;
+                const auto n = (int) juce::jmin<juce::int64> (reader->lengthInSamples, (juce::int64) (reader->sampleRate * 2.0));
+                auto buffer = std::make_shared<juce::AudioBuffer<float>> (1, juce::jmax (1, n));
+                reader->read (buffer.get(), 0, n, 0, true, false);
+                if (samplesRate > 0.0 && std::abs (reader->sampleRate - samplesRate) > 1.0)   // match the first one's rate
+                {
+                    auto resampled = std::make_shared<juce::AudioBuffer<float>> (1, juce::jmax (1, (int) (n * samplesRate / reader->sampleRate)));
+                    juce::LagrangeInterpolator interp;
+                    interp.process (reader->sampleRate / samplesRate, buffer->getReadPointer (0), resampled->getWritePointer (0), resampled->getNumSamples());
+                    buffer = resampled;
+                }
+                else if (samplesRate <= 0.0)
+                    samplesRate = reader->sampleRate;
+                *target = buffer;
+            }
+        }
+        c.accentSample = accentSample;
+        c.beatSample = beatSample;
+        c.sampleRate = samplesRate > 0.0 ? samplesRate : 48000.0;
+        return c;
+    }
+
+    // A WAV in a temp folder named after its content, for dragging into the DAW (like the tiles' MIDI files).
+    static juce::File tempWav (const juce::AudioBuffer<float>& audio, double rate, const juce::String& key, const juce::String& name)
+    {
+        const auto dir = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("PedalCues")
+                             .getChildFile (juce::String::toHexString (key.hashCode64()));
+        dir.createDirectory();
+        const auto file = dir.getChildFile (juce::File::createLegalFileName (name) + ".wav");
+        if (! file.existsAsFile() && writeWav (audio, rate, file).isNotEmpty())
+            return {};
+        return file;
+    }
+
+    // The whole song's click from bar 1 (no count-in: it lines up with the MIDI dropped at the same spot).
+    juce::File clickTrackFile (const juce::ValueTree& song)
+    {
+        constexpr double rate = 48000.0;
+        const auto settings = songs::songsNode (state);
+        const auto key = song.toXmlString() + settings.toXmlString().fromFirstOccurrenceOf ("<Songs", true, false).upToFirstOccurrenceOf (">", true, false);
+        const auto click = songs::renderClickTrack (song, 0, rate, clickSound(), 1.0);
+        return tempWav (click, rate, "click" + key, song[IDs::name].toString() + " - click");
+    }
+
+    // The backing track lined up with bar 1, the song's length.
+    juce::File backingTrackFile (const juce::ValueTree& song)
+    {
+        const auto path = song[IDs::audioFile].toString();
+        if (path.isEmpty() || ! juce::File (path).existsAsFile())
+            return {};
+        constexpr double rate = 48000.0;
+        const auto seconds = songs::songSeconds (song) + 1.0;
+        const auto key = "backing" + path + song[IDs::audioOffset].toString() + song[IDs::audioGain].toString() + juce::String (seconds);
+        const auto audio = proc.songAudio.renderBacking (juce::File (path), (double) song.getProperty (IDs::audioOffset, 0.0), 0.0, seconds, rate,
+                                                         (float) (double) song.getProperty (IDs::audioGain, 0.8));
+        return tempWav (audio, rate, key, song[IDs::name].toString() + " - backing");
+    }
+
+    void openTapTempo (juce::ValueTree section)
+    {
+        juce::DialogWindow::LaunchOptions o;
+        o.dialogTitle = "Tap tempo";
+        o.dialogBackgroundColour = background;
+        o.content.setOwned (new TapPanel (current(), section));
+        o.escapeKeyTriggersCloseButton = true;
+        o.useNativeTitleBar = true;
+        o.resizable = false;
+        o.componentToCentreAround = this;
+        o.launchAsync();
+    }
+
+    // Zoom by a factor, keeping the beat under anchorX (in the grid) in place; -1: the middle of the view.
+    // Every track's height (saved with the songs), keeping the track under the view's top where it was.
+    void setTrackHeight (int height)
+    {
+        height = juce::jlimit (minTrackHeight, maxTrackHeight, height);
+        if (height == grid.trackHeight)
+            return;
+        songsNode().setProperty (IDs::trackHeight, height, nullptr);
+        grid.trackHeight = height;
+        layoutTracks();
+    }
+
+    void zoomBy (double factor, int anchorX)
+    {
+        const auto viewX = anchorX >= 0 ? anchorX - gridView.getViewPositionX() : gridView.getWidth() / 2;
+        const auto beat = grid.beatAt (gridView.getViewPositionX() + viewX);
+        zoom = juce::jlimit (1.0, 64.0, zoom * factor);
+        layoutTracks();
+        gridView.setViewPosition (juce::jmax (0, grid.xOf (beat) - viewX), gridView.getViewPositionY());
+    }
+
+    void changeListenerCallback (juce::ChangeBroadcaster*) override { grid.repaint(); }   // the waveform as it loads
+
+    void chooseAudio()
+    {
+        chooser = std::make_unique<juce::FileChooser> ("Pick a backing track", juce::File::getSpecialLocation (juce::File::userMusicDirectory),
+                                                       proc.songAudio.formats().getWildcardForAllFormats());
+        juce::Component::SafePointer<SongBuilder> safe (this);
+        auto song = current();
+        chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles, [safe, song] (const juce::FileChooser& fc) mutable
+        {
+            const auto file = fc.getResult();
+            if (safe == nullptr || file == juce::File())
+                return;
+            std::unique_ptr<juce::AudioFormatReader> reader (safe->proc.songAudio.formats().createReaderFor (file));
+            if (reader == nullptr)
+            {
+                juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "Backing track",
+                                                        file.getFileName() + " can't be read. Use an MP3, WAV, AIFF, FLAC or Ogg file.");
+                return;
+            }
+            song.setProperty (IDs::audioFile, file.getFullPathName(), nullptr);
+            if (! song.hasProperty (IDs::audioGain))
+                song.setProperty (IDs::audioGain, 0.8, nullptr);
+        });
+    }
+
+    // x: where in the grid it was right-clicked (-1: from the label), for "bar 1 is here" and fitting the tempo.
+    void audioMenu (int x)
+    {
+        auto song = current();
+        const auto has = song[IDs::audioFile].toString().isNotEmpty();
+        const auto offset = (double) song.getProperty (IDs::audioOffset, 0.0);
+        const auto beat = x >= 0 ? grid.beatAt (x) : -1.0;
+        const auto fileSeconds = beat >= 0.0 ? songs::beatToSeconds (song, beat) + offset : -1.0;   // the audio under the mouse
+        const auto nearestBar = beat >= 0.0 ? juce::jmax (2, songs::barNumberAt (song, beat + songs::barBeats (songs::sectionAt (song, beat)) / 2.0)) : 2;
+        juce::PopupMenu m;
+        m.addSectionHeader (has ? juce::File (song[IDs::audioFile].toString()).getFileName() : juce::String ("Backing track"));
+        if (has && beat >= 0.0)
+        {
+            m.addItem (10, "Bar 1 starts here in the audio");
+            m.addItem (11, "Bar " + juce::String (nearestBar) + " starts here (fit the tempo)...");
+            m.addSeparator();
+        }
+        m.addItem (1, has ? "Replace..." : "Add audio...");
+        juce::PopupMenu vol;
+        for (int pct : { 100, 80, 60, 40, 20 })
+            vol.addItem (100 + pct, juce::String (pct) + "%", true, juce::roundToInt ((double) song.getProperty (IDs::audioGain, 0.8) * 100.0) == pct);
+        m.addSubMenu ("Volume", vol, has);
+        m.addItem (2, "Set where bar 1 is in the file...", has);
+        m.addItem (3, "Bar 1 at the file's start", has);
+        m.addSeparator();
+        m.addItem (4, "Remove", has);
+        juce::Component::SafePointer<SongBuilder> safe (this);
+        m.showMenuAsync (juce::PopupMenu::Options(), [safe, song, fileSeconds, nearestBar] (int r) mutable
+        {
+            if (safe == nullptr)
+                return;
+            if (r == 10)
+                song.setProperty (IDs::audioOffset, std::round (fileSeconds * 1000.0) / 1000.0, nullptr);
+            else if (r == 11)
+                askText ("Which bar starts at this point in the audio? Every section's tempo is scaled so it lands there.",
+                         juce::String (nearestBar), [song, fileSeconds] (const juce::String& t) mutable
+                {
+                    if (t.getIntValue() > 1 && ! songs::fitTempoToAudio (song, t.getIntValue(), fileSeconds))
+                        juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "Fit the tempo",
+                                                                "That point is before bar 1 in the audio: set where bar 1 is first.");
+                });
+            else if (r == 1)
+                safe->chooseAudio();
+            else if (r > 100)
+                song.setProperty (IDs::audioGain, (r - 100) / 100.0, nullptr);
+            else if (r == 2)
+                askText ("Bar 1 is this many seconds into the file (negative: the audio starts after bar 1)",
+                         juce::String ((double) song.getProperty (IDs::audioOffset, 0.0), 3), [song] (const juce::String& t) mutable
+                {
+                    if (t.isNotEmpty())
+                        song.setProperty (IDs::audioOffset, t.getDoubleValue(), nullptr);
+                });
+            else if (r == 3)
+                song.setProperty (IDs::audioOffset, 0.0, nullptr);
+            else if (r == 4)
+            {
+                song.removeProperty (IDs::audioFile, nullptr);
+                song.removeProperty (IDs::audioOffset, nullptr);
+            }
+        });
+    }
+
+    // The songs list's selection: `picked` (uids); the open song is the last one clicked.
+    bool isPicked (const juce::ValueTree& song) const { return picked.contains (song[IDs::uid].toString()); }
+
+    std::vector<juce::ValueTree> pickedSongs()
+    {
+        std::vector<juce::ValueTree> list;
+        for (auto song : state.getChildWithName (IDs::Songs))
+            if (isPicked (song))
+                list.push_back (song);
+        if (list.empty() && current().isValid())
+            list.push_back (current());
+        return list;
+    }
+
+    void songClicked (juce::ValueTree song)
+    {
+        const auto mods = juce::ModifierKeys::currentModifiers;
+        const auto uid = song[IDs::uid].toString();
+        auto list = state.getChildWithName (IDs::Songs);
+        if (mods.isCommandDown() || mods.isCtrlDown())
+        {
+            if (picked.isEmpty() && current().isValid())
+                picked.add (current()[IDs::uid].toString());
+            if (picked.contains (uid) && picked.size() > 1)
+                picked.removeString (uid);
+            else
+                picked.addIfNotAlreadyThere (uid);
+        }
+        else if (mods.isShiftDown() && current().isValid())
+        {
+            const auto a = list.indexOf (current()), b = list.indexOf (song);
+            picked.clear();
+            for (int i = juce::jmin (a, b); i <= juce::jmax (a, b); ++i)
+                picked.add (list.getChild (i)[IDs::uid].toString());
+            listContent.grabKeyboardFocus();
+            rebuild();
+            return;   // the open song stays
+        }
+        else
+            picked = { uid };
+        listContent.grabKeyboardFocus();
+        if (song != current())
+            state.setProperty (IDs::selectedSong, uid, nullptr);
+        else
+            rebuild();
+    }
+
+    bool songKey (const juce::KeyPress& k)
+    {
+        const auto cmd = juce::ModifierKeys::commandModifier;
+        if (k == juce::KeyPress ('c', cmd, 0)) { copySongs(); return true; }
+        if (k == juce::KeyPress ('x', cmd, 0)) { copySongs(); deleteSongs (false); return true; }
+        if (k == juce::KeyPress ('v', cmd, 0)) { pasteSongs (songClipboard); return true; }
+        if (k == juce::KeyPress ('d', cmd, 0))
+        {
+            std::vector<juce::ValueTree> copies;
+            for (const auto& song : pickedSongs())
+                copies.push_back (song.createCopy());
+            pasteSongs (copies);
+            return true;
+        }
+        if (k == juce::KeyPress ('a', cmd, 0))
+        {
+            picked.clear();
+            for (const auto& song : state.getChildWithName (IDs::Songs))
+                picked.add (song[IDs::uid].toString());
+            rebuild();
+            return true;
+        }
+        if (k == juce::KeyPress::deleteKey || k == juce::KeyPress::backspaceKey) { deleteSongs (true); return true; }
+        if (k == juce::KeyPress::escapeKey) { picked.clear(); rebuild(); return true; }
+        return false;
+    }
+
+    void copySongs()
+    {
+        songClipboard.clear();
+        for (const auto& song : pickedSongs())
+            songClipboard.push_back (song.createCopy());
+    }
+
+    // After the last picked song, as new copies ("Name (copy)"), which become the selection.
+    void pasteSongs (const std::vector<juce::ValueTree>& from)
+    {
+        if (from.empty())
+            return;
+        auto list = songs::songsNode (state);
+        int at = list.getNumChildren();
+        for (const auto& song : pickedSongs())
+            at = juce::jmax (at == list.getNumChildren() ? -1 : at, list.indexOf (song) + 1);
+        if (at < 0)
+            at = list.getNumChildren();
+        picked.clear();
+        juce::String last;
+        for (const auto& song : from)
+        {
+            auto copy = songs::copySong (song, song[IDs::name].toString() + " (copy)");
+            list.addChild (copy, at++, nullptr);
+            picked.add (last = copy[IDs::uid].toString());
+        }
+        state.setProperty (IDs::selectedSong, last, nullptr);
+    }
+
+    void deleteSongs (bool ask)
+    {
+        auto doomed = pickedSongs();
+        if (doomed.empty())
+            return;
+        auto run = [this, doomed]
+        {
+            auto list = state.getChildWithName (IDs::Songs);
+            for (auto song : doomed)
+                list.removeChild (song, nullptr);
+            picked.clear();
+        };
+        if (! ask)
+        {
+            run();
+            return;
+        }
+        const auto what = doomed.size() == 1 ? "\"" + doomed.front()[IDs::name].toString() + "\""
+                                             : juce::String ((int) doomed.size()) + " songs";
+        auto* w = new juce::AlertWindow ("Delete song" + juce::String (doomed.size() == 1 ? "" : "s"),
+                                         "Delete " + what + " and their cues? Clips already in your DAW aren't affected.",
+                                         juce::MessageBoxIconType::NoIcon);
+        w->addButton ("Delete", 1);
+        w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+        juce::Component::SafePointer<SongBuilder> safe (this);
+        w->enterModalState (true, juce::ModalCallbackFunction::create ([safe, run] (int res)
+        {
+            if (safe != nullptr && res == 1)
+                run();
+        }), true);
     }
 
     void chooseSaveSong (juce::ValueTree song)
@@ -1548,11 +2881,16 @@ private:
         juce::DialogWindow::LaunchOptions o;
         o.dialogTitle = "Export MIDI file(s)";
         o.dialogBackgroundColour = background;
-        o.content.setOwned (new ExportPanel (song, [safe] (bool filePerTrack)
+        // The export's count-in follows the song card's, or 1 bar when that's off.
+        const auto bars = juce::jmax (1, juce::jlimit (0, 2, (int) state.getChildWithName (IDs::Songs).getProperty (IDs::countIn, 1)));
+        o.content.setOwned (new ExportPanel (song, bars, [safe, bars] (int mode, bool withCountIn)
         {
             if (safe == nullptr)
                 return;
-            if (filePerTrack)
+            safe->exportCountIn = withCountIn ? bars : 0;
+            if (mode == 2)
+                safe->choosePackageFolder ({ safe->current() });
+            else if (mode == 1)
                 safe->chooseExportFolder();
             else
                 safe->chooseExportFile();
@@ -1562,6 +2900,88 @@ private:
         o.resizable = false;
         o.componentToCentreAround = this;
         o.launchAsync();
+    }
+
+    // A song package for a backing-track player, in a folder named after the song: the cues (MIDI), the click (WAV) and the
+    // backing track lined up with bar 1 (WAV), all starting together (with the count-in when asked). Returns a problem or "".
+    juce::String writePackage (const juce::ValueTree& song, const juce::File& folder)
+    {
+        const auto dir = folder.getChildFile (juce::File::createLegalFileName (song[IDs::name].toString()));
+        if (! dir.createDirectory())
+            return "Couldn't make " + dir.getFullPathName();
+        const auto name = juce::File::createLegalFileName (song[IDs::name].toString());
+        const auto counted = songs::withCountIn (song, exportCountIn);
+        {
+            const auto midi = songs::songMidi (counted, songs::includedTracks (counted));
+            juce::MemoryOutputStream data;
+            const auto file = dir.getChildFile (name + " - cues.mid");
+            if (! midi.writeTo (data, 1) || ! file.replaceWithData (data.getData(), data.getDataSize()))
+                return "Couldn't write " + file.getFullPathName();
+        }
+        constexpr double rate = 48000.0;
+        const auto settings = state.getChildWithName (IDs::Songs);
+        const auto click = songs::renderClickTrack (song, exportCountIn, rate, clickSound());
+        if (const auto problem = writeWav (click, rate, dir.getChildFile (name + " - click.wav")); problem.isNotEmpty())
+            return problem;
+        const auto audioPath = song[IDs::audioFile].toString();
+        if (audioPath.isNotEmpty() && juce::File (audioPath).existsAsFile())
+        {
+            const auto backing = proc.songAudio.renderBacking (juce::File (audioPath), (double) song.getProperty (IDs::audioOffset, 0.0),
+                                                               songs::countInSeconds (song, 0.0, exportCountIn),
+                                                               click.getNumSamples() / rate, rate,
+                                                               (float) (double) song.getProperty (IDs::audioGain, 0.8));
+            if (const auto problem = writeWav (backing, rate, dir.getChildFile (name + " - backing.wav")); problem.isNotEmpty())
+                return problem;
+        }
+        return {};
+    }
+
+    static juce::String writeWav (const juce::AudioBuffer<float>& audio, double rate, const juce::File& file)
+    {
+        file.deleteFile();
+        auto stream = file.createOutputStream();
+        if (stream == nullptr)
+            return "Couldn't write " + file.getFullPathName();
+        juce::WavAudioFormat wav;
+        std::unique_ptr<juce::AudioFormatWriter> writer (wav.createWriterFor (stream.get(), rate, (unsigned int) audio.getNumChannels(), 24, {}, 0));
+        if (writer == nullptr)
+            return "Couldn't write " + file.getFullPathName();
+        stream.release();   // the writer owns it now
+        writer->writeFromAudioSampleBuffer (audio, 0, audio.getNumSamples());
+        return {};
+    }
+
+    // One song, or the whole setlist (numbered "01 Name", "02 Name"... in the list's order): a package each.
+    void choosePackageFolder (std::vector<juce::ValueTree> list)
+    {
+        if (list.empty())
+            return;
+        chooser = std::make_unique<juce::FileChooser> (list.size() == 1 ? "Choose a folder for the song package" : "Choose a folder for the setlist",
+                                                       juce::File::getSpecialLocation (juce::File::userDocumentsDirectory));
+        juce::Component::SafePointer<SongBuilder> safe (this);
+        chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectDirectories, [safe, list] (const juce::FileChooser& fc)
+        {
+            const auto folder = fc.getResult();
+            if (safe == nullptr || folder == juce::File() || ! folder.isDirectory())
+                return;
+            juce::StringArray problems;
+            int n = 1;
+            for (const auto& song : list)
+            {
+                auto target = folder;
+                if (list.size() > 1)
+                {
+                    target = folder.getChildFile (juce::String (n++).paddedLeft ('0', 2) + " " + juce::File::createLegalFileName (song[IDs::name].toString()));
+                    target.createDirectory();
+                }
+                if (const auto problem = safe->writePackage (song, target); problem.isNotEmpty())
+                    problems.add (problem);
+            }
+            if (! problems.isEmpty())
+                juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "Export", problems.joinIntoString ("\n"));
+            else
+                folder.revealToUser();
+        });
     }
 
     // A file per ticked track, "Song - Track.mid", in the folder the user picks.
@@ -1583,7 +3003,7 @@ private:
                     continue;
                 const auto name = juce::File::createLegalFileName (song[IDs::name].toString() + " - " + track[IDs::name].toString());
                 const auto target = folder.getChildFile (name + ".mid");
-                const auto midi = songs::songMidi (song, { track[IDs::uid].toString() });
+                const auto midi = songs::songMidi (songs::withCountIn (song, safe->exportCountIn), { track[IDs::uid].toString() });
                 juce::MemoryOutputStream data;
                 if (midi.writeTo (data, 1) && target.replaceWithData (data.getData(), data.getDataSize()))
                     written.add (target.getFileName());
@@ -1610,7 +3030,7 @@ private:
             if (safe == nullptr || fc.getResult() == juce::File())
                 return;
             auto target = fc.getResult().withFileExtension ("mid");
-            const auto midi = songs::songMidi (song, songs::includedTracks (song));
+            const auto midi = songs::songMidi (songs::withCountIn (song, safe->exportCountIn), songs::includedTracks (song));
             juce::MemoryOutputStream data;
             if (! midi.writeTo (data, 1) || ! target.replaceWithData (data.getData(), data.getDataSize()))
                 juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::NoIcon, "Export MIDI file", "Couldn't write " + target.getFullPathName());
@@ -1623,17 +3043,36 @@ private:
     Section listSection { "songs.list", "Songs", "beta", builderViolet };
     juce::TextButton addSong { "+ Song" }, importSong { "Import song..." };
     juce::Viewport listView;
-    juce::Component listContent;
+    SongList listContent;
     juce::OwnedArray<Tile> songRows;
 
     Section songSection { "songs.song", "Song", "drag it into your DAW, or export it", builderViolet };
     juce::Label songName, summary;
     DragSongButton dragSong;
-    juce::TextButton exportSong, saveSong, play;
+    juce::TextButton exportSong, saveSong, play, clickButton;
+    bool looping = false, setlistPlaying = false;
+    double loopStart = 0.0, loopEnd = 0.0, nextLoopAt = 0.0;
+    juce::ToggleButton metronomeToggle, snapToggle;
+    juce::ComboBox countInBox, gridBox;
+    juce::TextButton zoomOut { "-" }, zoomIn { "+" }, zoomFit { "Fit" }, shorter { "-" }, taller { "+" };
+    juce::Label heightLabel;
+    double zoom = 1.0, lead = 0.0;   // lead: the count-in, in seconds
+    juce::AudioThumbnailCache thumbnailCache { 4 };
+    juce::AudioThumbnail thumbnail { 512, proc.songAudio.formats(), thumbnailCache };
+    juce::String thumbnailFile;
+    AudioLabel audioLabel;
+    ClickLabel clickLabel;
+    juce::String clickSamplesKey;   // the custom click samples loaded (paths)
+    std::shared_ptr<juce::AudioBuffer<float>> accentSample, beatSample;
+    double samplesRate = 48000.0;
+    juce::StringArray picked;   // songs selected in the list (uids)
+    static inline std::vector<juce::ValueTree> songClipboard;
     juce::ValueTree playing;
     double playFrom = 0.0, playStarted = 0.0;
+    int exportCountIn = 0;   // bars of count-in the next export starts with
 
-    Section gridSection { "songs.grid", "Arrangement", "drag tiles in from the tabs; click a spot to play or paste there", builderViolet };
+    Section gridSection { "songs.grid", "Arrangement", "drag tiles in from the tabs", builderViolet };
+    juce::Label gridLabel;
     juce::TextButton addSection, addTrack;
     juce::Viewport tracksView;    // scrolls the tracks up and down
     juce::Component tracksArea;
@@ -1675,7 +3114,7 @@ std::unique_ptr<juce::DocumentWindow> makeSongBuilderWindow (PedalCuesProcessor&
 
 std::unique_ptr<juce::Component> makeSongExportPanel (juce::ValueTree song)
 {
-    return std::make_unique<ExportPanel> (song, nullptr);
+    return std::make_unique<ExportPanel> (song, 1, nullptr);
 }
 
 std::unique_ptr<juce::Component> makeSongBuilder (PedalCuesProcessor& p, std::function<juce::String()> deviceName)

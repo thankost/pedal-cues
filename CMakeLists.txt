@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum macOS version")
 set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Universal binary")
 
-project(PedalCues VERSION 0.10.0 LANGUAGES C CXX)
+project(PedalCues VERSION 0.11.0 LANGUAGES C CXX)
 
 option(PEDALCUES_COPY_PLUGIN "Install plugins into the system plug-in folders after building" ON)
 
@@ -95,11 +95,13 @@ target_sources(PedalCues PRIVATE
     Source/MidiNameSync.cpp
     Source/Songs.cpp
     Source/SongBuilder.cpp
+    Source/SongAudio.cpp
     Source/MidiNameSyncDialog.cpp
     Source/StandaloneApp.cpp)
 
 target_compile_definitions(PedalCues PUBLIC
     JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1
+    JUCE_USE_MP3AUDIOFORMAT=1
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0)
@@ -160,9 +162,10 @@ if(PEDALCUES_BUILD_DOCS)
         Source/MidiNameSync.cpp
     Source/Songs.cpp
     Source/SongBuilder.cpp
+    Source/SongAudio.cpp
         Source/MidiNameSyncDialog.cpp)
     target_compile_definitions(DocShots PRIVATE
-        JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0 JUCE_USE_MP3AUDIOFORMAT=1
         JucePlugin_Name="PedalCues"
         JucePlugin_VersionString="${PROJECT_VERSION}")
     target_link_libraries(DocShots PRIVATE juce::juce_audio_utils hidapi::hidapi

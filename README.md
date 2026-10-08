@@ -65,7 +65,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - **Whammy DT Drop Tune:** Shift Up and Shift Down tiles, 1–7 semitones, Oct and Oct + Dry, on or bypassed (Program Change 43–78)
 - Optional "heel before mode change" (`CC#11 = 0`)
 - Treadle moves on `CC#11`: Ramp Up, Ramp Down, Rise & Fall, Dive, Trill (1/16), Bend to Bar, Toe, Heel
-- Draw your own treadle move with the mouse, then drag it onto the timeline like any other move
+- Draw your own treadle move with the mouse, then drag it onto the timeline like any other move: points and lines like a DAW envelope (curve shapes, multi-select, scale and tilt, freehand, undo / redo, a grid), or in a **Larger editor** window
 - **Wave...** in Draw mode generates a sine, triangle, square or saw (waves, phase, shape, low / high, grow, speed), like Reaper's CC LFO; on the treadle and on every expression pedal
 - **Import MIDI...** in every Draw mode: load a move you drew as CC automation in your DAW from a `.mid` file and reuse it in any song (saved in My drawings)
 - **My drawings:** save your drawn moves by name, load them to reuse or edit, rename or delete them. Kept on your computer
@@ -77,6 +77,8 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - Sections along the top (name, bars, time signature, tempo) and a track per device; drag tiles in from the tabs (or `.mid` clips), copy / paste / duplicate cues
 - **Play** the song to your devices; **drag it into the DAW** as one MIDI file with the tempo map, time signatures and section markers, or **export** one file or a file per track (e.g. for a backing-track player)
 - A MIDI channel per track (rewrites its cues), **Duplicate** a track for a second player; save songs as `.pedalcues-song` files and import songs from MIDI files
+- **Backing-track creator:** a click track with a count-in and a click per section (beat, 1/8, 1/16, triplets...), your own click sounds, a backing track (MP3 / WAV / AIFF / FLAC) to line up with bar 1 and fit the tempo to, the click on one side and the backing track on the other; export a **song package** (cues MIDI + click WAV + backing WAV) or a whole setlist, or drag the click and backing track into the DAW
+- Any time signature (37/8 too), grid and snap, zoom and track height, mute / solo, loop a section, tap a tempo, play the setlist
 
 **Workflow**
 - **Search every list:** presets on the Quad Cortex, Fractal, Line 6, HeadRush, Darkglass and Nano Cortex pages, Kemper performances, custom device tiles and the device list. Forgiving: letters in order (`drpc` finds *Drop C Heavy*), one typo, or a location like `SL2` / `3B`
@@ -171,7 +173,8 @@ Source/QcUsb.*, QcSyncDialog.cpp  Sync from QC (USB, read-only)
 Source/WhammyPage.cpp    Whammy V / DT page
 Source/SettingsPage.cpp  MIDI strip (channel, Test), How to connect window (DAW tracks, standalone port) and the wiring guide
 Source/Songs.*           Song Builder model: sections, tracks, cues, song MIDI export, DAW map / song import, song files
-Source/SongBuilder.cpp   Song Builder window (arrangement, export window, playback)
+Source/SongBuilder.cpp   Song Builder window (arrangement, click lane, backing track, export window, playback)
+Source/SongAudio.*       Song Builder audio: the metronome and the backing track during Play, and the WAV renders
 Source/Tour.*            quick-tour overlay (steps + spotlight)
 Tools/DocShots.cpp       renders docs/images/*.png
 docs/GUIDE.md            user guide

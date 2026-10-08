@@ -301,6 +301,7 @@ void PedalCuesEditor::closeTour (bool)
 void PedalCuesEditor::setHelpInMenuBar (bool inMenuBar)
 {
     helpButton.setVisible (! inMenuBar);
+    resized();
 }
 
 void PedalCuesEditor::showAboutDialog()
@@ -922,8 +923,10 @@ void PedalCuesEditor::paint (juce::Graphics& g)
 
 juce::Rectangle<float> PedalCuesEditor::tempoPill() const
 {
-    auto right = getLocalBounds().removeFromTop (64).reduced (18, 0);
-    right.removeFromRight (44 + songButtonWidth + 14);   // the ☰ menu, the Song Builder button and the gap before it
+    // The header's right end lines up with the MIDI strip's (where Saved ends).
+    auto right = getLocalBounds().removeFromTop (64).reduced (18, 0).withTrimmedRight (10);
+    right.removeFromRight ((helpButton.isVisible() ? 44 : 0) + songButtonWidth + 14);   // the ☰ menu (not when it's in the
+                                                                                        // menu bar), Song Builder and the gap
     return right.removeFromRight (190).withSizeKeepingCentre (190, 30).toFloat();
 }
 
@@ -1033,9 +1036,9 @@ void PedalCuesEditor::layoutContent()
 
 void PedalCuesEditor::resized()
 {
-    auto header = getLocalBounds().removeFromTop (64).reduced (18, 13);
+    auto header = getLocalBounds().removeFromTop (64).reduced (18, 13).withTrimmedRight (10);   // ends where the strip's Saved ends
 
-    helpButton.setBounds (header.removeFromRight (38).withSizeKeepingCentre (34, 34));
+    helpButton.setBounds (header.removeFromRight (34).withSizeKeepingCentre (34, 34));
     updateBadge.setBounds (18 + 40 + 10, 36, 240, 20);
 
     // The amp tab is wider: it holds its ▾ unit menu; the pedals tab has a ▾ too.

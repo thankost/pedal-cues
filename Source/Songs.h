@@ -4,6 +4,7 @@
 
 #include <juce_data_structures/juce_data_structures.h>
 
+#include <memory>
 #include <vector>
 
 // Song Builder (beta): a song is a list of sections (name, bars, time signature, tempo) and tracks the user names (one per
@@ -17,6 +18,12 @@
 //                                               cc0IsControl, padCc, events }
 namespace songs
 {
+// What a section can be. The time signature follows what a MIDI file can store: up to 255 beats in a bar, and a note value
+// that's a power of two (1-64). The tempo and length ranges are just generous.
+constexpr int maxBeatsPerBar = 255, maxBars = 9999;
+constexpr double minBpm = 10.0, maxBpm = 960.0;
+inline bool isNoteValue (int den) { return den >= 1 && den <= 64 && (den & (den - 1)) == 0; }
+
 juce::ValueTree songsNode (juce::ValueTree root);                 // created when missing
 juce::ValueTree createSong (const juce::String& name);            // one 8-bar "Intro" at 120 BPM, 4/4, no tracks yet
 juce::ValueTree createSection (const juce::String& name, int bars, int timeNum, int timeDen, double bpm);
@@ -34,6 +41,23 @@ juce::ValueTree sectionByUid (const juce::ValueTree& song, const juce::String& u
 juce::String barLabel (const juce::ValueTree& song, double beat);       // "Bar 9" or "Bar 9, beat 3"
 double beatToSeconds (const juce::ValueTree& song, double beat);         // through each section's tempo
 double secondsToBeat (const juce::ValueTree& song, double seconds);
+
+// The metronome from a beat: a click on every beat of each section's time signature (the eighth in 7/8), accented on bar
+// starts, through the tempo map; countInBars bars of clicks first (in the starting section's time signature and tempo).
+// Times are seconds from pressing Play; countInSeconds is how long the count-in lasts (the song's MIDI starts after it).
+struct Click { double seconds; bool accent; bool sub = false; };   // accent: a bar's first beat; sub: between the beats
+double countInSeconds (const juce::ValueTree& song, double fromBeat, int countInBars);
+std::vector<Click> metronomeClicks (const juce::ValueTree& song, double fromBeat, int countInBars);
+
+// How a section's click counts (SongSection clickDiv): its beat, quarters, eighths, sixteenths, triplets, only bar starts,
+// or nothing. The count-in always counts the beat.
+juce::StringArray clickDivNames();   // "Beat", "1/4", "1/8", "1/16", "1/8 T", "1/16 T", "Bars only", "Off"
+double clickStepBeats (const juce::ValueTree& section);   // 0: no click in it
+
+// Grid steps for snapping (quarter notes): 0 = the section's beat, then bar, 1/2, 1/4, 1/8, 1/16, 1/32, 1/4T, 1/8T, 1/16T.
+juce::StringArray gridStepNames();
+double gridStepBeats (int step, const juce::ValueTree& section);
+double snapBeat (const juce::ValueTree& song, double beat, int step);   // to the grid, counted from its section's start
 
 // Play from a beat: the chosen tracks' messages (with their channels) at seconds from that beat, through the tempo map.
 std::vector<std::pair<double, juce::MidiMessage>> playbackEvents (const juce::ValueTree& song, const juce::StringArray& trackUids,
@@ -77,6 +101,42 @@ double clipLength (const std::vector<ClipCue>&);   // from the first cue's start
 juce::MidiFile songMidi (const juce::ValueTree& song, const juce::StringArray& trackUids, bool singleTrack = false);
 juce::File writeSongFile (const juce::ValueTree& song, const juce::StringArray& trackUids, bool singleTrack = false,
                           const juce::String& fileName = {});
+
+// ---- Backing-track creator --------------------------------------------------------------------------------------
+// A copy of the song with `bars` bars of count-in in front (the first section's time signature and tempo, named
+// "Count-in"), for exports that start with it; cues keep their places.
+juce::ValueTree withCountIn (const juce::ValueTree& song, int bars);
+
+// The click: its sound (0 beep, 1 click, 2 wood block, 3 cowbell), an accented first beat, volume.
+struct ClickSound
+{
+    int sound = 0;              // 0 beep, 1 click, 2 wood block, 3 cowbell, 4 custom samples
+    bool accent = true;
+    float gain = 0.7f;
+    // Custom samples (sound 4), mono at sampleRate: the accent and the beat (the beat one also plays the subdivisions, softer).
+    std::shared_ptr<juce::AudioBuffer<float>> accentSample, beatSample;
+    double sampleRate = 48000.0;
+};
+juce::StringArray clickSoundNames();
+ClickSound clickSettings (const juce::ValueTree& songsNode);
+constexpr double clickSeconds = 0.05;
+float clickSample (const ClickSound&, bool accented, double t, juce::Random* noise = nullptr, bool sub = false);   // t: seconds in
+double clickLength (const ClickSound&);   // seconds: clickSeconds, or the longest custom sample (up to 2 s)
+// The whole song's click as audio (mono), from the count-in (if any) to the end plus tailSeconds of silence.
+juce::AudioBuffer<float> renderClickTrack (const juce::ValueTree& song, int countInBars, double sampleRate, const ClickSound&,
+                                           double tailSeconds = 2.0);
+
+// Fit the tempo to the audio: make bar `bar` (1 = the first) start at `fileSeconds` in the backing track, bar 1 staying at
+// the song's audio offset, by scaling every section's tempo by the same factor. False when it can't (bar 1, or before it).
+bool fitTempoToAudio (juce::ValueTree song, int bar, double fileSeconds);
+double barStartBeat (const juce::ValueTree& song, int bar);   // 1-based, through the time signatures
+int barNumberAt (const juce::ValueTree& song, double beat);   // 1-based
+double tempoFromTaps (const std::vector<double>& tapSeconds); // BPM from the median gap (0 below 2 taps)
+
+// Play: the tracks it plays (ticked, not muted; only the soloed ones when any is soloed).
+juce::StringArray playedTracks (const juce::ValueTree& song);
+// The section Play loops, if any (its start and end beat).
+bool loopRange (const juce::ValueTree& song, double& start, double& end);
 
 // Song files (.pedalcues-song): one song with its sections, tracks and cues, to keep or share. Opening one gives it new
 // ids (copySong), so the same file can be opened twice or into a project that already has it.

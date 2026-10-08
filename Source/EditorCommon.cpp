@@ -38,11 +38,16 @@ void Section::paint (juce::Graphics& g)
 SaveIndicator::SaveIndicator (PedalCuesProcessor& p) : proc (p)
 {
     setInterceptsMouseClicks (true, false);
-    setTooltip (proc.autoSave.writesToDisk()
-                    ? "PedalCues saves every change automatically on this computer, a moment after you make it."
-                    : "PedalCues keeps every change in your DAW project automatically. Save the project in your DAW to "
-                      "keep it on disk, as you do for the rest of the song.");
     startTimerHz (20);
+}
+
+// Worked out on hover: the standalone app switches on its own saving after the window is built.
+juce::String SaveIndicator::getTooltip()
+{
+    return proc.autoSave.writesToDisk()
+               ? "Your devices, presets, songs and settings are saved automatically by PedalCues. Nothing to do."
+               : "Your devices, presets, songs and settings are saved automatically by PedalCues, with your DAW "
+                 "project: just save the project as usual.";
 }
 
 float SaveIndicator::wordsAlpha() const

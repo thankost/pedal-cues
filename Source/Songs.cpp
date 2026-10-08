@@ -16,10 +16,10 @@ juce::String newUid() { return juce::Uuid().toString(); }
 
 int clampDen (int den)
 {
-    for (int d : { 1, 2, 4, 8, 16, 32 })
+    for (int d : { 1, 2, 4, 8, 16, 32, 64 })
         if (den <= d)
             return d;
-    return 32;
+    return 64;
 }
 
 // Events as text: "beat:hexbytes" separated by spaces, e.g. "0:b00000 0:c005 0.25:b02b01".
@@ -67,10 +67,10 @@ juce::ValueTree createSection (const juce::String& name, int bars, int timeNum, 
     juce::ValueTree s (IDs::SongSection);
     s.setProperty (IDs::name, name, nullptr);
     s.setProperty (IDs::uid, newUid(), nullptr);
-    s.setProperty (IDs::bars, juce::jlimit (1, 999, bars), nullptr);
-    s.setProperty (IDs::timeNum, juce::jlimit (1, 32, timeNum), nullptr);
+    s.setProperty (IDs::bars, juce::jlimit (1, maxBars, bars), nullptr);
+    s.setProperty (IDs::timeNum, juce::jlimit (1, maxBeatsPerBar, timeNum), nullptr);
     s.setProperty (IDs::timeDen, clampDen (timeDen), nullptr);
-    s.setProperty (IDs::bpm, juce::jlimit (20.0, 400.0, bpm), nullptr);
+    s.setProperty (IDs::bpm, juce::jlimit (minBpm, maxBpm, bpm), nullptr);
     return s;
 }
 
@@ -98,7 +98,7 @@ juce::ValueTree selectedSong (juce::ValueTree root)
 //==============================================================================
 double barBeats (const juce::ValueTree& section)
 {
-    const auto num = juce::jlimit (1, 32, (int) section.getProperty (IDs::timeNum, 4));
+    const auto num = juce::jlimit (1, maxBeatsPerBar, (int) section.getProperty (IDs::timeNum, 4));
     const auto den = clampDen ((int) section.getProperty (IDs::timeDen, 4));
     return num * 4.0 / den;
 }
@@ -145,7 +145,7 @@ double songSeconds (const juce::ValueTree& song)
     double seconds = 0.0;
     for (const auto& s : song)
         if (s.hasType (IDs::SongSection))
-            seconds += sectionLengthBeats (s) * 60.0 / juce::jlimit (20.0, 400.0, (double) s.getProperty (IDs::bpm, 120.0));
+            seconds += sectionLengthBeats (s) * 60.0 / juce::jlimit (minBpm, maxBpm, (double) s.getProperty (IDs::bpm, 120.0));
     return seconds;
 }
 
@@ -210,7 +210,7 @@ double beatToSeconds (const juce::ValueTree& song, double beat)
         if (! s.hasType (IDs::SongSection))
             continue;
         const auto length = sectionLengthBeats (s);
-        const auto spb = 60.0 / juce::jlimit (20.0, 400.0, (double) s.getProperty (IDs::bpm, 120.0));
+        const auto spb = 60.0 / juce::jlimit (minBpm, maxBpm, (double) s.getProperty (IDs::bpm, 120.0));
         if (beat <= start + length)
             return seconds + (beat - start) * spb;
         seconds += length * spb;
@@ -227,7 +227,7 @@ double secondsToBeat (const juce::ValueTree& song, double seconds)
         if (! s.hasType (IDs::SongSection))
             continue;
         const auto length = sectionLengthBeats (s);
-        const auto spb = 60.0 / juce::jlimit (20.0, 400.0, (double) s.getProperty (IDs::bpm, 120.0));
+        const auto spb = 60.0 / juce::jlimit (minBpm, maxBpm, (double) s.getProperty (IDs::bpm, 120.0));
         if (seconds <= elapsed + length * spb)
             return start + (seconds - elapsed) / spb;
         elapsed += length * spb;
@@ -505,8 +505,8 @@ juce::MidiFile songMidi (const juce::ValueTree& song, const juce::StringArray& t
     {
         if (! s.hasType (IDs::SongSection))
             continue;
-        const auto bpm = juce::jlimit (20.0, 400.0, (double) s.getProperty (IDs::bpm, 120.0));
-        const auto num = juce::jlimit (1, 32, (int) s.getProperty (IDs::timeNum, 4));
+        const auto bpm = juce::jlimit (minBpm, maxBpm, (double) s.getProperty (IDs::bpm, 120.0));
+        const auto num = juce::jlimit (1, maxBeatsPerBar, (int) s.getProperty (IDs::timeNum, 4));
         const auto den = clampDen ((int) s.getProperty (IDs::timeDen, 4));
         if (std::abs (bpm - lastBpm) > 1.0e-6)
             conductor.addEvent (juce::MidiMessage::tempoMetaEvent (juce::roundToInt (60000000.0 / bpm)), toTicks (beat));
@@ -560,6 +560,108 @@ juce::MidiFile songMidi (const juce::ValueTree& song, const juce::StringArray& t
     return file;
 }
 
+double countInSeconds (const juce::ValueTree& song, double fromBeat, int countInBars)
+{
+    const auto section = sectionAt (song, fromBeat);
+    if (! section.isValid() || countInBars <= 0)
+        return 0.0;
+    return countInBars * barBeats (section) * 60.0 / juce::jlimit (minBpm, maxBpm, (double) section.getProperty (IDs::bpm, 120.0));
+}
+
+juce::StringArray clickDivNames()
+{
+    return { "Beat", "1/4", "1/8", "1/16", "1/8 T", "1/16 T", "Bars only", "Off" };
+}
+
+double clickStepBeats (const juce::ValueTree& section)
+{
+    const auto beat = 4.0 / juce::jmax (1, (int) section.getProperty (IDs::timeDen, 4));
+    switch ((int) section.getProperty (IDs::clickDiv, 0))
+    {
+        case 1: return 1.0;
+        case 2: return 0.5;
+        case 3: return 0.25;
+        case 4: return 1.0 / 3.0;
+        case 5: return 1.0 / 6.0;
+        case 6: return barBeats (section);
+        case 7: return 0.0;
+        default: return beat;
+    }
+}
+
+std::vector<Click> metronomeClicks (const juce::ValueTree& song, double fromBeat, int countInBars)
+{
+    std::vector<Click> clicks;
+    const auto lead = countInSeconds (song, fromBeat, countInBars);
+    if (lead > 0.0)
+    {
+        const auto section = sectionAt (song, fromBeat);
+        const auto unit = 4.0 / juce::jmax (1, (int) section.getProperty (IDs::timeDen, 4));
+        const auto perBar = juce::roundToInt (barBeats (section) / unit);
+        const auto spb = 60.0 / juce::jlimit (minBpm, maxBpm, (double) section.getProperty (IDs::bpm, 120.0));
+        for (int i = 0; i < countInBars * perBar; ++i)
+            clicks.push_back ({ i * unit * spb, i % perBar == 0, false });
+    }
+    const auto startSeconds = beatToSeconds (song, fromBeat);
+    double start = 0.0;
+    for (const auto& s : song)
+    {
+        if (! s.hasType (IDs::SongSection))
+            continue;
+        const auto beatUnit = 4.0 / juce::jmax (1, (int) s.getProperty (IDs::timeDen, 4));
+        const auto step = clickStepBeats (s);
+        const auto bb = barBeats (s);
+        const auto length = sectionLengthBeats (s);
+        if (step > 0.0)
+            for (int k = 0; k * step < length - 1.0e-9; ++k)
+            {
+                const auto b = k * step;
+                const auto beat = start + b;
+                if (beat < fromBeat - 1.0e-9)
+                    continue;
+                const auto inBar = std::fmod (b, bb);
+                const auto onBar = inBar < 1.0e-6 || bb - inBar < 1.0e-6;
+                const auto inBeat = std::fmod (inBar, beatUnit);
+                const auto onBeat = inBeat < 1.0e-6 || beatUnit - inBeat < 1.0e-6;
+                clicks.push_back ({ lead + beatToSeconds (song, beat) - startSeconds, onBar, ! onBeat });
+            }
+        start += length;
+    }
+    return clicks;
+}
+
+juce::StringArray gridStepNames()
+{
+    return { "Beat", "Bar", "1/2", "1/4", "1/8", "1/16", "1/32", "1/4 T", "1/8 T", "1/16 T" };
+}
+
+double gridStepBeats (int step, const juce::ValueTree& section)
+{
+    switch (step)
+    {
+        case 1: return barBeats (section);
+        case 2: return 2.0;
+        case 3: return 1.0;
+        case 4: return 0.5;
+        case 5: return 0.25;
+        case 6: return 0.125;
+        case 7: return 2.0 / 3.0;
+        case 8: return 1.0 / 3.0;
+        case 9: return 1.0 / 6.0;
+        default: return 4.0 / juce::jmax (1, (int) section.getProperty (IDs::timeDen, 4));
+    }
+}
+
+double snapBeat (const juce::ValueTree& song, double beat, int step)
+{
+    const auto section = sectionAt (song, beat);
+    if (! section.isValid())
+        return juce::jmax (0.0, beat);
+    const auto start = sectionStartBeat (song, section);
+    const auto unit = gridStepBeats (step, section);
+    return juce::jmax (0.0, start + std::round ((beat - start) / unit) * unit);
+}
+
 std::vector<std::pair<double, juce::MidiMessage>> playbackEvents (const juce::ValueTree& song, const juce::StringArray& trackUids,
                                                                   double fromBeat)
 {
@@ -600,6 +702,178 @@ juce::File writeSongFile (const juce::ValueTree& song, const juce::StringArray& 
         name = "Song";
     const auto out = dir.getChildFile (name + ".mid");
     return out.replaceWithData (data.getData(), data.getDataSize()) ? out : juce::File();
+}
+
+//==============================================================================
+juce::ValueTree withCountIn (const juce::ValueTree& song, int bars)
+{
+    auto copy = song.createCopy();
+    const auto first = copy.getChildWithName (IDs::SongSection);
+    if (bars <= 0 || ! first.isValid())
+        return copy;
+    copy.addChild (createSection ("Count-in", bars, first[IDs::timeNum], first[IDs::timeDen], first[IDs::bpm]), copy.indexOf (first), nullptr);
+    return copy;
+}
+
+juce::StringArray clickSoundNames() { return { "Beep", "Click", "Wood block", "Cowbell", "Custom samples" }; }
+
+ClickSound clickSettings (const juce::ValueTree& node)
+{
+    ClickSound c;
+    c.sound = juce::jlimit (0, 4, (int) node.getProperty (IDs::clickSound, 0));
+    c.accent = (bool) node.getProperty (IDs::clickAccent, true);
+    c.gain = juce::jlimit (0.0f, 1.0f, (float) (double) node.getProperty (IDs::clickGain, 0.7));
+    return c;
+}
+
+double clickLength (const ClickSound& c)
+{
+    if (c.sound != 4)
+        return clickSeconds;
+    double longest = clickSeconds;
+    for (const auto& b : { c.accentSample, c.beatSample })
+        if (b != nullptr)
+            longest = juce::jmax (longest, b->getNumSamples() / c.sampleRate);
+    return juce::jmin (2.0, longest);
+}
+
+float clickSample (const ClickSound& c, bool accented, double t, juce::Random* noise, bool sub)
+{
+    const auto accent = accented && c.accent;
+    const auto level = sub ? 0.35 : (accent ? 0.95 : 0.65);
+    if (c.sound == 4)   // custom samples: the accent one on bar starts (else the beat one), the beat one for the rest
+    {
+        const auto& sample = accent && c.accentSample != nullptr ? c.accentSample : c.beatSample != nullptr ? c.beatSample : c.accentSample;
+        if (sample == nullptr || t < 0.0)
+            return 0.0f;
+        const auto i = (int) (t * c.sampleRate);
+        return i < sample->getNumSamples() ? sample->getSample (0, i) * c.gain * (float) (sub ? 0.5 : 1.0) : 0.0f;
+    }
+    if (t < 0.0 || t >= clickSeconds)
+        return 0.0f;
+    const auto twoPi = juce::MathConstants<double>::twoPi;
+    double v = 0.0;
+    switch (c.sound)
+    {
+        case 1:   // a short noise click
+            v = (noise != nullptr ? noise->nextFloat() * 2.0 - 1.0 : std::sin (twoPi * 3000.0 * t)) * std::exp (-t * 400.0);
+            break;
+        case 2:   // a wood block: two tones, quick decay
+            v = (0.7 * std::sin (twoPi * (accent ? 1250.0 : 950.0) * t) + 0.3 * std::sin (twoPi * (accent ? 2700.0 : 2100.0) * t))
+                * std::exp (-t * 180.0);
+            break;
+        case 3:   // a cowbell: two detuned squares-ish tones
+            v = (std::sin (twoPi * (accent ? 800.0 : 560.0) * t) + std::sin (twoPi * (accent ? 1200.0 : 845.0) * t)) * 0.5
+                * std::exp (-t * 60.0);
+            break;
+        default:  // a beep
+            v = std::sin (twoPi * (accent ? 1760.0 : 1320.0) * t) * std::exp (-t * 120.0);
+            break;
+    }
+    return (float) (v * c.gain * level);
+}
+
+juce::AudioBuffer<float> renderClickTrack (const juce::ValueTree& song, int countInBars, double sampleRate, const ClickSound& c,
+                                           double tailSeconds)
+{
+    const auto lead = countInSeconds (song, 0.0, countInBars);
+    const auto total = lead + songSeconds (song) + juce::jmax (0.0, tailSeconds);
+    juce::AudioBuffer<float> out (1, juce::jmax (1, (int) std::ceil (total * sampleRate)));
+    out.clear();
+    juce::Random noise (1234);
+    const auto len = (int) (clickLength (c) * sampleRate);
+    for (const auto& k : metronomeClicks (song, 0.0, countInBars))
+    {
+        const auto at = (int) std::round (k.seconds * sampleRate);
+        for (int i = 0; i < len && at + i < out.getNumSamples(); ++i)
+            out.addSample (0, at + i, clickSample (c, k.accent, i / sampleRate, &noise, k.sub));
+    }
+    return out;
+}
+
+double barStartBeat (const juce::ValueTree& song, int bar)
+{
+    double beat = 0.0;
+    int n = 1;
+    for (const auto& s : song)
+    {
+        if (! s.hasType (IDs::SongSection))
+            continue;
+        const auto bars = juce::jmax (1, (int) s.getProperty (IDs::bars, 1));
+        if (bar < n + bars)
+            return beat + (bar - n) * barBeats (s);
+        beat += sectionLengthBeats (s);
+        n += bars;
+    }
+    return beat;
+}
+
+int barNumberAt (const juce::ValueTree& song, double beat)
+{
+    double start = 0.0;
+    int n = 1;
+    for (const auto& s : song)
+    {
+        if (! s.hasType (IDs::SongSection))
+            continue;
+        const auto length = sectionLengthBeats (s);
+        if (beat < start + length - 1.0e-9)
+            return n + (int) std::floor ((beat - start) / barBeats (s) + 1.0e-9);
+        start += length;
+        n += juce::jmax (1, (int) s.getProperty (IDs::bars, 1));
+    }
+    return n;
+}
+
+bool fitTempoToAudio (juce::ValueTree song, int bar, double fileSeconds)
+{
+    const auto offset = (double) song.getProperty (IDs::audioOffset, 0.0);
+    const auto wanted = fileSeconds - offset;   // seconds from bar 1 to that bar, in the audio
+    const auto now = beatToSeconds (song, barStartBeat (song, bar));
+    if (bar <= 1 || wanted <= 0.05 || now <= 0.0)
+        return false;
+    const auto factor = now / wanted;           // faster when the audio gets there sooner
+    for (auto s : song)
+        if (s.hasType (IDs::SongSection))
+            s.setProperty (IDs::bpm, juce::jlimit (minBpm, maxBpm, std::round ((double) s.getProperty (IDs::bpm, 120.0) * factor * 100.0) / 100.0), nullptr);
+    return true;
+}
+
+double tempoFromTaps (const std::vector<double>& taps)
+{
+    if (taps.size() < 2)
+        return 0.0;
+    std::vector<double> gaps;
+    for (size_t i = 1; i < taps.size(); ++i)
+        if (taps[i] > taps[i - 1])
+            gaps.push_back (taps[i] - taps[i - 1]);
+    if (gaps.empty())
+        return 0.0;
+    std::sort (gaps.begin(), gaps.end());
+    const auto median = gaps[gaps.size() / 2];
+    return juce::jlimit (minBpm, maxBpm, std::round (60.0 / median * 10.0) / 10.0);
+}
+
+juce::StringArray playedTracks (const juce::ValueTree& song)
+{
+    const auto list = tracks (song);
+    const auto anySolo = std::any_of (list.begin(), list.end(), [] (const auto& t) { return (bool) t.getProperty (IDs::soloed, false); });
+    juce::StringArray uids;
+    for (const auto& t : list)
+        if ((bool) t.getProperty (IDs::include, true) && (anySolo ? (bool) t.getProperty (IDs::soloed, false)
+                                                                   : ! (bool) t.getProperty (IDs::muted, false)))
+            uids.add (t[IDs::uid].toString());
+    return uids;
+}
+
+bool loopRange (const juce::ValueTree& song, double& start, double& end)
+{
+    const auto section = sectionByUid (song, song[IDs::loopSection].toString());
+    if (! section.isValid())
+        return false;
+    start = sectionStartBeat (song, section);
+    end = start + sectionLengthBeats (section);
+    return true;
 }
 
 //==============================================================================
@@ -710,7 +984,7 @@ MapImport importMap (const juce::MidiFile& file, const juce::String& songName, b
             {
                 int num = 4, den = 4;
                 m.getTimeSignatureInfo (num, den);
-                meters[tick] = { juce::jlimit (1, 32, num), clampDen (den) };
+                meters[tick] = { juce::jlimit (1, maxBeatsPerBar, num), clampDen (den) };
             }
             else if (m.isTextMetaEvent() && (m.getMetaEventType() == 6 || m.getMetaEventType() == 7))   // marker, cue point
             {

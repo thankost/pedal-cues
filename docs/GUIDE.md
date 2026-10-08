@@ -576,16 +576,32 @@ Instead of dropping cues into the DAW one by one, you can lay out a whole song i
 
 ![The Song Builder](images/song-builder.png)
 
-1. **+ Song**, then set the **sections** along the top: click a section to edit its name, bars, time signature and tempo (a 7/8 bridge at 140 is fine), recolour, duplicate (with its cues), move or delete it. **+ Section** adds one at the end. Changing a section's length moves everything after it.
+1. **+ Song**, then set the **sections** along the top: click a section to edit its name, bars, time signature and tempo (any time signature, like 7/8 or 37/8, and 10-960 BPM), recolour, duplicate (with its cues), move or delete it. **+ Section** adds one at the end. Changing a section's length moves everything after it.
 2. **Tracks:** **+ Track** adds one for the device on Amps & Modelers or Effects & Pedals, any other device PedalCues knows (by brand), one of your MIDI devices, or an empty one. Or skip it: drop a tile on **Drop here for a new track** and a track for that device appears.
-3. **Drag tiles in** from the Amps & Modelers and Effects & Pedals tabs, exactly as you'd drag them to the DAW, onto a track. A `.mid` clip from your DAW or Finder works too. Cues snap to the beat (hold **Alt** for 1/16) and keep the MIDI they had when you dropped them.
+3. **Drag tiles in** from the Amps & Modelers and Effects & Pedals tabs, exactly as you'd drag them to the DAW, onto a track. A `.mid` clip from your DAW or Finder works too. Cues keep the MIDI they had when you dropped them.
 4. **Edit:** drag a cue to move it (also onto another track). Click to select (Shift adds), then **⌘C / ⌘V** (Ctrl on Windows and Linux): click a spot on a track first and the cues are pasted there, with their spacing. **⌘D** duplicates, **Delete** deletes, right-click for the same and **Send it to the device now**.
 5. **Play** (or Space) plays the ticked tracks to your devices from the song position (click a spot, or the bar numbers, to move it), following each section's tempo. Start from a spot with a preset cue: the preset before it isn't sent first.
-6. **Get it out:** **Drag song to the DAW** drops one MIDI file with the ticked tracks, the tempo map, time signatures and a marker per section. Drag a **track's name** for that track alone. **Export MIDI file(s)...** saves one file with all the ticked tracks, or **a file per track** in a folder.
+6. **Get it out:** **Drag song to the DAW** drops the ticked tracks as one MIDI file with the tempo map, time signatures and a marker per section, plus the click and the backing track as WAVs when they're ticked. Drag a **track's name** for that track alone. **Export MIDI file(s)...** saves files for a DAW or a backing-track player (see below).
+
+**Grid, snap and zoom.** **Grid** sets where cues snap and the grid lines (Beat follows each section's time signature; or Bar, 1/2 to 1/32 and triplets); **Snap** turns it on or off (hold **Alt** while dragging for the opposite). Zoom with **- / + / Fit**, the **-** and **+** keys, or **Alt / Option + mouse wheel**. **Track height** (- / + above the track names, **⌘ / Ctrl + mouse wheel**, **⌘ / Ctrl + - / +**, or drag a track name's bottom edge) makes room for more cues stacked on a track.
+
+**Click track and count-in.** The **Click track** lane under the bar numbers counts each section: click it to pick the section's click (Beat, 1/4, 1/8, 1/16, triplets, bars only or off), or the same for every section. **Metronome** plays it through PedalCues' audio output while the song plays; **Count-in** (1 or 2 bars, in the first bar's time signature and tempo) clicks before the song starts. **Click...** sets the sound (beep, click, wood block, cowbell, or your own samples for the accent and the beat), the accent on each bar's first beat, the volume and the **output**: both sides, or the click on one side and the backing track on the other (e.g. click to your in-ears, backing track to the front of house). Changes are heard right away, even while the song plays. Drag the **Click track** name into your DAW for the click as a WAV, lined up with bar 1.
+
+**Backing track.** Click the lane under the tracks to add an MP3, WAV, AIFF or FLAC: it plays with Play, after the count-in. Drag the waveform sideways to line it up with bar 1. Its name has **M** (mute), a tick (include it when you drag the song) and a volume slider; right-click the waveform at a downbeat for **Bar 1 starts here in the audio** or **Bar N starts here (fit the tempo)...** (every section's tempo scales so the bars line up with the recording), or for the volume, where bar 1 is in the file, replace or remove. The file stays where it is: the song links to it. Drag the **Backing track** name into your DAW for it as a WAV lined up with bar 1. To set a section's tempo by ear, right-click it > **Tap its tempo...** and tap along (T or Space).
+
+**Practice.** **S** solos and **M** mutes a track while playing (export follows the tick). Right-click a section > **Play from here**, or **Loop this section while playing** to repeat it until you stop (a green band marks it; pick it again to stop looping).
+
+**Songs and setlists.** The Songs list is also your setlist, in its order. Click a song to open it; ⌘ / Ctrl-click or Shift-click selects several, then **⌘C / ⌘X / ⌘V / ⌘D / Delete** (or right-click) copy, cut, paste, duplicate or delete them. Right-click a song > **Play the setlist from here** plays the songs in order, with the **Gap between songs** you pick in the same menu, and **Export the setlist as song packages...** writes a numbered folder per song.
 
 **MIDI channels per track.** Each track shows the channel its cues use (*Own channel (1)*). Right-click a track > **MIDI channel** (or pick it in the export window) to put every cue on that track on one channel, now and for cues you add later. **Two players with the same changes:** right-click the track > **Duplicate**, then give the copy the other rig's channel.
 
 ![Export: tracks, channels, one file or a file per track](images/song-builder-export.png)
+
+**Export.** Pick the tracks and their channels, then what to save (hover a choice to see the files it writes):
+- **One file, all tracks:** `Song.mid` with the tempo map, time signatures and section markers, and a MIDI track per ticked track.
+- **A file per track:** `Song - Track.mid` for each ticked track, in the folder you pick.
+- **Song package**, for a backing-track player: a folder with `Song - cues.mid`, `Song - click.wav` and, when the song has one, `Song - backing.wav` lined up with bar 1. They all start together (48 kHz, 24-bit WAVs).
+- **Start with a count-in** puts the count-in (the song card's length, or 1 bar) at the start of every file.
 
 **One file or a file per track?** A single file keeps each message's channel. That's all you need when all your devices hang off one MIDI output (a daisy chain, or a backing-track player with one MIDI Out): give each device its own channel. In Reaper, keep the track's MIDI output on *Send to original channels*. If your DAW sends a track on one channel only, or each device is on its own port, use **a file per track** and set each DAW track's output.
 
@@ -710,12 +726,16 @@ Treadle moves are **CC#11** automation written in beats, so they follow your pro
 
 ![Draw mode](images/whammy-draw.png)
 
-When no ready-made shape fits, click **Draw** in the *Treadle moves* header.
+When no ready-made shape fits, click **Draw** in the *Treadle moves* header. The pad works like a DAW's envelope editor (Reaper's, for example): points joined by lines. Bottom is heel (0), top is toe (127).
 
-1. **Pick the length** first. The pad's grid shows beats, with brighter lines on each bar.
-2. **Drag across the pad** to draw the treadle: bottom is heel, top is toe. Draw over any part again to fix it. Hold **Shift** to snap to heel, quarter, half, three-quarter or toe.
-3. **Clear** resets the pad to heel. **Smooth** rounds off sharp edges; click it again for a softer curve.
-4. **Drag the *Drawn move* tile** onto the timeline where the move should start, or click its play button to try it on the pedal.
+1. **Pick the length** first, and the **Grid** next to it: points snap to it in time.
+2. **Click** to add a point, **drag** a point or a line to move it (**Shift**: off the grid, **⌘ / Ctrl + Shift**: one direction only). **⌘ / Ctrl-drag** draws freehand. **Double-click** a point to type its value. **Option / Alt-click** a point deletes it.
+3. **Shape the lines:** right-click a line for its shape (square, linear, slow start / end, fast start, fast end, bezier); **Option / Alt-drag** a line to curve it, **Option / Alt-double-click** to straighten it.
+4. **Several points at once:** ⌘ / Ctrl-click adds to the selection, **right-drag** selects an area, ⌘ / Ctrl + A selects all. Arrows nudge them, **Delete** removes them, and the selection box scales them (drag its top or bottom edge) or tilts them (a top corner). Right-click also has **Invert** and **Scale / compress...**.
+5. **⌘ / Ctrl + Z** undoes, **⌘ / Ctrl + Shift + Z** redoes. **Clear** resets the pad to heel; **Smooth** rounds off sharp edges.
+6. **Drag the *Drawn move* tile** onto the timeline where the move should start, or click its play button to try it on the pedal.
+
+**Larger editor** opens the pad in its own window, with the same tools, for detailed work. The pad's labels show the values: TOE (127), HALF (64), HEEL (0).
 
 The drawing stretches to whatever *Length* you pick. *Return to heel after move* works here too; *Curve* only applies to the shapes, so in Draw mode its place holds **Wave...**. Click **Shapes** to go back to the ready-made moves.
 
@@ -725,7 +745,7 @@ The drawing stretches to whatever *Length* you pick. *Return to heel after move*
 |---|---|
 | ![A growing sine in the drawing pad](images/whammy-wave.png) | ![Wave settings](images/wave-editor.png) |
 
-**Wave...** (in Draw mode, next to Length) writes a wave into the pad as you set it, like the CC LFO in Reaper's MIDI editor:
+**Wave...** (in Draw mode, in the tools row) writes a wave into the pad as you set it, like the CC LFO in Reaper's MIDI editor:
 
 - **Type:** Sine, Triangle, Square, Saw up or Saw down.
 - **Waves:** how many across the move (½ to 8). The move follows *Length*, so 4 waves over 1 bar is a steady quarter-note wobble.
@@ -782,6 +802,8 @@ My drawings are saved **on your computer**, not in one project, so every project
 Every change is saved automatically, a moment after you make it. The right end of each page's MIDI strip (and the Song Builder's song card) shows **Saving...**, then **✓ Saved**, then rests dimmed:
 - **Plugin:** it says **✓ In your project**. Everything is kept in your DAW project, and PedalCues tells the DAW the project changed, so save the project in your DAW as usual.
 - **Standalone app:** it says **✓ Saved**: your changes are written on this computer, not only when you quit.
+
+Just looking around (opening another song, preset or view) isn't a change: it's remembered with your next edit, so your DAW doesn't ask to save a project you only browsed.
 
 ### Your setup: save, share, start new projects with it
 

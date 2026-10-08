@@ -291,4 +291,103 @@
         const auto bareSong = importMap (bare, "Bare", true);
         CHECK (bareSong.error.isEmpty() && tracks (bareSong.song).size() == 1 && importMap (bare, "Bare", false).error.isNotEmpty());
     }
+
+    // The metronome: every beat (eighths in 7/8) through the tempo map, accents on bar starts, a count-in in the start's bar.
+    {
+        auto m = createSong ("Click");
+        m.getChild (0).setProperty (IDs::bars, 2, nullptr);                      // 2 bars of 4/4 at 120: 8 clicks, 0.5 s apart
+        m.appendChild (createSection ("Odd", 1, 7, 8, 140.0), nullptr);          // 1 bar of 7/8 at 140: 7 eighths
+        const auto all = metronomeClicks (m, 0.0, 0);
+        CHECK (all.size() == 15 && near (all[1].seconds, 0.5) && all[0].accent && ! all[1].accent && all[4].accent
+               && all[8].accent && near (all[8].seconds, 4.0) && near (all[9].seconds - all[8].seconds, 0.5 * 60.0 / 140.0));
+        const auto counted = metronomeClicks (m, 0.0, 1);                         // one bar of count-in: 4 clicks, 2 s
+        CHECK (near (countInSeconds (m, 0.0, 1), 2.0) && counted.size() == 19 && counted[0].accent && near (counted[4].seconds, 2.0)
+               && counted[4].accent);
+        const auto fromBar2 = metronomeClicks (m, 4.0, 0);
+        CHECK (fromBar2.size() == 11 && near (fromBar2[0].seconds, 0.0) && fromBar2[0].accent);
+        CHECK (near (countInSeconds (m, 8.0, 2), 2.0 * 3.5 * 60.0 / 140.0));   // counted in the 7/8 bridge's own bar
+        // Snapping to the grid, from the section's start.
+        CHECK (near (snapBeat (m, 1.1, 3), 1.0) && near (snapBeat (m, 1.1, 5), 1.0) && near (snapBeat (m, 1.2, 5), 1.25)
+               && near (snapBeat (m, 9.3, 0), 9.5) && near (snapBeat (m, 2.9, 1), 4.0) && near (snapBeat (m, 0.3, 8), 1.0 / 3.0));
+    }
+
+    // Full freedom within what a MIDI file stores: 37/8, 255/64, 10-960 BPM; a note value of 6 isn't one.
+    {
+        auto odd = createSong ("Odd");
+        odd.removeAllChildren (nullptr);
+        odd.appendChild (createSection ("A", 2, 37, 8, 960.0), nullptr);
+        odd.appendChild (createSection ("B", 1, 255, 64, 10.0), nullptr);
+        CHECK ((int) odd.getChild (0)[IDs::timeNum] == 37 && near (barBeats (odd.getChild (0)), 18.5)
+               && (int) odd.getChild (1)[IDs::timeNum] == 255 && (int) odd.getChild (1)[IDs::timeDen] == 64
+               && near ((double) odd.getChild (0)[IDs::bpm], 960.0) && near ((double) odd.getChild (1)[IDs::bpm], 10.0));
+        const auto file = songMidi (odd, {});
+        int n = 0, d = 0;
+        for (int i = 0; i < file.getTrack (0)->getNumEvents(); ++i)
+            if (file.getTrack (0)->getEventPointer (i)->message.isTimeSignatureMetaEvent() && n == 0)
+                file.getTrack (0)->getEventPointer (i)->message.getTimeSignatureInfo (n, d);
+        CHECK (n == 37 && d == 8);
+        CHECK (isNoteValue (64) && isNoteValue (1) && ! isNoteValue (6) && ! isNoteValue (128));
+    }
+
+    // Backing-track creator: count-in section, click track, tempo fit, taps, mute / solo, loop.
+    {
+        auto b = createSong ("Backing");
+        b.getChild (0).setProperty (IDs::bars, 4, nullptr);                         // 4 bars of 4/4 at 120 = 8 s
+        auto t1 = addTrack (b, "QC", juce::Colours::blue), t2 = addTrack (b, "Whammy", juce::Colours::red);
+        cues::Cue pc;
+        pc.add (0.0, juce::MidiMessage::programChange (1, 3));
+        auto first = placeCue (b, t1, 4.0, pc, juce::Colours::blue);              // bar 2
+        const auto counted = withCountIn (b, 1);
+        CHECK (counted.getChild (0)[IDs::name].toString() == "Count-in" && near (songLengthBeats (counted), 20.0)
+               && near (cueBeat (counted, counted.getChildWithProperty (IDs::uid, first[IDs::uid])), 8.0));   // moved by the bar
+        CHECK (songMidi (counted, includedTracks (counted)).getNumTracks() == 3);
+
+        const ClickSound beep;
+        const auto click = renderClickTrack (b, 1, 1000.0, beep, 1.0);             // 2 s count-in + 8 s + 1 s tail at 1 kHz
+        CHECK (click.getNumSamples() == 11000 && click.getNumChannels() == 1);
+        const auto peakAt = [&] (int from) { float m = 0.0f; for (int i = from; i < from + 40; ++i) m = juce::jmax (m, std::abs (click.getSample (0, i))); return m; };
+        CHECK (peakAt (0) > 0.1f && peakAt (500) > 0.1f && peakAt (250) < 1.0e-6f && peakAt (10500) < 1.0e-6f);
+        CHECK (clickSample (beep, true, 0.001) != 0.0f && clickSample (beep, true, 0.2) == 0.0f && clickSoundNames().size() == 5);
+
+        CHECK (barNumberAt (b, 4.0) == 2 && barNumberAt (b, 3.9) == 1 && near (barStartBeat (b, 3), 8.0));
+        b.setProperty (IDs::audioOffset, 1.0, nullptr);                            // bar 1 is 1 s into the file
+        CHECK (fitTempoToAudio (b, 3, 1.0 + 3.0));                                 // bar 3 at 4 s: 8 beats in 3 s = 160 BPM
+        CHECK (std::abs ((double) b.getChild (0)[IDs::bpm] - 160.0) < 0.01 && ! fitTempoToAudio (b, 1, 2.0));
+        CHECK (std::abs (tempoFromTaps ({ 0.0, 0.5, 1.0, 1.5, 2.6 }) - 120.0) < 0.01 && tempoFromTaps ({ 1.0 }) == 0.0);
+
+        CHECK (playedTracks (b).size() == 2);
+        t1.setProperty (IDs::muted, true, nullptr);
+        CHECK (playedTracks (b) == juce::StringArray { t2[IDs::uid].toString() });
+        t1.setProperty (IDs::soloed, true, nullptr);                               // solo wins over mute here: only the soloed
+        CHECK (playedTracks (b) == juce::StringArray { t1[IDs::uid].toString() });
+        double ls = 0.0, le = 0.0;
+        CHECK (! loopRange (b, ls, le));
+        b.setProperty (IDs::loopSection, b.getChild (0)[IDs::uid], nullptr);
+        CHECK (loopRange (b, ls, le) && near (ls, 0.0) && near (le, 16.0));
+    }
+
+    // A section's click can count eighths, sixteenths, triplets, bars only or nothing; custom samples play.
+    {
+        auto d = createSong ("Div");
+        d.getChild (0).setProperty (IDs::bars, 1, nullptr);                         // one 4/4 bar at 120
+        d.getChild (0).setProperty (IDs::clickDiv, 2, nullptr);                     // eighths: 8 clicks, the off-beats softer
+        auto eighths = metronomeClicks (d, 0.0, 0);
+        CHECK (eighths.size() == 8 && eighths[0].accent && ! eighths[0].sub && eighths[1].sub && ! eighths[2].sub && near (eighths[1].seconds, 0.25));
+        d.getChild (0).setProperty (IDs::clickDiv, 4, nullptr);                     // eighth triplets: 12
+        CHECK (metronomeClicks (d, 0.0, 0).size() == 12);
+        d.getChild (0).setProperty (IDs::clickDiv, 6, nullptr);                     // bars only
+        CHECK (metronomeClicks (d, 0.0, 0).size() == 1);
+        d.getChild (0).setProperty (IDs::clickDiv, 7, nullptr);                     // off; the count-in still counts
+        CHECK (metronomeClicks (d, 0.0, 0).empty() && metronomeClicks (d, 0.0, 1).size() == 4);
+        CHECK (clickDivNames().size() == 8);
+
+        ClickSound custom;
+        custom.sound = 4;
+        custom.sampleRate = 1000.0;
+        custom.beatSample = std::make_shared<juce::AudioBuffer<float>> (1, 300);    // 0.3 s
+        custom.beatSample->clear();
+        custom.beatSample->setSample (0, 10, 1.0f);
+        CHECK (near (clickLength (custom), 0.3) && clickSample (custom, false, 0.010) != 0.0f && clickSample (custom, true, 0.010) != 0.0f
+               && clickSample (custom, false, 0.4) == 0.0f);
+    }
 }

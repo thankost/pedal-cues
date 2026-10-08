@@ -147,6 +147,28 @@ namespace IDs
     PEDALCUES_ID (padCc)
     PEDALCUES_ID (events)
     PEDALCUES_ID (selectedSong)
+    PEDALCUES_ID (audioFile)       // Song: the backing track, linked (full path), with
+    PEDALCUES_ID (audioOffset)     //   where bar 1 is in the file (seconds; negative: the audio starts after bar 1)
+    PEDALCUES_ID (audioGain)       //   and its volume (0-1)
+    PEDALCUES_ID (metronome)       // Songs: the click while playing (on / off), the count-in in bars, the grid step
+    PEDALCUES_ID (countIn)
+    PEDALCUES_ID (gridStep)
+    PEDALCUES_ID (snap)
+    PEDALCUES_ID (trackHeight)     // Songs: the Song Builder's track height in pixels (songs::minTrackHeight-maxTrackHeight)
+    PEDALCUES_ID (clickSound)      // Songs: the click's sound (0 beep, 1 click, 2 wood, 3 cowbell), accent, volume, routing
+    PEDALCUES_ID (clickAccent)
+    PEDALCUES_ID (clickGain)
+    PEDALCUES_ID (clickRoute)      //   0 mixed, 1 click left / backing right, 2 click right / backing left
+    PEDALCUES_ID (setlistGap)      //   seconds between songs when a setlist plays / exports
+    PEDALCUES_ID (muted)           // SongTrack: left out of Play; soloed: only soloed tracks play
+    PEDALCUES_ID (soloed)
+    PEDALCUES_ID (audioMuted)      // Song: the backing track left out of Play
+    PEDALCUES_ID (loopSection)     // Song: the section Play loops (its uid), or none
+    PEDALCUES_ID (clickDiv)        // SongSection: how its click counts (songs::clickDivNames)
+    PEDALCUES_ID (clickInclude)    // Song: the click track goes along with Drag song (and the backing track: audioInclude)
+    PEDALCUES_ID (audioInclude)
+    PEDALCUES_ID (clickFileAccent) // Songs: custom click samples (clickSound 4), the accent and the beat
+    PEDALCUES_ID (clickFileBeat)
 #undef PEDALCUES_ID
 }
 

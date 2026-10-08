@@ -4,6 +4,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include "CueModel.h"
+#include "SongAudio.h"
 #include "State.h"
 
 #include <atomic>
@@ -16,7 +17,7 @@ public:
     ~PedalCuesProcessor() override = default;
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
-    void releaseResources() override {}
+    void releaseResources() override;
     bool isBusesLayoutSupported (const BusesLayout&) const override;
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     using AudioProcessor::processBlock;
@@ -44,6 +45,10 @@ public:
     // Song Builder playback: messages at seconds from now (the song's own tempo map), and Stop clearing what's still queued.
     void previewTimed (const std::vector<std::pair<double, juce::MidiMessage>>& secondsAndMessages);
     void stopPreview();
+
+    // Song Builder: the metronome and the backing track, mixed into the output (SongAudio.h).
+    SongAudio songAudio;
+    juce::int64 nowSample() const { return sampleCounter.load(); }
 
     double getHostBpm() const { return hostBpm.load(); }
 
@@ -75,7 +80,21 @@ public:
 
     private:
         void changed() { if (loading) return; pending = true; startTimer (800); }
-        void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override { changed(); }
+        // Browsing (the open song, preset or performance, a page's view, Shapes / Draw, Exp 1 / 2, the Song Builder's track
+        // height) isn't an edit: it's remembered, but written with the next real change, so the DAW project isn't marked
+        // as changed by looking around.
+        static bool isViewOnly (const juce::Identifier& id)
+        {
+            for (const auto& v : { IDs::selectedSong, IDs::selectedPreset, IDs::selectedPerformance,
+                                   IDs::mdView, IDs::fxView, IDs::cuExpressionView, IDs::kemperPedalsView, IDs::whDropTuneView,
+                                   IDs::qcExpressionView, IDs::qcLooperView,
+                                   IDs::mdDraw, IDs::fxDraw, IDs::cuDraw, IDs::kpDraw, IDs::sweepDraw, IDs::expDraw,
+                                   IDs::expPedal, IDs::mdPedal, IDs::fxPedal, IDs::trackHeight })
+                if (id == v)
+                    return true;
+            return false;
+        }
+        void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier& id) override { if (! isViewOnly (id)) changed(); }
         void valueTreeChildAdded (juce::ValueTree&, juce::ValueTree&) override { changed(); }
         void valueTreeChildRemoved (juce::ValueTree&, juce::ValueTree&, int) override { changed(); }
         void valueTreeChildOrderChanged (juce::ValueTree&, int, int) override { changed(); }

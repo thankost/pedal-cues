@@ -102,7 +102,16 @@ private:
     PedalCuesProcessor& pedalProcessor;
     juce::ValueTree state;
 
-    juce::TooltipWindow tooltips { this, 600 };
+    // One tooltip window for every PedalCues window (the editor, the Song Builder, dialogs, call-outs): a tooltip window
+    // inside the editor only shows tooltips for the editor's own window.
+    struct SharedTooltips
+    {
+        SharedTooltips() { window.setLookAndFeel (&lookAndFeel.get()); }
+        ~SharedTooltips() { window.setLookAndFeel (nullptr); }
+        juce::SharedResourcePointer<theme::LookAndFeel> lookAndFeel;
+        juce::TooltipWindow window { nullptr, 600 };
+    };
+    juce::SharedResourcePointer<SharedTooltips> tooltips;
 
     struct TabBar final : public juce::Component
     {

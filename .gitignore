@@ -4,3 +4,4 @@ external/
 .idea/
 cmake-build-*/
 .claude/worktrees/
+build-tests/

@@ -21,7 +21,7 @@ struct MovesConfig
     juce::Identifier drawingNameId;        // name of the saved drawing loaded in the pad ("" = not saved)
 
     juce::String resetText, resetTooltip;
-    juce::String padHint, padTooltip;      // shown on an empty pad / its tooltip
+    juce::String padHint, padTooltip;      // unused since the pad has one editing mode (MovesPanel writes its own help)
     juce::String drawnTooltip;
     juce::String tileNote;                 // appended to every move tile's tooltip
     juce::String shapesTooltip, drawTooltip;
@@ -67,13 +67,22 @@ public:
 
     // Height of the controls row plus the gap below it, inside the card.
     static constexpr int controlsHeight = 42;
+    int extraControlsRow = 0;   // a second tools row when the panel is narrow
     static constexpr int newDrawingId = 10000;   // "New drawing" in My drawings
 
 private:
+    struct DrawDoc;
     class DrawPad;
     class WaveEditor;
-    void showWaveEditor();
+    class LargeEditor;
+    class LargeWindow;
+    void showWaveEditor();   // above the Wave... button; a second click closes it
     void applyWave();
+    void openLargeEditor();  // the pad in a resizable window, same drawing
+    void setGrid (double beats);
+    void clearDrawing();
+    void smoothDrawing();
+    void padChanged();       // a pad is being edited: the other pad and the tile follow
     // Draw > Import MIDI... (or a .mid dropped on the card): a move from a MIDI clip, to reuse in any song.
     void chooseMidiFile();
     void importMidi (const juce::File&);
@@ -97,7 +106,7 @@ private:
     juce::String drawingName() const;
     bool drawingEdited() const;
     cues::Cue finished (cues::Cue c) const   { return config.finish ? config.finish (std::move (c)) : c; }
-    void commitDrawing();
+    void commitDrawing (const juce::String& mergeKey = {});
 
     PedalCuesProcessor& proc;
     juce::ValueTree state;
@@ -112,11 +121,19 @@ private:
     juce::ToggleButton resetToggle;
     juce::TextButton shapesButton { "Shapes" }, drawButton { "Draw" };
     juce::TextButton clearButton { "Clear" }, smoothButton { "Smooth" };
+    juce::Label gridLabel;
+    juce::ComboBox gridBox;                // the pad's snap grid (Draw only)
     juce::TextButton waveButton { "Wave..." }, importButton { "Import MIDI..." };
     WaveSettings wave;
     juce::ComboBox libraryBox;             // My drawings
     juce::TextButton saveButton { "Save" }, moreButton { "..." };
+    std::unique_ptr<DrawDoc> doc;          // the drawing's points, grid and undo history, shared by both pads
     std::unique_ptr<DrawPad> pad;
+    std::unique_ptr<juce::Button> expandButton;
+    std::unique_ptr<juce::DocumentWindow> largeWindow;
+    LargeEditor* large = nullptr;          // largeWindow's content
+    juce::Component::SafePointer<juce::CallOutBox> waveBox;
+    int waveSession = 0;                   // each Wave panel opening is one undo step
     std::unique_ptr<Tile> drawTile;
     juce::OwnedArray<Tile> shapeTiles;
 };

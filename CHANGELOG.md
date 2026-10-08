@@ -2,6 +2,28 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.11.0 (2026-10-08)
+
+- **Backing-track creator in the Song Builder (beta):**
+  - **Metronome and count-in (1 or 2 bars).** Each section counts the way you choose in the new **Click track** lane: beat, 1/8, 1/16, triplets, bars only or off.
+  - **Click...:** beep, click, wood block, cowbell or your own samples; an accent on the first beat; the volume. The output can put the click on one side and the backing track on the other (in-ears / front of house). Changes are heard right away while the song plays.
+  - **A backing track** (MP3, WAV, AIFF, FLAC) under the tracks. Drag its waveform to line it up with bar 1, or set where a bar starts and fit the tempo to the recording.
+  - **Tap a section's tempo.**
+  - **Export a song package** for a backing-track player: cues MIDI, click WAV and backing WAV, all starting together. Export one song or the whole setlist, with or without the count-in. Or drag the click and the backing track into your DAW as WAVs.
+  - **Practice:** mute and solo tracks, play from a section, loop a section, and play the setlist in order with a gap between songs.
+- **Song Builder editing:**
+  - a grid with snap, zoom (- / +, Alt + wheel) and track height (⌘ / Ctrl + wheel or - / +, or drag a track's edge);
+  - any time signature (37/8, 15/16...) and 10-960 BPM;
+  - select several songs in the list to copy, paste, duplicate or delete them.
+- **Drawing moves, like a DAW envelope:**
+  - click to add points, drag points and lines, and pick a curve shape for each line;
+  - select several points to move, scale, tilt or invert them, draw freehand, and undo / redo;
+  - a grid, and a **Larger editor** window;
+  - the pad shows TOE (127), HALF (64) and HEEL (0). Wave... opens above the pad and closes on a second click.
+- **Hover texts everywhere:** the Song Builder, its dialogs and the larger editor now show their tips, long ones in full. Export's choices list the files they write.
+- **Fix:** the export's count-in switch couldn't be turned on when the song card had no count-in.
+- **Fix:** browsing (another song, preset or view) no longer counts as a change, so your DAW doesn't ask to save a project you only looked through.
+
 ## 0.10.0 (2026-10-07)
 
 - **Song Builder (new, beta):** build a whole song once. Click **Song Builder** at the top right: sections along the top (name, bars, time signature, tempo), a track per device, and cues dragged in from the Amps & Modelers and Effects & Pedals tabs (or `.mid` clips). Copy, paste and duplicate cues, play the song to your rig, then drag it into your DAW as one MIDI file with the tempo map, time signatures and section markers, or export one file or a file per track for a backing-track player.

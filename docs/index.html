@@ -69,6 +69,7 @@
 
     .shot { margin: 44px auto 0; max-width: 1000px; border-radius: 14px; overflow: hidden; border: 1px solid var(--outline); box-shadow: 0 30px 80px #000a; }
     .shot img { display: block; width: 100%; }
+    .shot-caption { margin: 14px auto 0; max-width: 1000px; color: var(--dim); font-size: 15px; }
 
     section { padding: 64px 0; border-top: 1px solid var(--outline); }
     h2 { font-size: 30px; margin: 0 0 8px; }
@@ -196,6 +197,9 @@
       <a href="https://github.com/thankost/pedal-cues/releases">All releases</a></div>
 
     <div class="shot"><img src="images/quad-cortex.png" alt="PedalCues Quad Cortex page"></div>
+    <p class="shot-caption">Your device's presets, scenes and moves as tiles: drag one onto the timeline.</p>
+    <div class="shot"><img src="images/song-builder.png" alt="PedalCues Song Builder"></div>
+    <p class="shot-caption">Song Builder (beta): build the whole song with a click track and a backing track, then drag it into your DAW.</p>
   </div>
 </div>
 
@@ -221,9 +225,9 @@
       <div class="card"><h3><span class="dot" style="background:var(--wh)"></span>All 21 Whammy modes, plus DT Drop Tune</h3>
         <p>Whammy V or Whammy DT, laid out like the pedal's panel, engaged or bypassed, with heel-first switching. On the DT, Shift Up and Shift Down tiles drop or raise your tuning.</p></div>
       <div class="card"><h3><span class="dot" style="background:var(--wh)"></span>Treadle moves</h3>
-        <p>Ramps, dives, trills and bends as tempo-synced CC#11 automation, or draw your own with the mouse (or generate a wave: sine, triangle, square, growing or speeding up, or import a move you drew in your DAW from a MIDI file) and save it in My drawings to reuse in any song.</p></div>
+        <p>Ramps, dives, trills and bends as tempo-synced CC#11 automation, or draw your own with points and curves, like a DAW envelope (or generate a wave: sine, triangle, square, growing or speeding up, or import a move you drew in your DAW from a MIDI file) and save it in My drawings to reuse in any song.</p></div>
       <div class="card"><h3><span class="dot" style="background:#9b87f5"></span>Song Builder (beta)</h3>
-        <p>Build a whole song once: sections with their tempo and time signature, a track per device, cues dragged in from the tabs. Play it to your rig, then drag it into your DAW or export the MIDI for a backing-track player. Copy and paste, a channel per track for a second player, and import a song from your DAW's MIDI.</p></div>
+        <p>Build a whole song once: sections with their tempo and time signature, a track per device, cues dragged in from the tabs. Play it to your rig with a click and a count-in, add a backing track (MP3 or WAV), then drag it all into your DAW or export a song package (MIDI, click and backing WAVs) for a backing-track player, one song or the whole setlist. Any time signature, a click per section, your own click sounds, the click on one side and the backing track on the other, loop a section, tap a tempo, a channel per track for a second player, and import a song from your DAW's MIDI.</p></div>
       <div class="card"><h3><span class="dot" style="background:var(--amber)"></span>Search &amp; named clips</h3>
         <p>A forgiving search on every device finds a preset, performance or tile in a long list, even with a typo. Every drop is a clip called "Chorus" or "Whammy Dive 1 bar", so you read your show at a glance.</p></div>
       <div class="card"><h3><span class="dot" style="background:var(--amber)"></span>Guided setup</h3>
@@ -251,7 +255,7 @@
       <figure><img src="images/dl4-models.png" alt="Line 6 DL4 MkII page" loading="lazy"><figcaption>DL4 MkII on Effects &amp; Pedals: every delay and reverb model (beta)</figcaption></figure>
       <figure><img src="images/strymon-timeline-mx-models.png" alt="Strymon TimeLine MX page" loading="lazy"><figcaption>Strymon TimeLine MX: delay types and dual mode (beta)</figcaption></figure>
       <figure><img src="images/chase-bliss-mood.png" alt="Chase Bliss MOOD MKII page" loading="lazy"><figcaption>Chase Bliss MOOD MKII, and Meris, Walrus, Source Audio, EHX (beta)</figcaption></figure>
-      <figure><img src="images/song-builder.png" alt="Song Builder" loading="lazy"><figcaption>Song Builder (beta): the whole song, a track per device</figcaption></figure>
+      <figure><img src="images/song-builder.png" alt="Song Builder" loading="lazy"><figcaption>Song Builder (beta): the whole song, a click track and a backing track</figcaption></figure>
       <figure><img src="images/pedal-picker.png" alt="Effects and Pedals device list" loading="lazy"><figcaption>Effects &amp; Pedals: pick the Whammy, a Strymon, Boss, Meris and more</figcaption></figure>
       <figure><img src="images/whammy-draw.png" alt="Draw a treadle move" loading="lazy"><figcaption>Draw your own treadle move</figcaption></figure>
       <figure><img src="images/timeline.png" alt="Cues on a DAW timeline" loading="lazy"><figcaption>Named cues on the timeline</figcaption></figure>
@@ -308,7 +312,7 @@
 </section>
 
 <!-- Fallback numbers, shown until fresh ones arrive (updated at each release; see the release skill). -->
-<section id="downloads-section" data-downloads="405" data-version="0.10.0" data-released="2026-10-07">
+<section id="downloads-section" data-downloads="409" data-version="0.11.0" data-released="2026-10-08">
   <div class="wrap">
     <div class="stats-band">
       <div class="stat">

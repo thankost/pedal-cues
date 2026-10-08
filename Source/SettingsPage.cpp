@@ -583,27 +583,25 @@ public:
         channelLabel.setBounds (r.removeFromLeft (96));
         channelBox.setBounds (r.removeFromLeft (122).withSizeKeepingCentre (122, 28));
         r.removeFromLeft (12);
+        saved.alignRight = true;   // the words end at the strip's right edge, under the header's last button
         const auto savedWidth = proc.autoSave.writesToDisk() ? 78 : 118;
         saved.setBounds (r.removeFromRight (savedWidth).withSizeKeepingCentre (savedWidth, 20));
 
-        // [hint]  gap  [Done] [Test] [How to connect >]  gap  [Saved]: the buttons sit midway between the end of the
-        // hint text and Saved; a long hint wraps to two lines and keeps at least 16 px either side.
+        // [hint] ... [Done] [Test]  [How to connect >]  [Saved]: the buttons keep fixed gaps from Saved at the right end;
+        // the hint takes the rest (a long one wraps to two lines).
+        constexpr int buttonGap = 10;
         const auto connectWidth = juce::GlyphArrangement::getStringWidthInt (font (15.0f, true), connectButton.getButtonText()) + 20;
-        const auto groupWidth = (doneButton.isVisible() ? 84 + 10 : 0) + 84 + 6 + connectWidth;
-        const auto natural = juce::GlyphArrangement::getStringWidthInt (hint.getFont(), hint.getText())
-                           + hint.getBorderSize().getLeftAndRight() + 4;
-        const auto hintWidth = juce::jmax (0, juce::jmin (natural, r.getWidth() - groupWidth - 32));
-        const auto gap = juce::jmax (16, (r.getWidth() - hintWidth - groupWidth) / 2);
-        hint.setBounds (r.removeFromLeft (hintWidth));
-        r.removeFromLeft (gap);
+        r.removeFromRight (buttonGap);
+        connectButton.setBounds (r.removeFromRight (connectWidth));
+        r.removeFromRight (buttonGap);
+        testButton.setBounds (r.removeFromRight (84).withSizeKeepingCentre (84, 28));
         if (doneButton.isVisible())
         {
-            doneButton.setBounds (r.removeFromLeft (84).withSizeKeepingCentre (84, 28));
-            r.removeFromLeft (10);
+            r.removeFromRight (10);
+            doneButton.setBounds (r.removeFromRight (84).withSizeKeepingCentre (84, 28));
         }
-        testButton.setBounds (r.removeFromLeft (84).withSizeKeepingCentre (84, 28));
-        r.removeFromLeft (6);
-        connectButton.setBounds (r.removeFromLeft (connectWidth));
+        r.removeFromRight (16);
+        hint.setBounds (r);
     }
 
 private:

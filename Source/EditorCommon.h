@@ -158,6 +158,7 @@ public:
     explicit SaveIndicator (PedalCuesProcessor&);
     bool compact = false;
     bool alignRight = false;   // in a window's bottom-right corner: the words end at the right edge
+    juce::String getTooltip() override;
     static inline bool settledForScreenshots = false;   // DocShots: show the resting state, not the save it never gets to finish
     void paint (juce::Graphics&) override;
 

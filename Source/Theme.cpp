@@ -159,14 +159,50 @@ void LookAndFeel::drawPopupMenuBackground (juce::Graphics& g, int width, int hei
     g.drawRect (0, 0, width, height);
 }
 
+// Tooltips: sized and drawn from the same layout, so long ones (several lines, file lists) show in full.
+namespace
+{
+constexpr float tooltipMaxWidth = 440.0f;
+constexpr int tooltipPadX = 9, tooltipPadY = 6;
+
+juce::TextLayout tooltipLayout (const juce::String& tip, juce::Colour colour)
+{
+    juce::AttributedString s;
+    s.setJustification (juce::Justification::topLeft);
+    s.append (tip, font (13.0f), colour);
+    juce::TextLayout layout;
+    layout.createLayoutWithBalancedLineLengths (s, tooltipMaxWidth);
+    return layout;
+}
+} // namespace
+
+juce::Rectangle<int> LookAndFeel::getTooltipBounds (const juce::String& tip, juce::Point<int> screenPos, juce::Rectangle<int> parentArea)
+{
+    const auto layout = tooltipLayout (tip, text);
+    const auto w = (int) std::ceil (layout.getWidth()) + tooltipPadX * 2;
+    const auto h = (int) std::ceil (layout.getHeight()) + tooltipPadY * 2;
+    return juce::Rectangle<int> (screenPos.x > parentArea.getCentreX() ? screenPos.x - (w + 12) : screenPos.x + 24,
+                                 screenPos.y > parentArea.getCentreY() ? screenPos.y - (h + 6) : screenPos.y + 6, w, h)
+        .constrainedWithin (parentArea);
+}
+
+// Pop-out panels (Click..., Wave...): opaque, so what's behind doesn't show through their controls.
+void LookAndFeel::drawCallOutBoxBackground (juce::CallOutBox&, juce::Graphics& g, const juce::Path& path, juce::Image&)
+{
+    g.setColour (juce::Colours::black.withAlpha (0.35f));
+    g.fillPath (path, juce::AffineTransform::translation (0.0f, 3.0f));
+    g.setColour (surface);
+    g.fillPath (path);
+    g.setColour (outline);
+    g.strokePath (path, juce::PathStrokeType (1.0f));
+}
+
 void LookAndFeel::drawTooltip (juce::Graphics& g, const juce::String& tip, int width, int height)
 {
     g.fillAll (findColour (juce::TooltipWindow::backgroundColourId));
     g.setColour (outline);
     g.drawRect (0, 0, width, height);
-    g.setColour (text);
-    g.setFont (font (13.0f));
-    g.drawFittedText (tip, juce::Rectangle<int> (width, height).reduced (8, 4), juce::Justification::centredLeft, 4);
+    tooltipLayout (tip, text).draw (g, juce::Rectangle<int> (width, height).reduced (tooltipPadX, tooltipPadY).toFloat());
 }
 
 

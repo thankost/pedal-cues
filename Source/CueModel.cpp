@@ -828,6 +828,390 @@ namespace whammy
         }
         return v;
     }
+
+    juce::String segmentName (Segment s)
+    {
+        switch (s)
+        {
+            case Segment::square:       return "Square";
+            case Segment::linear:       return "Linear";
+            case Segment::slowStartEnd: return "Slow start/end";
+            case Segment::fastStart:    return "Fast start";
+            case Segment::fastEnd:      return "Fast end";
+            case Segment::bezier:       return "Bezier";
+        }
+        return {};
+    }
+
+    float segmentValue (Segment shape, float tension, float a, float b, float x)
+    {
+        x = juce::jlimit (0.0f, 1.0f, x);
+        float g = x;
+        switch (shape)
+        {
+            case Segment::square:       g = x < 1.0f ? 0.0f : 1.0f; break;
+            case Segment::linear:       break;
+            case Segment::slowStartEnd: g = 0.5f - 0.5f * std::cos (juce::MathConstants<float>::pi * x); break;
+            case Segment::fastStart:    g = 1.0f - std::pow (1.0f - x, 3.0f); break;
+            case Segment::fastEnd:      g = std::pow (x, 3.0f); break;
+            case Segment::bezier:
+            {
+                // Positive tension bulges the line up whichever way it runs: early on a rise, late on a fall.
+                const auto u = juce::jlimit (-1.0f, 1.0f, tension) * (b >= a ? 1.0f : -1.0f);
+                const auto power = 1.0f + 4.0f * std::abs (u);
+                g = u > 0.0f ? 1.0f - std::pow (1.0f - x, power) : std::pow (x, power);
+                break;
+            }
+        }
+        return a + (b - a) * g;
+    }
+
+    std::vector<float> renderBreakpoints (const std::vector<Breakpoint>& bps)
+    {
+        std::vector<float> v ((size_t) drawPoints, 0.0f);
+        if (bps.empty())
+            return v;
+
+        size_t seg = 0;
+        for (int i = 0; i < drawPoints; ++i)
+        {
+            const auto t = (float) i / (float) (drawPoints - 1);
+            while (seg + 1 < bps.size() && bps[seg + 1].time <= t)
+                ++seg;
+            float value;
+            if (t <= bps.front().time)
+                value = bps.front().value;
+            else if (seg + 1 >= bps.size())
+                value = bps.back().value;
+            else
+            {
+                const auto& a = bps[seg];
+                const auto& b = bps[seg + 1];
+                const auto dt = b.time - a.time;
+                value = dt <= 0.0f ? b.value : segmentValue (a.shape, a.tension, a.value, b.value, (t - a.time) / dt);
+            }
+            v[(size_t) i] = juce::jlimit (0.0f, 1.0f, value);
+        }
+        return v;
+    }
+
+    std::vector<Breakpoint> simplifyDrawing (const std::vector<float>& samples, float tolerance)
+    {
+        const auto n = samples.size();
+        if (n == 0)
+            return { { 0.0f, 0.0f }, { 1.0f, 0.0f } };
+        if (n == 1)
+            return { { 0.0f, samples[0] }, { 1.0f, samples[0] } };
+
+        std::vector<bool> keep (n, false);
+        keep.front() = keep.back() = true;
+        std::vector<std::pair<size_t, size_t>> stack { { 0, n - 1 } };
+        while (! stack.empty())
+        {
+            const auto [a, b] = stack.back();
+            stack.pop_back();
+            float worst = 0.0f;
+            size_t at = a;
+            for (auto i = a + 1; i < b; ++i)
+            {
+                const auto line = samples[a] + (samples[b] - samples[a]) * (float) (i - a) / (float) (b - a);
+                const auto d = std::abs (samples[i] - line);
+                if (d > worst) { worst = d; at = i; }
+            }
+            if (worst > tolerance)
+            {
+                keep[at] = true;
+                stack.push_back ({ a, at });
+                stack.push_back ({ at, b });
+            }
+        }
+
+        std::vector<Breakpoint> out;
+        for (size_t i = 0; i < n; ++i)
+            if (keep[i])
+                out.push_back ({ (float) i / (float) (n - 1), samples[i] });
+        return out;
+    }
+
+    double gridStepBeats (double lengthBeats, double widthPx, double minGapPx)
+    {
+        for (auto step : { 0.25, 0.5 })
+            if (lengthBeats > 0.0 && widthPx * step / lengthBeats >= minGapPx)
+                return step;
+        return 1.0;
+    }
+
+    float snapTime (float time, double lengthBeats, double stepBeats)
+    {
+        if (lengthBeats <= 0.0 || stepBeats <= 0.0)
+            return juce::jlimit (0.0f, 1.0f, time);
+        const auto steps = lengthBeats / stepBeats;
+        return juce::jlimit (0.0f, 1.0f, (float) (std::round (time * steps) / steps));
+    }
+
+    float snapValue (float value)
+    {
+        return juce::jlimit (0.0f, 1.0f, std::round (value * 100.0f) / 100.0f);
+    }
+
+    juce::String positionLabel (double beat)
+    {
+        beat = juce::jmax (0.0, beat);
+        const auto near = [] (double x) { return std::abs (x - std::round (x)) < 1.0e-3; };
+        if (near (beat))
+            beat = std::round (beat);
+        const auto whole = std::floor (beat + 1.0e-6);
+        const auto bar = (int) (whole / 4.0) + 1;
+        const auto beatInBar = (int) whole % 4 + 1;
+        const auto label = juce::String (bar) + "." + juce::String (beatInBar);
+        const auto frac = beat - whole;
+        if (frac < 1.0e-3)
+            return label;
+        if (near (frac * 4.0))
+            return label + "." + juce::String ((int) std::round (frac * 4.0) + 1);
+        // Off the grid: the nearest beat and how far from it ("1.3 -0.02" just before beat 3).
+        const auto nearest = std::round (beat);
+        const auto offset = beat - nearest;
+        const auto nearLabel = juce::String ((int) (nearest / 4.0) + 1) + "." + juce::String ((int) nearest % 4 + 1);
+        return nearLabel + (offset < 0.0 ? " -" : " +") + juce::String (std::abs (offset), 2);
+    }
+
+    double parsePosition (const juce::String& text)
+    {
+        const auto t = text.trim();
+        if (t.isEmpty())
+            return -1.0;
+        if (t.startsWithChar ('+'))
+        {
+            const auto rest = t.substring (1).trim();
+            return rest.containsOnly ("0123456789.") && rest.isNotEmpty() ? rest.getDoubleValue() : -1.0;
+        }
+        if (! t.containsOnly ("0123456789."))
+            return -1.0;
+        const auto parts = juce::StringArray::fromTokens (t, ".", "");
+        if (parts.size() < 1 || parts.size() > 3)
+            return -1.0;
+        for (const auto& part : parts)
+            if (part.isEmpty())
+                return -1.0;
+        const auto bar = parts[0].getIntValue();
+        const auto beat = parts.size() > 1 ? parts[1].getIntValue() : 1;
+        const auto sixteenth = parts.size() > 2 ? parts[2].getIntValue() : 1;
+        if (bar < 1 || beat < 1 || beat > 4 || sixteenth < 1 || sixteenth > 4)
+            return -1.0;
+        return (bar - 1) * 4.0 + (beat - 1) + (sixteenth - 1) * 0.25;
+    }
+
+    int numSelected (const std::vector<Breakpoint>& bps)
+    {
+        return (int) std::count_if (bps.begin(), bps.end(), [] (const Breakpoint& b) { return b.selected; });
+    }
+
+    float limitSelectionShift (const std::vector<Breakpoint>& bps, float dt)
+    {
+        const auto n = (int) bps.size();
+        auto lo = -2.0f, hi = 2.0f;
+        auto any = false;
+        const auto moves = [&] (int i) { return i > 0 && i < n - 1 && bps[(size_t) i].selected; };
+        for (int i = 1; i < n - 1; ++i)
+        {
+            if (! moves (i))
+                continue;
+            any = true;
+            if (! moves (i - 1))
+                lo = juce::jmax (lo, bps[(size_t) i - 1].time + minPointGap - bps[(size_t) i].time);
+            if (! moves (i + 1))
+                hi = juce::jmin (hi, bps[(size_t) i + 1].time - minPointGap - bps[(size_t) i].time);
+        }
+        if (! any || lo > hi)
+            return 0.0f;
+        return juce::jlimit (lo, hi, dt);
+    }
+
+    std::vector<Breakpoint> moveSelection (const std::vector<Breakpoint>& from, float dt, float dv)
+    {
+        auto out = from;
+        dt = limitSelectionShift (from, dt);
+        const auto n = out.size();
+        for (size_t i = 0; i < n; ++i)
+        {
+            if (! out[i].selected)
+                continue;
+            if (i > 0 && i + 1 < n)
+                out[i].time = juce::jlimit (0.0f, 1.0f, out[i].time + dt);
+            out[i].value = juce::jlimit (0.0f, 1.0f, out[i].value + dv);
+        }
+        return out;
+    }
+
+    namespace
+    {
+        bool selectionRange (const std::vector<Breakpoint>& bps, float& lo, float& hi, float& t0, float& t1)
+        {
+            auto any = false;
+            for (const auto& b : bps)
+            {
+                if (! b.selected)
+                    continue;
+                if (! any) { lo = hi = b.value; t0 = t1 = b.time; any = true; }
+                lo = juce::jmin (lo, b.value); hi = juce::jmax (hi, b.value);
+                t0 = juce::jmin (t0, b.time);  t1 = juce::jmax (t1, b.time);
+            }
+            return any;
+        }
+    }
+
+    std::vector<Breakpoint> scaleSelection (const std::vector<Breakpoint>& from, float factor)
+    {
+        auto out = from;
+        float lo = 0, hi = 0, t0 = 0, t1 = 0;
+        if (! selectionRange (from, lo, hi, t0, t1))
+            return out;
+        const auto centre = (lo + hi) * 0.5f;
+        factor = juce::jmax (0.0f, factor);
+        for (auto& b : out)
+            if (b.selected)
+                b.value = juce::jlimit (0.0f, 1.0f, centre + (b.value - centre) * factor);
+        return out;
+    }
+
+    std::vector<Breakpoint> tiltSelection (const std::vector<Breakpoint>& from, float left, float right)
+    {
+        auto out = from;
+        float lo = 0, hi = 0, t0 = 0, t1 = 0;
+        if (! selectionRange (from, lo, hi, t0, t1))
+            return out;
+        for (auto& b : out)
+            if (b.selected)
+            {
+                const auto f = t1 > t0 ? (b.time - t0) / (t1 - t0) : 0.5f;
+                b.value = juce::jlimit (0.0f, 1.0f, b.value + left + (right - left) * f);
+            }
+        return out;
+    }
+
+    void invertSelection (std::vector<Breakpoint>& bps)
+    {
+        for (auto& b : bps)
+            if (b.selected)
+                b.value = 1.0f - b.value;
+    }
+
+    int deleteSelection (std::vector<Breakpoint>& bps)
+    {
+        if (bps.size() <= 2)
+            return 0;
+        const auto before = (int) bps.size();
+        const auto first = bps.front(), last = bps.back();
+        std::vector<Breakpoint> kept { first };
+        for (size_t i = 1; i + 1 < bps.size(); ++i)
+            if (! bps[i].selected)
+                kept.push_back (bps[i]);
+        kept.push_back (last);
+        bps = kept;
+        return before - (int) bps.size();
+    }
+
+    void setSelectionShape (std::vector<Breakpoint>& bps, Segment shape)
+    {
+        for (size_t i = 0; i + 1 < bps.size(); ++i)
+            if (bps[i].selected)
+            {
+                bps[i].shape = shape;
+                if (shape != Segment::bezier)
+                    bps[i].tension = 0.0f;
+            }
+    }
+
+    std::vector<Breakpoint> mergeStroke (const std::vector<Breakpoint>& bps, const std::vector<float>& samples, int first, int last,
+                                         float tolerance)
+    {
+        const auto n = (int) samples.size();
+        if (n < 2)
+            return bps;
+        if (first > last)
+            std::swap (first, last);
+        first = juce::jlimit (0, n - 1, first);
+        last = juce::jlimit (0, n - 1, last);
+        const auto t0 = (float) first / (float) (n - 1);
+        const auto t1 = (float) last / (float) (n - 1);
+
+        std::vector<Breakpoint> stroke;
+        if (first == last)
+        {
+            stroke.push_back ({ t0, juce::jlimit (0.0f, 1.0f, samples[(size_t) first]) });
+        }
+        else
+        {
+            const std::vector<float> part (samples.begin() + first, samples.begin() + last + 1);
+            for (auto p : simplifyDrawing (part, tolerance))
+                stroke.push_back ({ t0 + p.time * (t1 - t0), juce::jlimit (0.0f, 1.0f, p.value) });
+        }
+
+        std::vector<Breakpoint> out;
+        const auto eps = minPointGap - 1.0e-5f;
+        for (const auto& b : bps)
+            if (b.time < t0 - eps || b.time > t1 + eps)
+                out.push_back (b);
+        for (const auto& b : stroke)
+            out.push_back (b);
+        std::sort (out.begin(), out.end(), [] (const Breakpoint& a, const Breakpoint& b) { return a.time < b.time; });
+        if (out.empty() || out.front().time > 0.0f)
+            out.insert (out.begin(), { 0.0f, out.empty() ? 0.0f : out.front().value });
+        if (out.back().time < 1.0f)
+            out.push_back ({ 1.0f, out.back().value });
+        return out;
+    }
+
+    bool samePoints (const std::vector<Breakpoint>& a, const std::vector<Breakpoint>& b)
+    {
+        if (a.size() != b.size())
+            return false;
+        for (size_t i = 0; i < a.size(); ++i)
+            if (! juce::exactlyEqual (a[i].time, b[i].time) || ! juce::exactlyEqual (a[i].value, b[i].value) || a[i].shape != b[i].shape
+                || ! juce::exactlyEqual (a[i].tension, b[i].tension))
+                return false;
+        return true;
+    }
+
+    void DrawHistory::record (const std::vector<Breakpoint>& s, const juce::String& mergeKey)
+    {
+        if (index >= 0 && samePoints (states[(size_t) index], s))
+        {
+            states[(size_t) index] = s;   // the same line: keep the newer selection, no new step
+            return;
+        }
+        states.resize ((size_t) (index + 1));   // a new edit drops what could be redone
+        if (mergeKey.isNotEmpty() && mergeKey == lastKey && index > 0)
+            states[(size_t) index] = s;
+        else
+        {
+            states.push_back (s);
+            ++index;
+        }
+        lastKey = mergeKey;
+        while ((int) states.size() > maxSteps + 1)
+        {
+            states.erase (states.begin());
+            --index;
+        }
+    }
+
+    std::vector<Breakpoint> DrawHistory::undo()
+    {
+        lastKey = {};
+        if (index > 0)
+            --index;
+        return index >= 0 ? states[(size_t) index] : std::vector<Breakpoint>();
+    }
+
+    std::vector<Breakpoint> DrawHistory::redo()
+    {
+        lastKey = {};
+        if (index + 1 < (int) states.size())
+            ++index;
+        return index >= 0 ? states[(size_t) index] : std::vector<Breakpoint>();
+    }
 }
 
 //==============================================================================

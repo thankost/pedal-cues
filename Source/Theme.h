@@ -40,5 +40,7 @@ public:
                            float minSliderPos, float maxSliderPos, juce::Slider::SliderStyle, juce::Slider&) override;
     void drawPopupMenuBackground (juce::Graphics&, int width, int height) override;
     void drawTooltip (juce::Graphics&, const juce::String& text, int width, int height) override;
+    void drawCallOutBoxBackground (juce::CallOutBox&, juce::Graphics&, const juce::Path&, juce::Image&) override;
+    juce::Rectangle<int> getTooltipBounds (const juce::String& text, juce::Point<int> screenPos, juce::Rectangle<int> parentArea) override;
 };
 } // namespace theme

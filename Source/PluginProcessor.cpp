@@ -39,9 +39,15 @@ void PedalCuesProcessor::setDirectMidiOutput (const juce::String& id)
     state::setSetting ("standaloneMidiOutput", id);
 }
 
-void PedalCuesProcessor::prepareToPlay (double sampleRate, int)
+void PedalCuesProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     currentSampleRate = sampleRate;
+    songAudio.prepare (sampleRate, samplesPerBlock);
+}
+
+void PedalCuesProcessor::releaseResources()
+{
+    songAudio.release();
 }
 
 bool PedalCuesProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -92,6 +98,7 @@ void PedalCuesProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
         }
     }
 
+    songAudio.render (buffer, numSamples, blockStart);   // the Song Builder's click and backing track, when playing
     sampleCounter = blockStart + numSamples;
 }
 

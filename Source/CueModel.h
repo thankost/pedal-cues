@@ -190,6 +190,78 @@ namespace whammy
     juce::String       encodeDrawing (const std::vector<float>&);
     std::vector<float> decodeDrawing (const juce::String&);   // always drawPoints values
 
+    // Draw > Points: breakpoints (time 0..1 across the move, value 0..1) joined by straight lines, like a DAW's CC
+    // envelope. The drawing itself stays drawPoints samples: the pad renders its breakpoints into them on every edit,
+    // and simplifies samples that come from elsewhere (a saved drawing, Wave, Import MIDI, Freehand) back into points.
+    // Each point also says how the line from it to the next one runs (like Reaper's envelope point shapes): square holds
+    // its value until the next point, slow start/end is an S curve, fast start / fast end bend towards the next value
+    // early / late, and bezier bends by 'tension' (-1..1: above 0 the line bulges up, below 0 it sags; 0 = straight).
+    // 'selected' is the pad's selection; nothing outside the pad reads it.
+    enum class Segment { square, linear, slowStartEnd, fastStart, fastEnd, bezier };
+    constexpr int numSegments = 6;
+    juce::String segmentName (Segment);
+    struct Breakpoint
+    {
+        float time = 0.0f, value = 0.0f;
+        Segment shape = Segment::linear;
+        float tension = 0.0f;
+        bool selected = false;
+    };
+    // Where a segment from value 'a' to 'b' is at 'x' (0..1 across it).
+    float segmentValue (Segment, float tension, float a, float b, float x);
+    std::vector<float>      renderBreakpoints (const std::vector<Breakpoint>&);   // sorted by time; drawPoints values
+    // Ramer-Douglas-Peucker on the samples, keeping the first and last: no sample is further than 'tolerance' (in value)
+    // from the line through the points, so a straight ramp gives 2 points and a sine a handful per wave.
+    std::vector<Breakpoint> simplifyDrawing (const std::vector<float>&, float tolerance = 0.02f);
+    // The grid step for a move of 'lengthBeats' on a pad 'widthPx' wide: 1/16 (0.25 beat) when those lines are at least
+    // 'minGapPx' apart, else 1/8, else 1/4.
+    double gridStepBeats (double lengthBeats, double widthPx, double minGapPx = 8.0);
+    float  snapTime  (float time, double lengthBeats, double stepBeats);   // to the nearest grid line, 0..1
+    float  snapValue (float value);                                        // to 1 % steps
+    juce::String positionLabel (double beat);   // 0-based beat -> "1.1" (bar.beat), "2.3.3" off the beat on a 1/16, "1.2 +0.37" off the grid
+    // "1.1", "2.3.3" (bar.beat.sixteenth, as positionLabel writes them) or a plain beat count "+2.5" -> 0-based beat; -1 if unreadable.
+    double parsePosition (const juce::String&);
+
+    // Points editing (the pad's selection, Reaper-style). All keep the points sorted, the first at time 0 and the last at
+    // time 1, values 0..1, and at least minPointGap between neighbours.
+    constexpr float minPointGap = 1.0f / (float) (drawPoints - 1);   // one sample
+    // Moves the selected points of 'from' by dt (time) and dv (value). The first and last points only move up and down;
+    // dt is limited so the selection never reaches an unselected neighbour (it keeps its order).
+    std::vector<Breakpoint> moveSelection (const std::vector<Breakpoint>& from, float dt, float dv);
+    float limitSelectionShift (const std::vector<Breakpoint>&, float dt);   // the dt moveSelection actually uses
+    // Scales the selected values around the middle of their range (factor < 1 compresses, > 1 expands).
+    std::vector<Breakpoint> scaleSelection (const std::vector<Breakpoint>& from, float factor);
+    // Adds 'left' at the selection's first point and 'right' at its last, linearly in between (a tilt with left = -right).
+    std::vector<Breakpoint> tiltSelection (const std::vector<Breakpoint>& from, float left, float right);
+    void invertSelection (std::vector<Breakpoint>&);                        // value -> 1 - value
+    int  deleteSelection (std::vector<Breakpoint>&);                        // never the first or last; returns how many
+    void setSelectionShape (std::vector<Breakpoint>&, Segment);             // the segments that start at a selected point
+    int  numSelected (const std::vector<Breakpoint>&);
+    // Freehand inside Points: 'samples' (drawPoints values) were drawn from index 'first' to 'last'. The points in that
+    // range are replaced by the stroke, simplified; the ones outside keep their place and shape.
+    std::vector<Breakpoint> mergeStroke (const std::vector<Breakpoint>&, const std::vector<float>& samples, int first, int last,
+                                         float tolerance = 0.02f);
+    bool samePoints (const std::vector<Breakpoint>&, const std::vector<Breakpoint>&);   // ignores the selection
+
+    // The pad's undo history: the states after each edit. record() adds one (dropping any redo); a 'mergeKey' equal to the
+    // previous record's replaces that state instead, so a dragged slider is one step. Keeps 'limit' undo steps.
+    class DrawHistory
+    {
+    public:
+        explicit DrawHistory (int limit = 100) : maxSteps (limit) {}
+        void record (const std::vector<Breakpoint>&, const juce::String& mergeKey = {});
+        bool canUndo() const { return index > 0; }
+        bool canRedo() const { return index + 1 < (int) states.size(); }
+        std::vector<Breakpoint> undo();   // the state to show; call only when canUndo()
+        std::vector<Breakpoint> redo();
+        void endMerge() { lastKey = {}; }
+        int size() const { return (int) states.size(); }
+    private:
+        std::vector<std::vector<Breakpoint>> states;
+        int index = -1, maxSteps;
+        juce::String lastKey;
+    };
+
     // Draw > Wave: a generated line (like Reaper's CC LFO). 'cycles' waves across the move, starting 'phase' degrees in;
     // 'shape' (-1..1) moves the peak (triangle -> saw), leans a sine, or sets a square's pulse width (saws ignore it);
     // the wave runs between 'low' and 'high' (0 = heel, 1 = toe). 'grow' (-1..1) makes it build up from 'low' (> 0)
