@@ -278,7 +278,7 @@ Click **Expression** under the preset screen. Its tiles move whatever you assign
 
 - **Exp 1 / Exp 2** (header) picks which expression pedal the tiles move.
 - **Set to** tiles put it at a fixed spot: **Heel**, **25%**, **Half**, **75%** or **Toe**. Drop one at the start of a song or right after a preset loads, so you always start from a known position.
-- **Moves**, with a **Length** (1/16 to 4 bars) and a **Curve**, written in beats so they follow the project tempo:
+- **Moves**, with a **Length** (1/16 to 8 bars) and a **Curve**, written in beats so they follow the project tempo:
 
 | Move | What it does | Good for |
 |---|---|---|
@@ -720,7 +720,7 @@ Treadle moves are **CC#11** automation written in beats, so they follow your pro
 | Bend to Bar | Holds heel, then bends in the last beat so it lands on the next bar line |
 | Toe Down / Heel Down | Jumps and holds |
 
-- **Length:** from 1/16 note up to 4 bars.
+- **Length:** from 1/16 note up to 8 bars.
 - **Curve:** `1.00` is linear, lower values start fast, higher values start slow.
 - **Early by** (in the Treadle moves header: Off, 10 to 50 ms): the Whammy's pitch shifting takes a moment, so a bend can sound a little after the beat. Players used to move their automation a little to the left; with Early by, every treadle move (shapes and drawn ones) plays that much earlier inside its clip, and you still drop it on the beat. The clip's first point stays at its start, and mode changes aren't moved. No one has measured the Whammy V or DT yet (reports for older Whammys say roughly 15-30 ms): try 20 ms and adjust by ear. It applies to moves you drag from then on.
 - **Return to heel after move:** adds a `CC#11 = 0` at the end.
