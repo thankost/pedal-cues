@@ -567,6 +567,11 @@ int main (int argc, char** argv)
                                                { "Chorus", 8, 4, 4, 120.0 }, { "Bridge", 4, 7, 8, 140.0 }, { "Solo", 8, 4, 4, 120.0 },
                                                { "Outro", 4, 4, 4, 120.0 } })
                 song.appendChild (songs::createSection (n, b, num, den, bpm), nullptr);
+            {   // A ritardando in the Outro: it glides from 120 to 90 over three bars, then holds.
+                auto outro = song.getChild (song.getNumChildren() - 1);
+                outro.setProperty (IDs::tempoRamp, true, nullptr);
+                songs::addTempoChange (outro, 12.0, 90.0);
+            }
             auto list = songs::songsNode (proc.state);
             list.appendChild (song, nullptr);
             list.appendChild (songs::createSong ("Ghost Light"), nullptr);

@@ -2,9 +2,12 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
-## 0.11.1 (unreleased)
+## 0.11.1 (2026-10-08)
 
 - **Early by for Whammy treadle moves (new):** the Whammy's pitch shifting takes a moment, so bends can sound late. Pick 10-50 ms in the Treadle moves header and every move plays that much earlier inside its clip; you still drop it on the beat.
+- **Tempo changes anywhere, like Reaper's tempo markers (Song Builder, beta):** a new **Tempo** lane under the bar numbers shows the tempo line. Double-click it to add a tempo change at any beat, even partway through a bar (the bars don't move), then drag it up or down for its tempo and left or right to move it, like an envelope point; drag the line to change a stretch's tempo. Any change, or a section's start, can **change gradually to the next tempo** for a ritardando or accelerando. Play, the click, the backing track and the exported tempo map all follow it.
+- **Song import is exact:** every tempo change in the file comes in where it is (Guitar Pro's tempo changes partway through a bar too), and a section that stops partway through a bar ends with one exact short bar instead of being rounded, so the bars and cues never shift. Tempos read as the file means them (225, not 225.001).
+- **Fix:** in the Song Builder's songs list, ⌘ / Ctrl-click on a selected song now deselects it.
 - **Curve a line without a key:** point at a line in Draw and drag the diamond in its middle. Picking **Bezier** gives the line a curve right away.
 
 ## 0.11.0 (2026-10-08)

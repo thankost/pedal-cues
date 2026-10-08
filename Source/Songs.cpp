@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <set>
 #include <map>
 
 namespace songs
@@ -140,13 +141,118 @@ int songBars (const juce::ValueTree& song)
     return bars;
 }
 
+static double sectionBpm (const juce::ValueTree& s) { return juce::jlimit (minBpm, maxBpm, (double) s.getProperty (IDs::bpm, 120.0)); }
+
+std::vector<juce::ValueTree> tempoChanges (const juce::ValueTree& section)
+{
+    std::vector<juce::ValueTree> list;
+    const auto length = sectionLengthBeats (section);
+    for (const auto& c : section)
+        if (c.hasType (IDs::SongTempo) && (double) c[IDs::beat] > 1.0e-9 && (double) c[IDs::beat] < length - 1.0e-9)
+            list.push_back (c);
+    std::stable_sort (list.begin(), list.end(), [] (const auto& a, const auto& b) { return (double) a[IDs::beat] < (double) b[IDs::beat]; });
+    return list;
+}
+
+juce::ValueTree addTempoChange (juce::ValueTree section, double beat, double bpm, bool gradual)
+{
+    juce::ValueTree t (IDs::SongTempo);
+    t.setProperty (IDs::beat, juce::jlimit (0.0, sectionLengthBeats (section), beat), nullptr);
+    t.setProperty (IDs::bpm, juce::jlimit (minBpm, maxBpm, bpm), nullptr);
+    if (gradual)
+        t.setProperty (IDs::tempoRamp, true, nullptr);
+    section.appendChild (t, nullptr);
+    return t;
+}
+
+std::vector<TempoSegment> tempoSegments (const juce::ValueTree& song)
+{
+    // Every tempo point in song order: a section's start, then its changes.
+    struct Point { double beat, bpm; bool glide; };
+    std::vector<Point> points;
+    double start = 0.0;
+    for (const auto& s : song)
+    {
+        if (! s.hasType (IDs::SongSection))
+            continue;
+        points.push_back ({ start, sectionBpm (s), (bool) s.getProperty (IDs::tempoRamp, false) });
+        for (const auto& c : tempoChanges (s))
+            points.push_back ({ start + (double) c[IDs::beat], juce::jlimit (minBpm, maxBpm, (double) c[IDs::bpm]),
+                                (bool) c.getProperty (IDs::tempoRamp, false) });
+        start += sectionLengthBeats (s);
+    }
+    std::vector<TempoSegment> segments;
+    for (size_t i = 0; i < points.size(); ++i)
+    {
+        const auto to = i + 1 < points.size() ? points[i + 1].beat : start;
+        if (to <= points[i].beat + 1.0e-12)
+            continue;
+        const auto end = points[i].glide && i + 1 < points.size() ? points[i + 1].bpm : points[i].bpm;
+        segments.push_back ({ points[i].beat, to, points[i].bpm, end });
+    }
+    return segments;
+}
+
+static juce::ValueTree nextSection (const juce::ValueTree& song, const juce::ValueTree& section)
+{
+    for (int i = song.indexOf (section) + 1; i < song.getNumChildren(); ++i)
+        if (song.getChild (i).hasType (IDs::SongSection))
+            return song.getChild (i);
+    return {};
+}
+
+bool rampsTempo (const juce::ValueTree& song, const juce::ValueTree& section)
+{
+    return (bool) section.getProperty (IDs::tempoRamp, false) && (! tempoChanges (section).empty() || nextSection (song, section).isValid());
+}
+
+// Seconds from a segment's start to `x` beats into it, its tempo going evenly per beat from b0 to b1 over `length` beats
+// (bpm(x) = b0 + (b1 - b0) x / length, so the time is a logarithm), and the way back.
+static double secondsInto (double length, double b0, double b1, double x)
+{
+    if (std::abs (b1 - b0) < 1.0e-9 || length <= 0.0)
+        return x * 60.0 / b0;
+    const auto k = (b1 - b0) / length;
+    return 60.0 / k * std::log ((b0 + k * x) / b0);
+}
+
+static double beatsInto (double length, double b0, double b1, double seconds)
+{
+    if (std::abs (b1 - b0) < 1.0e-9 || length <= 0.0)
+        return seconds * b0 / 60.0;
+    const auto k = (b1 - b0) / length;
+    return b0 / k * (std::exp (seconds * k / 60.0) - 1.0);
+}
+
+static double segmentSeconds (const TempoSegment& g, double beat)
+{
+    return secondsInto (g.to - g.from, g.bpm0, g.bpm1, juce::jlimit (0.0, g.to - g.from, beat - g.from));
+}
+
 double songSeconds (const juce::ValueTree& song)
 {
     double seconds = 0.0;
-    for (const auto& s : song)
-        if (s.hasType (IDs::SongSection))
-            seconds += sectionLengthBeats (s) * 60.0 / juce::jlimit (minBpm, maxBpm, (double) s.getProperty (IDs::bpm, 120.0));
+    for (const auto& g : tempoSegments (song))
+        seconds += segmentSeconds (g, g.to);
     return seconds;
+}
+
+double sectionEndBpm (const juce::ValueTree& song, const juce::ValueTree& section)
+{
+    const auto end = sectionStartBeat (song, section) + sectionLengthBeats (section);
+    for (const auto& g : tempoSegments (song))
+        if (std::abs (g.to - end) < 1.0e-9)
+            return g.bpm1;
+    return sectionBpm (section);
+}
+
+double tempoAt (const juce::ValueTree& song, double beat)
+{
+    const auto segments = tempoSegments (song);
+    for (const auto& g : segments)
+        if (beat < g.to - 1.0e-9)
+            return g.bpm0 + (g.bpm1 - g.bpm0) * juce::jlimit (0.0, 1.0, (beat - g.from) / (g.to - g.from));
+    return segments.empty() ? 120.0 : segments.back().bpm1;
 }
 
 juce::ValueTree sectionAt (const juce::ValueTree& song, double beat)
@@ -204,36 +310,28 @@ juce::String barLabel (const juce::ValueTree& song, double beat)
 
 double beatToSeconds (const juce::ValueTree& song, double beat)
 {
-    double start = 0.0, seconds = 0.0;
-    for (const auto& s : song)
+    double seconds = 0.0;
+    for (const auto& g : tempoSegments (song))
     {
-        if (! s.hasType (IDs::SongSection))
-            continue;
-        const auto length = sectionLengthBeats (s);
-        const auto spb = 60.0 / juce::jlimit (minBpm, maxBpm, (double) s.getProperty (IDs::bpm, 120.0));
-        if (beat <= start + length)
-            return seconds + (beat - start) * spb;
-        seconds += length * spb;
-        start += length;
+        if (beat <= g.to)
+            return seconds + segmentSeconds (g, beat);
+        seconds += segmentSeconds (g, g.to);
     }
     return seconds;
 }
 
 double secondsToBeat (const juce::ValueTree& song, double seconds)
 {
-    double start = 0.0, elapsed = 0.0;
-    for (const auto& s : song)
+    double elapsed = 0.0, end = 0.0;
+    for (const auto& g : tempoSegments (song))
     {
-        if (! s.hasType (IDs::SongSection))
-            continue;
-        const auto length = sectionLengthBeats (s);
-        const auto spb = 60.0 / juce::jlimit (minBpm, maxBpm, (double) s.getProperty (IDs::bpm, 120.0));
-        if (seconds <= elapsed + length * spb)
-            return start + (seconds - elapsed) / spb;
-        elapsed += length * spb;
-        start += length;
+        const auto whole = segmentSeconds (g, g.to);
+        if (seconds <= elapsed + whole)
+            return g.from + juce::jlimit (0.0, g.to - g.from, beatsInto (g.to - g.from, g.bpm0, g.bpm1, seconds - elapsed));
+        elapsed += whole;
+        end = g.to;
     }
-    return start;
+    return end;
 }
 
 //==============================================================================
@@ -505,17 +603,39 @@ juce::MidiFile songMidi (const juce::ValueTree& song, const juce::StringArray& t
     {
         if (! s.hasType (IDs::SongSection))
             continue;
-        const auto bpm = juce::jlimit (minBpm, maxBpm, (double) s.getProperty (IDs::bpm, 120.0));
         const auto num = juce::jlimit (1, maxBeatsPerBar, (int) s.getProperty (IDs::timeNum, 4));
         const auto den = clampDen ((int) s.getProperty (IDs::timeDen, 4));
-        if (std::abs (bpm - lastBpm) > 1.0e-6)
-            conductor.addEvent (juce::MidiMessage::tempoMetaEvent (juce::roundToInt (60000000.0 / bpm)), toTicks (beat));
+        const auto length = sectionLengthBeats (s);
         if (num != lastNum || den != lastDen)
             conductor.addEvent (juce::MidiMessage::timeSignatureMetaEvent (num, den), toTicks (beat));
         conductor.addEvent (juce::MidiMessage::textMetaEvent (6, s[IDs::name].toString()), toTicks (beat));
-        lastBpm = bpm; lastNum = num; lastDen = den;
-        beat += sectionLengthBeats (s);
+        lastNum = num; lastDen = den;
+        beat += length;
     }
+    // The tempo map: a tempo at each steady change; a glide as a tempo every 1/16 (a MIDI file holds steps), each lasting
+    // exactly as long as the glide does there.
+    for (const auto& g : tempoSegments (song))
+    {
+        const auto write = [&] (double at, double bpmNow)
+        {
+            if (std::abs (bpmNow - lastBpm) > 1.0e-6)
+                conductor.addEvent (juce::MidiMessage::tempoMetaEvent (juce::roundToInt (60000000.0 / bpmNow)), toTicks (at));
+            lastBpm = bpmNow;
+        };
+        if (std::abs (g.bpm1 - g.bpm0) < 1.0e-9)
+        {
+            write (g.from, g.bpm0);
+            continue;
+        }
+        constexpr double step = 0.25;
+        const auto length = g.to - g.from;
+        for (double x = 0.0; x < length - 1.0e-9; x += step)
+        {
+            const auto d = juce::jmin (step, length - x);
+            write (g.from + x, d * 60.0 / (secondsInto (length, g.bpm0, g.bpm1, x + d) - secondsInto (length, g.bpm0, g.bpm1, x)));
+        }
+    }
+    conductor.sort();
 
     // One sequence per exported track, in the song's order.
     std::vector<juce::ValueTree> exported;
@@ -565,7 +685,7 @@ double countInSeconds (const juce::ValueTree& song, double fromBeat, int countIn
     const auto section = sectionAt (song, fromBeat);
     if (! section.isValid() || countInBars <= 0)
         return 0.0;
-    return countInBars * barBeats (section) * 60.0 / juce::jlimit (minBpm, maxBpm, (double) section.getProperty (IDs::bpm, 120.0));
+    return countInBars * barBeats (section) * 60.0 / tempoAt (song, fromBeat);
 }
 
 juce::StringArray clickDivNames()
@@ -598,7 +718,7 @@ std::vector<Click> metronomeClicks (const juce::ValueTree& song, double fromBeat
         const auto section = sectionAt (song, fromBeat);
         const auto unit = 4.0 / juce::jmax (1, (int) section.getProperty (IDs::timeDen, 4));
         const auto perBar = juce::roundToInt (barBeats (section) / unit);
-        const auto spb = 60.0 / juce::jlimit (minBpm, maxBpm, (double) section.getProperty (IDs::bpm, 120.0));
+        const auto spb = 60.0 / tempoAt (song, fromBeat);
         for (int i = 0; i < countInBars * perBar; ++i)
             clicks.push_back ({ i * unit * spb, i % perBar == 0, false });
     }
@@ -833,9 +953,18 @@ bool fitTempoToAudio (juce::ValueTree song, int bar, double fileSeconds)
     if (bar <= 1 || wanted <= 0.05 || now <= 0.0)
         return false;
     const auto factor = now / wanted;           // faster when the audio gets there sooner
+    const auto scale = [factor] (juce::ValueTree t)
+    {
+        t.setProperty (IDs::bpm, juce::jlimit (minBpm, maxBpm, std::round ((double) t.getProperty (IDs::bpm, 120.0) * factor * 100.0) / 100.0), nullptr);
+    };
     for (auto s : song)
         if (s.hasType (IDs::SongSection))
-            s.setProperty (IDs::bpm, juce::jlimit (minBpm, maxBpm, std::round ((double) s.getProperty (IDs::bpm, 120.0) * factor * 100.0) / 100.0), nullptr);
+        {
+            scale (s);
+            for (auto c : s)   // its tempo changes too
+                if (c.hasType (IDs::SongTempo))
+                    scale (c);
+        }
     return true;
 }
 
@@ -955,6 +1084,19 @@ static juce::String nameFor (const std::vector<std::pair<double, juce::MidiMessa
     return "Cue";
 }
 
+// A bar of `quarters` quarter notes as a time signature: the smallest note value that counts it in whole beats
+// (3/8 for 1.5, 7/16 for 1.75), else the nearest 1/64.
+static std::pair<int, int> shortBar (double quarters)
+{
+    for (int den = 4; den <= 64; den *= 2)
+    {
+        const auto num = quarters * den / 4.0;
+        if (std::abs (num - std::round (num)) < 1.0e-3 && std::round (num) >= 1.0 && std::round (num) <= maxBeatsPerBar)
+            return { (int) std::round (num), den };
+    }
+    return { juce::jlimit (1, maxBeatsPerBar, juce::roundToInt (quarters * 16.0)), 64 };
+}
+
 MapImport importMap (const juce::MidiFile& file, const juce::String& songName, bool withCues)
 {
     MapImport result;
@@ -979,7 +1121,8 @@ MapImport importMap (const juce::MidiFile& file, const juce::String& songName, b
             const auto tick = m.getTimeStamp();
             endTick = juce::jmax (endTick, tick);
             if (m.isTempoMetaEvent())
-                tempos[tick] = 60.0 / juce::jmax (1.0e-6, m.getTempoSecondsPerQuarterNote());
+                // A file stores whole microseconds a beat (225 BPM = 266,666 us, which reads back as 225.0006): round to 0.01.
+                tempos[tick] = std::round (6000.0 / juce::jmax (1.0e-6, m.getTempoSecondsPerQuarterNote())) / 100.0;
             else if (m.isTimeSignatureMetaEvent())
             {
                 int num = 4, den = 4;
@@ -1032,26 +1175,8 @@ MapImport importMap (const juce::MidiFile& file, const juce::String& songName, b
         if (starts.find (tick) == starts.end())
             starts[tick] = {};
 
-    std::vector<double> markerTicks { 0.0 };
-    for (const auto& [tick, name] : markers)
-        markerTicks.push_back (tick);
-    markerTicks.push_back (std::numeric_limits<double>::max());
-    for (size_t k = 0; k + 1 < markerTicks.size(); ++k)
-    {
-        std::vector<double> inside;
-        for (const auto& [tick, bpm] : tempos)
-            if (tick > markerTicks[k] + 0.5 && tick < markerTicks[k + 1] - 0.5)
-                inside.push_back (tick);
-        if (inside.size() > 4)
-        {
-            result.warnings.add ("A tempo ramp (" + juce::String ((int) inside.size()) + " tempo changes) was kept as the tempo where "
-                                 "its section starts.");
-            continue;
-        }
-        for (auto tick : inside)
-            if (starts.find (tick) == starts.end())
-                starts[tick] = {};
-    }
+    // Tempo changes don't start sections: like Reaper's tempo markers, each one lands inside its section at its exact
+    // beat, so a change partway through a bar (Guitar Pro writes them) keeps the bars where they are.
 
     if (endTick <= starts.rbegin()->first)
         endTick = starts.rbegin()->first;   // the last section gets a default length below
@@ -1068,6 +1193,13 @@ MapImport importMap (const juce::MidiFile& file, const juce::String& songName, b
         const auto next = std::next (it) != starts.end() ? std::next (it)->first : endTick;
         const auto meter = valueAt (meters, tick, std::pair<int, int> { 4, 4 });
         const auto bpm = valueAt (tempos, tick, 120.0);
+        // The file's tempo changes inside this stretch, as changes in the section(s) made for it.
+        const auto addChanges = [&] (juce::ValueTree section, double fromTick, double toTick)
+        {
+            for (const auto& [t, value] : tempos)
+                if (t > fromTick + 0.5 && t < toTick - 0.5 && std::abs (value - valueAt (tempos, t - 1.0, value)) > 1.0e-6)
+                    addTempoChange (section, (t - fromTick) / tpq, value);
+        };
         const auto bb = meter.first * 4.0 / meter.second;
         const auto lengthBeats = (next - tick) / tpq;
 
@@ -1082,22 +1214,44 @@ MapImport importMap (const juce::MidiFile& file, const juce::String& songName, b
         else
             lastName = name;
 
-        int bars = juce::roundToInt (lengthBeats / bb);
-        if (lengthBeats <= 1.0e-6)
-        {
-            bars = 4;   // the last marker with nothing after it
-            result.warnings.add ("\"" + name + "\" is the last marker and nothing follows it: it got 4 bars.");
-        }
-        else if (std::abs (lengthBeats / bb - bars) > 0.05 || bars < 1)
-        {
-            bars = juce::jmax (1, bars);
-            result.warnings.add ("\"" + name + "\" doesn't end on a bar line: rounded to " + juce::String (bars)
-                                 + (bars == 1 ? " bar." : " bars."));
-        }
         if (it == starts.begin() && it->second.isEmpty() && lengthBeats <= 1.0e-6)
             continue;   // a marker at the very start: no empty "Start" section
+        const auto isLast = std::next (it) == starts.end();
+        if (lengthBeats <= 1.0e-6)
+        {
+            result.warnings.add ("\"" + name + "\" is the last marker and nothing follows it: it got 4 bars.");
+            song.appendChild (createSection (name, 4, meter.first, meter.second, bpm), nullptr);
+            continue;
+        }
 
-        song.appendChild (createSection (name, bars, meter.first, meter.second, bpm), nullptr);
+        // Whole bars, then, when the section stops partway through a bar (a tempo or time signature change mid-bar, a
+        // pickup or cut-off bar), one short bar in a time signature that fits exactly, so nothing after it moves. The
+        // song's last section is just filled up to its last bar line instead.
+        auto bars = (int) std::floor (lengthBeats / bb + 1.0e-6);
+        const auto rest = lengthBeats - bars * bb;
+        if (rest > 1.0e-3 && isLast)
+            ++bars;
+        else if (rest > 1.0e-3)
+        {
+            const auto fit = shortBar (rest);
+            const auto split = tick + bars * bb * tpq;
+            if (bars > 0)
+            {
+                auto whole = createSection (name, bars, meter.first, meter.second, bpm);
+                addChanges (whole, tick, split);
+                song.appendChild (whole, nullptr);
+            }
+            auto last = createSection (bars > 0 ? name + " (end)" : name, 1, fit.first, fit.second, valueAt (tempos, split, bpm));
+            addChanges (last, split, next);
+            song.appendChild (last, nullptr);
+            if (std::abs (fit.first * 4.0 / fit.second - rest) > 1.0e-3)
+                result.warnings.add ("\"" + name + "\" ends partway through a bar: its last bar is " + juce::String (fit.first) + "/"
+                                     + juce::String (fit.second) + ", as near as a time signature gets.");
+            continue;
+        }
+        auto section = createSection (name, juce::jmax (1, bars), meter.first, meter.second, bpm);
+        addChanges (section, tick, next);
+        song.appendChild (section, nullptr);
     }
 
     // Drop a zero-length "Start" when the first marker sits at tick 0 (std::map merged it, so nothing to do) and

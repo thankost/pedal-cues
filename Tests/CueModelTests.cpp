@@ -59,6 +59,88 @@ int main (int argc, char** argv)
         return info.status == update::Info::Status::failed ? 1 : 0;
     }
 
+    // Import diagnostics: PedalCuesTests --import-map song.mid prints the sections and notes the Song Builder would make.
+    if (argc > 2 && juce::String (argv[1]) == "--import-map")
+    {
+        juce::FileInputStream in { juce::File (juce::String::fromUTF8 (argv[2])) };
+        juce::MidiFile file;
+        if (! in.openedOk() || ! file.readFrom (in))
+            return 1;
+        const auto r = songs::importMap (file, "Import", true);
+        std::printf ("%s\n", r.error.toRawUTF8());
+        double beat = 0.0;
+        for (const auto& sec : r.song)
+        {
+            if (! sec.hasType (IDs::SongSection))
+                continue;
+            std::printf ("beat %8.3f  %-14s %3d bars  %d/%d  %.3f BPM\n", beat, sec[IDs::name].toString().toRawUTF8(), (int) sec[IDs::bars],
+                         (int) sec[IDs::timeNum], (int) sec[IDs::timeDen], (double) sec[IDs::bpm]);
+            for (const auto& t : songs::tempoChanges (sec))
+                std::printf ("           tempo change %.3f beats in: %.3f BPM%s\n", (double) t[IDs::beat], (double) t[IDs::bpm],
+                             (bool) t[IDs::tempoRamp] ? " (gradual)" : "");
+            beat += songs::sectionLengthBeats (sec);
+        }
+        std::printf ("total %.3f beats\n", beat);
+        for (const auto& w : r.warnings)
+            std::printf ("note: %s\n", w.toRawUTF8());
+
+        // Round trip: what Drag song writes, against the original, in seconds (what a DAW plays): every time signature
+        // and tempo change, by its position in beats.
+        auto exported = songs::songMidi (r.song, {});
+        const auto mapOf = [] (juce::MidiFile f)
+        {
+            const auto tpq = (double) f.getTimeFormat();
+            std::vector<std::tuple<double, juce::String>> beatsAndWhat;
+            for (int t = 0; t < f.getNumTracks(); ++t)
+                for (int i = 0; i < f.getTrack (t)->getNumEvents(); ++i)
+                {
+                    const auto& m = f.getTrack (t)->getEventPointer (i)->message;
+                    if (m.isTempoMetaEvent())
+                        beatsAndWhat.emplace_back (m.getTimeStamp() / tpq, "tempo " + juce::String (60.0 / m.getTempoSecondsPerQuarterNote(), 4));
+                    else if (m.isTimeSignatureMetaEvent())
+                    {
+                        int n = 0, d = 0;
+                        m.getTimeSignatureInfo (n, d);
+                        beatsAndWhat.emplace_back (m.getTimeStamp() / tpq, "meter " + juce::String (n) + "/" + juce::String (d));
+                    }
+                }
+            f.convertTimestampTicksToSeconds();
+            std::vector<std::tuple<double, double, juce::String>> out;
+            size_t k = 0;
+            for (int t = 0; t < f.getNumTracks(); ++t)
+                for (int i = 0; i < f.getTrack (t)->getNumEvents(); ++i)
+                {
+                    const auto& m = f.getTrack (t)->getEventPointer (i)->message;
+                    if (m.isTempoMetaEvent() || m.isTimeSignatureMetaEvent())
+                    {
+                        out.emplace_back (std::get<0> (beatsAndWhat[k]), m.getTimeStamp(), std::get<1> (beatsAndWhat[k]));
+                        ++k;
+                    }
+                }
+            std::sort (out.begin(), out.end());
+            return out;
+        };
+        const auto a = mapOf (file), b = mapOf (exported);
+        double worst = 0.0;
+        for (const auto& [beat, sec, what] : a)
+        {
+            const auto match = std::find_if (b.begin(), b.end(), [&] (const auto& e) { return std::abs (std::get<0> (e) - beat) < 1.0e-6 && std::get<2> (e).upToFirstOccurrenceOf (" ", false, false) == what.upToFirstOccurrenceOf (" ", false, false); });
+            if (match == b.end())
+                std::printf ("MISSING in export: beat %.3f %s\n", beat, what.toRawUTF8());
+            else
+            {
+                worst = juce::jmax (worst, std::abs (std::get<1> (*match) - sec));
+                if (std::get<2> (*match) != what && what.startsWith ("meter"))
+                    std::printf ("DIFFERENT at beat %.3f: %s vs %s\n", beat, what.toRawUTF8(), std::get<2> (*match).toRawUTF8());
+            }
+        }
+        for (const auto& [beat, sec, what] : b)
+            if (std::none_of (a.begin(), a.end(), [&] (const auto& e) { return std::abs (std::get<0> (e) - beat) < 1.0e-6 && std::get<2> (e).upToFirstOccurrenceOf (" ", false, false) == what.upToFirstOccurrenceOf (" ", false, false); }))
+                std::printf ("EXTRA in export: beat %.3f %s\n", beat, what.toRawUTF8());
+        std::printf ("original: %zu tempo/meter events, export: %zu; largest timing difference %.3f ms\n", a.size(), b.size(), worst * 1000.0);
+        return 0;
+    }
+
     // Hardware diagnostics: PedalCuesTests --qc-setlists lists the QC's setlists in the order it sends them,
     // with any folder fields PedalCues doesn't decode (to find how the QC numbers its setlists). Quit Cortex Control first.
     if (argc > 1 && juce::String (argv[1]) == "--qc-setlists")

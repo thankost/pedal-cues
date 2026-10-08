@@ -144,7 +144,7 @@
     const auto fromClip = cueFromMidiFile (clipFile, "Clip");
     CHECK (fromClip.events.size() == 2 && near (fromClip.events[1].first, 1.0) && near (fromClip.lengthBeats, 2.0) && fromClip.name == "Clip");
 
-    // Import a DAW's map: markers, a 7/8 bridge and a tempo change; a marker off the bar line is rounded.
+    // Import a DAW's map: markers, a 7/8 bridge and a tempo change; a marker off the bar line gets an exact short bar.
     juce::MidiMessageSequence map;
     map.addEvent (juce::MidiMessage::tempoMetaEvent (500000), 0.0);                // 120
     map.addEvent (juce::MidiMessage::timeSignatureMetaEvent (4, 4), 0.0);
@@ -159,17 +159,20 @@
     daw.setTicksPerQuarterNote (480);
     daw.addTrack (map);
     const auto imported = importMap (daw, "Imported");
-    CHECK (imported.error.isEmpty() && imported.song.isValid() && imported.song.getNumChildren() == 4);
-    if (imported.song.getNumChildren() == 4)
+    CHECK (imported.error.isEmpty() && imported.song.isValid() && imported.song.getNumChildren() == 5);
+    if (imported.song.getNumChildren() == 5)
     {
         const auto& is = imported.song;
         CHECK (is.getChild (0)[IDs::name].toString() == "Intro" && (int) is.getChild (0)[IDs::bars] == 4);
         CHECK (is.getChild (1)[IDs::name].toString() == "Verse" && (int) is.getChild (1)[IDs::bars] == 8);
         CHECK (is.getChild (2)[IDs::name].toString() == "Bridge" && (int) is.getChild (2)[IDs::timeNum] == 7
                && (int) is.getChild (2)[IDs::timeDen] == 8 && std::abs ((double) is.getChild (2)[IDs::bpm] - 140.0) < 0.01
-               && (int) is.getChild (2)[IDs::bars] == 4);                       // 15 beats of 7/8 = 4.29 bars: rounded
-        CHECK (is.getChild (3)[IDs::name].toString() == "Outro" && (int) is.getChild (3)[IDs::bars] == 2);   // 7 beats of 7/8
-        CHECK (imported.warnings.size() == 1 && imported.warnings[0].contains ("Bridge"));
+               && (int) is.getChild (2)[IDs::bars] == 4);                       // 15 beats of 7/8 = 4 bars and a quarter...
+        CHECK (is.getChild (3)[IDs::name].toString() == "Bridge (end)" && (int) is.getChild (3)[IDs::bars] == 1
+               && (int) is.getChild (3)[IDs::timeNum] == 1 && (int) is.getChild (3)[IDs::timeDen] == 4);   // ...kept as a 1/4 bar
+        CHECK (is.getChild (4)[IDs::name].toString() == "Outro" && (int) is.getChild (4)[IDs::bars] == 2);   // 7 beats of 7/8
+        CHECK (near (songLengthBeats (is), 70.0));   // the file's length, to the beat: nothing after the bridge moved
+        CHECK (imported.warnings.isEmpty());
     }
     juce::MidiFile empty;
     empty.setTicksPerQuarterNote (480);
@@ -193,6 +196,145 @@
     const auto parts = importMap (nm, "Parts");
     CHECK (parts.song.getNumChildren() == 2 && parts.song.getChild (0)[IDs::name].toString() == "Part 1"
            && (int) parts.song.getChild (1)[IDs::timeNum] == 3 && (int) parts.song.getChild (1)[IDs::bars] == 2);
+
+    // A short bar picks the note value that counts it exactly (1.75 quarters = 7/16); the song's end is filled to a bar.
+    {
+        juce::MidiMessageSequence odd;
+        odd.addEvent (juce::MidiMessage::timeSignatureMetaEvent (4, 4), 0.0);
+        odd.addEvent (juce::MidiMessage::timeSignatureMetaEvent (3, 4), (8.0 + 1.75) * 480);   // 2 bars of 4/4 and 7/16
+        odd.addEvent (juce::MidiMessage::endOfTrack(), (8.0 + 1.75 + 4.0) * 480);               // 1 bar of 3/4 and a quarter
+        juce::MidiFile of;
+        of.setTicksPerQuarterNote (480);
+        of.addTrack (odd);
+        const auto r = importMap (of, "Odd");
+        CHECK (r.song.getNumChildren() == 3 && r.warnings.isEmpty());
+        if (r.song.getNumChildren() == 3)
+        {
+            CHECK ((int) r.song.getChild (0)[IDs::bars] == 2 && (int) r.song.getChild (1)[IDs::timeNum] == 7
+                   && (int) r.song.getChild (1)[IDs::timeDen] == 16 && (int) r.song.getChild (1)[IDs::bars] == 1);
+            CHECK ((int) r.song.getChild (2)[IDs::timeNum] == 3 && (int) r.song.getChild (2)[IDs::bars] == 2);   // filled up
+        }
+    }
+
+    // A tempo change partway through a bar (Guitar Pro writes them) stays exactly there, inside its section, like a
+    // Reaper tempo marker: no bar moves, no section starts there, nothing to warn about.
+    {
+        juce::MidiMessageSequence gp;
+        gp.addEvent (juce::MidiMessage::tempoMetaEvent (444444), 0.0);                      // 135
+        gp.addEvent (juce::MidiMessage::timeSignatureMetaEvent (9, 8), 0.0);
+        gp.addEvent (juce::MidiMessage::timeSignatureMetaEvent (4, 4), 4.5 * 480);          // 1 bar of 9/8
+        gp.addEvent (juce::MidiMessage::tempoMetaEvent (250000), 4.5 * 480 + 551);          // 240, 1.15 beats into the bar
+        gp.addEvent (juce::MidiMessage::endOfTrack(), (4.5 + 16.0) * 480);
+        juce::MidiFile f;
+        f.setTicksPerQuarterNote (480);
+        f.addTrack (gp);
+        const auto r = importMap (f, "GP");
+        CHECK (r.song.getNumChildren() == 2 && near (songLengthBeats (r.song), 20.5) && r.warnings.isEmpty());
+        if (r.song.getNumChildren() == 2)
+        {
+            const auto four = r.song.getChild (1);
+            const auto changes = tempoChanges (four);
+            CHECK ((int) four[IDs::bars] == 4 && std::abs ((double) four[IDs::bpm] - 135.0) < 0.01 && changes.size() == 1);
+            if (changes.size() == 1)
+                CHECK (near ((double) changes[0][IDs::beat], 551.0 / 480.0) && std::abs ((double) changes[0][IDs::bpm] - 240.0) < 0.01);
+            // The time follows it exactly: 4.5 + 1.148 beats at 135, the rest at 240.
+            CHECK (std::abs (songSeconds (r.song) - ((4.5 + 551.0 / 480.0) * 60.0 / 135.0 + (16.0 - 551.0 / 480.0) * 60.0 / 240.0)) < 1.0e-3);
+        }
+    }
+
+    // A gradual tempo change (tempoRamp): even per beat from 120 to 60 over 8 beats, then steady 60. The time is
+    // 60 / k * ln (b1 / b0) with k = -7.5 BPM a beat: 5.545 s; seconds and beats convert both ways; the export steps it.
+    {
+        auto g = createSong ("Ritardando");
+        g.removeAllChildren (nullptr);
+        auto slow = createSection ("Rit.", 2, 4, 4, 120.0);
+        slow.setProperty (IDs::tempoRamp, true, nullptr);
+        g.appendChild (slow, nullptr);
+        g.appendChild (createSection ("End", 1, 4, 4, 60.0), nullptr);
+        CHECK (rampsTempo (g, slow) && ! rampsTempo (g, g.getChild (1)));
+        CHECK (std::abs (beatToSeconds (g, 8.0) - 60.0 / -7.5 * std::log (60.0 / 120.0)) < 1.0e-9);
+        CHECK (std::abs (songSeconds (g) - (beatToSeconds (g, 8.0) + 4.0)) < 1.0e-9);
+        CHECK (std::abs (tempoAt (g, 4.0) - 90.0) < 1.0e-9 && std::abs (tempoAt (g, 9.0) - 60.0) < 1.0e-9);
+        for (double b : { 0.5, 3.0, 7.75, 10.0 })
+            CHECK (std::abs (secondsToBeat (g, beatToSeconds (g, b)) - b) < 1.0e-6);
+        CHECK (beatToSeconds (g, 1.0) < beatToSeconds (g, 8.0) - beatToSeconds (g, 7.0));   // slowing down: later beats are longer
+        // The last section has nothing to glide to: steady.
+        g.getChild (1).setProperty (IDs::tempoRamp, true, nullptr);
+        CHECK (! rampsTempo (g, g.getChild (1)) && std::abs (sectionEndBpm (g, g.getChild (1)) - 60.0) < 1.0e-9);
+        // Exported as a tempo every 1/16 whose times add up to the glide's.
+        const auto midi = songMidi (g, {});
+        int tempoEvents = 0;
+        const auto ticksPerQuarter = (double) midi.getTimeFormat();
+        double fileSeconds = 0.0, lastTick = 0.0, spq = 0.5;
+        const auto& conductor = *midi.getTrack (0);
+        for (int i = 0; i < conductor.getNumEvents(); ++i)
+        {
+            const auto& m = conductor.getEventPointer (i)->message;
+            if (! m.isTempoMetaEvent())
+                continue;
+            ++tempoEvents;
+            fileSeconds += (m.getTimeStamp() - lastTick) / ticksPerQuarter * spq;
+            lastTick = m.getTimeStamp();
+            spq = m.getTempoSecondsPerQuarterNote();
+        }
+        fileSeconds += (12.0 * ticksPerQuarter - lastTick) / ticksPerQuarter * spq;
+        CHECK (tempoEvents == 33 && std::abs (fileSeconds - songSeconds (g)) < 1.0e-3);
+    }
+
+    // Import: a ritardando written as a tempo step every bar comes in as those steps, in one section.
+    {
+        juce::MidiMessageSequence rit;
+        rit.addEvent (juce::MidiMessage::timeSignatureMetaEvent (4, 4), 0.0);
+        rit.addEvent (juce::MidiMessage::tempoMetaEvent (500000), 0.0);   // 120 for 4 bars
+        int bar = 4;
+        for (double bpm : { 110.0, 100.0, 90.0, 80.0 })   // then 110, 100, 90 and 80 a bar each
+            rit.addEvent (juce::MidiMessage::tempoMetaEvent (juce::roundToInt (60000000.0 / bpm)), bar++ * 4.0 * 480);
+        rit.addEvent (juce::MidiMessage::endOfTrack(), 12.0 * 4.0 * 480);
+        juce::MidiFile rf;
+        rf.setTicksPerQuarterNote (480);
+        rf.addTrack (rit);
+        const auto r = importMap (rf, "Rit");
+        CHECK (r.song.getNumChildren() == 1 && near (songLengthBeats (r.song), 48.0) && r.warnings.isEmpty());
+        if (r.song.getNumChildren() == 1)
+            CHECK (tempoChanges (r.song.getChild (0)).size() == 4 && std::abs (tempoAt (r.song, 26.0) - 90.0) < 0.01);
+    }
+
+    // Tempo changes inside a section, steady and gliding, and the export writes them where they are.
+    {
+        auto t = createSong ("Changes");
+        t.removeAllChildren (nullptr);
+        auto sec = createSection ("A", 4, 4, 4, 120.0);   // 16 beats
+        addTempoChange (sec, 6.0, 90.0, true);            // 90 at beat 6, gliding to...
+        addTempoChange (sec, 10.0, 150.0);                // ...150 at beat 10, then steady
+        t.appendChild (sec, nullptr);
+        CHECK (std::abs (tempoAt (t, 3.0) - 120.0) < 1.0e-9 && std::abs (tempoAt (t, 8.0) - 120.0) < 1.0e-9
+               && std::abs (tempoAt (t, 12.0) - 150.0) < 1.0e-9);
+        const auto glide = 60.0 / 15.0 * std::log (150.0 / 90.0);   // k = 60 BPM over 4 beats
+        CHECK (std::abs (songSeconds (t) - (6.0 * 0.5 + glide + 6.0 * 0.4)) < 1.0e-9);
+        CHECK (std::abs (secondsToBeat (t, beatToSeconds (t, 8.5)) - 8.5) < 1.0e-6);
+        CHECK (std::abs (sectionEndBpm (t, sec) - 150.0) < 1.0e-9);
+        const auto midi = songMidi (t, {});
+        int tempos = 0;
+        for (int i = 0; i < midi.getTrack (0)->getNumEvents(); ++i)
+            if (midi.getTrack (0)->getEventPointer (i)->message.isTempoMetaEvent())
+                ++tempos;
+        CHECK (tempos == 1 + 16 + 1);   // 120, the glide in 1/16 steps, 150
+        // Fit the tempo scales the changes too.
+        t.setProperty (IDs::audioOffset, 0.0, nullptr);
+        CHECK (fitTempoToAudio (t, 2, beatToSeconds (t, 4.0) / 2.0) && std::abs ((double) tempoChanges (sec)[1][IDs::bpm] - 300.0) < 0.01);
+    }
+
+    // A tempo the file can only store approximately (225 BPM = 266,666 us a beat) comes in as 225, not 225.0006.
+    {
+        juce::MidiMessageSequence q;
+        q.addEvent (juce::MidiMessage::tempoMetaEvent (266666), 0.0);
+        q.addEvent (juce::MidiMessage::timeSignatureMetaEvent (4, 4), 0.0);
+        q.addEvent (juce::MidiMessage::endOfTrack(), 16.0 * 480);
+        juce::MidiFile qf;
+        qf.setTicksPerQuarterNote (480);
+        qf.addTrack (q);
+        CHECK ((double) importMap (qf, "Q").song.getChild (0)[IDs::bpm] == 225.0);
+    }
 
     // Songs survive a project load (sanitise) and loading a setup leaves them alone.
     juce::ValueTree root (IDs::PedalCues);

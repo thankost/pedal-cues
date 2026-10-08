@@ -133,6 +133,7 @@ namespace IDs
     PEDALCUES_ID (SongSection)
     PEDALCUES_ID (SongTrack)
     PEDALCUES_ID (SongCue)
+    PEDALCUES_ID (SongTempo)       // in a SongSection: a tempo change { beat (quarters into the section), bpm, tempoRamp }
     PEDALCUES_ID (track)
     PEDALCUES_ID (include)
     PEDALCUES_ID (uid)
@@ -155,6 +156,7 @@ namespace IDs
     PEDALCUES_ID (countIn)
     PEDALCUES_ID (gridStep)
     PEDALCUES_ID (snap)
+    PEDALCUES_ID (tempoRamp)       // SongSection / SongTempo: the tempo glides (evenly per beat) to the next tempo change
     PEDALCUES_ID (trackHeight)     // Songs: the Song Builder's track height in pixels (songs::minTrackHeight-maxTrackHeight)
     PEDALCUES_ID (clickSound)      // Songs: the click's sound (0 beep, 1 click, 2 wood, 3 cowbell), accent, volume, routing
     PEDALCUES_ID (clickAccent)

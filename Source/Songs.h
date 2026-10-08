@@ -41,6 +41,17 @@ juce::ValueTree sectionByUid (const juce::ValueTree& song, const juce::String& u
 juce::String barLabel (const juce::ValueTree& song, double beat);       // "Bar 9" or "Bar 9, beat 3"
 double beatToSeconds (const juce::ValueTree& song, double beat);         // through each section's tempo
 double secondsToBeat (const juce::ValueTree& song, double seconds);
+// The tempo map, like Reaper's tempo markers: each section starts at its own bpm, and can hold tempo changes at any beat
+// inside it (SongTempo children, `beat` in quarters from the section's start), so a change partway through a bar never
+// moves a bar line. The section's start and every change can glide (tempoRamp), evenly per beat, to the next change or
+// the next section's tempo, like Reaper's "gradually transition to next marker". The song's very end stays steady.
+struct TempoSegment { double from, to, bpm0, bpm1; };   // song beats; bpm1 == bpm0 when steady
+std::vector<TempoSegment> tempoSegments (const juce::ValueTree& song);
+std::vector<juce::ValueTree> tempoChanges (const juce::ValueTree& section);            // inside it, by beat
+juce::ValueTree addTempoChange (juce::ValueTree section, double beat, double bpm, bool gradual = false);
+bool rampsTempo (const juce::ValueTree& song, const juce::ValueTree& section);          // its start glides
+double sectionEndBpm (const juce::ValueTree& song, const juce::ValueTree& section);   // the tempo where it ends
+double tempoAt (const juce::ValueTree& song, double beat);
 
 // The metronome from a beat: a click on every beat of each section's time signature (the eighth in 7/8), accented on bar
 // starts, through the tempo map; countInBars bars of clicks first (in the starting section's time signature and tempo).

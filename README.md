@@ -78,7 +78,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - **Play** the song to your devices; **drag it into the DAW** as one MIDI file with the tempo map, time signatures and section markers, or **export** one file or a file per track (e.g. for a backing-track player)
 - A MIDI channel per track (rewrites its cues), **Duplicate** a track for a second player; save songs as `.pedalcues-song` files and import songs from MIDI files
 - **Backing-track creator:** a click track with a count-in and a click per section (beat, 1/8, 1/16, triplets...), your own click sounds, a backing track (MP3 / WAV / AIFF / FLAC) to line up with bar 1 and fit the tempo to, the click on one side and the backing track on the other; export a **song package** (cues MIDI + click WAV + backing WAV) or a whole setlist, or drag the click and backing track into the DAW
-- Any time signature (37/8 too), grid and snap, zoom and track height, mute / solo, loop a section, tap a tempo, play the setlist
+- Any time signature (37/8 too), tempo changes anywhere (also partway through a bar) with gradual ritardandos / accelerandos, like Reaper's tempo markers; grid and snap, zoom and track height, mute / solo, loop a section, tap a tempo, play the setlist
 
 **Workflow**
 - **Search every list:** presets on the Quad Cortex, Fractal, Line 6, HeadRush, Darkglass and Nano Cortex pages, Kemper performances, custom device tiles and the device list. Forgiving: letters in order (`drpc` finds *Drop C Heavy*), one typo, or a location like `SL2` / `3B`
