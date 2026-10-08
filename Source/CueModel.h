@@ -186,6 +186,11 @@ namespace whammy
     Cue drawn (int channel, const std::vector<float>& points, double lengthBeats, bool resetToHeel,
                const juce::String& name = {});
 
+    // "Early by": everything after the move's first point plays `beats` earlier inside the clip (never before the clip's
+    // start, and in order), for a Whammy that answers late. The first point and the clip's length stay.
+    void moveEarly (Cue&, double beats);
+    inline double msToBeats (double ms, double bpm) { return ms / 1000.0 * juce::jmax (1.0, bpm) / 60.0; }
+
     std::vector<float> defaultDrawing();
     juce::String       encodeDrawing (const std::vector<float>&);
     std::vector<float> decodeDrawing (const juce::String&);   // always drawPoints values

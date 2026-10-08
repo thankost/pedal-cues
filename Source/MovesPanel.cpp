@@ -43,7 +43,7 @@ const juce::String cmdKey ("Ctrl"), altKey ("Alt");
 juce::String padTooltip()
 {
     return "Click: add a point. Drag a point or a line to move it (Shift: off the grid, " + cmdKey + "+Shift: one direction only). "
-         + altKey + "-drag a line: curve it, " + altKey + "-click a point: delete it. Double-click a point: type its value. "
+         "Drag the diamond in a line's middle (or " + altKey + "-drag the line): curve it. " + altKey + "-click a point: delete it. Double-click a point: type its value. "
          + cmdKey + "-click: select more, right-drag: select an area, " + cmdKey + "+A: all. " + cmdKey + "-drag: draw freehand. "
          "Right-click: line shapes, invert, scale. " + cmdKey + "+Z: undo. Bottom = heel, top = toe.";
 }
@@ -52,7 +52,8 @@ juce::String padHelp()
 {
     return "Click: add a point.   Drag a point or a line: move it (Shift: off the grid, " + cmdKey + "+Shift: one direction only).   "
          + cmdKey + "-drag: draw freehand.\n"
-         + altKey + "-drag a line: curve it (" + altKey + "-double-click: straight again).   " + altKey + "-click a point: delete it.   "
+         "Drag the diamond in a line's middle (or " + altKey + "-drag the line): curve it (" + altKey + "-double-click: straight again).   "
+         + altKey + "-click a point: delete it.   "
          "Double-click a point: type its value.\n"
          + cmdKey + "-click: add to the selection.   Right-drag: select an area.   " + cmdKey + "+A: select all.   Arrows: nudge.   "
          "Delete: remove.   Selection box: drag its top or bottom edge to scale, a top corner to tilt.\n"
@@ -208,6 +209,17 @@ public:
                 seg.lineTo (poly[k]);
             g.setColour (config.line.withAlpha (0.35f));
             g.strokePath (seg, juce::PathStrokeType (6.0f, juce::PathStrokeType::mitered, juce::PathStrokeType::rounded));
+            // Its curve handle: a small diamond to drag up or down.
+            if (const auto h = curveHandle (shownSegment))
+            {
+                juce::Path d;
+                d.addRectangle (-4.5f, -4.5f, 9.0f, 9.0f);
+                d.applyTransform (juce::AffineTransform::rotation (juce::MathConstants<float>::pi / 4.0f).translated (h->x, h->y));
+                g.setColour (background);
+                g.fillPath (d);
+                g.setColour (config.line);
+                g.strokePath (d, juce::PathStrokeType (1.6f));
+            }
         }
 
         paintSelectionBox (g);
@@ -300,7 +312,7 @@ public:
         }
         if (seg >= 0)
         {
-            gesture = e.mods.isAltDown() ? Gesture::bendSegment : Gesture::segmentPending;
+            gesture = e.mods.isAltDown() || onCurveHandle (seg, e.position) ? Gesture::bendSegment : Gesture::segmentPending;
             from = doc.bps;
             return;
         }
@@ -531,6 +543,28 @@ private:
         if (doc.grid <= 0.0 || doc.grid > doc.beats)
             return juce::jlimit (0.0f, 1.0f, t);
         return cues::whammy::snapTime (t, doc.beats, doc.grid);
+    }
+
+    // The curve handle in the middle of a line (drag it up or down to bend the line, no key needed), or none when the line
+    // is too short to grab it apart from its points.
+    std::optional<juce::Point<float>> curveHandle (int i) const
+    {
+        if (i < 0 || i + 1 >= (int) doc.bps.size())
+            return std::nullopt;
+        const auto& a = doc.bps[(size_t) i];
+        const auto& b = doc.bps[(size_t) i + 1];
+        const auto pa = toScreen (a), pb = toScreen (b);
+        if (pb.x - pa.x < 30.0f)
+            return std::nullopt;
+        const auto mid = cues::whammy::segmentValue (a.shape, a.tension, a.value, b.value, 0.5f);
+        const auto plot = plotArea();
+        return juce::Point<float> ((pa.x + pb.x) * 0.5f, plot.getBottom() - plot.getHeight() * mid);
+    }
+
+    bool onCurveHandle (int i, juce::Point<float> pos) const
+    {
+        const auto h = curveHandle (i);
+        return h.has_value() && h->getDistanceFrom (pos) <= 7.0f;
     }
 
     // A segment on screen: straight pieces that follow its shape.

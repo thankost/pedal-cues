@@ -639,6 +639,18 @@ namespace whammy
                        [&points] (double t) { return samplePoints (points, t); });
     }
 
+    void moveEarly (Cue& cue, double beats)
+    {
+        if (beats <= 0.0 || cue.events.empty())
+            return;
+        constexpr double tick = 1.0 / 960.0;   // a MIDI file's resolution: later points never land on the first one's tick
+        const auto first = cue.events.front().first;
+        for (size_t i = 1; i < cue.events.size(); ++i)
+            if (cue.events[i].first > first)
+                cue.events[i].first = juce::jmax (first + tick, cue.events[i].first - beats);
+        std::stable_sort (cue.events.begin(), cue.events.end(), [] (const auto& a, const auto& b) { return a.first < b.first; });
+    }
+
     std::vector<float> defaultDrawing()
     {
         // Rise, hold at toe, shake, then fall back to heel.
@@ -1120,6 +1132,8 @@ namespace whammy
                 bps[i].shape = shape;
                 if (shape != Segment::bezier)
                     bps[i].tension = 0.0f;
+                else if (std::abs (bps[i].tension) < 1.0e-4f)
+                    bps[i].tension = 0.5f;   // a visible curve from the start (straight would look like Linear)
             }
     }
 

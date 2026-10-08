@@ -81,6 +81,40 @@
         std::vector<Breakpoint> bent { { 0.0f, 0.0f, Segment::bezier, 1.0f }, { 1.0f, 1.0f } };
         CHECK (renderBreakpoints (bent)[32] > ramp[32] + 0.2f);
         CHECK (segmentName (Segment::slowStartEnd) == "Slow start/end");
+        // Early by: the first point stays, the rest move earlier (not onto the first point's tick), in order, same length.
+        {
+            auto move = cues::whammy::sweep (2, cues::whammy::Shape::swell, 4.0, 1.0, true);
+            const auto before = move.events;
+            const auto length = move.lengthBeats;
+            const auto early = cues::whammy::msToBeats (20.0, 120.0);
+            CHECK (std::abs (early - 0.04) < 1.0e-9);
+            cues::whammy::moveEarly (move, early);
+            CHECK (move.events.size() == before.size() && std::abs (move.lengthBeats - length) < 1.0e-9);
+            CHECK (move.events.front().first == before.front().first);
+            CHECK (std::abs (move.events.back().first - (before.back().first - early)) < 1.0e-9);
+            bool ordered = true, apart = true;
+            for (size_t i = 1; i < move.events.size(); ++i)
+            {
+                ordered = ordered && move.events[i].first >= move.events[i - 1].first;
+                apart = apart && move.events[i].first > move.events.front().first;
+            }
+            CHECK (ordered && apart);
+            auto off = cues::whammy::sweep (2, cues::whammy::Shape::swell, 4.0, 1.0, true);
+            cues::whammy::moveEarly (off, 0.0);
+            CHECK (off.events.size() == before.size() && std::abs (off.events.back().first - before.back().first) < 1.0e-9);
+        }
+        // Picking Bezier gives a straight line a visible curve; a curved one keeps its curve; other shapes are straight.
+        {
+            std::vector<Breakpoint> q { { 0.0f, 0.0f }, { 1.0f, 1.0f } };
+            q[0].selected = true;
+            setSelectionShape (q, Segment::bezier);
+            CHECK (q[0].shape == Segment::bezier && std::abs (q[0].tension - 0.5f) < 1.0e-6f);
+            q[0].tension = -0.3f;
+            setSelectionShape (q, Segment::bezier);
+            CHECK (std::abs (q[0].tension + 0.3f) < 1.0e-6f);
+            setSelectionShape (q, Segment::fastEnd);
+            CHECK (q[0].tension == 0.0f);
+        }
     }
 
     // Moving a selection: order kept, the first / last only move up and down, it stops at an unselected neighbour.

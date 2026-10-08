@@ -109,6 +109,7 @@ namespace IDs
     PEDALCUES_ID (whChords)
     PEDALCUES_ID (whBypass)
     PEDALCUES_ID (whHeelFirst)
+    PEDALCUES_ID (whMovesEarly)    // Whammy: treadle moves play this many ms early inside their clip (0 = off)
     PEDALCUES_ID (sweepBeats)
     PEDALCUES_ID (sweepCurve)
     PEDALCUES_ID (sweepReset)

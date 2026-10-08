@@ -51,6 +51,23 @@ public:
         bypassToggle.onClick = [this] { state.setProperty (IDs::whBypass, bypassToggle.getToggleState(), nullptr); };
         heelToggle.onClick   = [this] { state.setProperty (IDs::whHeelFirst, heelToggle.getToggleState(), nullptr); };
 
+        // Early by (in the Treadle moves header): for a Whammy that answers a little late.
+        earlyLabel.setText ("EARLY BY", juce::dontSendNotification);
+        earlyLabel.setFont (font (11.5f, true));
+        earlyLabel.setColour (juce::Label::textColourId, dim);
+        earlyLabel.setJustificationType (juce::Justification::centredRight);
+        for (int ms : { 0, 10, 20, 30, 40, 50 })
+            earlyBox.addItem (ms == 0 ? juce::String ("Off") : juce::String (ms) + " ms", ms + 1);
+        earlyBox.setComponentID ("wh.movesEarly");
+        const juce::String earlyTip ("Plays every treadle move this much earlier inside its clip, for a Whammy that answers a little "
+                                     "late: you still drop the move on the beat. The clip's first point stays at its start, and mode "
+                                     "changes aren't moved. Applies to moves you drag from now on.");
+        earlyBox.setTooltip (earlyTip);
+        earlyLabel.setTooltip (earlyTip);
+        earlyBox.onChange = [this] { state.setProperty (IDs::whMovesEarly, earlyBox.getSelectedId() - 1, nullptr); };
+        moves.extraHeader().addAndMakeVisible (earlyLabel);
+        moves.extraHeader().addAndMakeVisible (earlyBox);
+
         // Program numbering: rarely needed, so it's in the Modes header's "..." menu rather than among the options.
         moreButton.setComponentID ("wh.more");
         moreButton.setColour (juce::TextButton::buttonColourId, raised);
@@ -103,6 +120,7 @@ public:
         chordsToggle.setToggleState (chords, juce::dontSendNotification);
         bypassToggle.setToggleState (bypass, juce::dontSendNotification);
         heelToggle.setToggleState ((bool) state[IDs::whHeelFirst], juce::dontSendNotification);
+        earlyBox.setSelectedId (juce::jlimit (0, 50, (int) state[IDs::whMovesEarly]) / 10 * 10 + 1, juce::dontSendNotification);
 
         const auto wh = state.getChildWithName (IDs::Whammy);
 
@@ -193,6 +211,11 @@ public:
         r.removeFromTop (12);
 
         moves.setBounds (r.removeFromBottom (Section::headerHeight + MovesPanel::controlsHeight + 124));
+        {
+            auto hdr = moves.extraHeader().getLocalBounds();
+            earlyBox.setBounds (hdr.removeFromRight (100));
+            earlyLabel.setBounds (hdr.withTrimmedRight (6));
+        }
         r.removeFromBottom (12);
         modesSection.setBounds (r);
         {
@@ -297,19 +320,20 @@ private:
         c.shapesTooltip = "Ready-made treadle moves";
         c.drawTooltip = "Draw your own treadle move with the mouse";
         c.numShapes = cues::whammy::numShapes;
+        c.extraHeaderWidth = 190;   // Early by
         c.shapeName        = [] (int s) { return cues::whammy::shapeName ((cues::whammy::Shape) s); };
         c.shapeDescription = [] (int s) { return cues::whammy::shapeDescription ((cues::whammy::Shape) s); };
         c.shapeHolds       = [] (int s) { return s == (int) cues::whammy::Shape::toe || s == (int) cues::whammy::Shape::heel; };
         c.makeShape = [this] (int s)
         {
-            return cues::whammy::sweep (state::pedalChannel (state), (cues::whammy::Shape) s, (double) state[IDs::sweepBeats],
-                                        (double) state[IDs::sweepCurve], (bool) state[IDs::sweepReset]);
+            return early (cues::whammy::sweep (state::pedalChannel (state), (cues::whammy::Shape) s, (double) state[IDs::sweepBeats],
+                                               (double) state[IDs::sweepCurve], (bool) state[IDs::sweepReset]));
         };
         c.controller = [] { return 11; };   // the treadle
         c.makeDrawn = [this] (const std::vector<float>& points, const juce::String& name)
         {
-            return cues::whammy::drawn (state::pedalChannel (state), points, (double) state[IDs::sweepBeats],
-                                        (bool) state[IDs::sweepReset], name);
+            return early (cues::whammy::drawn (state::pedalChannel (state), points, (double) state[IDs::sweepBeats],
+                                               (bool) state[IDs::sweepReset], name));
         };
         return c;
     }
@@ -331,12 +355,21 @@ private:
     juce::ToggleButton chordsToggle { "Chords" };
     juce::ToggleButton bypassToggle { "Load bypassed" };
     juce::ToggleButton heelToggle   { "Heel first" };
+    juce::Label earlyLabel;
+    juce::ComboBox earlyBox;
     MovesPanel moves { proc, treadleMoves() };
 
     std::vector<Group> groups;
     juce::OwnedArray<Tile> modeTiles, dropTiles;
     juce::TextButton whammyViewButton { "Whammy" }, dropTuneViewButton { "Drop Tune" };
     juce::TextButton moreButton { "..." };
+
+    // Early by: the move plays that much earlier inside its clip, at the tempo it's dragged at.
+    cues::Cue early (cues::Cue cue) const
+    {
+        cues::whammy::moveEarly (cue, cues::whammy::msToBeats ((int) state[IDs::whMovesEarly], proc.getHostBpm()));
+        return cue;
+    }
 
     void showMoreMenu()
     {

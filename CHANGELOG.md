@@ -2,6 +2,11 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.11.1 (unreleased)
+
+- **Early by for Whammy treadle moves (new):** the Whammy's pitch shifting takes a moment, so bends can sound late. Pick 10-50 ms in the Treadle moves header and every move plays that much earlier inside its clip; you still drop it on the beat.
+- **Curve a line without a key:** point at a line in Draw and drag the diamond in its middle. Picking **Bezier** gives the line a curve right away.
+
 ## 0.11.0 (2026-10-08)
 
 - **Backing-track creator in the Song Builder (beta):**

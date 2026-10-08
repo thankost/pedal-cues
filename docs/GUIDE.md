@@ -720,6 +720,7 @@ Treadle moves are **CC#11** automation written in beats, so they follow your pro
 
 - **Length:** from 1/16 note up to 4 bars.
 - **Curve:** `1.00` is linear, lower values start fast, higher values start slow.
+- **Early by** (in the Treadle moves header: Off, 10 to 50 ms): the Whammy's pitch shifting takes a moment, so a bend can sound a little after the beat. Players used to move their automation a little to the left; with Early by, every treadle move (shapes and drawn ones) plays that much earlier inside its clip, and you still drop it on the beat. The clip's first point stays at its start, and mode changes aren't moved. No one has measured the Whammy V or DT yet (reports for older Whammys say roughly 15-30 ms): try 20 ms and adjust by ear. It applies to moves you drag from then on.
 - **Return to heel after move:** adds a `CC#11 = 0` at the end.
 
 ### Draw your own move
@@ -730,7 +731,7 @@ When no ready-made shape fits, click **Draw** in the *Treadle moves* header. The
 
 1. **Pick the length** first, and the **Grid** next to it: points snap to it in time.
 2. **Click** to add a point, **drag** a point or a line to move it (**Shift**: off the grid, **⌘ / Ctrl + Shift**: one direction only). **⌘ / Ctrl-drag** draws freehand. **Double-click** a point to type its value. **Option / Alt-click** a point deletes it.
-3. **Shape the lines:** right-click a line for its shape (square, linear, slow start / end, fast start, fast end, bezier); **Option / Alt-drag** a line to curve it, **Option / Alt-double-click** to straighten it.
+3. **Shape the lines:** right-click a line for its shape (square, linear, slow start / end, fast start, fast end, bezier; Bezier starts with a medium curve). To curve a line, drag the **diamond** that appears in its middle when you point at it (or **Option / Alt-drag** the line); **Option / Alt-double-click** straightens it.
 4. **Several points at once:** ⌘ / Ctrl-click adds to the selection, **right-drag** selects an area, ⌘ / Ctrl + A selects all. Arrows nudge them, **Delete** removes them, and the selection box scales them (drag its top or bottom edge) or tilts them (a top corner). Right-click also has **Invert** and **Scale / compress...**.
 5. **⌘ / Ctrl + Z** undoes, **⌘ / Ctrl + Shift + Z** redoes. **Clear** resets the pad to heel; **Smooth** rounds off sharp edges.
 6. **Drag the *Drawn move* tile** onto the timeline where the move should start, or click its play button to try it on the pedal.
@@ -839,6 +840,7 @@ PedalCues asks GitHub for the latest release when it opens; nothing else is sent
 | A stomp tile changes scenes | The QC is in Scene mode, where footswitch A-H select scenes. Put the QC in Stomp mode (or drop the **Stomp Mode** tile before your stomp cues). Before v0.4.2 the Scene Mode and Stomp Mode tiles were swapped; drag those clips in again. |
 | The QC stays in another setlist | Turn on **Switch to the preset's setlist** (under the preset list, or the **Setlists not sent: turn on** button above *Sync from QC*), check the preset's setlist number in *Edit preset*, then drag its clips into your DAW again: clips keep what they were dragged with. |
 | Wrong preset loads | Check setlist, bank and slot in *Edit preset*. If presets are in other setlists, turn on **Switch to the preset's setlist** under the preset list. Setlist numbers are as the QC shows them (Factory Presets = 0). Before v0.4.28 PedalCues sent one less, so if you added 1 to work around it, set them back. |
+| Whammy bends sound a little late | The Whammy's pitch shifting takes a moment. Set **Early by** in the Treadle moves header (try 20 ms) and drag the moves again: they play that much earlier inside their clips. See [Treadle moves](#treadle-moves). |
 | The scene changes a little after the beat | That's the 1/16 gap of **Load 1A first**, which gives the QC time to load the preset. Drop the tile 1/16 early, or switch Load 1A first off inside the song. See [Timing](#timing-scenes-right-after-a-preset). |
 | Whammy doesn't react | If the QC is on USB and the Whammy hangs off the QC's Thru, that can't work: the QC doesn't forward USB MIDI (a known QC limitation). Use one of the [three working setups](#2-connect-your-rig). Otherwise check the cable direction (MIDI Out to MIDI In) and the channels, set the QC to a fixed channel (not *Omni*), and for the daisy chain turn on QC MIDI Thru. |
 | My amp changes preset or slot when a Whammy cue plays | The amp modeler is on *Omni*, so it also hears the Whammy's Program Changes. Set it to a fixed channel, different from the Whammy's, and the same number at the top of its page. |

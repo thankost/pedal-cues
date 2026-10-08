@@ -64,7 +64,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - All 21 modes, Classic or Chords (Chords on the V only), engaged or bypassed (Program Change)
 - **Whammy DT Drop Tune:** Shift Up and Shift Down tiles, 1–7 semitones, Oct and Oct + Dry, on or bypassed (Program Change 43–78)
 - Optional "heel before mode change" (`CC#11 = 0`)
-- Treadle moves on `CC#11`: Ramp Up, Ramp Down, Rise & Fall, Dive, Trill (1/16), Bend to Bar, Toe, Heel
+- Treadle moves on `CC#11`: Ramp Up, Ramp Down, Rise & Fall, Dive, Trill (1/16), Bend to Bar, Toe, Heel; **Early by** (10-50 ms) plays them a little early for the Whammy's pitch-shift delay
 - Draw your own treadle move with the mouse, then drag it onto the timeline like any other move: points and lines like a DAW envelope (curve shapes, multi-select, scale and tilt, freehand, undo / redo, a grid), or in a **Larger editor** window
 - **Wave...** in Draw mode generates a sine, triangle, square or saw (waves, phase, shape, low / high, grow, speed), like Reaper's CC LFO; on the treadle and on every expression pedal
 - **Import MIDI...** in every Draw mode: load a move you drew as CC automation in your DAW from a `.mid` file and reuse it in any song (saved in My drawings)

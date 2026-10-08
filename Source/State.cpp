@@ -516,6 +516,7 @@ void sanitise (juce::ValueTree& root)
     setDefault (root, IDs::whChords, false);
     setDefault (root, IDs::whBypass, false);
     setDefault (root, IDs::whHeelFirst, true);
+    setDefault (root, IDs::whMovesEarly, 0);
     setDefault (root, IDs::sweepBeats, 4.0);
     setDefault (root, IDs::sweepCurve, 1.0);
     setDefault (root, IDs::sweepReset, true);
@@ -702,16 +703,16 @@ void setFlag (const juce::String& name, bool value)
 // What a setup carries besides the names: the MIDI settings and the playing preferences
 // (Whammy Chords / Load bypassed / Heel first, return to heel after moves, Expression's Load 1A first).
 // Length and curve change per song, so they stay in the project.
-static const std::array<const juce::Identifier*, 31>& setupProperties()
+static const std::array<const juce::Identifier*, 32>& setupProperties()
 {
-    static const std::array<const juce::Identifier*, 31> ids { &IDs::ampUnit, &IDs::selectedCustomUnit, &IDs::fxUnit, &IDs::fxCustomUnit, &IDs::modellerProfile,
+    static const std::array<const juce::Identifier*, 32> ids { &IDs::ampUnit, &IDs::selectedCustomUnit, &IDs::fxUnit, &IDs::fxCustomUnit, &IDs::modellerProfile,
                                                                &IDs::fxProfile, &IDs::fxReset,
                                                                &IDs::qcMiniChannel, &IDs::kemperChannel, &IDs::kemperPlayerChannel, &IDs::whDtChannel,
                                                                &IDs::perDeviceChannels,
                                                                &IDs::mdLoadFirst, &IDs::mdSendSetlist, &IDs::mdReset, &IDs::cuReset, &IDs::kemperSlotFirst, &IDs::kemperKeepTails,
                                                                &IDs::kpReset, &IDs::qcChannel, &IDs::whChannel, &IDs::whModel, &IDs::whPcBase,
                                                                &IDs::sendSetlist, &IDs::comboPresetScene,
-                                                               &IDs::whChords, &IDs::whBypass, &IDs::whHeelFirst,
+                                                               &IDs::whChords, &IDs::whBypass, &IDs::whHeelFirst, &IDs::whMovesEarly,
                                                                &IDs::sweepReset, &IDs::expReset, &IDs::expLoadFirst };
     return ids;
 }
