@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum macOS version")
 set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Universal binary")
 
-project(PedalCues VERSION 0.11.1 LANGUAGES C CXX)
+project(PedalCues VERSION 0.11.2 LANGUAGES C CXX)
 
 option(PEDALCUES_COPY_PLUGIN "Install plugins into the system plug-in folders after building" ON)
 
@@ -118,11 +118,11 @@ target_link_libraries(PedalCues
 option(PEDALCUES_BUILD_TESTS "Build the CueModel tests" ON)
 if(PEDALCUES_BUILD_TESTS)
     juce_add_console_app(PedalCuesTests PRODUCT_NAME "PedalCuesTests")
-    target_sources(PedalCuesTests PRIVATE Tests/CueModelTests.cpp Source/CueModel.cpp Source/State.cpp Source/DeviceTemplates.cpp Source/Modellers.cpp Source/PedalsStrymon.cpp Source/PedalsBoss.cpp Source/PedalsBoutique.cpp Source/Update.cpp Source/QcUsb.cpp Source/HelixImport.cpp Source/MidiNameSync.cpp Source/Songs.cpp)
+    target_sources(PedalCuesTests PRIVATE Tests/CueModelTests.cpp Source/CueModel.cpp Source/State.cpp Source/DeviceTemplates.cpp Source/Modellers.cpp Source/PedalsStrymon.cpp Source/PedalsBoss.cpp Source/PedalsBoutique.cpp Source/Update.cpp Source/QcUsb.cpp Source/HelixImport.cpp Source/MidiNameSync.cpp Source/Songs.cpp Source/SongAudio.cpp)
     target_compile_definitions(PedalCuesTests PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0
         JucePlugin_VersionString="${PROJECT_VERSION}"
         PEDALCUES_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/Tests/fixtures")
-    target_link_libraries(PedalCuesTests PRIVATE juce::juce_audio_basics juce::juce_graphics juce::juce_data_structures hidapi::hidapi
+    target_link_libraries(PedalCuesTests PRIVATE juce::juce_audio_basics juce::juce_audio_formats juce::juce_audio_utils juce::juce_graphics juce::juce_data_structures hidapi::hidapi
                           PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 endif()
 

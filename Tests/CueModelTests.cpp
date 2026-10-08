@@ -8,8 +8,10 @@
 #include "../Source/HelixImport.h"
 #include "../Source/MidiNameSync.h"
 #include "../Source/Songs.h"
+#include "../Source/SongAudio.h"
 
 #include <cstdio>
+#include <thread>
 
 static int failures = 0;
 
@@ -481,6 +483,7 @@ int main (int argc, char** argv)
         #include "MidiNameSyncChecks.inc"
         #include "SongChecks.inc"
         #include "DrawPointsChecks.inc"
+        #include "SongAudioChecks.inc"
         const auto& fx8 = *find ("fractal.fx8");
         CHECK (presetLabel (fx8, -1, 9) == "B2" && preset (fx8, 1, -1, 9, true, {}).events.size() == 1);   // no bank select
     }

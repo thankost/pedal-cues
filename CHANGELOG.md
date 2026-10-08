@@ -2,6 +2,15 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.11.2 (2026-10-08)
+
+- **Fix:** with a backing track loaded, the metronome kept clicking for about a second after you stopped the song.
+- **Backing track settings (Song Builder):** **...** on the Backing track opens one panel with the file (replace, remove), the volume, where bar 1 is in the file (type it or nudge it by 10 ms) and the song's length. The waveform's right-click keeps "Bar 1 starts here" and fitting the tempo.
+- **Long backing tracks aren't cut off:** when a recording runs past the song's end, PedalCues offers to add the missing bars to the last section.
+- **Song position:** click or drag along the click lane, like the bar numbers, or grab the violet line and drag it when the song isn't playing. The click lane's count is now on right-click, and the ruler shows the Grid's steps.
+- **Tempo changes:** a "Gradually transition to the next tempo" tick box instead of a drop-down.
+- **Draw:** freehand drawing (⌘ / Ctrl-drag) puts a point on each grid line the stroke crosses, so a shaky hand still gives clean 1/16 steps. Hold Shift too to draw off the grid.
+
 ## 0.11.1 (2026-10-08)
 
 - **Early by for Whammy treadle moves (new):** the Whammy's pitch shifting takes a moment, so bends can sound late. Pick 10-50 ms in the Treadle moves header and every move plays that much earlier inside its clip; you still drop it on the beat.

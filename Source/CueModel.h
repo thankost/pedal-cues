@@ -243,9 +243,10 @@ namespace whammy
     void setSelectionShape (std::vector<Breakpoint>&, Segment);             // the segments that start at a selected point
     int  numSelected (const std::vector<Breakpoint>&);
     // Freehand inside Points: 'samples' (drawPoints values) were drawn from index 'first' to 'last'. The points in that
-    // range are replaced by the stroke, simplified; the ones outside keep their place and shape.
+    // range are replaced by the stroke, simplified; the ones outside keep their place and shape. With a gridStep (a
+    // fraction of the move's length), the stroke becomes one point on each grid line it covers instead.
     std::vector<Breakpoint> mergeStroke (const std::vector<Breakpoint>&, const std::vector<float>& samples, int first, int last,
-                                         float tolerance = 0.02f);
+                                         float tolerance = 0.02f, float gridStep = 0.0f);
     bool samePoints (const std::vector<Breakpoint>&, const std::vector<Breakpoint>&);   // ignores the selection
 
     // The pad's undo history: the states after each edit. record() adds one (dropping any redo); a 'mergeKey' equal to the

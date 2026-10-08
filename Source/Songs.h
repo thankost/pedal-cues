@@ -140,6 +140,10 @@ juce::AudioBuffer<float> renderClickTrack (const juce::ValueTree& song, int coun
 // Fit the tempo to the audio: make bar `bar` (1 = the first) start at `fileSeconds` in the backing track, bar 1 staying at
 // the song's audio offset, by scaling every section's tempo by the same factor. False when it can't (bar 1, or before it).
 bool fitTempoToAudio (juce::ValueTree song, int bar, double fileSeconds);
+// How many bars the last section needs to cover a backing track `audioSeconds` long (bar 1 at the song's audioOffset),
+// at the tempo it ends on; 0 when the song already reaches the audio's end. extendLastSection adds them.
+int barsToCoverAudio (const juce::ValueTree& song, double audioSeconds);
+void extendLastSection (juce::ValueTree song, int bars);
 double barStartBeat (const juce::ValueTree& song, int bar);   // 1-based, through the time signatures
 int barNumberAt (const juce::ValueTree& song, double beat);   // 1-based
 double tempoFromTaps (const std::vector<double>& tapSeconds); // BPM from the median gap (0 below 2 taps)

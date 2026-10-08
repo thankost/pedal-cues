@@ -89,10 +89,13 @@ void SongAudio::addBacking (double atSeconds, double fileSeconds)
 
 void SongAudio::stop()
 {
-    transport.stop();
-    const juce::SpinLock::ScopedLockType sl (lock);
-    scheduled.clear();
-    backingStarts.clear();
+    {
+        // The clicks and restarts first, so nothing more starts while the player stops.
+        const juce::SpinLock::ScopedLockType sl (lock);
+        scheduled.clear();
+        backingStarts.clear();
+    }
+    transport.stop();   // returns once render has fed the player one more (faded-out) block
 }
 
 void SongAudio::render (juce::AudioBuffer<float>& buffer, int numSamples, juce::int64 blockStart)
@@ -161,7 +164,9 @@ void SongAudio::render (juce::AudioBuffer<float>& buffer, int numSamples, juce::
         if (! transport.isPlaying())
             transport.start();
     }
-    if (transport.isPlaying())
+    // Fed on every block, also once it's stopped: that's how the player finishes stopping (with a short fade) and
+    // lets stop() return right away. A stopped player gives silence.
+    if (readerSource != nullptr)
     {
         const auto gain = backingMuted.load() ? 0.0f : backingGain.load();   // muted: keeps playing silently, in time
         for (int done = 0; done < numSamples;)

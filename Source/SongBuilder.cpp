@@ -74,11 +74,15 @@ bool isMidiFile (const juce::String& path)
     return path.endsWithIgnoreCase (".mid") || path.endsWithIgnoreCase (".midi") || path.endsWithIgnoreCase (".smf");
 }
 
-// A tempo change's (or a section start's) tempo, and whether it glides to the next one.
-const juce::StringArray& afterItChoices()
+// The "glide" checkbox in the tempo dialogs; the dialog's callback deletes it (AlertWindow doesn't own custom components).
+juce::ToggleButton* gradualToggle (juce::AlertWindow& w, bool on)
 {
-    static const juce::StringArray c { "Then stays steady", "Then changes gradually to the next tempo" };
-    return c;
+    auto* t = new juce::ToggleButton ("Gradually transition to the next tempo");
+    t->setToggleState (on, juce::dontSendNotification);
+    t->setColour (juce::ToggleButton::tickColourId, builderViolet);
+    t->setSize (360, 28);
+    w.addCustomComponent (t);
+    return t;
 }
 
 // isNew: the change was just added, so Cancel takes it away again.
@@ -86,12 +90,12 @@ void editTempoDialog (juce::ValueTree change, bool isNew = false)
 {
     auto* w = new juce::AlertWindow ("Tempo change", "The tempo from this point on. Bars don't move.", juce::MessageBoxIconType::NoIcon);
     w->addTextEditor ("bpm", bpmText ((double) change.getProperty (IDs::bpm, 120.0)), "Tempo (BPM)");
-    w->addComboBox ("after", afterItChoices(), "After it");
-    w->getComboBoxComponent ("after")->setSelectedItemIndex ((bool) change.getProperty (IDs::tempoRamp, false) ? 1 : 0);
+    auto* gradual = gradualToggle (*w, (bool) change.getProperty (IDs::tempoRamp, false));
     w->addButton ("OK", 1, juce::KeyPress (juce::KeyPress::returnKey));
     w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
-    w->enterModalState (true, juce::ModalCallbackFunction::create ([w, change, isNew] (int result) mutable
+    w->enterModalState (true, juce::ModalCallbackFunction::create ([w, change, isNew, gradual] (int result) mutable
     {
+        const std::unique_ptr<juce::ToggleButton> owned (gradual);
         if (result != 1)
         {
             if (isNew)
@@ -101,7 +105,7 @@ void editTempoDialog (juce::ValueTree change, bool isNew = false)
         const auto bpm = w->getTextEditorContents ("bpm").getDoubleValue();
         if (bpm > 0.0)
             change.setProperty (IDs::bpm, juce::jlimit (songs::minBpm, songs::maxBpm, bpm), nullptr);
-        change.setProperty (IDs::tempoRamp, w->getComboBoxComponent ("after")->getSelectedItemIndex() == 1, nullptr);
+        change.setProperty (IDs::tempoRamp, gradual->getToggleState(), nullptr);
     }), true);
 }
 
@@ -113,12 +117,12 @@ void editSectionDialog (juce::ValueTree section)
     w->addTextEditor ("bars", section[IDs::bars].toString(), "Bars");
     w->addTextEditor ("meter", meterText (section), "Time signature (up to 255 / 1, 2, 4, 8, 16, 32 or 64)");
     w->addTextEditor ("bpm", bpmText ((double) section.getProperty (IDs::bpm, 120.0)), "Tempo (BPM)");
-    w->addComboBox ("after", afterItChoices(), "After its start");
-    w->getComboBoxComponent ("after")->setSelectedItemIndex ((bool) section.getProperty (IDs::tempoRamp, false) ? 1 : 0);
+    auto* gradual = gradualToggle (*w, (bool) section.getProperty (IDs::tempoRamp, false));
     w->addButton ("OK", 1, juce::KeyPress (juce::KeyPress::returnKey));
     w->addButton ("Cancel", 0, juce::KeyPress (juce::KeyPress::escapeKey));
-    w->enterModalState (true, juce::ModalCallbackFunction::create ([w, section] (int result) mutable
+    w->enterModalState (true, juce::ModalCallbackFunction::create ([w, section, gradual] (int result) mutable
     {
+        const std::unique_ptr<juce::ToggleButton> owned (gradual);
         if (result != 1)
             return;
         const auto name = w->getTextEditorContents ("name").trim();
@@ -142,7 +146,7 @@ void editSectionDialog (juce::ValueTree section)
         const auto bpm = w->getTextEditorContents ("bpm").getDoubleValue();
         if (bpm > 0.0)
             section.setProperty (IDs::bpm, juce::jlimit (songs::minBpm, songs::maxBpm, bpm), nullptr);
-        section.setProperty (IDs::tempoRamp, w->getComboBoxComponent ("after")->getSelectedItemIndex() == 1, nullptr);
+        section.setProperty (IDs::tempoRamp, gradual->getToggleState(), nullptr);
     }), true);
 }
 
@@ -503,10 +507,15 @@ public:
             const auto step = songs::gridStepBeats (gridStep, s);
             if (step * pixelsPerBeat >= 6.0 && step < bb - 1.0e-9)
             {
-                g.setColour (outline.withAlpha (0.28f));
                 for (double b = step; b < length - 1.0e-9; b += step)
                     if (std::fmod (b, bb) > 1.0e-6 && bb - std::fmod (b, bb) > 1.0e-6)
+                    {
+                        g.setColour (outline.withAlpha (0.28f));
                         g.drawVerticalLine (xOf (start + b), (float) trackTop (0), (float) audioTop());
+                        // ...and a tick on the ruler, so the Grid you pick shows where clips and the song position snap.
+                        g.setColour (dim.withAlpha (0.55f));
+                        g.drawVerticalLine (xOf (start + b), (float) (rulerHeight + barsHeight - 5), (float) (rulerHeight + barsHeight));
+                    }
             }
             for (int i = 0; i < bars; ++i, ++bar)
             {
@@ -691,14 +700,14 @@ public:
         {
             m.addSectionHeader ("Tempo change: " + bpmText ((double) change[IDs::bpm]) + " BPM, " + songs::barLabel (song, beat));
             m.addItem (1, "Edit tempo change...");
-            m.addItem (2, "Change gradually to the next tempo", true, (bool) change.getProperty (IDs::tempoRamp, false));
+            m.addItem (2, "Gradually transition to the next tempo", true, (bool) change.getProperty (IDs::tempoRamp, false));
             m.addItem (3, "Delete tempo change", true);
         }
         else
         {
             m.addSectionHeader (songs::barLabel (song, beat));
             m.addItem (4, "Add a tempo change here...", into > 1.0e-6);
-            m.addItem (5, "\"" + section[IDs::name].toString() + "\" changes gradually from its start", true,
+            m.addItem (5, "\"" + section[IDs::name].toString() + "\": gradually transition from its start", true,
                        (bool) section.getProperty (IDs::tempoRamp, false));
         }
         auto songTree = song;
@@ -829,6 +838,12 @@ public:
     {
         // The tempo lane, like a point in an envelope: up / down sets the tempo (1 BPM a pixel, Shift 0.1), left / right
         // moves a change along its section on the grid. Dragging the line itself only changes that stretch's tempo.
+        if (draggingCursor)
+        {
+            cursorBeat = juce::jlimit (0.0, songs::songLengthBeats (song), snap (beatAt (e.x)));
+            repaint();
+            return;
+        }
         if (draggingTempo.isValid() || tempoLineOwner.isValid())
         {
             auto owner = draggingTempo.isValid() ? draggingTempo : tempoLineOwner;
@@ -868,11 +883,18 @@ public:
                             : onTempoLine (e.getPosition()) ? juce::MouseCursor::UpDownResizeCursor : juce::MouseCursor::NormalCursor);
             return;
         }
+        // The song position's line can be dragged when not playing.
+        if (e.y >= rulerHeight && playBeat < 0.0 && cursorBeat >= 0.0 && std::abs (e.x - xOf (cursorBeat)) <= 4)
+        {
+            setMouseCursor (juce::MouseCursor::LeftRightResizeCursor);
+            hoverSection = {};
+            return;
+        }
         const auto s = e.y < rulerHeight ? songs::sectionAt (song, beatAt (e.x)) : juce::ValueTree();
+        setMouseCursor (s.isValid() ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
         if (s != hoverSection)
         {
             hoverSection = s;
-            setMouseCursor (s.isValid() ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
             repaint();
         }
     }
@@ -927,14 +949,19 @@ public:
             }
             return;
         }
-        if (e.y >= clickLaneTop && e.y < trackTop (0))   // the click lane: how this section counts
+        if (e.y >= clickLaneTop && e.y < trackTop (0) && e.mods.isPopupMenu())   // the click lane: how this section counts
         {
             clickLaneMenu (songs::sectionAt (song, beatAt (e.x)));
             return;
         }
-        if (e.y < trackTop (0))   // the bar numbers: move the song position only
+        // The ruler (bar numbers and the click lane), or the song position's line itself when not playing: set the song
+        // position, and drag it along.
+        const auto onCursorLine = playBeat < 0.0 && cursorBeat >= 0.0 && std::abs (e.x - xOf (cursorBeat)) <= 4
+                                  && getComponentAt (e.getPosition()) == this;
+        if (e.y < trackTop (0) || onCursorLine)
         {
-            cursorBeat = snap (beatAt (e.x));
+            cursorBeat = juce::jlimit (0.0, songs::songLengthBeats (song), snap (beatAt (e.x)));
+            draggingCursor = true;
             repaint();
             return;
         }
@@ -968,6 +995,11 @@ public:
 
     void mouseUp (const juce::MouseEvent& e) override
     {
+        if (draggingCursor)
+        {
+            draggingCursor = false;
+            return;
+        }
         if (draggingTempo.isValid() || tempoLineOwner.isValid())
         {
             draggingTempo = tempoLineOwner = {};
@@ -1308,6 +1340,7 @@ private:
     juce::ValueTree tempoLineOwner;              // the change (or section) whose stretch of the line is dragged up or down
     double tempoDragBpm = 120.0;                 // its tempo when the drag started
     int tempoDragX = 0;                          // where the mouse is, for the tempo label
+    bool draggingCursor = false;                 // the song position, dragged along the ruler
     double dropBeat = -1.0;
     int dropTrack = -1;
     std::vector<juce::ValueTree> selection;
@@ -1591,6 +1624,163 @@ private:
 };
 
 // Tap tempo: tap the button (or T / Space) along with the song, then set the section's tempo, or every section's.
+// The backing track, in one place: its file, volume, where bar 1 is in it, and whether the song is long enough for it.
+// (Right-clicking the waveform still lines up a bar where you click.)
+class BackingPanel final : public juce::Component
+{
+public:
+    std::function<void()> onReplace;
+    std::function<void (float gain)> onLiveGain;   // the volume while it's dragged (saved when you let go)
+
+    BackingPanel (juce::ValueTree s, double fileSeconds) : song (std::move (s)), audioSeconds (fileSeconds)
+    {
+        styleCaption (fileLabel, "FILE");
+        styleCaption (volumeLabel, "VOLUME");
+        styleCaption (offsetLabel, "BAR 1 AT");
+        styleCaption (lengthLabel, "LENGTH");
+        for (auto* l : { &fileLabel, &volumeLabel, &offsetLabel, &lengthLabel })
+            addAndMakeVisible (l);
+
+        fileName.setFont (font (14.0f, true));
+        fileName.setColour (juce::Label::textColourId, text);
+        addAndMakeVisible (fileName);
+        for (auto* b : { &replace, &remove, &earlier, &later, &fileStart, &extend })
+        {
+            b->setColour (juce::TextButton::buttonColourId, surfaceHi);
+            addAndMakeVisible (b);
+        }
+        replace.onClick = [this] { if (onReplace) onReplace(); close(); };
+        remove.setTooltip ("Take the backing track out of this song (the file itself stays where it is)");
+        remove.onClick = [this]
+        {
+            song.removeProperty (IDs::audioFile, nullptr);
+            song.removeProperty (IDs::audioOffset, nullptr);
+            close();
+        };
+
+        volume.textFromValueFunction = [] (double v) { return juce::String (juce::roundToInt (v * 100.0)) + " %"; };
+        volume.valueFromTextFunction = [] (const juce::String& t) { return t.getDoubleValue() / 100.0; };
+        volume.setTextBoxStyle (juce::Slider::TextBoxRight, false, 64, 24);
+        volume.setRange (0.0, 1.0, 0.01);
+        volume.setValue ((double) song.getProperty (IDs::audioGain, 0.8), juce::dontSendNotification);
+        volume.updateText();
+        volume.setColour (juce::Slider::trackColourId, builderViolet);
+        volume.onDragEnd = [this] { song.setProperty (IDs::audioGain, volume.getValue(), nullptr); };
+        volume.onValueChange = [this]
+        {
+            if (onLiveGain)
+                onLiveGain ((float) volume.getValue());
+            if (! volume.isMouseButtonDown())   // typed in the box
+                song.setProperty (IDs::audioGain, volume.getValue(), nullptr);
+        };
+        addAndMakeVisible (volume);
+
+        offset.setJustification (juce::Justification::centred);
+        offset.setInputRestrictions (10, "-0123456789.");
+        offset.setTooltip ("Seconds into the file where bar 1 is (negative: the audio starts after bar 1). Type and press Return, "
+                           "or drag the waveform sideways.");
+        offset.onReturnKey = [this] { setOffset (offset.getText().getDoubleValue()); };
+        offset.onFocusLost = [this] { setOffset (offset.getText().getDoubleValue()); };
+        addAndMakeVisible (offset);
+        seconds.setText ("seconds into the file", juce::dontSendNotification);
+        seconds.setColour (juce::Label::textColourId, dim);
+        seconds.setFont (font (12.5f));
+        addAndMakeVisible (seconds);
+        earlier.setTooltip ("Bar 1 10 ms earlier in the file");
+        later.setTooltip ("Bar 1 10 ms later in the file");
+        earlier.onClick = [this] { setOffset ((double) song.getProperty (IDs::audioOffset, 0.0) - 0.01); };
+        later.onClick = [this] { setOffset ((double) song.getProperty (IDs::audioOffset, 0.0) + 0.01); };
+        fileStart.setTooltip ("Bar 1 right at the start of the file");
+        fileStart.onClick = [this] { setOffset (0.0); };
+
+        lengthText.setColour (juce::Label::textColourId, dim);
+        lengthText.setFont (font (12.5f));
+        lengthText.setJustificationType (juce::Justification::centredLeft);
+        addAndMakeVisible (lengthText);
+        extend.onClick = [this]
+        {
+            songs::extendLastSection (song, songs::barsToCoverAudio (song, audioSeconds));
+            refresh();
+        };
+
+        hint.setText ("To line up a bar with the recording, right-click the waveform on a downbeat.", juce::dontSendNotification);
+        hint.setColour (juce::Label::textColourId, dim);
+        hint.setFont (font (12.0f));
+        addAndMakeVisible (hint);
+        refresh();
+        setSize (560, 214);
+    }
+
+    void paint (juce::Graphics& g) override { g.fillAll (surface); }
+
+    void resized() override
+    {
+        auto r = getLocalBounds().reduced (14, 10);
+        const auto row = [&] (juce::Label& l) { auto line = r.removeFromTop (36); l.setBounds (line.removeFromLeft (84)); return line.reduced (0, 4); };
+        {
+            auto line = row (fileLabel);
+            remove.setBounds (line.removeFromRight (78));
+            line.removeFromRight (6);
+            replace.setBounds (line.removeFromRight (90));
+            line.removeFromRight (8);
+            fileName.setBounds (line);
+        }
+        volume.setBounds (row (volumeLabel));
+        {
+            auto line = row (offsetLabel);
+            offset.setBounds (line.removeFromLeft (70));
+            line.removeFromLeft (6);
+            seconds.setBounds (line.removeFromLeft (150));
+            fileStart.setBounds (line.removeFromRight (80));
+            line.removeFromRight (6);
+            later.setBounds (line.removeFromRight (64));
+            line.removeFromRight (4);
+            earlier.setBounds (line.removeFromRight (64));
+        }
+        {
+            auto line = row (lengthLabel);
+            extend.setBounds (line.removeFromRight (150));
+            line.removeFromRight (8);
+            lengthText.setBounds (line);
+        }
+        r.removeFromTop (6);
+        hint.setBounds (r.removeFromTop (22));
+    }
+
+private:
+    void setOffset (double secondsIntoFile)
+    {
+        song.setProperty (IDs::audioOffset, std::round (secondsIntoFile * 1000.0) / 1000.0, nullptr);
+        refresh();
+    }
+
+    void refresh()
+    {
+        fileName.setText (juce::File (song[IDs::audioFile].toString()).getFileName(), juce::dontSendNotification);
+        offset.setText (juce::String ((double) song.getProperty (IDs::audioOffset, 0.0), 3), juce::dontSendNotification);
+        const auto bars = songs::barsToCoverAudio (song, audioSeconds);
+        lengthText.setText (bars > 0 ? "The audio runs about " + juce::String (bars) + (bars == 1 ? " bar" : " bars") + " past the song's end."
+                                     : juce::String ("The song is long enough for the audio."), juce::dontSendNotification);
+        extend.setButtonText (bars > 0 ? "Add " + juce::String (bars) + (bars == 1 ? " bar" : " bars") + " to the end" : juce::String ("Nothing to add"));
+        extend.setEnabled (bars > 0);
+        extend.setTooltip ("Adds the bars to the last section, at the tempo it ends on, so the whole recording plays");
+    }
+
+    void close()
+    {
+        if (auto* box = findParentComponentOfClass<juce::CallOutBox>())
+            box->dismiss();
+    }
+
+    juce::ValueTree song;
+    double audioSeconds;
+    juce::Label fileLabel, volumeLabel, offsetLabel, lengthLabel, fileName, seconds, lengthText, hint;
+    juce::TextButton replace { "Replace..." }, remove { "Remove" }, earlier { "-10 ms" }, later { "+10 ms" }, fileStart { "File start" },
+                     extend { "Add bars" };
+    juce::Slider volume { juce::Slider::LinearHorizontal, juce::Slider::TextBoxRight };
+    juce::TextEditor offset;
+};
+
 class TapPanel final : public juce::Component
 {
 public:
@@ -1691,7 +1881,7 @@ struct ClickLabel final : public juce::Component, public juce::SettableTooltipCl
 
     ClickLabel()
     {
-        setTooltip ("The click track: set how each section counts in its lane. Drag this name into your DAW for the click as a "
+        setTooltip ("The click track: right-click a section in its lane to set how it counts; click or drag the lane to set where Play starts. Drag this name into your DAW for the click as a "
                     "WAV (the whole song from bar 1). The tick sends it along with Drag song; M mutes the click while playing.");
     }
     juce::Rectangle<int> tickArea() const { return getLocalBounds().reduced (0, 2).removeFromRight (30); }
@@ -1768,6 +1958,7 @@ struct AudioLabel final : public juce::Component, public juce::SettableTooltipCl
     juce::ValueTree song;
     juce::Slider volume { juce::Slider::LinearHorizontal, juce::Slider::NoTextBox };
     std::function<void()> onMenu, onAdd;
+    juce::TextButton settings { "..." };
     std::function<void (float gain)> onLiveVolume;   // the volume while it's dragged (saved when you let go)
     std::function<juce::File()> makeFile;   // the backing track lined up with bar 1, as a WAV, for dragging into the DAW
     bool started = false;
@@ -1781,15 +1972,20 @@ struct AudioLabel final : public juce::Component, public juce::SettableTooltipCl
         volume.onDragEnd = [this] { auto sTree = song; sTree.setProperty (IDs::audioGain, volume.getValue(), nullptr); };
         volume.onValueChange = [this] { if (onLiveVolume) onLiveVolume ((float) volume.getValue()); };   // heard while dragging
         addAndMakeVisible (volume);
+        settings.setColour (juce::TextButton::buttonColourId, raised);
+        settings.setTooltip ("Backing track settings: the file, volume, where bar 1 is, and the song's length");
+        settings.onClick = [this] { if (onMenu) onMenu(); };
+        addChildComponent (settings);
         setTooltip ("The backing track: plays with Play, after the count-in. Drag its waveform sideways to line it up with "
                     "bar 1. Drag this name into your DAW for it as a WAV lined up with bar 1; the tick sends it along with "
-                    "Drag song. Right-click for volume, offset, fitting the tempo, replace or remove.");
+                    "Drag song. \"...\" (or right-click) opens its settings.");
     }
 
     void refresh()
     {
         const auto has = song[IDs::audioFile].toString().isNotEmpty();
         volume.setVisible (has);
+        settings.setVisible (has);
         volume.setValue ((double) song.getProperty (IDs::audioGain, 0.8), juce::dontSendNotification);
         repaint();
     }
@@ -1835,7 +2031,11 @@ struct AudioLabel final : public juce::Component, public juce::SettableTooltipCl
         if (f.existsAsFile())
             juce::DragAndDropContainer::performExternalDragDropOfFiles (juce::StringArray (f.getFullPathName()), false, this);
     }
-    void resized() override { volume.setBounds (getLocalBounds().reduced (0, 4).withTrimmedLeft (10).withTrimmedRight (6).removeFromBottom (24)); }
+    void resized() override
+    {
+        volume.setBounds (getLocalBounds().reduced (0, 4).withTrimmedLeft (10).withTrimmedRight (6).removeFromBottom (24));
+        settings.setBounds (getLocalBounds().reduced (0, 4).removeFromTop (26).withTrimmedRight (56).removeFromRight (26).withSizeKeepingCentre (24, 18));
+    }
     void mouseEnter (const juce::MouseEvent&) override { repaint(); }
     void mouseExit (const juce::MouseEvent&) override { repaint(); }
     void mouseDown (const juce::MouseEvent& e) override
@@ -1913,7 +2113,7 @@ public:
         thumbnail.addChangeListener (this);
         audioLabel.onAdd = [this] { chooseAudio(); };
         audioLabel.onLiveVolume = [this] (float gain) { if (isTimerRunning()) proc.songAudio.setBackingGain (gain); };
-        audioLabel.onMenu = [this] { audioMenu (-1); };
+        audioLabel.onMenu = [this] { showBackingPanel(); };
         labels.addAndMakeVisible (audioLabel);
         labels.addAndMakeVisible (clickLabel);
         clickLabel.makeFile = [this] { return clickTrackFile (current()); };
@@ -2859,10 +3059,52 @@ private:
                                                         file.getFileName() + " can't be read. Use an MP3, WAV, AIFF, FLAC or Ogg file.");
                 return;
             }
+            const auto audioSeconds = reader->sampleRate > 0.0 ? (double) reader->lengthInSamples / reader->sampleRate : 0.0;
             song.setProperty (IDs::audioFile, file.getFullPathName(), nullptr);
             if (! song.hasProperty (IDs::audioGain))
                 song.setProperty (IDs::audioGain, 0.8, nullptr);
+            safe->offerToCoverAudio (song, audioSeconds);
         });
+    }
+
+    double backingSeconds (const juce::ValueTree& song)
+    {
+        std::unique_ptr<juce::AudioFormatReader> reader (proc.songAudio.formats().createReaderFor (juce::File (song[IDs::audioFile].toString())));
+        return reader != nullptr && reader->sampleRate > 0.0 ? (double) reader->lengthInSamples / reader->sampleRate : 0.0;
+    }
+
+    void showBackingPanel()
+    {
+        auto song = current();
+        if (song[IDs::audioFile].toString().isEmpty())
+        {
+            chooseAudio();
+            return;
+        }
+        auto panel = std::make_unique<BackingPanel> (song, backingSeconds (song));
+        juce::Component::SafePointer<SongBuilder> safe (this);
+        panel->onReplace = [safe] { if (safe != nullptr) safe->chooseAudio(); };
+        panel->onLiveGain = [safe] (float gain) { if (safe != nullptr && safe->isTimerRunning()) safe->proc.songAudio.setBackingGain (gain); };
+        juce::CallOutBox::launchAsynchronously (std::move (panel), audioLabel.getScreenBounds(), nullptr);
+    }
+
+    // A new backing track longer than the song: offer the bars it needs, so it isn't cut off at the song's end.
+    void offerToCoverAudio (juce::ValueTree song, double audioSeconds)
+    {
+        const auto bars = songs::barsToCoverAudio (song, audioSeconds);
+        if (bars <= 0)
+            return;
+        auto* w = new juce::AlertWindow ("Backing track", "The recording runs about " + juce::String (bars) + (bars == 1 ? " bar" : " bars")
+                                         + " past the song's end, so the end would be cut off. Add "
+                                         + (bars == 1 ? juce::String ("it") : juce::String ("them")) + " to the last section?",
+                                         juce::MessageBoxIconType::NoIcon);
+        w->addButton ("Add " + juce::String (bars) + (bars == 1 ? " bar" : " bars"), 1, juce::KeyPress (juce::KeyPress::returnKey));
+        w->addButton ("Keep the song as it is", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+        w->enterModalState (true, juce::ModalCallbackFunction::create ([song, bars] (int r) mutable
+        {
+            if (r == 1)
+                songs::extendLastSection (song, bars);
+        }), true);
     }
 
     // x: where in the grid it was right-clicked (-1: from the label), for "bar 1 is here" and fitting the tempo.
@@ -2882,15 +3124,10 @@ private:
             m.addItem (11, "Bar " + juce::String (nearestBar) + " starts here (fit the tempo)...");
             m.addSeparator();
         }
-        m.addItem (1, has ? "Replace..." : "Add audio...");
-        juce::PopupMenu vol;
-        for (int pct : { 100, 80, 60, 40, 20 })
-            vol.addItem (100 + pct, juce::String (pct) + "%", true, juce::roundToInt ((double) song.getProperty (IDs::audioGain, 0.8) * 100.0) == pct);
-        m.addSubMenu ("Volume", vol, has);
-        m.addItem (2, "Set where bar 1 is in the file...", has);
-        m.addItem (3, "Bar 1 at the file's start", has);
-        m.addSeparator();
-        m.addItem (4, "Remove", has);
+        if (has)
+            m.addItem (5, "Backing track settings...");
+        else
+            m.addItem (1, "Add audio...");
         juce::Component::SafePointer<SongBuilder> safe (this);
         m.showMenuAsync (juce::PopupMenu::Options(), [safe, song, fileSeconds, nearestBar] (int r) mutable
         {
@@ -2908,22 +3145,8 @@ private:
                 });
             else if (r == 1)
                 safe->chooseAudio();
-            else if (r > 100)
-                song.setProperty (IDs::audioGain, (r - 100) / 100.0, nullptr);
-            else if (r == 2)
-                askText ("Bar 1 is this many seconds into the file (negative: the audio starts after bar 1)",
-                         juce::String ((double) song.getProperty (IDs::audioOffset, 0.0), 3), [song] (const juce::String& t) mutable
-                {
-                    if (t.isNotEmpty())
-                        song.setProperty (IDs::audioOffset, t.getDoubleValue(), nullptr);
-                });
-            else if (r == 3)
-                song.setProperty (IDs::audioOffset, 0.0, nullptr);
-            else if (r == 4)
-            {
-                song.removeProperty (IDs::audioFile, nullptr);
-                song.removeProperty (IDs::audioOffset, nullptr);
-            }
+            else if (r == 5)
+                safe->showBackingPanel();
         });
     }
 
@@ -3411,6 +3634,11 @@ struct SongBuilderWindow final : public juce::DocumentWindow
 std::unique_ptr<juce::DocumentWindow> makeSongBuilderWindow (PedalCuesProcessor& p, std::function<juce::String()> deviceName)
 {
     return std::make_unique<SongBuilderWindow> (p, std::move (deviceName));
+}
+
+std::unique_ptr<juce::Component> makeSongBackingPanel (juce::ValueTree song, double audioSeconds)
+{
+    return std::make_unique<BackingPanel> (song, audioSeconds);
 }
 
 std::unique_ptr<juce::Component> makeSongExportPanel (juce::ValueTree song)

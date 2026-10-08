@@ -167,6 +167,23 @@
         CHECK (all.size() == 2 && all[0].time == 0.0f && all[1].time == 1.0f);
     }
 
+    // Freehand on the grid: one point on every grid line the stroke covers, at its height there, however it wobbled.
+    {
+        std::vector<Breakpoint> p { { 0.0f, 0.0f }, { 1.0f, 0.0f } };
+        std::vector<float> wobble (n, 0.0f);
+        for (size_t i = 0; i < n; ++i)
+            wobble[i] = 0.5f + 0.4f * std::sin ((float) i * 0.9f);   // shaky, many ups and downs between grid lines
+        const auto g = mergeStroke (p, wobble, 0, (int) n - 1, 0.02f, 1.0f / 16.0f);
+        CHECK (g.size() == 17);                                       // 0, 1/16 ... 16/16
+        bool onLines = true;
+        for (size_t k = 0; k < g.size(); ++k)
+            onLines = onLines && std::abs (g[k].time - (float) k / 16.0f) < 1.0e-6f;
+        CHECK (onLines);
+        // A short stroke between two grid lines: one point, on the nearer line.
+        const auto one = mergeStroke (p, wobble, 70, 74, 0.02f, 1.0f / 16.0f);
+        CHECK (one.size() == 3 && std::abs (one[1].time - 9.0f / 16.0f) < 1.0e-6f);
+    }
+
     // Undo / redo: states after each edit, redo dropped by a new edit, merged steps (a dragged Wave slider), a limit.
     {
         DrawHistory h (3);

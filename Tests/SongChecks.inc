@@ -336,6 +336,17 @@
         CHECK ((double) importMap (qf, "Q").song.getChild (0)[IDs::bpm] == 225.0);
     }
 
+    // A backing track longer than the song: the bars to add to the last section, at its tempo, to reach the audio's end.
+    {
+        auto b = createSong ("Backing");   // one 8-bar section at 120: 16 seconds
+        CHECK (barsToCoverAudio (b, 15.0) == 0 && barsToCoverAudio (b, 16.02) == 0);
+        CHECK (barsToCoverAudio (b, 16.5) == 1 && barsToCoverAudio (b, 26.0) == 5);   // 10 s more = 20 beats = 5 bars
+        b.setProperty (IDs::audioOffset, 2.0, nullptr);                                // bar 1 two seconds into the file
+        CHECK (barsToCoverAudio (b, 26.0) == 4);
+        extendLastSection (b, 4);
+        CHECK (songBars (b) == 12 && barsToCoverAudio (b, 26.0) == 0);
+    }
+
     // Songs survive a project load (sanitise) and loading a setup leaves them alone.
     juce::ValueTree root (IDs::PedalCues);
     songsNode (root).appendChild (createSong ("Kept"), nullptr);

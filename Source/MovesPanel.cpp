@@ -44,14 +44,14 @@ juce::String padTooltip()
 {
     return "Click: add a point. Drag a point or a line to move it (Shift: off the grid, " + cmdKey + "+Shift: one direction only). "
          "Drag the diamond in a line's middle (or " + altKey + "-drag the line): curve it. " + altKey + "-click a point: delete it. Double-click a point: type its value. "
-         + cmdKey + "-click: select more, right-drag: select an area, " + cmdKey + "+A: all. " + cmdKey + "-drag: draw freehand. "
+         + cmdKey + "-click: select more, right-drag: select an area, " + cmdKey + "+A: all. " + cmdKey + "-drag: draw freehand, a point on each grid line (Shift: off the grid). "
          "Right-click: line shapes, invert, scale. " + cmdKey + "+Z: undo. Bottom = heel, top = toe.";
 }
 
 juce::String padHelp()
 {
     return "Click: add a point.   Drag a point or a line: move it (Shift: off the grid, " + cmdKey + "+Shift: one direction only).   "
-         + cmdKey + "-drag: draw freehand.\n"
+         + cmdKey + "-drag: draw freehand, a point on each grid line (Shift: off the grid).\n"
          "Drag the diamond in a line's middle (or " + altKey + "-drag the line): curve it (" + altKey + "-double-click: straight again).   "
          + altKey + "-click a point: delete it.   "
          "Double-click a point: type its value.\n"
@@ -885,7 +885,9 @@ private:
         strokeHi = strokeHi < 0 ? index : juce::jmax (strokeHi, index);
         lastIndex = index;
         lastValue = value;
-        doc.bps = cues::whammy::mergeStroke (from, stroke, strokeLo, strokeHi);
+        // On the grid, like the other points (Shift: off the grid): one point per grid line the stroke covers.
+        const auto onGrid = doc.grid > 0.0 && doc.grid < doc.beats && ! juce::ModifierKeys::currentModifiers.isShiftDown();
+        doc.bps = cues::whammy::mergeStroke (from, stroke, strokeLo, strokeHi, 0.02f, onGrid ? (float) (doc.grid / doc.beats) : 0.0f);
         render();
     }
 

@@ -968,6 +968,31 @@ bool fitTempoToAudio (juce::ValueTree song, int bar, double fileSeconds)
     return true;
 }
 
+int barsToCoverAudio (const juce::ValueTree& song, double audioSeconds)
+{
+    juce::ValueTree last;
+    for (const auto& s : song)
+        if (s.hasType (IDs::SongSection))
+            last = s;
+    if (! last.isValid())
+        return 0;
+    const auto past = audioSeconds - (double) song.getProperty (IDs::audioOffset, 0.0) - songSeconds (song);
+    if (past <= 0.05)
+        return 0;
+    const auto beats = past * sectionEndBpm (song, last) / 60.0;
+    return (int) std::ceil (beats / barBeats (last) - 1.0e-6);
+}
+
+void extendLastSection (juce::ValueTree song, int bars)
+{
+    juce::ValueTree last;
+    for (const auto& s : song)
+        if (s.hasType (IDs::SongSection))
+            last = s;
+    if (last.isValid() && bars > 0)
+        last.setProperty (IDs::bars, juce::jlimit (1, maxBars, juce::jmax (1, (int) last.getProperty (IDs::bars, 1)) + bars), nullptr);
+}
+
 double tempoFromTaps (const std::vector<double>& taps)
 {
     if (taps.size() < 2)

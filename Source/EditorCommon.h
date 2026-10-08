@@ -96,6 +96,7 @@ std::unique_ptr<Page> makeMidiStrip (PedalCuesProcessor&, bool pedalTab);
 // tab being dragged from, to name a new track. makeSongBuilder is the window's content alone (DocShots).
 std::unique_ptr<juce::DocumentWindow> makeSongBuilderWindow (PedalCuesProcessor&, std::function<juce::String()> deviceName);
 std::unique_ptr<juce::Component> makeSongBuilder (PedalCuesProcessor&, std::function<juce::String()> deviceName);
+std::unique_ptr<juce::Component> makeSongBackingPanel (juce::ValueTree song, double audioSeconds);   // the backing track settings (DocShots)
 std::unique_ptr<juce::Component> makeSongExportPanel (juce::ValueTree song);   // the Export MIDI file window's content (DocShots)   // above each device page: channel, Done, Test, How to connect
 void showConnectDialog (PedalCuesProcessor&);                               // How to connect: the Connect your rig window
 void showWiringGuide (const juce::ValueTree& state);   // Help > Wiring guide, for the unit on the first tab

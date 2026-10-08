@@ -1138,7 +1138,7 @@ namespace whammy
     }
 
     std::vector<Breakpoint> mergeStroke (const std::vector<Breakpoint>& bps, const std::vector<float>& samples, int first, int last,
-                                         float tolerance)
+                                         float tolerance, float gridStep)
     {
         const auto n = (int) samples.size();
         if (n < 2)
@@ -1151,7 +1151,24 @@ namespace whammy
         const auto t1 = (float) last / (float) (n - 1);
 
         std::vector<Breakpoint> stroke;
-        if (first == last)
+        auto lo = t0, hi = t1;   // the stretch the stroke replaces
+        if (gridStep > 0.0f)
+        {
+            // On the grid: a point on every grid line the stroke covers, at the stroke's height there (the nearest line
+            // when it covers none), however the mouse moved in between.
+            const auto sampleAt = [&] (float t) { return juce::jlimit (0.0f, 1.0f, samples[(size_t) juce::jlimit (0, n - 1, juce::roundToInt (t * (float) (n - 1)))]); };
+            auto k0 = (int) std::ceil (t0 / gridStep - 1.0e-4f), k1 = (int) std::floor (t1 / gridStep + 1.0e-4f);
+            if (k0 > k1)
+                k0 = k1 = juce::roundToInt ((t0 + t1) * 0.5f / gridStep);
+            for (int k = k0; k <= k1; ++k)
+            {
+                const auto t = juce::jlimit (0.0f, 1.0f, (float) k * gridStep);
+                stroke.push_back ({ t, sampleAt (juce::jlimit (t0, t1, t)) });
+            }
+            lo = stroke.front().time;
+            hi = stroke.back().time;
+        }
+        else if (first == last)
         {
             stroke.push_back ({ t0, juce::jlimit (0.0f, 1.0f, samples[(size_t) first]) });
         }
@@ -1165,7 +1182,7 @@ namespace whammy
         std::vector<Breakpoint> out;
         const auto eps = minPointGap - 1.0e-5f;
         for (const auto& b : bps)
-            if (b.time < t0 - eps || b.time > t1 + eps)
+            if (b.time < lo - eps || b.time > hi + eps)
                 out.push_back (b);
         for (const auto& b : stroke)
             out.push_back (b);
