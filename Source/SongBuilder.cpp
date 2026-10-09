@@ -2138,7 +2138,7 @@ public:
         styleCaption (gridLabel, "GRID");
         addChildComponent (gridLabel);
         snapToggle.setButtonText ("Snap");
-        snapToggle.setTooltip ("Snap to the grid (hold Alt for the opposite while you drag)");
+        snapToggle.setTooltip ("Snap to the grid (hold " + ui::optionKeyName() + " for the opposite while you drag)");
         snapToggle.onClick = [this] { songsNode().setProperty (IDs::snap, snapToggle.getToggleState(), nullptr); };
         addChildComponent (snapToggle);
         for (auto* b : { &zoomOut, &zoomIn, &zoomFit })
@@ -2575,7 +2575,7 @@ private:
                 t->badge = juce::String (songs::songBars (song)) + (songs::songBars (song) == 1 ? " bar" : " bars");
                 t->colour = paletteColour (index++);
                 t->highlighted = song == selected || isPicked (song);
-                t->setTooltip ("Click to open. Cmd / Ctrl-click or Shift-click to select several, then copy, paste, "
+                t->setTooltip ("Click to open. " + ui::commandKeyName() + "-click or Shift-click to select several, then copy, paste, "
                                "duplicate or delete them (keys or right-click).");
                 t->onClick = [this, song] { songClicked (song); };
                 t->onContextMenu = [this, song] { if (! isPicked (song)) picked = { song[IDs::uid].toString() }; songMenu (song); };

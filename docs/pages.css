@@ -76,7 +76,24 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: 
 .code pre code { background: none; border: 0; padding: 0; font-size: 13.5px; }
 .code .copy { position: absolute; top: 8px; right: 8px; background: var(--raised); color: var(--text); border: 1px solid var(--outline);
               border-radius: 6px; padding: 3px 10px; font: 600 12px inherit; cursor: pointer; }
-@media (max-width: 900px) { .guide { grid-template-columns: 1fr; } .toc { display: none; } }
+/* Phones and narrow windows: the contents as a bar under the header, opening into the list */
+.toc-mobile { display: none; }
+@media (max-width: 900px) {
+  .guide { grid-template-columns: 1fr; gap: 0; }
+  .toc { display: none; }
+  .toc-mobile { display: block; position: sticky; top: 65px; z-index: 4; margin: 0 -24px; background: #0c0e12f2; backdrop-filter: blur(8px);
+                border-bottom: 1px solid var(--outline); }
+  .toc-mobile summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 12px 24px; cursor: pointer; }
+  .toc-mobile summary::-webkit-details-marker { display: none; }
+  .toc-mobile summary b { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  .toc-mobile .cur { flex: 1; min-width: 0; color: var(--text); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .toc-mobile summary::after { content: "\25BE"; color: var(--amber); font-size: 20px; line-height: 1; }
+  .toc-mobile[open] summary::after { content: "\25B4"; }
+  .toc-mobile nav { display: flex; flex-direction: column; max-height: 65vh; overflow-y: auto; padding: 4px 0 10px; border-top: 1px solid var(--outline); }
+  .toc-mobile nav a { color: var(--dim); text-decoration: none; font-size: 15px; padding: 10px 24px; border-left: 3px solid transparent; }
+  .toc-mobile nav a.on { color: var(--text); font-weight: 600; border-left-color: var(--amber); background: #ffffff08; }
+  .doc h2, .doc h3, .doc h4 { scroll-margin-top: 124px; }
+}
 .doc .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
 .doc .pair figure { margin: 0; }
 .doc .pair img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--outline); }

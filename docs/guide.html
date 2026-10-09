@@ -27,6 +27,7 @@
   <nav><a href="./#features">Features</a><a href="./#install">Install</a><a href="guide.html" aria-current="page">User guide</a><a href="changelog.html">What's new</a><a href="help.html">Help</a><a href="./#support">Support</a><a href="https://github.com/thankost/pedal-cues">GitHub</a></nav>
 </div></header>
 <div class="wrap guide">
+  <details class="toc-mobile"><summary><b>Contents</b><span class="cur"></span></summary><nav><a href="#1-install">1. Install</a><a href="#2-connect-your-rig">2. Connect your rig</a><a href="#3-set-up-your-daw-once">3. Set up your DAW (once)</a><a href="#4-first-launch-the-quick-tour">4. First launch: the quick tour</a><a href="#5-quad-cortex">5. Quad Cortex</a><a href="#6-kemper">6. Kemper</a><a href="#7-fractal-line-6-headrush-darkglass-and-more-beta">7. Fractal, Line 6, HeadRush, Darkglass and more (beta)</a><a href="#8-custom-midi-devices-beta">8. Custom MIDI devices (beta)</a><a href="#9-build-a-song-step-by-step">9. Build a song, step by step</a><a href="#10-effects--pedals-whammy-strymon-line-6-boss-meris-chase-bliss-and-more">10. Effects &amp; Pedals: Whammy, Strymon, Line 6, Boss, Meris, Chase Bliss and more</a><a href="#11-midi-channels-how-to-connect-and-your-setup">11. MIDI channels, How to connect and your setup</a><a href="#12-troubleshooting">12. Troubleshooting</a></nav></details>
   <aside class="toc"><b>Contents</b><a href="#1-install">1. Install</a><a href="#2-connect-your-rig">2. Connect your rig</a><a href="#3-set-up-your-daw-once">3. Set up your DAW (once)</a><a href="#4-first-launch-the-quick-tour">4. First launch: the quick tour</a><a href="#5-quad-cortex">5. Quad Cortex</a><a href="#6-kemper">6. Kemper</a><a href="#7-fractal-line-6-headrush-darkglass-and-more-beta">7. Fractal, Line 6, HeadRush, Darkglass and more (beta)</a><a href="#8-custom-midi-devices-beta">8. Custom MIDI devices (beta)</a><a href="#9-build-a-song-step-by-step">9. Build a song, step by step</a><a href="#10-effects--pedals-whammy-strymon-line-6-boss-meris-chase-bliss-and-more">10. Effects &amp; Pedals: Whammy, Strymon, Line 6, Boss, Meris, Chase Bliss and more</a><a href="#11-midi-channels-how-to-connect-and-your-setup">11. MIDI channels, How to connect and your setup</a><a href="#12-troubleshooting">12. Troubleshooting</a></aside>
   <main class="doc">
     <h1>User guide</h1>
@@ -341,8 +342,13 @@
 <script>
   (function () {
     var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var phone = Array.prototype.slice.call(document.querySelectorAll('.toc-mobile nav a'));
+    var label = document.querySelector('.toc-mobile .cur');
+    var drop = document.querySelector('.toc-mobile');
     var heads = links.map(function (a) { return document.getElementById(decodeURIComponent(a.hash.slice(1))); });
     var current = null, queued = false;
+    // On a phone, picking a section closes the list.
+    phone.forEach(function (a) { a.addEventListener('click', function () { drop.removeAttribute('open'); }); });
     function update() {
       queued = false;
       var line = 120, on = 0;
@@ -353,6 +359,8 @@
       if (current) { current.classList.remove('on'); current.removeAttribute('aria-current'); }
       current = links[on];
       if (current) { current.classList.add('on'); current.setAttribute('aria-current', 'location'); }
+      phone.forEach(function (a, i) { a.classList.toggle('on', i === on); });
+      if (label && current) label.textContent = current.textContent;
     }
     function queue() { if (!queued) { queued = true; requestAnimationFrame(update); } }
     window.addEventListener('scroll', queue, { passive: true });

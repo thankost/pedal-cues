@@ -193,8 +193,13 @@ def guide():
 <script>
   (function () {
     var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var phone = Array.prototype.slice.call(document.querySelectorAll('.toc-mobile nav a'));
+    var label = document.querySelector('.toc-mobile .cur');
+    var drop = document.querySelector('.toc-mobile');
     var heads = links.map(function (a) { return document.getElementById(decodeURIComponent(a.hash.slice(1))); });
     var current = null, queued = false;
+    // On a phone, picking a section closes the list.
+    phone.forEach(function (a) { a.addEventListener('click', function () { drop.removeAttribute('open'); }); });
     function update() {
       queued = false;
       var line = 120, on = 0;
@@ -205,6 +210,8 @@ def guide():
       if (current) { current.classList.remove('on'); current.removeAttribute('aria-current'); }
       current = links[on];
       if (current) { current.classList.add('on'); current.setAttribute('aria-current', 'location'); }
+      phone.forEach(function (a, i) { a.classList.toggle('on', i === on); });
+      if (label && current) label.textContent = current.textContent;
     }
     function queue() { if (!queued) { queued = true; requestAnimationFrame(update); } }
     window.addEventListener('scroll', queue, { passive: true });
@@ -213,7 +220,10 @@ def guide():
     update();
   })();
 </script>"""
+    # Phones: a bar under the header with the section being read; tap it for the whole list.
+    phone = f"""<details class="toc-mobile"><summary><b>Contents</b><span class="cur"></span></summary><nav>{side}</nav></details>"""
     main = f"""<div class="wrap guide">
+  {phone}
   <aside class="toc"><b>Contents</b>{side}</aside>
   <main class="doc">
     <h1>User guide</h1>
