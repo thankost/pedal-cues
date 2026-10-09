@@ -52,7 +52,8 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: 
 
 /* User guide */
 .guide { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; }
-.toc { position: sticky; top: 88px; align-self: start; padding-top: 52px; display: flex; flex-direction: column; gap: 2px; }
+.toc { position: sticky; top: 88px; align-self: start; padding-top: 52px; display: flex; flex-direction: column; gap: 2px;
+       max-height: calc(100vh - 100px); overflow-y: auto; overscroll-behavior: contain; }
 .toc b { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin-bottom: 8px; }
 .toc a { color: var(--dim); text-decoration: none; font-size: 14px; padding: 5px 10px; border-left: 2px solid var(--outline); }
 .toc a:hover { color: var(--text); border-left-color: var(--amber); }
@@ -81,7 +82,7 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: 
 @media (max-width: 900px) {
   .guide { grid-template-columns: 1fr; gap: 0; }
   .toc { display: none; }
-  .toc-mobile { display: block; position: sticky; top: 65px; z-index: 4; margin: 0 -24px; background: #0c0e12f2; backdrop-filter: blur(8px);
+  .toc-mobile { display: block; position: sticky; top: 65px; z-index: 4; margin: 0 -24px; background: #0c0e12;   /* solid: a blur here would trap the open list inside the bar */
                 border-bottom: 1px solid var(--outline); }
   .toc-mobile summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 12px 24px; cursor: pointer; }
   .toc-mobile summary::-webkit-details-marker { display: none; }
@@ -89,10 +90,14 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: 
   .toc-mobile .cur { flex: 1; min-width: 0; color: var(--text); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .toc-mobile summary::after { content: "\25BE"; color: var(--amber); font-size: 20px; line-height: 1; }
   .toc-mobile[open] summary::after { content: "\25B4"; }
-  .toc-mobile nav { display: flex; flex-direction: column; max-height: 65vh; overflow-y: auto; padding: 4px 0 10px; border-top: 1px solid var(--outline); }
+  /* Open: the list fills the screen under the bar and scrolls on its own; the page behind stays put (html.toc-open). */
+  .toc-mobile nav { display: flex; flex-direction: column; position: fixed; left: 0; right: 0; top: var(--toc-top, 113px); bottom: 0;
+                    overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y;
+                    padding: 4px 0 calc(16px + env(safe-area-inset-bottom, 0px)); background: #0c0e12; border-top: 1px solid var(--outline); }
   .toc-mobile nav a { color: var(--dim); text-decoration: none; font-size: 15px; padding: 10px 24px; border-left: 3px solid transparent; }
   .toc-mobile nav a.on { color: var(--text); font-weight: 600; border-left-color: var(--amber); background: #ffffff08; }
   .doc h2, .doc h3, .doc h4 { scroll-margin-top: 124px; }
+  html.toc-open, html.toc-open body { overflow: hidden; }
 }
 .doc .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
 .doc .pair figure { margin: 0; }
