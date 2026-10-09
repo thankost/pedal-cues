@@ -193,19 +193,19 @@ def guide():
 <script>
   (function () {
     var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
-    var phone = Array.prototype.slice.call(document.querySelectorAll('.toc-mobile nav a'));
-    var label = document.querySelector('.toc-mobile .cur');
-    var drop = document.querySelector('.toc-mobile');
+    var sheetLinks = Array.prototype.slice.call(document.querySelectorAll('.toc-sheet nav a'));
+    var bar = document.querySelector('.toc-bar'), openButton = document.querySelector('.toc-open');
+    var label = document.querySelector('.toc-open .cur');
+    var sheet = document.querySelector('.toc-sheet'), closeButton = document.querySelector('.toc-close');
     var heads = links.map(function (a) { return document.getElementById(decodeURIComponent(a.hash.slice(1))); });
-    var current = null, queued = false;
-    // On a phone, picking a section closes the list. While it's open, the list sits right under the bar.
-    phone.forEach(function (a) { a.addEventListener('click', function () { drop.removeAttribute('open'); }); });
-    if (drop) drop.addEventListener('toggle', function () {
-      if (drop.open) drop.style.setProperty('--toc-top', Math.round(drop.querySelector('summary').getBoundingClientRect().bottom) + 'px');
-    });
+    var current = null, queued = false, savedY = 0;
+
+    // The contents column (and the phone bar) follow the reader: the section whose heading last passed under the
+    // sticky header is marked.
     function update() {
       queued = false;
-      var line = 120, on = 0;
+      if (sheet && ! sheet.hidden) return;
+      var line = (bar && bar.offsetHeight ? bar.getBoundingClientRect().bottom : 64) + 40, on = 0;
       for (var i = 0; i < heads.length; i++)
         if (heads[i] && heads[i].getBoundingClientRect().top <= line) on = i;
       if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 2) on = heads.length - 1;   // the last, short section
@@ -213,18 +213,65 @@ def guide():
       if (current) { current.classList.remove('on'); current.removeAttribute('aria-current'); }
       current = links[on];
       if (current) { current.classList.add('on'); current.setAttribute('aria-current', 'location'); }
-      phone.forEach(function (a, i) { a.classList.toggle('on', i === on); });
+      sheetLinks.forEach(function (a, i) { a.classList.toggle('on', i === on); });
       if (label && current) label.textContent = current.textContent;
     }
     function queue() { if (!queued) { queued = true; requestAnimationFrame(update); } }
+
+    // Phones: the bar opens a full-screen sheet. The page behind is frozen where it was (the iOS-safe way: the body
+    // fixed at its scroll offset) and put back on close; picking a section scrolls there directly.
+    function freeze() {
+      savedY = window.scrollY;
+      var b = document.body.style;
+      b.position = 'fixed'; b.top = (-savedY) + 'px'; b.left = '0'; b.right = '0'; b.width = '100%';
+    }
+    function thaw() {
+      var b = document.body.style;
+      b.position = ''; b.top = ''; b.left = ''; b.right = ''; b.width = '';
+      window.scrollTo(0, savedY);
+    }
+    function openSheet() {
+      freeze();
+      sheet.hidden = false;
+      openButton.setAttribute('aria-expanded', 'true');
+      var on = sheet.querySelector('nav a.on');
+      if (on) on.scrollIntoView({ block: 'center' });
+      closeButton.focus({ preventScroll: true });
+    }
+    function closeSheet() {
+      sheet.hidden = true;
+      openButton.setAttribute('aria-expanded', 'false');
+      thaw();
+    }
+    if (sheet) {
+      openButton.addEventListener('click', openSheet);
+      closeButton.addEventListener('click', closeSheet);
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && ! sheet.hidden) closeSheet(); });
+      sheetLinks.forEach(function (a) {
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          var id = decodeURIComponent(a.hash.slice(1)), target = document.getElementById(id);
+          closeSheet();
+          if (! target) return;
+          var y = target.getBoundingClientRect().top + window.scrollY - (bar.getBoundingClientRect().bottom + 12);
+          window.scrollTo(0, Math.max(0, y));
+          history.replaceState(null, '', '#' + id);
+          queue();
+        });
+      });
+    }
     window.addEventListener('scroll', queue, { passive: true });
     window.addEventListener('resize', queue);
     window.addEventListener('load', update);
     update();
   })();
 </script>"""
-    # Phones: a bar under the header with the section being read; tap it for the whole list.
-    phone = f"""<details class="toc-mobile"><summary><b>Contents</b><span class="cur"></span></summary><nav>{side}</nav></details>"""
+    # Phones: a bar under the header with the section being read; it opens a full-screen contents sheet.
+    phone = f"""<div class="toc-bar"><button type="button" class="toc-open" aria-expanded="false" aria-controls="toc-sheet"><b>Contents</b><span class="cur"></span><span class="chev" aria-hidden="true">&#9662;</span></button></div>"""
+    sheet = f"""<div class="toc-sheet" id="toc-sheet" role="dialog" aria-modal="true" aria-label="Contents" hidden>
+  <div class="toc-sheet-head"><b>Contents</b><button type="button" class="toc-close" aria-label="Close the contents">&#10005;</button></div>
+  <nav>{side}</nav>
+</div>"""
     main = f"""<div class="wrap guide">
   {phone}
   <aside class="toc"><b>Contents</b>{side}</aside>
@@ -232,7 +279,8 @@ def guide():
     <h1>User guide</h1>
 {body}
   </main>
-</div>""" + spy
+</div>
+{sheet}""" + spy
     return page("User guide", "How to install PedalCues, connect your Quad Cortex, Kemper, Fractal, Line 6, HeadRush, Darkglass, "
                 "Whammy or any MIDI device, and build songs with drag-and-drop pedal cues.", "guide.html", main, "docs/GUIDE.md")
 

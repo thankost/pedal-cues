@@ -77,27 +77,30 @@ footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: 
 .code pre code { background: none; border: 0; padding: 0; font-size: 13.5px; }
 .code .copy { position: absolute; top: 8px; right: 8px; background: var(--raised); color: var(--text); border: 1px solid var(--outline);
               border-radius: 6px; padding: 3px 10px; font: 600 12px inherit; cursor: pointer; }
-/* Phones and narrow windows: the contents as a bar under the header, opening into the list */
-.toc-mobile { display: none; }
+/* Phones and narrow windows: a bar under the header with the section being read; it opens a full-screen sheet */
+.toc-bar { display: none; }
+.toc-sheet { position: fixed; inset: 0; z-index: 100; background: #0c0e12; display: flex; flex-direction: column;
+             padding-top: env(safe-area-inset-top, 0px); }
+.toc-sheet[hidden] { display: none; }
+.toc-sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid var(--outline); }
+.toc-sheet-head b { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+.toc-close { background: var(--raised); color: var(--text); border: 1px solid var(--outline); border-radius: 8px; width: 40px; height: 40px;
+             font-size: 18px; line-height: 1; cursor: pointer; }
+.toc-sheet nav { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+                 display: flex; flex-direction: column; padding: 6px 0 calc(20px + env(safe-area-inset-bottom, 0px)); }
+.toc-sheet nav a { color: var(--dim); text-decoration: none; font-size: 16px; padding: 13px 24px; border-left: 3px solid transparent; }
+.toc-sheet nav a.on { color: var(--text); font-weight: 600; border-left-color: var(--amber); background: #ffffff08; }
 @media (max-width: 900px) {
   .guide { grid-template-columns: 1fr; gap: 0; }
   .toc { display: none; }
-  .toc-mobile { display: block; position: sticky; top: 65px; z-index: 4; margin: 0 -24px; background: #0c0e12;   /* solid: a blur here would trap the open list inside the bar */
-                border-bottom: 1px solid var(--outline); }
-  .toc-mobile summary { list-style: none; display: flex; align-items: center; gap: 10px; padding: 12px 24px; cursor: pointer; }
-  .toc-mobile summary::-webkit-details-marker { display: none; }
-  .toc-mobile summary b { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
-  .toc-mobile .cur { flex: 1; min-width: 0; color: var(--text); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .toc-mobile summary::after { content: "\25BE"; color: var(--amber); font-size: 20px; line-height: 1; }
-  .toc-mobile[open] summary::after { content: "\25B4"; }
-  /* Open: the list fills the screen under the bar and scrolls on its own (overscroll-behavior keeps the page still;
-     locking the page instead breaks the sticky bar on iPhone Safari). */
-  .toc-mobile nav { display: flex; flex-direction: column; position: fixed; left: 0; right: 0; top: var(--toc-top, 113px); bottom: 0;
-                    overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y;
-                    padding: 4px 0 calc(16px + env(safe-area-inset-bottom, 0px)); background: #0c0e12; border-top: 1px solid var(--outline); }
-  .toc-mobile nav a { color: var(--dim); text-decoration: none; font-size: 15px; padding: 10px 24px; border-left: 3px solid transparent; }
-  .toc-mobile nav a.on { color: var(--text); font-weight: 600; border-left-color: var(--amber); background: #ffffff08; }
+  .toc-bar { display: block; position: sticky; top: 65px; z-index: 4; margin: 0 -24px; background: #0c0e12; border-bottom: 1px solid var(--outline); }
+  .toc-open { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 24px; background: none; border: 0; color: inherit;
+              font: inherit; text-align: left; cursor: pointer; }
+  .toc-open b { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  .toc-open .cur { flex: 1; min-width: 0; color: var(--text); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .toc-open .chev { color: var(--amber); font-size: 18px; line-height: 1; }
   .doc h2, .doc h3, .doc h4 { scroll-margin-top: 124px; }
+}
 }
 .doc .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0; }
 .doc .pair figure { margin: 0; }
