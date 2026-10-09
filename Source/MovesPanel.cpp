@@ -1642,6 +1642,7 @@ void MovesPanel::refresh()
     drawTile->colour = config.line;
     drawTile->setTooltip (config.drawnTooltip + config.tileNote);
     drawTile->makeCue = [this] { return finished (config.makeDrawn (pad->points, drawingName())); };
+    drawTile->setLoopKey (config.idPrefix + ".drawn");
     addChildComponent (drawTile.get());
     drawTile->setVisible (drawMode);
     updateDrawTile();
@@ -1651,6 +1652,7 @@ void MovesPanel::refresh()
     {
         auto* t = shapeTiles.add (new Tile (proc, Tile::Look::sweep));
         t->makeCue = [this, s] { return finished (config.makeShape (s)); };
+        t->setLoopKey (config.idPrefix + ".shape" + juce::String (s));
         curveOf (*t, config.makeShape (s));
         t->title = config.shapeName (s);
         t->subtitle = (config.shapeHolds && config.shapeHolds (s) ? "hold " : "") + cues::formatBeats (beats);

@@ -12,12 +12,19 @@ class PedalCuesProcessor;
 // A draggable cue. Drag it onto the DAW timeline to drop a named MIDI clip;
 // click the round play button to send it to the pedal immediately.
 class Tile final : public juce::Component,
-                   public juce::SettableTooltipClient
+                   public juce::SettableTooltipClient,
+                   private juce::ChangeListener
 {
 public:
     enum class Look { row, screen, footswitch, stomp, utility, whammyMode, sweep };
 
     Tile (PedalCuesProcessor&, Look);
+    ~Tile() override;
+
+    // Move tiles: a loop button next to play (PedalCuesProcessor::MoveLoop). The key names the move across rebuilds
+    // of the tile, e.g. "wh.treadle.shape3".
+    void setLoopKey (const juce::String& key);
+    juce::String getTooltip() override;
 
     juce::String title, subtitle, badge;
     juce::Colour colour { juce::Colours::grey };
@@ -52,6 +59,12 @@ public:
 
 private:
     juce::Rectangle<int> playArea() const;
+    juce::Rectangle<int> loopArea() const;   // empty without a loop key
+    bool looping() const;
+    void changeListenerCallback (juce::ChangeBroadcaster*) override { repaint(); }
+    void paintLoop (juce::Graphics&, bool hover);
+    juce::String loopKey;
+    bool overLoop = false;
 
     void paintRow (juce::Graphics&, juce::Rectangle<float>, bool hover);
     void paintScreen (juce::Graphics&, juce::Rectangle<float>, bool hover);

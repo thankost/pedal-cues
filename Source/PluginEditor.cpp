@@ -138,6 +138,7 @@ PedalCuesEditor::PedalCuesEditor (PedalCuesProcessor& p, bool allowFirstRunTour)
 
 PedalCuesEditor::~PedalCuesEditor()
 {
+    pedalProcessor.moveLoop.stop();   // nobody could stop it with the window closed
     state.removeListener (this);
     songWindow.reset();
     tour.reset();

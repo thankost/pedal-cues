@@ -41,6 +41,8 @@ juce::ValueTree sectionByUid (const juce::ValueTree& song, const juce::String& u
 juce::String barLabel (const juce::ValueTree& song, double beat);       // "Bar 9" or "Bar 9, beat 3"
 double beatToSeconds (const juce::ValueTree& song, double beat);         // through each section's tempo
 double secondsToBeat (const juce::ValueTree& song, double seconds);
+// Past the song's end it carries on at the end tempo (secondsToBeat stops at the end): for a backing track that runs longer.
+double secondsToBeatOn (const juce::ValueTree& song, double seconds);
 // The tempo map, like Reaper's tempo markers: each section starts at its own bpm, and can hold tempo changes at any beat
 // inside it (SongTempo children, `beat` in quarters from the section's start), so a change partway through a bar never
 // moves a bar line. The section's start and every change can glide (tempoRamp), evenly per beat, to the next change or

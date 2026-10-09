@@ -113,6 +113,70 @@ public:
     };
     AutoSave autoSave { *this };
 
+    // A move tile's loop (the loop button next to its play button): the move again and again, in time at the current
+    // tempo, until stopped, so it can be tried with both hands on the guitar. One loop at a time. Each pass asks the
+    // tile for its move (edits are heard on the next pass); when the tile is gone, the last move keeps looping.
+    struct MoveLoop final : public juce::ChangeBroadcaster, private juce::Timer
+    {
+        explicit MoveLoop (PedalCuesProcessor& p) : owner (p) {}
+        ~MoveLoop() override { stopTimer(); }
+
+        void start (const juce::String& key, juce::Component* tile, std::function<cues::Cue()> make)
+        {
+            owner.stopPreview();
+            current = key;
+            maker = std::move (make);
+            provider = tile;
+            last = maker ? maker() : cues::Cue();
+            running = true;
+            nextAt = juce::Time::getMillisecondCounterHiRes() + 30.0;
+            startTimerHz (40);
+            sendChangeMessage();
+        }
+        void stop()
+        {
+            if (! running)
+                return;
+            running = false;
+            stopTimer();
+            owner.stopPreview();
+            sendChangeMessage();
+        }
+        bool isLooping (const juce::String& key) const { return running && key.isNotEmpty() && key == current; }
+        // A tile rebuilt with the same key takes over (its move is the current one).
+        void adopt (const juce::String& key, juce::Component* tile, std::function<cues::Cue()> make)
+        {
+            if (isLooping (key)) { provider = tile; maker = std::move (make); }
+        }
+
+    private:
+        void timerCallback() override
+        {
+            const auto now = juce::Time::getMillisecondCounterHiRes();
+            if (now < nextAt - 250.0)   // the next pass is queued a moment before it's due
+                return;
+            if (provider != nullptr && maker)
+                last = maker();
+            const auto bpm = juce::jlimit (10.0, 960.0, owner.getHostBpm());
+            const auto secondsPerBeat = 60.0 / bpm;
+            const auto lead = juce::jmax (0.0, (nextAt - now) / 1000.0);
+            std::vector<std::pair<double, juce::MidiMessage>> events;
+            for (const auto& [beat, message] : last.events)
+                events.emplace_back (lead + beat * secondsPerBeat, message);
+            owner.previewTimed (events);
+            nextAt += juce::jmax (0.25, last.lengthBeats) * secondsPerBeat * 1000.0;
+        }
+
+        PedalCuesProcessor& owner;
+        juce::String current;
+        std::function<cues::Cue()> maker;
+        juce::Component::SafePointer<juce::Component> provider;
+        cues::Cue last;
+        double nextAt = 0.0;
+        bool running = false;
+    };
+    MoveLoop moveLoop { *this };
+
 private:
     struct Scheduled
     {

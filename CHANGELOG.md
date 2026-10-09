@@ -2,6 +2,12 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.11.5 (2026-10-09)
+
+- **Loop a move (new):** a ↻ button next to the play button on every move tile (treadle and expression moves, drawn moves) plays it again and again at the song's tempo, so you can try it with both hands on the guitar. Click it again to stop.
+- **Song Builder: scroll past the song's end:** the arrangement shows a few bars after the end, with the rest of a backing track's waveform, and a cue dropped there makes the last section longer.
+- **Song Builder: a longer backing track plays to its end:** when the recording runs past the song's end, Play keeps going until it ends instead of stopping at the last bar, and the backing track's WAV (dragged into your DAW or in a song package) isn't cut off either.
+
 ## 0.11.4 (2026-10-09)
 
 - **The right key names on every system:** the Snap switch and the songs list now say Option and Cmd on a Mac, Alt and Ctrl on Windows and Linux.

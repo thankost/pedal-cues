@@ -334,6 +334,15 @@ double secondsToBeat (const juce::ValueTree& song, double seconds)
     return end;
 }
 
+double secondsToBeatOn (const juce::ValueTree& song, double seconds)
+{
+    const auto length = songSeconds (song);
+    const auto segments = tempoSegments (song);
+    if (seconds <= length || segments.empty())
+        return secondsToBeat (song, seconds);
+    return segments.back().to + (seconds - length) * segments.back().bpm1 / 60.0;
+}
+
 //==============================================================================
 juce::ValueTree cueToTree (const cues::Cue& cue)
 {
@@ -506,6 +515,17 @@ cues::Cue cueFromMidiFile (const juce::MidiFile& file, const juce::String& name)
 
 static void setCuePosition (juce::ValueTree song, juce::ValueTree cue, const juce::ValueTree& track, double beat)
 {
+    // Past the song's end (the arrangement shows a few bars more): the last section grows to hold the cue.
+    beat = juce::jmax (0.0, beat);
+    if (beat > songLengthBeats (song) - 0.25)
+    {
+        juce::ValueTree last;
+        for (const auto& s : song)
+            if (s.hasType (IDs::SongSection))
+                last = s;
+        if (last.isValid())
+            extendLastSection (song, (int) std::ceil ((beat + 0.25 - songLengthBeats (song)) / barBeats (last) - 1.0e-9));
+    }
     beat = juce::jlimit (0.0, juce::jmax (0.0, songLengthBeats (song) - 0.25), beat);
     const auto section = sectionAt (song, beat);
     cue.setProperty (IDs::track, track[IDs::uid].toString(), nullptr);

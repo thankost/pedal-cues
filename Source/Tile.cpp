@@ -10,6 +10,38 @@ Tile::Tile (PedalCuesProcessor& p, Look l) : look (l), processor (p)
     setRepaintsOnMouseActivity (true);
 }
 
+Tile::~Tile()
+{
+    if (loopKey.isNotEmpty())
+        processor.moveLoop.removeChangeListener (this);
+}
+
+void Tile::setLoopKey (const juce::String& key)
+{
+    if (loopKey.isEmpty() && key.isNotEmpty())
+        processor.moveLoop.addChangeListener (this);
+    loopKey = key;
+    processor.moveLoop.adopt (loopKey, this, makeCue);   // a rebuilt tile takes over its running loop
+}
+
+bool Tile::looping() const { return processor.moveLoop.isLooping (loopKey); }
+
+juce::Rectangle<int> Tile::loopArea() const
+{
+    if (loopKey.isEmpty())
+        return {};
+    return playArea().translated (-(playArea().getWidth() + 6), 0);
+}
+
+juce::String Tile::getTooltip()
+{
+    if (loopKey.isNotEmpty() && loopArea().contains (getMouseXYRelative()))
+        return looping() ? juce::String ("Looping at the song's tempo: click to stop")
+                         : juce::String ("Loop: plays this move again and again at the song's tempo, so you can try it with both "
+                                         "hands on the guitar. Click again to stop.");
+    return juce::SettableTooltipClient::getTooltip();
+}
+
 juce::Rectangle<int> Tile::playArea() const
 {
     constexpr int d = 22;
@@ -54,7 +86,11 @@ void Tile::paint (juce::Graphics& g)
     }
 
     if (makeCue)
+    {
         paintPlay (g, hover);
+        if (loopKey.isNotEmpty())
+            paintLoop (g, hover);
+    }
 }
 
 void Tile::paintRow (juce::Graphics& g, juce::Rectangle<float> b, bool hover)
@@ -392,6 +428,37 @@ void Tile::paintSweep (juce::Graphics& g, juce::Rectangle<float> b, bool hover)
     g.drawFittedText (subtitle, area.toNearestInt(), juce::Justification::centredLeft, 1);
 }
 
+// Two arrows chasing each other round a circle; lit while this move loops.
+void Tile::paintLoop (juce::Graphics& g, bool hover)
+{
+    const auto area = loopArea().toFloat();
+    // Orange only while it loops; hovering just lightens it, so on and off never look alike.
+    const auto on = looping();
+    const auto alpha = on || overLoop ? 1.0f : (hover ? 0.75f : 0.3f);
+    if (on)
+        g.setColour (overLoop ? accent.brighter (0.25f) : accent);
+    else
+        g.setColour (overLoop ? raised.brighter (0.35f) : background.withAlpha (0.55f * alpha + 0.2f));
+    g.fillEllipse (area);
+    const auto c = area.getCentre();
+    const auto r = area.getWidth() * 0.27f;
+    g.setColour ((on ? juce::Colours::black : text).withAlpha (alpha));
+    for (int half = 0; half < 2; ++half)
+    {
+        const auto a0 = juce::MathConstants<float>::pi * (half == 0 ? 0.15f : 1.15f);
+        const auto a1 = a0 + juce::MathConstants<float>::pi * 0.72f;
+        juce::Path arc;
+        arc.addCentredArc (c.x, c.y, r, r, 0.0f, a0, a1, true);
+        g.strokePath (arc, juce::PathStrokeType (1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        const juce::Point<float> tip (c.x + r * std::sin (a1), c.y - r * std::cos (a1));
+        const auto dir = juce::Point<float> (std::cos (a1), std::sin (a1));   // along the arc, clockwise
+        const auto side = juce::Point<float> (-dir.y, dir.x);
+        juce::Path head;
+        head.addTriangle (tip + dir * 3.2f, tip - side * 2.6f, tip + side * 2.6f);
+        g.fillPath (head);
+    }
+}
+
 void Tile::paintPlay (juce::Graphics& g, bool hover)
 {
     const auto area = playArea().toFloat();
@@ -435,7 +502,14 @@ void Tile::mouseUp (const juce::MouseEvent& e)
     if (e.mods.isPopupMenu() || dragStarted)
         return;
 
-    if (makeCue && playArea().contains (e.getPosition()))
+    if (makeCue && loopArea().contains (e.getPosition()))
+    {
+        if (looping())
+            processor.moveLoop.stop();
+        else
+            processor.moveLoop.start (loopKey, this, makeCue);
+    }
+    else if (makeCue && playArea().contains (e.getPosition()))
         sendNow();
     else if (onClick)
         onClick();
@@ -443,17 +517,19 @@ void Tile::mouseUp (const juce::MouseEvent& e)
 
 void Tile::mouseDoubleClick (const juce::MouseEvent& e)
 {
-    if (! playArea().contains (e.getPosition()) && onDoubleClick)
+    if (! playArea().contains (e.getPosition()) && ! loopArea().contains (e.getPosition()) && onDoubleClick)
         onDoubleClick();
 }
 
 void Tile::mouseMove (const juce::MouseEvent& e)
 {
     const auto over = makeCue && playArea().contains (e.getPosition());
-    if (over != overPlay)
+    const auto onLoop = makeCue && loopArea().contains (e.getPosition());
+    if (over != overPlay || onLoop != overLoop)
     {
         overPlay = over;
-        setMouseCursor (over ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::DraggingHandCursor);
+        overLoop = onLoop;
+        setMouseCursor (over || onLoop ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::DraggingHandCursor);
         repaint();
     }
 }
@@ -461,6 +537,7 @@ void Tile::mouseMove (const juce::MouseEvent& e)
 void Tile::mouseExit (const juce::MouseEvent&)
 {
     overPlay = false;
+    overLoop = false;
     repaint();
 }
 

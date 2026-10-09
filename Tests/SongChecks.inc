@@ -347,6 +347,24 @@
         CHECK (songBars (b) == 12 && barsToCoverAudio (b, 26.0) == 0);
     }
 
+    // A cue dropped past the song's end: the last section grows (whole bars) to hold it.
+    {
+        auto e = createSong ("End");                       // 8 bars of 4/4: 32 beats
+        auto t = addTrack (e, "QC", juce::Colours::blue);
+        cues::Cue c;
+        c.add (0.0, juce::MidiMessage::programChange (1, 3));
+        const auto placed = placeCue (e, t, 41.0, c, juce::Colours::blue);   // bar 11
+        CHECK (songBars (e) == 11 && near (cueBeat (e, placed), 41.0));
+        moveCue (e, placed, t, 10.0);                                        // moving it back keeps the bars
+        CHECK (songBars (e) == 11 && near (cueBeat (e, placed), 10.0));
+    }
+
+    // Past the end (a longer backing track) the playhead carries on at the end tempo.
+    {
+        auto p = createSong ("Past");                      // 8 bars of 4/4 at 120: 32 beats, 16 s
+        CHECK (near (secondsToBeat (p, 18.0), 32.0) && near (secondsToBeatOn (p, 18.0), 36.0) && near (secondsToBeatOn (p, 10.0), 20.0));
+    }
+
     // Songs survive a project load (sanitise) and loading a setup leaves them alone.
     juce::ValueTree root (IDs::PedalCues);
     songsNode (root).appendChild (createSong ("Kept"), nullptr);

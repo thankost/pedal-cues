@@ -531,6 +531,27 @@ public:
             paintClickLane (g, s, start, length, colour);
             start += length;
         }
+        // A few bars after the song's end, dimmed, in the last section's time: room to scroll, see the rest of a
+        // backing track, and drop cues there (the last section grows to hold them).
+        if (auto last = songs::sectionAt (song, start); last.isValid())
+        {
+            const auto bb = songs::barBeats (last);
+            int n = bar;
+            for (double b = start; xOf (b) < w; b += bb, ++n)
+            {
+                g.setColour (outline.withAlpha (0.35f));
+                g.drawVerticalLine (xOf (b), (float) rulerHeight, (float) trackTop (count));
+                if (b > start && (bb * pixelsPerBeat >= 22.0 || (n - 1) % 4 == 0))
+                {
+                    g.setColour (dim.withAlpha (0.45f));
+                    g.setFont (font (10.5f));
+                    g.drawText (juce::String (n), xOf (b) + 3, rulerHeight, 40, barsHeight, juce::Justification::centredLeft, false);
+                }
+            }
+            g.setColour (dim.withAlpha (0.6f));
+            g.setFont (font (11.0f, true));
+            g.drawText ("End", xOf (start) + 5, rulerHeight - 20, 60, 16, juce::Justification::centredLeft, false);
+        }
         paintTempoLane (g);
         g.setColour (outline.brighter (0.4f));
         g.drawVerticalLine (xOf (start), (float) rulerHeight, (float) trackTop (count));
@@ -825,6 +846,21 @@ public:
                     const auto px1 = x0 + juce::roundToInt ((b - t0) / (t1 - t0) * (x1 - x0));
                     thumbnail->drawChannels (g, { px0, lane.getY() + 2, juce::jmax (1, px1 - px0), lane.getHeight() - 4 }, a, b, 0.9f);
                 }
+            }
+        }
+        // After the song's end, dimmed, at the tempo it ends on: shows how much of the recording is still to come.
+        if (const auto segments = songs::tempoSegments (song); ! segments.empty())
+        {
+            const auto endBeat = segments.back().to, endBpm = segments.back().bpm1;
+            const auto t0 = songs::songSeconds (song) + offset;
+            const auto x0 = xOf (endBeat);
+            const auto t1 = t0 + (getWidth() - x0) / pixelsPerBeat * 60.0 / endBpm;
+            const auto a = juce::jlimit (0.0, thumbnail->getTotalLength(), t0), b = juce::jlimit (0.0, thumbnail->getTotalLength(), t1);
+            if (b > a && t1 > t0)
+            {
+                g.setColour (juce::Colour (0xff9b87f5).withAlpha (0.3f));
+                const auto px1 = x0 + juce::roundToInt ((b - t0) / (t1 - t0) * (getWidth() - x0));
+                thumbnail->drawChannels (g, { x0, lane.getY() + 2, juce::jmax (1, px1 - x0), lane.getHeight() - 4 }, a, b, 0.9f);
             }
         }
         g.setColour (dim);
@@ -2418,6 +2454,7 @@ private:
             rebuild();
     }
 
+    double playingAudioEnd = 0.0;
     void togglePlay()
     {
         if (isTimerRunning())
@@ -2466,6 +2503,8 @@ private:
         proc.songAudio.addClicks (clicks);
         proc.songAudio.addBacking (lead, (double) playing.getProperty (IDs::audioOffset, 0.0) + songs::beatToSeconds (playing, playFrom));
 
+        // Where the recording ends, in song seconds from bar 1 (0 without one).
+        playingAudioEnd = audioPath.isNotEmpty() ? backingSeconds (playing) - (double) playing.getProperty (IDs::audioOffset, 0.0) : 0.0;
         nextLoopAt = lead + until;   // seconds from start: when the loop's next pass begins
         playStarted = juce::Time::getMillisecondCounterHiRes();
         play.setButtonText (juce::String::fromUTF8 ("\u25A0  Stop"));
@@ -2517,15 +2556,17 @@ private:
             return;
         }
         const auto t = elapsed - lead;   // negative: counting in
-        const auto beat = songs::secondsToBeat (playing, songs::beatToSeconds (playing, playFrom) + juce::jmax (0.0, t));
-        if (beat >= songs::songLengthBeats (playing))
+        const auto at = songs::beatToSeconds (playing, playFrom) + juce::jmax (0.0, t);
+        // To the song's end, or the backing track's if it runs longer (and isn't muted): never cut the recording off.
+        const auto audioEnd = (bool) playing.getProperty (IDs::audioMuted, false) ? 0.0 : playingAudioEnd;
+        if (at >= juce::jmax (songs::songSeconds (playing), audioEnd))
         {
             stopPlaying();
             if (setlistPlaying)
                 nextInSetlist();
             return;
         }
-        grid.playBeat = beat;
+        grid.playBeat = songs::secondsToBeatOn (playing, at);
         grid.repaint();
     }
 
@@ -2693,7 +2734,13 @@ private:
         gridView.setBounds (labels.getRight(), 0, width - labels.getRight(), height);
 
         // Zoom 1 = the whole song fits (at least 6 px a beat); zoom in from there.
-        const auto beats = juce::jmax (1.0, songs::songLengthBeats (grid.song));
+        // The song plus four bars of its last section after the end, so there's always room to scroll past it.
+        const auto songBeats = juce::jmax (1.0, songs::songLengthBeats (grid.song));
+        auto beats = songBeats + 4.0 * songs::barBeats (songs::sectionAt (grid.song, songBeats));
+        // A backing track that runs longer: up to its end too (Play goes on until the recording ends).
+        if (grid.song[IDs::audioFile].toString().isNotEmpty() && thumbnail.getTotalLength() > 0.0)
+            beats = juce::jmax (beats, songs::secondsToBeatOn (grid.song, thumbnail.getTotalLength()
+                                                                          - (double) grid.song.getProperty (IDs::audioOffset, 0.0)) + 1.0);
         const auto fit = juce::jmax (6.0, (gridView.getWidth() - 4) / beats);
         grid.pixelsPerBeat = juce::jlimit (2.0, 400.0, fit * zoom);
         grid.setSize (juce::jmax (gridView.getWidth(), juce::roundToInt (beats * grid.pixelsPerBeat) + 2),
@@ -2989,14 +3036,21 @@ private:
         return tempWav (click, rate, "click" + key, song[IDs::name].toString() + " - click");
     }
 
-    // The backing track lined up with bar 1, the song's length.
+    // Where the recording ends, in seconds from bar 1 (0 without one).
+    double audioEndSeconds (const juce::ValueTree& song)
+    {
+        return song[IDs::audioFile].toString().isEmpty() ? 0.0
+                                                         : backingSeconds (song) - (double) song.getProperty (IDs::audioOffset, 0.0);
+    }
+
+    // The backing track lined up with bar 1, the song's length, or to the recording's end if that's later.
     juce::File backingTrackFile (const juce::ValueTree& song)
     {
         const auto path = song[IDs::audioFile].toString();
         if (path.isEmpty() || ! juce::File (path).existsAsFile())
             return {};
         constexpr double rate = 48000.0;
-        const auto seconds = songs::songSeconds (song) + 1.0;
+        const auto seconds = juce::jmax (songs::songSeconds (song) + 1.0, audioEndSeconds (song));
         const auto key = "backing" + path + song[IDs::audioOffset].toString() + song[IDs::audioGain].toString() + juce::String (seconds);
         const auto audio = proc.songAudio.renderBacking (juce::File (path), (double) song.getProperty (IDs::audioOffset, 0.0), 0.0, seconds, rate,
                                                          (float) (double) song.getProperty (IDs::audioGain, 0.8));
@@ -3037,7 +3091,16 @@ private:
         gridView.setViewPosition (juce::jmax (0, grid.xOf (beat) - viewX), gridView.getViewPositionY());
     }
 
-    void changeListenerCallback (juce::ChangeBroadcaster*) override { grid.repaint(); }   // the waveform as it loads
+    void changeListenerCallback (juce::ChangeBroadcaster*) override   // the waveform as it loads
+    {
+        if (const auto length = thumbnail.getTotalLength(); length != thumbnailLength)
+        {
+            thumbnailLength = length;
+            layoutTracks();   // the grid reaches the recording's end
+        }
+        grid.repaint();
+    }
+    double thumbnailLength = 0.0;
 
     void chooseAudio()
     {
@@ -3086,15 +3149,15 @@ private:
         juce::CallOutBox::launchAsynchronously (std::move (panel), audioLabel.getScreenBounds(), nullptr);
     }
 
-    // A new backing track longer than the song: offer the bars it needs, so it isn't cut off at the song's end.
+    // A new backing track longer than the song: offer the bars it needs, so the song is as long as the recording.
     void offerToCoverAudio (juce::ValueTree song, double audioSeconds)
     {
         const auto bars = songs::barsToCoverAudio (song, audioSeconds);
         if (bars <= 0)
             return;
         auto* w = new juce::AlertWindow ("Backing track", "The recording runs about " + juce::String (bars) + (bars == 1 ? " bar" : " bars")
-                                         + " past the song's end, so the end would be cut off. Add "
-                                         + (bars == 1 ? juce::String ("it") : juce::String ("them")) + " to the last section?",
+                                         + " past the song's end. It plays to its end either way; add "
+                                         + (bars == 1 ? juce::String ("it") : juce::String ("them")) + " to the last section, so the song is as long as the recording?",
                                          juce::MessageBoxIconType::NoIcon);
         w->addButton ("Add " + juce::String (bars) + (bars == 1 ? " bar" : " bars"), 1, juce::KeyPress (juce::KeyPress::returnKey));
         w->addButton ("Keep the song as it is", 0, juce::KeyPress (juce::KeyPress::escapeKey));
@@ -3442,7 +3505,9 @@ private:
         }
         constexpr double rate = 48000.0;
         const auto settings = state.getChildWithName (IDs::Songs);
-        const auto click = songs::renderClickTrack (song, exportCountIn, rate, clickSound());
+        // Both files as long as the song, or the recording if it runs longer, so they stay the same length.
+        const auto tail = juce::jmax (2.0, audioEndSeconds (song) - songs::songSeconds (song));
+        const auto click = songs::renderClickTrack (song, exportCountIn, rate, clickSound(), tail);
         if (const auto problem = writeWav (click, rate, dir.getChildFile (name + " - click.wav")); problem.isNotEmpty())
             return problem;
         const auto audioPath = song[IDs::audioFile].toString();
