@@ -2,6 +2,10 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.11.4 (2026-10-09)
+
+- **The right key names on every system:** the Snap switch and the songs list now say Option and Cmd on a Mac, Alt and Ctrl on Windows and Linux.
+
 ## 0.11.3 (2026-10-09)
 
 - **Shortcuts, easy to read:** a **?** button on the Draw pad and in the Song Builder opens every shortcut as a short, grouped list, with each key next to what it does. The larger Draw editor shows the list under the pad, and the hover texts are short again.
