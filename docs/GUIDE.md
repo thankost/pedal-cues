@@ -585,6 +585,8 @@ Instead of dropping cues into the DAW one by one, you can lay out a whole song i
 
 **Tempo.** Each section starts at its own tempo, and the **Tempo** lane under the bar numbers shows the tempo through the song as a line. Like Reaper's tempo markers, a tempo change can sit at any beat inside a section, even partway through a bar, and the bars don't move: **double-click** the lane to add one, then **drag** its dot like a point in an envelope: up or down for its tempo (1 BPM a pixel, **Shift** for 0.1), left or right to move it along the grid. **Drag the line** itself up or down (point right at it: the cursor turns to up / down arrows) to change that stretch's tempo, a section's own tempo too. The tempo shows next to the mouse while you drag. **Double-click** a dot to type its tempo, **Option / Alt-click** it to delete it, **right-click** for the menu. Tick **Gradually transition to the next tempo** on a change (or on a section's start, in **Edit section** or the lane's right-click menu) for a ritardando or accelerando: the tempo glides evenly to the next change or the next section, the section header shows it (*120 → 90 BPM*), and Play, the click, the backing track and the exported tempo map follow it (a MIDI file stores a glide as small tempo steps).
 
+**Shortcuts.** The **?** button in the arrangement's header lists every mouse and key shortcut: cues, the song position, the tempo lane, the view and the lanes.
+
 **Song position.** The violet line is where Play starts and Paste lands. Click or drag along the bar numbers or the click lane to set it, or grab the line itself and drag it when the song isn't playing.
 
 **Grid, snap and zoom.** **Grid** sets where cues snap, where the song position snaps, the grid lines and the ticks on the ruler (Beat follows each section's time signature; or Bar, 1/2 to 1/32 and triplets); **Snap** turns it on or off (hold **Alt** while dragging for the opposite). Zoom with **- / + / Fit**, the **-** and **+** keys, or **Alt / Option + mouse wheel**. **Track height** (- / + above the track names, **⌘ / Ctrl + mouse wheel**, **⌘ / Ctrl + - / +**, or drag a track name's bottom edge) makes room for more cues stacked on a track.
@@ -740,7 +742,7 @@ When no ready-made shape fits, click **Draw** in the *Treadle moves* header. The
 5. **⌘ / Ctrl + Z** undoes, **⌘ / Ctrl + Shift + Z** redoes. **Clear** resets the pad to heel; **Smooth** rounds off sharp edges.
 6. **Drag the *Drawn move* tile** onto the timeline where the move should start, or click its play button to try it on the pedal.
 
-**Larger editor** opens the pad in its own window, with the same tools, for detailed work. The pad's labels show the values: TOE (127), HALF (64), HEEL (0).
+The **?** button in the tools row lists every shortcut, grouped (points, lines, freehand, several points, undo); the larger editor shows the same list under the pad. **Larger editor** opens the pad in its own window, with the same tools, for detailed work. The pad's labels show the values: TOE (127), HALF (64), HEEL (0).
 
 The drawing stretches to whatever *Length* you pick. *Return to heel after move* works here too; *Curve* only applies to the shapes, so in Draw mode its place holds **Wave...**. Click **Shapes** to go back to the ready-made moves.
 

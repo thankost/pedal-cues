@@ -42,24 +42,9 @@ const juce::String cmdKey ("Ctrl"), altKey ("Alt");
 
 juce::String padTooltip()
 {
-    return "Click: add a point. Drag a point or a line to move it (Shift: off the grid, " + cmdKey + "+Shift: one direction only). "
-         "Drag the diamond in a line's middle (or " + altKey + "-drag the line): curve it. " + altKey + "-click a point: delete it. Double-click a point: type its value. "
-         + cmdKey + "-click: select more, right-drag: select an area, " + cmdKey + "+A: all. " + cmdKey + "-drag: draw freehand, a point on each grid line (Shift: off the grid). "
-         "Right-click: line shapes, invert, scale. " + cmdKey + "+Z: undo. Bottom = heel, top = toe.";
+    return "Click to add points, drag them to shape the move: bottom = heel, top = toe. The ? button lists every shortcut.";
 }
 
-juce::String padHelp()
-{
-    return "Click: add a point.   Drag a point or a line: move it (Shift: off the grid, " + cmdKey + "+Shift: one direction only).   "
-         + cmdKey + "-drag: draw freehand, a point on each grid line (Shift: off the grid).\n"
-         "Drag the diamond in a line's middle (or " + altKey + "-drag the line): curve it (" + altKey + "-double-click: straight again).   "
-         + altKey + "-click a point: delete it.   "
-         "Double-click a point: type its value.\n"
-         + cmdKey + "-click: add to the selection.   Right-drag: select an area.   " + cmdKey + "+A: select all.   Arrows: nudge.   "
-         "Delete: remove.   Selection box: drag its top or bottom edge to scale, a top corner to tilt.\n"
-         "Right-click: line shape (square, linear, slow start/end, fast start, fast end, bezier), invert, scale.   "
-         + cmdKey + "+Z / " + cmdKey + "+Shift+Z: undo / redo.";
-}
 
 void curveOf (Tile& t, const cues::Cue& cue)
 {
@@ -108,7 +93,7 @@ struct MovesPanel::DrawDoc
 
 //==============================================================================
 // The drawing canvas, heel (bottom) to toe (top) across the move's length: breakpoints joined by lines on a grid, edited
-// like a DAW's envelope / CC lane (see padHelp). Every edit renders them into the drawing's samples.
+// like a DAW's envelope / CC lane (see drawShortcuts). Every edit renders them into the drawing's samples.
 class MovesPanel::DrawPad final : public juce::Component,
                                   public juce::SettableTooltipClient
 {
@@ -1277,11 +1262,6 @@ public:
         clearButton.onClick = [this] { panel.clearDrawing(); };
         smoothButton.onClick = [this] { panel.smoothDrawing(); };
 
-        help.setText (padHelp(), juce::dontSendNotification);
-        help.setFont (font (12.0f));
-        help.setColour (juce::Label::textColourId, dim);
-        help.setJustificationType (juce::Justification::topLeft);
-        help.setMinimumHorizontalScale (1.0f);
         for (auto* c : std::initializer_list<juce::Component*> { &lengthLabel, &lengthBox, &gridLabel, &gridBox, &help })
             addAndMakeVisible (c);
         waveView.setScrollBarsShown (true, false, false, false);
@@ -1375,11 +1355,7 @@ public:
         }
         waveView.setVisible (wave != nullptr);
 
-        juce::AttributedString text;
-        text.append (help.getText(), help.getFont(), dim);
-        juce::TextLayout layout;
-        layout.createLayout (text, (float) r.getWidth() - 8.0f);
-        const auto helpH = juce::jmin ((int) std::ceil (layout.getHeight()) + 6, r.getHeight() / 3);
+        const auto helpH = juce::jmin (help.heightForWidth (r.getWidth()), r.getHeight() / 2);
         help.setBounds (r.removeFromBottom (helpH));
         r.removeFromBottom (8);
         pad.setBounds (r);
@@ -1389,7 +1365,8 @@ public:
 
 private:
     MovesPanel& panel;
-    juce::Label lengthLabel, gridLabel, help;
+    juce::Label lengthLabel, gridLabel;
+    ui::ShortcutSheet help { ui::drawShortcuts(), 4 };
     juce::ComboBox lengthBox, gridBox;
     juce::TextButton waveButton { "Wave..." }, importButton { "Import MIDI..." }, undoButton { "Undo" }, redoButton { "Redo" },
                      clearButton { "Clear" }, smoothButton { "Smooth" };
@@ -1550,6 +1527,11 @@ MovesPanel::MovesPanel (PedalCuesProcessor& p, MovesConfig c)
     expandButton->setTooltip ("Edit in a larger window");
     expandButton->onClick = [this] { openLargeEditor(); };
     addChildComponent (*expandButton);
+    shortcutsButton.setColour (juce::TextButton::buttonColourId, surface);
+    shortcutsButton.setColour (juce::TextButton::textColourOffId, text);
+    shortcutsButton.setTooltip ("Every shortcut for drawing");
+    shortcutsButton.onClick = [this] { ui::showShortcuts (shortcutsButton, "Drawing shortcuts", ui::drawShortcuts()); };
+    addChildComponent (shortcutsButton);
 
     refresh();
 }
@@ -1635,7 +1617,7 @@ void MovesPanel::refresh()
     doc->beats = beats;
     pad->setVisible (drawMode);
     for (auto* c : std::initializer_list<juce::Component*> { &clearButton, &smoothButton, &saveButton, &moreButton, &libraryBox,
-                                                             &gridLabel, &gridBox, expandButton.get() })
+                                                             &gridLabel, &gridBox, expandButton.get(), &shortcutsButton })
         c->setVisible (drawMode);
     if (! drawMode && largeWindow != nullptr)
         largeWindow->setVisible (false);
@@ -1696,7 +1678,7 @@ void MovesPanel::resized()
     // curve. The reset switch ends the row, or starts a second one when the row is too narrow (then the pad is shorter).
     const auto drawMode = (bool) state[config.drawId];
     const auto resetWidth = juce::GlyphArrangement::getStringWidthInt (font (14.0f), resetToggle.getButtonText()) + 56;
-    const auto toolsWidth = 58 + 110 + 20 + (drawMode ? 42 + 100 + 20 + 110 + 8 + 140 + 8 + 124 : 258);
+    const auto toolsWidth = 58 + 110 + 20 + (drawMode ? 42 + 100 + 20 + 110 + 8 + 140 + 8 + 124 + 6 + 34 : 258);
     const auto twoRows = content.getWidth() < toolsWidth + 20 + resetWidth;
     extraControlsRow = twoRows ? 36 : 0;
     auto controlsRow = content.withHeight (34);
@@ -1714,6 +1696,8 @@ void MovesPanel::resized()
         importButton.setBounds (controlsRow.removeFromLeft (140).reduced (0, 3));
         controlsRow.removeFromLeft (8);
         expandButton->setBounds (controlsRow.removeFromLeft (124).reduced (0, 3));
+        controlsRow.removeFromLeft (6);
+        shortcutsButton.setBounds (controlsRow.removeFromLeft (34).reduced (0, 3));
     }
     else
     {
@@ -2025,5 +2009,41 @@ void MovesPanel::showDrawingMenu()
             });
         }
     });
+}
+} // namespace ui
+
+namespace ui
+{
+// Every way to edit the pad, for the shortcut sheet (the larger editor and the ? button).
+std::vector<ShortcutGroup> drawShortcuts()
+{
+    const auto cmd = commandKeyName(), alt = optionKeyName();
+    std::vector<Shortcut> undo { { cmd + "+Z", "Undo" }, { cmd + "+Shift+Z", "Redo" } };
+   #if ! JUCE_MAC
+    undo.push_back ({ "Ctrl+Y", "Redo" });
+   #endif
+    return {
+        { "Points", { { "Click", "Add a point" },
+                      { "Drag", "Move a point or a line" },
+                      { "Shift-drag", "Move it off the grid" },
+                      { cmd + "+Shift-drag", "Move it in one direction only" },
+                      { "Double-click", "Type a point's value" },
+                      { alt + "-click", "Delete a point" } } },
+        { "Lines", { { "Drag the diamond", "Curve a line" },
+                     { alt + "-drag", "Curve a line" },
+                     { alt + "-double-click", "Make it straight again" },
+                     { "Right-click", "Line shape, invert, scale" } } },
+        { "Freehand", { { cmd + "-drag", "Draw: a point on each grid line" },
+                        { cmd + "+Shift-drag", "Draw off the grid" } } },
+        { "Several points", { { cmd + "-click", "Add to the selection" },
+                              { "Right-drag", "Select an area" },
+                              { cmd + "+A", "Select all" },
+                              { "Esc", "Clear the selection" },
+                              { "Arrows", "Nudge (Shift: further)" },
+                              { "Delete", "Remove them" },
+                              { "Box: top or bottom", "Drag to scale" },
+                              { "Box: top corner", "Drag to tilt" } } },
+        { "Undo", undo },
+    };
 }
 } // namespace ui

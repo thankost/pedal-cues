@@ -34,6 +34,7 @@ juce::String bpmText (double bpm)
     return std::abs (bpm - std::round (bpm)) < 0.005 ? juce::String (juce::roundToInt (bpm)) : juce::String (bpm, 2);
 }
 
+
 juce::String durationText (double seconds)
 {
     const auto s = juce::roundToInt (seconds);
@@ -224,9 +225,8 @@ struct TrackLabel final : public juce::Component, public juce::SettableTooltipCl
 
     TrackLabel()
     {
-        setTooltip ("M mutes this track while playing, S plays only the soloed tracks. Tick to include it in Drag song and Export. "
-                    "Drag the name to your DAW for this track alone. Right-click to set its MIDI channel, duplicate it for another "
-                    "player, rename, recolour, move or delete it. Drag its bottom edge to make every track taller or shorter.");
+        setTooltip ("M mutes this track while playing, S solos it, and the tick puts it in Drag song and Export. Drag the name into your "
+                    "DAW for this track alone; right-click for its MIDI channel and more.");
     }
 
     // The name, M / S and the tick sit in the top row however tall the track is.
@@ -424,8 +424,7 @@ public:
             const auto index = (int) (it - list.begin());
             auto* b = blocks.add (new CueBlock());
             b->cue = c;
-            b->setTooltip (c[IDs::name].toString() + " at " + songs::barLabel (song, beat)
-                           + ". Click to select (Shift adds), then Copy / Paste. Drag to move it (hold Alt to switch snapping for the move); right-click for more.");
+            b->setTooltip (c[IDs::name].toString() + " at " + songs::barLabel (song, beat) + ". Drag to move it; right-click for more.");
             const auto x = xOf (beat);
             const auto width = juce::jmax (juce::roundToInt (juce::jmax (1.0, (double) c.getProperty (IDs::lengthBeats, 1.0)) * pixelsPerBeat), 74);
             // The first lane that's free here, else the one that frees up first.
@@ -1881,8 +1880,8 @@ struct ClickLabel final : public juce::Component, public juce::SettableTooltipCl
 
     ClickLabel()
     {
-        setTooltip ("The click track: right-click a section in its lane to set how it counts; click or drag the lane to set where Play starts. Drag this name into your DAW for the click as a "
-                    "WAV (the whole song from bar 1). The tick sends it along with Drag song; M mutes the click while playing.");
+        setTooltip ("The click track. Right-click its lane to set how a section counts. M mutes it; the tick puts it in Drag song. "
+                    "Drag this name into your DAW for the click as a WAV.");
     }
     juce::Rectangle<int> tickArea() const { return getLocalBounds().reduced (0, 2).removeFromRight (30); }
     juce::Rectangle<int> muteArea() const { return getLocalBounds().reduced (0, 2).withTrimmedRight (30).removeFromRight (22).withSizeKeepingCentre (20, 18); }
@@ -1976,9 +1975,8 @@ struct AudioLabel final : public juce::Component, public juce::SettableTooltipCl
         settings.setTooltip ("Backing track settings: the file, volume, where bar 1 is, and the song's length");
         settings.onClick = [this] { if (onMenu) onMenu(); };
         addChildComponent (settings);
-        setTooltip ("The backing track: plays with Play, after the count-in. Drag its waveform sideways to line it up with "
-                    "bar 1. Drag this name into your DAW for it as a WAV lined up with bar 1; the tick sends it along with "
-                    "Drag song. \"...\" (or right-click) opens its settings.");
+        setTooltip ("The backing track, played after the count-in. \"...\" opens its settings. Drag the waveform to line it up; "
+                    "drag this name into your DAW for it as a WAV.");
     }
 
     void refresh()
@@ -2134,6 +2132,9 @@ public:
         gridBox.setTooltip ("Grid: where cues snap and the grid lines. Beat follows each section's time signature.");
         gridBox.onChange = [this] { songsNode().setProperty (IDs::gridStep, gridBox.getSelectedId() - 1, nullptr); };
         addChildComponent (gridBox);
+        shortcutsButton.setTooltip ("Every shortcut in the Song Builder");
+        shortcutsButton.onClick = [this] { ui::showShortcuts (shortcutsButton, "Song Builder shortcuts", ui::songBuilderShortcuts(), 960); };
+        addChildComponent (shortcutsButton);
         styleCaption (gridLabel, "GRID");
         addChildComponent (gridLabel);
         snapToggle.setButtonText ("Snap");
@@ -2156,13 +2157,8 @@ public:
         // Track height: in the corner above the track names.
         styleCaption (heightLabel, "TRACK HEIGHT");
         styleCaption (tempoLabel, "TEMPO");
-        tempoLabel.setTooltip ("The tempo through the song, like Reaper's tempo markers: each section starts at its tempo, and "
-                               "tempo changes can sit anywhere inside it, even partway through a bar, without moving the bars. "
-                               "Double-click the lane to add one; drag one up or down for its tempo (Shift: finer) and left or right to move it, or "
-                               "drag the line up or down; double-click to edit, Alt / Option-click to delete, "
-                               "right-click for more. "
-                               "A change (or a section's start) can glide gradually to the next tempo, for a ritardando or "
-                               "accelerando.");
+        tempoLabel.setTooltip ("The tempo through the song, like Reaper's tempo markers. Double-click to add a change; drag a dot to set it. "
+                               "The ? button above lists every way to edit it.");
         for (auto* c : std::initializer_list<juce::Component*> { &shorter, &taller, &heightLabel, &tempoLabel })
             labels.addAndMakeVisible (c);
         shorter.setTooltip ("Shorter tracks (or " + cmdKey + " + - , " + cmdKey + " + mouse wheel, or drag a track name's bottom edge)");
@@ -2271,7 +2267,7 @@ public:
 
         // Above the cards they sit on (each card's translucent fill would dim them otherwise).
         for (auto* c : std::initializer_list<juce::Component*> { &metronomeToggle, &countInBox, &clickButton, &gridLabel, &gridBox, &snapToggle,
-                                                                &zoomOut, &zoomIn, &zoomFit })
+                                                                &zoomOut, &zoomIn, &zoomFit, &shortcutsButton })
             c->toFront (false);
 
         state.addListener (this);
@@ -2359,6 +2355,8 @@ public:
         gridBox.setBounds (gh.removeFromRight (96));
         gh.removeFromRight (2);
         gridLabel.setBounds (gh.removeFromRight (42));
+        gh.removeFromRight (10);
+        shortcutsButton.setBounds (gh.removeFromRight (30).withSizeKeepingCentre (30, 26));
         tracksView.setBounds (gridSection.contentArea());
         layoutTracks();
     }
@@ -2586,7 +2584,7 @@ private:
 
         const auto has = selected.isValid();
         for (auto* c : std::initializer_list<juce::Component*> { &songSection, &songName, &summary, &dragSong, &exportSong, &saveSong, &play, &saved,
-                                                                &metronomeToggle, &countInBox, &clickButton, &gridBox, &gridLabel, &snapToggle, &zoomOut, &zoomIn, &zoomFit,
+                                                                &metronomeToggle, &countInBox, &clickButton, &gridBox, &gridLabel, &snapToggle, &zoomOut, &zoomIn, &zoomFit, &shortcutsButton,
                                                                 &gridSection, &addSection, &addTrack, &tracksView })
             c->setVisible (has);
         empty.setVisible (! has);
@@ -3578,7 +3576,7 @@ private:
     double loopStart = 0.0, loopEnd = 0.0, nextLoopAt = 0.0;
     juce::ToggleButton metronomeToggle, snapToggle;
     juce::ComboBox countInBox, gridBox;
-    juce::TextButton zoomOut { "-" }, zoomIn { "+" }, zoomFit { "Fit" }, shorter { "-" }, taller { "+" };
+    juce::TextButton zoomOut { "-" }, zoomIn { "+" }, zoomFit { "Fit" }, shorter { "-" }, taller { "+" }, shortcutsButton { "?" };
     juce::Label heightLabel, tempoLabel;
     double zoom = 1.0, lead = 0.0;   // lead: the count-in, in seconds
     juce::AudioThumbnailCache thumbnailCache { 4 };
@@ -3649,5 +3647,47 @@ std::unique_ptr<juce::Component> makeSongExportPanel (juce::ValueTree song)
 std::unique_ptr<juce::Component> makeSongBuilder (PedalCuesProcessor& p, std::function<juce::String()> deviceName)
 {
     return std::make_unique<SongBuilder> (p, std::move (deviceName));
+}
+} // namespace ui
+
+namespace ui
+{
+// Every mouse and key shortcut in the Song Builder, for the arrangement's "?" button.
+std::vector<ShortcutGroup> songBuilderShortcuts()
+{
+    const auto cmd = commandKeyName(), alt = optionKeyName();
+    return {
+        { "Cues", { { "Click", "Select a cue" },
+                    { "Shift-click", "Add to the selection" },
+                    { "Drag", "Move it, also to another track" },
+                    { alt + " while dragging", "Snap the other way" },
+                    { cmd + "+C / X", "Copy, cut" },
+                    { cmd + "+V", "Paste at the song position" },
+                    { cmd + "+D", "Duplicate" },
+                    { cmd + "+A", "Select all" },
+                    { "Delete", "Delete" },
+                    { "Esc", "Clear the selection" },
+                    { "Right-click", "More: channel, send now..." } } },
+        { "Song position", { { "Click the ruler", "Set where Play starts" },
+                             { "Drag the ruler", "Move it along" },
+                             { "Drag the violet line", "Move it (when stopped)" },
+                             { "Space", "Play / stop" } } },
+        { "Tempo lane", { { "Double-click", "Add a tempo change" },
+                          { "Drag a dot", "Tempo up / down, place sideways" },
+                          { "Shift-drag a dot", "Finer tempo steps" },
+                          { "Drag the line", "That stretch's tempo" },
+                          { "Double-click a dot", "Type its tempo" },
+                          { alt + "-click a dot", "Delete it" },
+                          { "Right-click", "Gradual transition, delete" } } },
+        { "View", { { "- / +", "Zoom out / in" },
+                    { alt + " + wheel", "Zoom" },
+                    { cmd + " + - / +", "Track height" },
+                    { cmd + " + wheel", "Track height" },
+                    { "Drag a name's edge", "Track height" } } },
+        { "Lanes", { { "Right-click the click lane", "How the section counts" },
+                     { "Drag the waveform", "Line up the backing track" },
+                     { "Right-click the waveform", "A bar starts here" },
+                     { "Drag a track's name", "That track into your DAW" } } },
+    };
 }
 } // namespace ui

@@ -222,6 +222,142 @@ void styleCaption (juce::Label& l, const juce::String& t)
 }
 
 //==============================================================================
+juce::String commandKeyName()
+{
+   #if JUCE_MAC
+    return "Cmd";
+   #else
+    return "Ctrl";
+   #endif
+}
+
+juce::String optionKeyName()
+{
+   #if JUCE_MAC
+    return "Option";
+   #else
+    return "Alt";
+   #endif
+}
+
+namespace
+{
+constexpr float sheetTitleH = 22.0f, sheetRowH = 22.0f, sheetGroupGap = 14.0f, sheetColumnGap = 22.0f;
+juce::Font sheetKeyFont() { return juce::Font (font (11.5f, true)); }
+juce::Font sheetTextFont() { return juce::Font (font (12.5f)); }
+}
+
+ShortcutSheet::ShortcutSheet (std::vector<ShortcutGroup> g, int c) : groups (std::move (g)), columns (juce::jmax (1, c))
+{
+    setInterceptsMouseClicks (false, false);
+}
+
+// Groups go down the columns in order, a new column when this one is past its share of the rows.
+std::vector<ShortcutSheet::Placed> ShortcutSheet::place (int width, float& height) const
+{
+    (void) width;
+    int total = 0;
+    for (const auto& g : groups)
+        total += (int) g.rows.size() + 2;
+    const auto share = (float) total / (float) columns;
+    std::vector<Placed> out;
+    int column = 0;
+    float y = 0.0f, used = 0.0f;
+    height = 0.0f;
+    for (const auto& g : groups)
+    {
+        const auto rows = (float) g.rows.size() + 2.0f;
+        if (used > 0.0f && used + rows * 0.5f > share && column < columns - 1)
+        {
+            ++column;
+            y = 0.0f;
+            used = 0.0f;
+        }
+        out.push_back ({ &g, column, y });
+        y += sheetTitleH + (float) g.rows.size() * sheetRowH + sheetGroupGap;
+        used += rows;
+        height = juce::jmax (height, y - sheetGroupGap);
+    }
+    return out;
+}
+
+int ShortcutSheet::heightForWidth (int width) const
+{
+    float h = 0.0f;
+    place (width, h);
+    return (int) std::ceil (h);
+}
+
+void ShortcutSheet::paint (juce::Graphics& g)
+{
+    float h = 0.0f;
+    const auto placed = place (getWidth(), h);
+    const auto columnW = ((float) getWidth() - sheetColumnGap * (float) (columns - 1)) / (float) columns;
+    for (const auto& p : placed)
+    {
+        const auto x = (float) p.column * (columnW + sheetColumnGap);
+        auto y = p.y;
+        g.setColour (accent);
+        g.setFont (font (11.0f, true));
+        g.drawText (p.group->title.toUpperCase(), juce::Rectangle<float> (x, y, columnW, sheetTitleH), juce::Justification::centredLeft, true);
+        y += sheetTitleH;
+        // The key chips share a width per group, so the actions line up.
+        float keyW = 0.0f;
+        for (const auto& r : p.group->rows)
+            keyW = juce::jmax (keyW, juce::GlyphArrangement::getStringWidth (sheetKeyFont(), r.keys) + 14.0f);
+        keyW = juce::jmin (keyW, columnW * 0.55f);
+        for (const auto& r : p.group->rows)
+        {
+            const auto chip = juce::Rectangle<float> (x, y + 2.0f, keyW, sheetRowH - 4.0f);
+            g.setColour (raised);
+            g.fillRoundedRectangle (chip, 4.0f);
+            g.setColour (text);
+            g.setFont (sheetKeyFont());
+            g.drawFittedText (r.keys, chip.toNearestInt().reduced (5, 0), juce::Justification::centred, 1, 0.8f);
+            g.setColour (dim);
+            g.setFont (sheetTextFont());
+            g.drawFittedText (r.action, juce::Rectangle<float> (x + keyW + 8.0f, y, columnW - keyW - 8.0f, sheetRowH).toNearestInt(),
+                              juce::Justification::centredLeft, 1, 0.85f);
+            y += sheetRowH;
+        }
+    }
+}
+
+namespace
+{
+class ShortcutPopup final : public juce::Component
+{
+public:
+    ShortcutPopup (const juce::String& t, std::vector<ShortcutGroup> groups, int width) : sheet (std::move (groups))
+    {
+        title.setText (t, juce::dontSendNotification);
+        title.setFont (font (15.0f, true));
+        title.setColour (juce::Label::textColourId, text);
+        addAndMakeVisible (title);
+        addAndMakeVisible (sheet);
+        setSize (width, 16 + 26 + 10 + sheet.heightForWidth (width - 32) + 16);
+    }
+    void paint (juce::Graphics& g) override { g.fillAll (surface); }
+    void resized() override
+    {
+        auto r = getLocalBounds().reduced (16);
+        title.setBounds (r.removeFromTop (26));
+        r.removeFromTop (10);
+        sheet.setBounds (r);
+    }
+
+private:
+    juce::Label title;
+    ShortcutSheet sheet;
+};
+}
+
+void showShortcuts (juce::Component& anchor, const juce::String& title, std::vector<ShortcutGroup> groups, int width)
+{
+    juce::CallOutBox::launchAsynchronously (std::make_unique<ShortcutPopup> (title, std::move (groups), width), anchor.getScreenBounds(), nullptr);
+}
+
+//==============================================================================
 void askText (const juce::String& title, const juce::String& current, std::function<void (const juce::String&)> done)
 {
     auto* w = new juce::AlertWindow (title, {}, juce::MessageBoxIconType::NoIcon);

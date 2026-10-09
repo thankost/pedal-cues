@@ -2,6 +2,10 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.11.3 (2026-10-09)
+
+- **Shortcuts, easy to read:** a **?** button on the Draw pad and in the Song Builder opens every shortcut as a short, grouped list, with each key next to what it does. The larger Draw editor shows the list under the pad, and the hover texts are short again.
+
 ## 0.11.2 (2026-10-08)
 
 - **Fix:** with a backing track loaded, the metronome kept clicking for about a second after you stopped the song.

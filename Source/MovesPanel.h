@@ -130,6 +130,7 @@ private:
     std::unique_ptr<DrawDoc> doc;          // the drawing's points, grid and undo history, shared by both pads
     std::unique_ptr<DrawPad> pad;
     std::unique_ptr<juce::Button> expandButton;
+    juce::TextButton shortcutsButton { "?" };   // the drawing shortcuts
     std::unique_ptr<juce::DocumentWindow> largeWindow;
     LargeEditor* large = nullptr;          // largeWindow's content
     juce::Component::SafePointer<juce::CallOutBox> waveBox;
