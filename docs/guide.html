@@ -347,12 +347,10 @@
     var drop = document.querySelector('.toc-mobile');
     var heads = links.map(function (a) { return document.getElementById(decodeURIComponent(a.hash.slice(1))); });
     var current = null, queued = false;
-    // On a phone, picking a section closes the list. While it's open, the list sits right under the bar and the page
-    // behind it doesn't scroll, so a swipe always scrolls the list.
+    // On a phone, picking a section closes the list. While it's open, the list sits right under the bar.
     phone.forEach(function (a) { a.addEventListener('click', function () { drop.removeAttribute('open'); }); });
     if (drop) drop.addEventListener('toggle', function () {
       if (drop.open) drop.style.setProperty('--toc-top', Math.round(drop.querySelector('summary').getBoundingClientRect().bottom) + 'px');
-      document.documentElement.classList.toggle('toc-open', drop.open);
     });
     function update() {
       queued = false;
