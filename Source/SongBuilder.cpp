@@ -2104,6 +2104,55 @@ struct SongList final : public juce::Component
 };
 
 //==============================================================================
+// The shortcuts kept open under the tracks (the "?" sheet's "Keep it at the bottom"), with Hide.
+class ShortcutDock final : public juce::Component
+{
+public:
+    ShortcutDock()
+    {
+        styleCaption (title, "SHORTCUTS");
+        addAndMakeVisible (title);
+        hide.setTooltip ("Put the shortcuts away (? shows them again)");
+        addAndMakeVisible (hide);
+        sheet.setInterceptsMouseClicks (true, false);   // so the wheel reaches the viewport over the list, not only its gaps
+        view.setViewedComponent (&sheet, false);
+        view.setScrollBarsShown (true, false);
+        view.setScrollBarThickness (8);
+        addAndMakeVisible (view);
+    }
+    // The height it wants at this width: the whole sheet plus its title row.
+    int idealHeight (int width)
+    {
+        sheet.setColumns (columnsFor (width));
+        return sheet.heightForWidth (width - 8 - view.getScrollBarThickness()) + headerH + 12;
+    }
+    void paint (juce::Graphics& g) override
+    {
+        g.setColour (outline);
+        g.fillRect (0, 0, getWidth(), 1);
+    }
+    void resized() override
+    {
+        auto r = getLocalBounds().withTrimmedTop (6);
+        auto top = r.removeFromTop (headerH);
+        hide.setBounds (top.removeFromRight (60).withSizeKeepingCentre (60, 22));
+        title.setBounds (top);
+        r.removeFromTop (4);
+        view.setBounds (r);
+        sheet.setColumns (columnsFor (getWidth()));
+        const auto w = r.getWidth() - view.getScrollBarThickness();
+        sheet.setSize (w, sheet.heightForWidth (w));
+    }
+    juce::TextButton hide { "Hide" };
+
+private:
+    static int columnsFor (int width) { return width >= 1300 ? 5 : width >= 1000 ? 4 : 3; }   // wide: one group a column
+    static constexpr int headerH = 22;
+    juce::Label title;
+    juce::Viewport view;
+    ui::ShortcutSheet sheet { ui::songBuilderShortcuts(), 4 };
+};
+
 class SongBuilder final : public juce::Component, public juce::DragAndDropContainer, private juce::ChangeListener,
                           private juce::ValueTree::Listener, private juce::AsyncUpdater, private juce::Timer
 {
@@ -2168,9 +2217,11 @@ public:
         gridBox.setTooltip ("Grid: where cues snap and the grid lines. Beat follows each section's time signature.");
         gridBox.onChange = [this] { songsNode().setProperty (IDs::gridStep, gridBox.getSelectedId() - 1, nullptr); };
         addChildComponent (gridBox);
-        shortcutsButton.setTooltip ("Every shortcut in the Song Builder");
-        shortcutsButton.onClick = [this] { ui::showShortcuts (shortcutsButton, "Song Builder shortcuts", ui::songBuilderShortcuts(), 960); };
+        shortcutsButton.setTooltip ("Every shortcut in the Song Builder (or press ?). You can keep them at the bottom.");
+        shortcutsButton.onClick = [this] { toggleShortcuts(); };
         addChildComponent (shortcutsButton);
+        dock.hide.onClick = [this] { setShortcutsDocked (false); };
+        addChildComponent (dock);
         styleCaption (gridLabel, "GRID");
         addChildComponent (gridLabel);
         snapToggle.setButtonText ("Snap");
@@ -2303,8 +2354,9 @@ public:
 
         // Above the cards they sit on (each card's translucent fill would dim them otherwise).
         for (auto* c : std::initializer_list<juce::Component*> { &metronomeToggle, &countInBox, &clickButton, &gridLabel, &gridBox, &snapToggle,
-                                                                &zoomOut, &zoomIn, &zoomFit, &shortcutsButton })
+                                                                &zoomOut, &zoomIn, &zoomFit, &shortcutsButton, &dock })
             c->toFront (false);
+        shortcutsButton.setToggleState (shortcutsDocked, juce::dontSendNotification);
 
         state.addListener (this);
         rebuild();
@@ -2376,6 +2428,8 @@ public:
         gridSection.setBounds (r);
         // The header row from the right: + Track, + Section, zoom, Snap, Grid (the title and hint keep the left).
         auto gh = gridSection.getBounds().removeFromTop (Section::headerHeight).reduced (Section::padding, 5);
+        shortcutsButton.setBounds (gh.removeFromRight (30).withSizeKeepingCentre (30, 26));
+        gh.removeFromRight (8);
         addTrack.setBounds (gh.removeFromRight (86));
         gh.removeFromRight (6);
         addSection.setBounds (gh.removeFromRight (94));
@@ -2391,14 +2445,39 @@ public:
         gridBox.setBounds (gh.removeFromRight (96));
         gh.removeFromRight (2);
         gridLabel.setBounds (gh.removeFromRight (42));
-        gh.removeFromRight (10);
-        shortcutsButton.setBounds (gh.removeFromRight (30).withSizeKeepingCentre (30, 26));
-        tracksView.setBounds (gridSection.contentArea());
+        auto content = gridSection.contentArea();
+        dock.setVisible (shortcutsDocked && gridSection.isVisible());
+        if (dock.isVisible())
+            dock.setBounds (content.removeFromBottom (juce::jmin (dock.idealHeight (content.getWidth()), content.getHeight() * 2 / 5)));
+        tracksView.setBounds (content);
         layoutTracks();
     }
 
 private:
     juce::ValueTree current() { return songs::selectedSong (state); }
+
+    // ? opens the shortcuts next to it, or puts the ones kept at the bottom away. Kept open per computer.
+    void toggleShortcuts()
+    {
+        if (shortcutsDocked)
+            setShortcutsDocked (false);
+        else
+        {
+            juce::Component::SafePointer<SongBuilder> safe (this);
+            ui::showShortcuts (shortcutsButton, "Song Builder shortcuts", ui::songBuilderShortcuts(), 960,
+                               [safe] { if (safe != nullptr) safe->setShortcutsDocked (true); });
+        }
+    }
+    void setShortcutsDocked (bool on)
+    {
+        shortcutsDocked = on;
+        state::setFlag (shortcutsDockedFlag, on);
+        shortcutsButton.setToggleState (on, juce::dontSendNotification);
+        resized();
+    }
+    static inline const juce::String shortcutsDockedFlag { "songShortcutsDocked" };
+    bool shortcutsDocked = state::getFlag (shortcutsDockedFlag);
+    ShortcutDock dock;
 
     void valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&) override
     {
@@ -2413,6 +2492,11 @@ private:
         const auto code = key.getKeyCode();
         const auto plus = c == '+' || c == '=' || code == juce::KeyPress::numberPadAdd;
         const auto minus = c == '-' || c == '_' || code == juce::KeyPress::numberPadSubtract;
+        if (c == '?')
+        {
+            toggleShortcuts();
+            return true;
+        }
         if (! plus && ! minus)
             return false;
         if (key.getModifiers().isCommandDown())
@@ -2628,6 +2712,7 @@ private:
                                                                 &metronomeToggle, &countInBox, &clickButton, &gridBox, &gridLabel, &snapToggle, &zoomOut, &zoomIn, &zoomFit, &shortcutsButton,
                                                                 &gridSection, &addSection, &addTrack, &tracksView })
             c->setVisible (has);
+        dock.setVisible (has && shortcutsDocked);
         empty.setVisible (! has);
 
         // The shared settings: metronome, count-in, grid and snap.
@@ -3723,7 +3808,7 @@ std::vector<ShortcutGroup> songBuilderShortcuts()
     const auto cmd = commandKeyName(), alt = optionKeyName();
     return {
         { "Cues", { { "Click", "Select a cue" },
-                    { "Shift-click", "Add to the selection" },
+                    { "Shift-click", "Select or deselect a cue" },
                     { "Drag", "Move it, also to another track" },
                     { alt + " while dragging", "Snap the other way" },
                     { cmd + "+C / X", "Copy, cut" },
@@ -3732,8 +3817,9 @@ std::vector<ShortcutGroup> songBuilderShortcuts()
                     { cmd + "+A", "Select all" },
                     { "Delete", "Delete" },
                     { "Esc", "Clear the selection" },
-                    { "Right-click", "More: channel, send now..." } } },
-        { "Song position", { { "Click the ruler", "Set where Play starts" },
+                    { "Right-click", "Send it now, copy, duplicate, delete" },
+                    { "Right-click empty space", "Paste here, play from here" } } },
+        { "Song position", { { "Click the ruler", "Set where Play starts (the click lane too)" },
                              { "Drag the ruler", "Move it along" },
                              { "Drag the violet line", "Move it (when stopped)" },
                              { "Space", "Play / stop" } } },
@@ -3743,15 +3829,17 @@ std::vector<ShortcutGroup> songBuilderShortcuts()
                           { "Drag the line", "That stretch's tempo" },
                           { "Double-click a dot", "Type its tempo" },
                           { alt + "-click a dot", "Delete it" },
-                          { "Right-click", "Gradual transition, delete" } } },
+                          { "Right-click", "Edit, gradual transition, delete" } } },
         { "View", { { "- / +", "Zoom out / in" },
                     { alt + " + wheel", "Zoom" },
                     { cmd + " + - / +", "Track height" },
                     { cmd + " + wheel", "Track height" },
-                    { "Drag a name's edge", "Track height" } } },
-        { "Lanes", { { "Right-click the click lane", "How the section counts" },
+                    { "Drag a name's edge", "Track height" },
+                    { "?", "These shortcuts (show or hide)" } } },
+        { "Lanes", { { "Click a section's name", "Edit, move, loop, tap its tempo" },
+                     { "Right-click the click lane", "How the section counts" },
                      { "Drag the waveform", "Line up the backing track" },
-                     { "Right-click the waveform", "A bar starts here" },
+                     { "Right-click the waveform", "Bar 1 here, fit the tempo, settings" },
                      { "Drag a track's name", "That track into your DAW" } } },
     };
 }

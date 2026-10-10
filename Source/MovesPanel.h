@@ -21,7 +21,6 @@ struct MovesConfig
     juce::Identifier drawingNameId;        // name of the saved drawing loaded in the pad ("" = not saved)
 
     juce::String resetText, resetTooltip;
-    juce::String padHint, padTooltip;      // unused since the pad has one editing mode (MovesPanel writes its own help)
     juce::String drawnTooltip;
     juce::String tileNote;                 // appended to every move tile's tooltip
     juce::String shapesTooltip, drawTooltip;

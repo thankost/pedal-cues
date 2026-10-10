@@ -2,6 +2,12 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.11.6 (2026-10-10)
+
+- **Fix:** long descriptions in the shortcut lists (Draw and Song Builder) were cut off with "..."; they now wrap onto a second line.
+- **Draw: right-click a line** to pick it, so **Line shape** in the menu changes that line (before, it only worked on points you'd already selected).
+- **Song Builder shortcuts:** the **?** button moved to the right end of the arrangement's header, the **?** key opens it too, and **Keep it at the bottom** keeps the list open under the tracks (**Hide** puts it away).
+
 ## 0.11.5 (2026-10-09)
 
 - **Loop a move (new):** a ↻ button next to the play button on every move tile (treadle and expression moves, drawn moves) plays it again and again at the song's tempo, so you can try it with both hands on the guitar. Click it again to stop.

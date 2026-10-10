@@ -134,8 +134,6 @@ private:
         c.drawId = IDs::expDraw;    c.drawingId = IDs::expDrawing;  c.drawingNameId = IDs::expDrawingName;
         c.resetText = "Back to heel after move";
         c.resetTooltip = "After a move, put the expression pedal back to heel (0). Leave it off for a swell that should stay up.";
-        c.padHint = "Drag here to draw an expression move";
-        c.padTooltip = "Drag to draw the expression move: bottom = heel, top = toe. Hold Shift to snap to quarter steps.";
         c.drawnTooltip = "Your drawn expression move. Drag onto the timeline where the move should start.";
         c.shapesTooltip = "Ready-made expression moves";
         c.drawTooltip = "Draw your own expression move with the mouse";

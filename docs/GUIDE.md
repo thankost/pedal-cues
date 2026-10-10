@@ -587,7 +587,7 @@ The arrangement always shows a few bars after the song's end (dimmed, with the r
 
 **Tempo.** Each section starts at its own tempo, and the **Tempo** lane under the bar numbers shows the tempo through the song as a line. Like Reaper's tempo markers, a tempo change can sit at any beat inside a section, even partway through a bar, and the bars don't move: **double-click** the lane to add one, then **drag** its dot like a point in an envelope: up or down for its tempo (1 BPM a pixel, **Shift** for 0.1), left or right to move it along the grid. **Drag the line** itself up or down (point right at it: the cursor turns to up / down arrows) to change that stretch's tempo, a section's own tempo too. The tempo shows next to the mouse while you drag. **Double-click** a dot to type its tempo, **Option / Alt-click** it to delete it, **right-click** for the menu. Tick **Gradually transition to the next tempo** on a change (or on a section's start, in **Edit section** or the lane's right-click menu) for a ritardando or accelerando: the tempo glides evenly to the next change or the next section, the section header shows it (*120 → 90 BPM*), and Play, the click, the backing track and the exported tempo map follow it (a MIDI file stores a glide as small tempo steps).
 
-**Shortcuts.** The **?** button in the arrangement's header lists every mouse and key shortcut: cues, the song position, the tempo lane, the view and the lanes.
+**Shortcuts.** The **?** button at the right end of the arrangement's header (or the **?** key) lists every mouse and key shortcut: cues, the song position, the tempo lane, the view and the lanes. **Keep it at the bottom** keeps the list open under the tracks; **Hide** (or **?** again) puts it away. PedalCues remembers your choice on this computer.
 
 **Song position.** The violet line is where Play starts and Paste lands. Click or drag along the bar numbers or the click lane to set it, or grab the line itself and drag it when the song isn't playing.
 
@@ -722,8 +722,8 @@ Treadle moves are **CC#11** automation written in beats, so they follow your pro
 | Ramp Up / Ramp Down | Heel to toe, or toe to heel, over the length |
 | Rise & Fall | Heel to toe and back |
 | Dive | Slow start, then accelerates to toe (try it with *Dive Bomb*) |
-| Trill | Toggles heel/toe on 1/16 notes |
-| Bend to Bar | Holds heel, then bends in the last beat so it lands on the next bar line |
+| Trill | Toe and heel in turn on 1/16 notes, starting on toe |
+| Bend to Bar | Holds heel, then bends to toe in the last beat (it lands on the next bar line when the move starts on one) |
 | Toe Down / Heel Down | Jumps and holds |
 
 - **Length:** from 1/16 note up to 8 bars.

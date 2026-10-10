@@ -925,6 +925,11 @@ private:
     {
         if (hit >= 0 && ! doc.bps[(size_t) hit].selected)
             selectOnly (hit);
+        // Right-clicking a line picks it (its two points), so Line shape acts on that line.
+        if (hit < 0 && segment >= 0 && segment + 1 < (int) doc.bps.size()
+            && ! (doc.bps[(size_t) segment].selected && doc.bps[(size_t) segment + 1].selected))
+            for (size_t i = 0; i < doc.bps.size(); ++i)
+                doc.bps[i].selected = (int) i == segment || (int) i == segment + 1;
         repaint();
         const auto selected = cues::whammy::numSelected (doc.bps);
         bool interior = false, segments = false;
@@ -1507,7 +1512,7 @@ MovesPanel::MovesPanel (PedalCuesProcessor& p, MovesConfig c)
 
     libraryBox.setTextWhenNothingSelected ("My drawings");
     libraryBox.setTextWhenNoChoicesAvailable ("No saved drawings");
-    libraryBox.setTooltip ("Load one of your saved drawings to use or edit it. Shared by the Whammy and the QC expression.");
+    libraryBox.setTooltip ("Load one of your saved drawings to use or edit it. Shared by every Draw pad, in every project.");
     libraryBox.onChange = [this] { loadDrawing (libraryBox.getSelectedId()); };
     addChildComponent (libraryBox);
 
@@ -2028,7 +2033,7 @@ std::vector<ShortcutGroup> drawShortcuts()
         { "Points", { { "Click", "Add a point" },
                       { "Drag", "Move a point or a line" },
                       { "Shift-drag", "Move it off the grid" },
-                      { cmd + "+Shift-drag", "Move it in one direction only" },
+                      { cmd + "+Shift-drag", "Move a point in one direction only" },
                       { "Double-click", "Type a point's value" },
                       { alt + "-click", "Delete a point" } } },
         { "Lines", { { "Drag the diamond", "Curve a line" },
@@ -2037,7 +2042,7 @@ std::vector<ShortcutGroup> drawShortcuts()
                      { "Right-click", "Line shape, invert, scale" } } },
         { "Freehand", { { cmd + "-drag", "Draw: a point on each grid line" },
                         { cmd + "+Shift-drag", "Draw off the grid" } } },
-        { "Several points", { { cmd + "-click", "Add to the selection" },
+        { "Several points", { { cmd + "-click", "Select or deselect a point" },
                               { "Right-drag", "Select an area" },
                               { cmd + "+A", "Select all" },
                               { "Esc", "Clear the selection" },

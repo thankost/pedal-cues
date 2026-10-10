@@ -292,7 +292,7 @@ namespace qc
             case ExpShape::riseFall:  return "Heel to toe and back";
             case ExpShape::slowRise:  return "Barely moves at first, then rises quickly to toe (a build-up)";
             case ExpShape::wahRhythm: return "Heel to toe and back on every beat (rhythmic wah)";
-            case ExpShape::riseToBar: return "Hold heel, then rise during the last beat so it reaches toe on the next bar line";
+            case ExpShape::riseToBar: return "Hold heel, then rise to toe during the last beat (it lands on the next bar line when the move starts on one)";
             case ExpShape::toe:       return "Jump to toe and hold";
             case ExpShape::heel:      return "Jump to heel and hold";
         }
@@ -591,8 +591,8 @@ namespace whammy
             case Shape::rampDown:  return "Toe to heel over the whole length";
             case Shape::swell:     return "Heel to toe to heel";
             case Shape::dive:      return "Slow start, accelerating to full toe (great with Dive Bomb)";
-            case Shape::trill:     return "Toggle heel/toe on 1/16 notes";
-            case Shape::bendToBar: return "Hold heel, then bend during the last beat so it lands on the next bar line";
+            case Shape::trill:     return "Toe and heel in turn on 1/16 notes, starting on toe";
+            case Shape::bendToBar: return "Hold heel, then bend to toe during the last beat (it lands on the next bar line when the move starts on one)";
             case Shape::toe:       return "Jump to toe and hold";
             case Shape::heel:      return "Jump to heel and hold";
         }

@@ -473,8 +473,6 @@ private:
         c.drawId = IDs::cuDraw;    c.drawingId = IDs::cuDrawing;  c.drawingNameId = IDs::cuDrawingName;
         c.resetText = "Back to heel after move";
         c.resetTooltip = "After a move, put the pedal back to heel (0). Leave it off for a swell that should stay up.";
-        c.padHint = "Drag here to draw a pedal move";
-        c.padTooltip = "Drag to draw the pedal move: bottom = heel, top = toe. Hold Shift to snap to quarter steps.";
         c.drawnTooltip = "Your drawn pedal move. Drag onto the timeline where the move should start.";
         c.shapesTooltip = "Ready-made pedal moves";
         c.drawTooltip = "Draw your own pedal move with the mouse";

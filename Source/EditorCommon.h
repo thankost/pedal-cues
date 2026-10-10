@@ -213,11 +213,13 @@ class ShortcutSheet final : public juce::Component
 public:
     explicit ShortcutSheet (std::vector<ShortcutGroup>, int columns = 3);
     int heightForWidth (int width) const;
+    void setColumns (int c) { columns = juce::jmax (1, c); repaint(); }
     void paint (juce::Graphics&) override;
 
 private:
     struct Placed { const ShortcutGroup* group; int column; float y; };
     std::vector<Placed> place (int width, float& height) const;
+    float columnWidth (int width) const;
     std::vector<ShortcutGroup> groups;
     int columns;
 };
@@ -226,7 +228,9 @@ std::vector<ShortcutGroup> drawShortcuts();          // the Draw pad's (MovesPan
 std::vector<ShortcutGroup> songBuilderShortcuts();   // the Song Builder's (SongBuilder.cpp)
 
 // A "?" button that opens the sheet next to itself.
-void showShortcuts (juce::Component& anchor, const juce::String& title, std::vector<ShortcutGroup>, int width = 760);
+// With `keepAtBottom`, the sheet has a button for it (which closes the sheet and calls it).
+void showShortcuts (juce::Component& anchor, const juce::String& title, std::vector<ShortcutGroup>, int width = 760,
+                    std::function<void()> keepAtBottom = {});
 // A pedal's faceplate banner: brushed gradient, screws, a heavy italic model name and a tagline (Whammy, effect pedal pages).
 class Faceplate final : public juce::Component
 {

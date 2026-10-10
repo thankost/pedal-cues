@@ -314,8 +314,6 @@ private:
         c.drawId = IDs::sweepDraw;    c.drawingId = IDs::sweepDrawing;  c.drawingNameId = IDs::sweepDrawingName;
         c.resetText = "Return to heel after move";
         c.resetTooltip = "After a treadle move, return the treadle to heel (CC#11 = 0)";
-        c.padHint = "Drag here to draw a treadle move";
-        c.padTooltip = "Drag to draw the treadle move: bottom = heel, top = toe. Hold Shift to snap to quarter steps.";
         c.drawnTooltip = "Your drawn treadle move. Drag onto the timeline where the move should start.";
         c.shapesTooltip = "Ready-made treadle moves";
         c.drawTooltip = "Draw your own treadle move with the mouse";
