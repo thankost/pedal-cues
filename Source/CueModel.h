@@ -23,10 +23,12 @@ struct Cue
 };
 
 // Writes the cue as a Standard MIDI File (named after the cue) into a temp folder,
-// ready to be dragged onto a DAW timeline.
-juce::File writeMidiFile (const Cue& cue, double bpm);
+// ready to be dragged onto a DAW timeline. `forAbleton`: a cue whose events all sit on the first tick gets one more
+// message 1/16 later (lengthPadding), because Ableton Live refuses a clip with no length. Other DAWs size the clip by
+// its end of track, so they get the cue's own messages only (an extra CC#0 kept the QC's tap tempo screen open).
+juce::File writeMidiFile (const Cue& cue, double bpm, bool forAbleton);
 
-// What writeMidiFile adds 1/16 later when every event sits on the first tick (Ableton needs a clip length):
+// What writeMidiFile adds 1/16 later for Ableton when every event sits on the first tick:
 // the last message again when that changes nothing, never a second Program Change (it could reload the preset),
 // and for toggles a bank select of 0 (CC#0 = 0, which waits for a Program Change) instead of a second press.
 juce::MidiMessage lengthPadding (const Cue& cue);

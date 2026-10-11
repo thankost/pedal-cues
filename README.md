@@ -29,7 +29,7 @@ Drag a tile onto the arrangement → a **named MIDI item** lands at the drop pos
 - **QC Mini:** pick *Quad Cortex Mini* in the device list. Scenes and footswitches in labelled Page I and Page II groups of A–D (Page II = the QC's E–H), plus Page I / Page II tiles → `CC#64`.
 - Scene and stomp tiles either **load their own preset first** (default; the scene/footswitch follows 1/16 later)
   or act on the **current QC preset** only
-- Footswitch stomps A–H on/off → `CC#35–42`; tuner on/off → `CC#45`; tap tempo → `CC#44`; Gig View screen on/off → `CC#46`; footswitch mode (preset / stomp / scene) → `CC#47`
+- Footswitch stomps A–H on/off → `CC#35–42`; tuner on/off → `CC#45`; tap tempo → `CC#44`; Gig View screen on/off → `CC#46`; footswitch mode (preset / scene / stomp) → `CC#47`
 - **Looper X** (Quad Cortex page > **Looper**) → `CC#48–60`: record / overdub, play / stop, undo / redo, one shot, reverse, half speed, duplicate, punch in / out, quantize and the looper screen (the preset needs a Looper X block)
 - **Expression automation** (Quad Cortex page > **Expression**) → `CC#1` / `CC#2`: moves whatever you assign to
   Expression 1 or 2 on the QC (volume swells, wah, a delay mix, drive). Swell In, Fade Out, Rise & Fall, Slow Rise,

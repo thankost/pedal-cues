@@ -28,7 +28,7 @@ juce::MidiMessage lengthPadding (const Cue& cue)
     return juce::MidiMessage::controllerEvent (last.getChannel(), spareBank, 0);
 }
 
-juce::File writeMidiFile (const Cue& cue, double bpm)
+juce::File writeMidiFile (const Cue& cue, double bpm, bool forAbleton)
 {
     const auto safeBpm = juce::jlimit (20.0, 400.0, bpm);
 
@@ -41,9 +41,9 @@ juce::File writeMidiFile (const Cue& cue, double bpm)
         seq.addEvent (msg, beat * ticksPerQuarter);
 
     // Ableton Live sizes a dropped clip by its last event and refuses a file whose events all sit on the first
-    // tick (a single scene change, the tuner...). Add a message 1/16 later that changes nothing on the pedal
-    // (lengthPadding), so the clip gets a length.
-    const auto allAtStart = ! cue.events.empty()
+    // tick (a single scene change, the tuner...). For Ableton only, add a message 1/16 later that changes nothing on
+    // the pedal (lengthPadding), so the clip gets a length.
+    const auto allAtStart = forAbleton && ! cue.events.empty()
                          && std::all_of (cue.events.begin(), cue.events.end(), [] (const auto& e) { return e.first <= 0.0; });
     if (allAtStart)
         seq.addEvent (lengthPadding (cue), 0.25 * ticksPerQuarter);
@@ -259,7 +259,9 @@ namespace qc
 
         Cue c;
         c.name = juce::String ("QC ") + names[m] + " Mode";
-        static const int values[] = { 0, 2, 1 }; // CC#47 values for preset, scene, stomp
+        // CC#47 picks the QC's footswitch mode slot (QC and Mini manuals 4.1.1): 0 = Preset, 1 = Scene, 2 = Stomp by default.
+        // The slots can be reordered on the QC, which swaps what 1 and 2 do.
+        static const int values[] = { 0, 1, 2 };
         c.add (0.0, juce::MidiMessage::controllerEvent (clampChannel (channel), cc::gigMode, values[m]));
         return c;
     }

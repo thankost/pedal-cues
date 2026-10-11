@@ -133,7 +133,7 @@ The clips PedalCues makes are plain MIDI files, so it works in any DAW that can 
 | DAW | Where the track's MIDI output is | Status |
 |---|---|---|
 | **Reaper** | *I/O > MIDI Hardware Output* (enable the port in *Preferences > MIDI Devices*) | Tested |
-| **Ableton Live** | the track's *MIDI To* | Should work, not tested yet |
+| **Ableton Live** | the track's *MIDI To* | Should work, not tested yet. Live refuses a clip with no length, so a clip with a single message (a scene, the tuner, a tap) gets a second, harmless one 1/16 later, only for Live: the plugin sees it's in Live; in the standalone app, pick **Ableton Live** under **How to connect > Your DAW** |
 | **Cubase / Nuendo** | the track's MIDI output | Should work, not tested yet |
 | **Bitwig, Studio One** | the track's MIDI / hardware output | Should work, not tested yet |
 | **Logic Pro** | put the clips on an *External MIDI* track | Clips work; Logic doesn't pass a plugin's MIDI out to hardware, so test with the standalone app |
@@ -196,7 +196,7 @@ The first tab is named after your amp modeler. Click the **▾** on it (or the t
 | **Stomps** | Switch one footswitch A-H. The header switch picks whether tiles send **ON** or **OFF**. | `CC#35-42` |
 | **Scenes & Stomps / Looper / Expression** | The switch under the screen picks what the lower part shows: scene and stomp tiles, the [Looper X](#looper-x) tiles, or [expression moves](#expression-swells-fades-and-wah). | |
 | **Expression** | Moves whatever you assign to Expression 1 or 2 on the QC: swells, fades, wah, or your own drawing. | `CC#1` / `CC#2` |
-| **Utilities** | Tuner on/off, **Tap** (one Tap Tempo press: drop one on each beat), **Gig View** on/off (opens or closes the QC's big-text Gig View screen), and the footswitch mode (Preset / Stomp / Scene). | `CC#45`, `CC#44`, `CC#46`, `CC#47` |
+| **Utilities** | Tuner on/off, **Tap** (one Tap Tempo press: drop one on each beat), **Gig View** on/off (opens or closes the QC's big-text Gig View screen), and the footswitch mode (Preset / Scene / Stomp: `CC#47` picks the QC's mode slot, so if you've reordered the modes on the QC, Scene and Stomp swap). | `CC#45`, `CC#44`, `CC#46`, `CC#47` |
 
 ### Search your presets
 

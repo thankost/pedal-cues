@@ -962,7 +962,8 @@ private:
         static const char* hints[] = {
             "Reaper: the track's I/O button > MIDI Hardware Output, and enable the port in Preferences > MIDI Devices (output). Keep "
             "'Send to original channels'.",
-            "Ableton Live: the track's MIDI To. Enable the port as Track in Preferences > Link, Tempo & MIDI.",
+            "Ableton Live: the track's MIDI To. Enable the port as Track in Preferences > Link, Tempo & MIDI. With Ableton picked "
+            "here, the standalone app's one-message clips get a second, harmless message 1/16 later, because Live needs a clip length.",
             "Cubase / Nuendo: the track's MIDI output in the Inspector.",
             "Logic Pro: use an External MIDI track and pick the port. Logic can't send the tiles' play-button tests to hardware: use the "
             "standalone app for those.",

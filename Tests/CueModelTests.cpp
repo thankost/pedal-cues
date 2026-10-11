@@ -182,7 +182,7 @@ int main (int argc, char** argv)
 
     CHECK (isCC (qc::tuner (1, true).events[0].second, 1, 45, 127));
     CHECK (isCC (qc::stomp (1, 7, false, {}).events[0].second, 1, 42, 0));
-    CHECK (isCC (qc::gigMode (1, 1).events[0].second, 1, 47, 2)); // scene
+    CHECK (isCC (qc::gigMode (1, 1).events[0].second, 1, 47, 1)); // scene (mode slot 2)
     CHECK (isCC (qc::gigView (1, true).events[0].second, 1, 46, 127) && isCC (qc::gigView (3, false).events[0].second, 3, 46, 0));
     CHECK (qc::gigView (1, true).name == "QC Gig View On");
     CHECK (isCC (qc::tap (2).events[0].second, 2, 44, 127));
@@ -249,7 +249,7 @@ int main (int argc, char** argv)
         CHECK (! custom::parse ("CC 128=1", 0).ok() && ! custom::parse ("hello", 0).ok() && ! custom::parse ("", 0).ok());
         CHECK (! custom::parse ("CC 34", 0).ok() && ! custom::parse ("wait", 0).ok());
     }
-    CHECK (isCC (qc::gigMode (1, 2).events[0].second, 1, 47, 1)); // stomp
+    CHECK (isCC (qc::gigMode (1, 2).events[0].second, 1, 47, 2)); // stomp (mode slot 3)
 
     // Whammy V program numbers (manual, 1-based)
     CHECK (whammy::programNumber (1, false, false) == 2);   // Oct Up
@@ -840,7 +840,7 @@ int main (int argc, char** argv)
                 for (const auto reset : { true, false })
                 {
                     const auto shape = whammy::defaultDrawing();
-                    const auto exported = writeMidiFile (whammy::drawn (2, shape, beats, reset), 120.0);
+                    const auto exported = writeMidiFile (whammy::drawn (2, shape, beats, reset), 120.0, true);
                     juce::MidiFile file;
                     juce::FileInputStream in (exported);
                     CHECK (file.readFrom (in));
@@ -953,7 +953,7 @@ int main (int argc, char** argv)
     }
 
     // MIDI file round trip
-    auto file = writeMidiFile (up, 90.0);
+    auto file = writeMidiFile (up, 90.0, true);
     CHECK (file.existsAsFile() && file.getFileName() == "Whammy Ramp Up 1 bar.mid");
     juce::FileInputStream in (file);
     juce::MidiFile mf;
@@ -980,10 +980,20 @@ int main (int argc, char** argv)
                         out.emplace_back (ev->message.getTimeStamp(), ev->message);
             return out;
         };
-        const auto lone = readEvents (writeMidiFile (qc::scene (1, 1, "Verse"), 120.0));
+        const auto lone = readEvents (writeMidiFile (qc::scene (1, 1, "Verse"), 120.0, true));
         CHECK (lone.size() == 2 && isCC (lone[0].second, 1, 43, 1) && lone[0].first == 0.0);
         CHECK (isCC (lone[1].second, 1, 43, 1) && std::abs (lone[1].first - 240.0) < 1.0e-6);
-        const auto loaded = readEvents (writeMidiFile (qc::withPresetFirst (qc::scene (1, 1, {}), 1, 1, 1, 0, false, "Clean"), 120.0));
+        // Any other DAW: only the cue's own message (no CC#0 after a QC tap), and the end of track still gives the clip
+        // its length.
+        {
+            const auto tapFile = writeMidiFile (qc::tap (1), 120.0, false);
+            const auto tap = readEvents (tapFile);
+            CHECK (tap.size() == 1 && isCC (tap[0].second, 1, 44, 127));
+            juce::FileInputStream in (tapFile);
+            juce::MidiFile midi;
+            CHECK (midi.readFrom (in) && midi.getNumTracks() == 1 && midi.getTrack (0)->getEndTime() >= 480.0 - 1.0e-6);
+        }
+        const auto loaded = readEvents (writeMidiFile (qc::withPresetFirst (qc::scene (1, 1, {}), 1, 1, 1, 0, false, "Clean"), 120.0, true));
         CHECK (loaded.size() == 3);   // preset (CC#0, PC) + the scene 1/16 later: nothing added
 
     }

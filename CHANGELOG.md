@@ -2,6 +2,11 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.11.7 (2026-10-11)
+
+- **Fix (Quad Cortex):** the **Scene Mode** and **Stomp Mode** tiles were swapped: Stomp Mode switched the QC to Scene mode and the other way round. They now follow Neural DSP's manual (`CC#47` = 1 Scene, 2 Stomp). If you've reordered the footswitch modes on your QC, the hover text explains why they'd swap. Clips you dragged before keep the old numbers, so drag them again.
+- **Clips with one message are just that message:** a scene, tuner or tap clip used to send a second, harmless message 1/16 later, which only Ableton Live needs (it refuses a clip with no length). On the Quad Cortex that extra message kept the tap tempo screen open in Reaper. Now only Live gets it: the plugin sees when it's running in Live, and in the standalone app you pick **Ableton Live** under **How to connect > Your DAW**. Drag your Tap clips again to get the new version.
+
 ## 0.11.6 (2026-10-10)
 
 - **Fix:** long descriptions in the shortcut lists (Draw and Song Builder) were cut off with "..."; they now wrap onto a second line.

@@ -483,6 +483,15 @@ void Tile::mouseDown (const juce::MouseEvent& e)
         onContextMenu();
 }
 
+// Clips get the extra length message only for Ableton Live: the plugin asks its host, the standalone app goes by
+// How to connect's "Your DAW" (index 1 = Ableton Live).
+static bool dropsIntoAbleton()
+{
+    if (juce::JUCEApplicationBase::isStandaloneApp())
+        return state::getSetting ("daw").getIntValue() == 1;
+    return juce::PluginHostType().isAbletonLive();
+}
+
 void Tile::mouseDrag (const juce::MouseEvent& e)
 {
     if (e.mods.isPopupMenu() || dragStarted || ! makeCue || e.getDistanceFromDragStart() < 6)
@@ -491,7 +500,7 @@ void Tile::mouseDrag (const juce::MouseEvent& e)
     dragStarted = true;
 
     const auto cue = makeCue();
-    const auto file = cues::writeMidiFile (cue, processor.getHostBpm());
+    const auto file = cues::writeMidiFile (cue, processor.getHostBpm(), dropsIntoAbleton());
     lastDrag = { file.getFullPathName(), cue, title.isNotEmpty() ? title : cue.name, colour };
     if (file.existsAsFile())
         juce::DragAndDropContainer::performExternalDragDropOfFiles (juce::StringArray (file.getFullPathName()), false, this);

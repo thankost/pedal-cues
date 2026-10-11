@@ -227,8 +227,13 @@ public:
         addUtil ("Gig View On", "", "CC#46 = 127", juce::Colour (0xff2ec4b6), [this] { return cues::qc::gigView (qcChannel(), true); });
         addUtil ("Gig View Off", "", "CC#46 = 0",   juce::Colour (0xff2ec4b6).darker (0.5f), [this] { return cues::qc::gigView (qcChannel(), false); });
         addUtil ("Preset Mode", "", "CC#47 = 0",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 0); });
-        addUtil ("Stomp Mode", "", "CC#47 = 1",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 2); });
-        addUtil ("Scene Mode", "", "CC#47 = 2",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 1); });
+        const juce::String modeNote (" CC#47 picks the QC's footswitch mode in the order of its mode slots: Preset, Scene, Stomp by "
+                                     "default. If you've reordered the modes on your QC, Scene Mode and Stomp Mode swap.");
+        utilTiles.getLast()->setTooltip ("Footswitches switch presets." + modeNote);
+        addUtil ("Scene Mode", "", "CC#47 = 1",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 1); });
+        utilTiles.getLast()->setTooltip ("Footswitches switch scenes." + modeNote);
+        addUtil ("Stomp Mode", "", "CC#47 = 2",   juce::Colour (0xff8e7cf0), [this] { return cues::qc::gigMode (qcChannel(), 2); });
+        utilTiles.getLast()->setTooltip ("Footswitches switch stomps (blocks) on and off." + modeNote);
         if (mini())
         {
             // The Mini's four footswitches have two pages (Page II = the QC's E-H).
