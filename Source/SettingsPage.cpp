@@ -683,6 +683,7 @@ public:
         addChildComponent (chainNote);
         styleCaption (dawLabel, "Your DAW");
         styleHint (dawHint, {});
+        dawHint.setMinimumHorizontalScale (1.0f);   // wrap a long hint instead of squeezing it
         for (auto* d : { "Reaper", "Ableton Live", "Cubase / Nuendo", "Logic Pro", "Other" })
             dawBox.addItem (d, dawBox.getNumItems() + 1);
         dawBox.setSelectedItemIndex (juce::jlimit (0, 4, state::getSetting ("daw").getIntValue()), juce::dontSendNotification);
@@ -926,8 +927,11 @@ private:
                 "In your DAW, enable the MIDI output your device is on: "
                     + (! amp.usbMidi ? "your interface's MIDI Out (e.g. for the " + amp.box + ", it needs a MIDI cable)."
                        : amp.hasDin ? "its USB port or your interface's MIDI Out (e.g. " + amp.box + ")." : "its USB port (e.g. " + amp.box + ")."),
-                "Make one cue track, e.g. " + ampTrack + ": insert PedalCues and set its MIDI output to that port.",
-                "Keep the original MIDI channels, and drag the tiles onto that track."
+                "Make one cue track, e.g. " + ampTrack + ", with no plugin on it, and set its MIDI output to that port.",
+                "Put PedalCues on a track of its own and send its MIDI to the cue track (or set its MIDI output to the same port), "
+                    "so the tiles' play buttons reach the device. On the cue track itself, a VST3 plugin would drop the Program "
+                    "Changes that load presets.",
+                "Keep the original MIDI channels, and drag the tiles onto the cue track."
             };
             tracksSteps.repaint();
             resized();
@@ -938,8 +942,10 @@ private:
         {
             tracksSteps.steps = {
                 "In your DAW, enable the MIDI outputs your devices are on.",
-                "Make a cue track for each device: insert PedalCues and set its MIDI output to that device's port, e.g. " + ampTrack + " on "
-                    + ampPort + ". Add the next one the same way, e.g. " + pedalTrack + " on MIDI Out 2.",
+                "Make a cue track for each device, with no plugin on it, and set its MIDI output to that device's port, e.g. "
+                    + ampTrack + " on " + ampPort + ". Add the next one the same way, e.g. " + pedalTrack + " on MIDI Out 2.",
+                "Put PedalCues on a track of its own and send its MIDI to every cue track, so the tiles' play buttons reach each "
+                    "device. On a cue track itself, a VST3 plugin would drop the Program Changes that load presets.",
                 "Keep the original MIDI channels, and drag each tab's tiles onto its device's track."
             };
         }
@@ -947,8 +953,11 @@ private:
         {
             tracksSteps.steps = {
                 "In your DAW, enable your interface's MIDI output.",
-                "Make a cue track for each device, e.g. " + ampTrack + " and " + pedalTrack + ": insert PedalCues and set its MIDI output to the "
-                    "interface MIDI Out (it goes into the " + amp.shortName + " and through its Thru to the next device). Add more the same way.",
+                "Make a cue track for each device, e.g. " + ampTrack + " and " + pedalTrack + ", with no plugin on them, and set their MIDI "
+                    "output to the interface MIDI Out (it goes into the " + amp.shortName + " and through its Thru to the next device). Add "
+                    "more the same way.",
+                "Put PedalCues on a track of its own and send its MIDI to the interface MIDI Out too (or to a cue track), so the tiles' "
+                    "play buttons reach your devices. On a cue track itself, a VST3 plugin would drop the Program Changes that load presets.",
                 "Keep the original MIDI channels, and drag each tab's tiles onto its device's track."
             };
         }
@@ -961,13 +970,15 @@ private:
     {
         static const char* hints[] = {
             "Reaper: the track's I/O button > MIDI Hardware Output, and enable the port in Preferences > MIDI Devices (output). Keep "
-            "'Send to original channels'.",
+            "'Send to original channels'. To send the PedalCues track to a cue track: its I/O button > Add new send, with the audio "
+            "set to None.",
             "Ableton Live: the track's MIDI To. Enable the port as Track in Preferences > Link, Tempo & MIDI. With Ableton picked "
             "here, the standalone app's one-message clips get a second, harmless message 1/16 later, because Live needs a clip length.",
             "Cubase / Nuendo: the track's MIDI output in the Inspector.",
             "Logic Pro: use an External MIDI track and pick the port. Logic can't send the tiles' play-button tests to hardware: use the "
             "standalone app for those.",
-            "Other DAWs: a MIDI track whose output is set to the port your device is on. The clips keep their own MIDI channels." };
+            "Other DAWs: a MIDI track with no plugin on it, its output set to the port your device is on. The clips keep their own "
+            "MIDI channels." };
         dawHint.setText (hints[juce::jlimit (0, 4, dawBox.getSelectedItemIndex())], juce::dontSendNotification);
     }
 

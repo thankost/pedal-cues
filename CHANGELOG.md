@@ -2,6 +2,10 @@
 
 Download the latest version from the [PedalCues website](https://thankost.github.io/pedal-cues/). The app shows **Update to vX.Y.Z** under its title when a new one is out.
 
+## 0.11.8 (2026-10-14)
+
+- **New DAW setup: PedalCues on its own track.** With the VST3 version on a cue track, preset changes were lost: a VST3 plugin can't receive Program Changes, so the DAW dropped them on the way out, while scene changes still worked. **How to connect** and the user guide now set up cue tracks with no plugin on them, and a separate PedalCues track that sends its MIDI to them (so the play buttons still work). If your cue tracks have PedalCues on them, take it off there (or bypass it) and add the PedalCues track. On a Mac, the AU version on a cue track also passes preset changes.
+
 ## 0.11.7 (2026-10-11)
 
 - **Fix (Quad Cortex):** the **Scene Mode** and **Stomp Mode** tiles were swapped: Stomp Mode switched the QC to Scene mode and the other way round. They now follow Neural DSP's manual (`CC#47` = 1 Scene, 2 Stomp). If you've reordered the footswitch modes on your QC, the hover text explains why they'd swap. Clips you dragged before keep the old numbers, so drag them again.

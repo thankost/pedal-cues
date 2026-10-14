@@ -57,6 +57,10 @@
     <details><summary>Nothing happens on the pedal</summary>
       <p>Check the cue track's MIDI hardware output in your DAW and that the pedal's MIDI device is enabled there.
          Press a tile's play button to test. In the standalone app, pick a port in <b>How to connect</b> (at the top of each page) or <b>Options &gt; MIDI Output</b>.</p></details>
+    <details><summary>Scenes change but presets don't (or only work with PedalCues bypassed)</summary>
+      <p>PedalCues is on the cue track. Its VST3 version can't receive Program Changes, so the clips' preset changes are dropped
+         on the way out. Take the plugin off the cue tracks and put it on a track of its own, sending its MIDI to the cue tracks
+         (see <a href="guide.html#3-set-up-your-daw-once">Set up your DAW</a>). On a Mac, the AU version on the cue track also works.</p></details>
     <details><summary>Sync from QC says "No Quad Cortex found"</summary>
       <p>Connect the QC's USB port (a MIDI cable isn't enough), switch it on, and quit Cortex Control, which keeps the USB
          connection to itself. On Linux, install the USB permission rule from the guide once.</p></details>

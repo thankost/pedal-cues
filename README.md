@@ -144,7 +144,7 @@ cmake --build build --target PedalCuesTests
    - ⚠️ **A MIDI Thru only passes on MIDI from the 5-pin MIDI In**, not MIDI received over **USB** (confirmed for the Quad Cortex and Kemper, true for most units). So "your unit on USB, the second device on its Thru" doesn't work; the Wiring Guide notes the exceptions (Helix Stadium with *MIDI Over USB C*, Axe-Fx II with *USB Adapter Mode*). The Whammy has only a 5-pin MIDI In, so it always needs a MIDI cable; POD Go has only USB MIDI, so it can't be in a chain.
 2. Give each device its **own MIDI channel** (not Omni; e.g. your unit on 1, the Whammy on 2) and set the same number at the top of each device's page, **before** dragging cues: every clip keeps the channel it was dragged with. Click **Done** in the strip to hide the reminder.
 3. In your DAW, enable the MIDI outputs you use (Reaper: *Preferences > MIDI Devices*).
-4. Create one track per device (e.g. **QC Cues** and **Whammy Cues**), insert *PedalCues* on each, and set each track's MIDI output as above (Reaper: *I/O > MIDI Hardware Output*, leave *Send to original channels*).
+4. Create one cue track per device (e.g. **QC Cues** and **Whammy Cues**) with **no plugin on it**, and set each track's MIDI output as above (Reaper: *I/O > MIDI Hardware Output*, leave *Send to original channels*). Put *PedalCues* on a track of its own and send its MIDI to the cue tracks (Reaper: *I/O > Add new send*, audio *None*) so the play buttons work. Not on the cue tracks: as a VST3 it would drop the clips' Program Changes (preset changes).
 5. Turn snapping on and drag each device's tiles onto its own track at the bars you want.
 
 Details and pictures: [guide, section 2](https://thankost.github.io/pedal-cues/guide.html#2-connect-your-rig).

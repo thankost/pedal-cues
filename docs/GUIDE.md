@@ -143,14 +143,17 @@ In Reaper:
 
 
 1. *Options > Preferences > Audio > MIDI Devices*: enable every MIDI output you use (your interface's MIDI Out, and any device on USB).
-2. Create one track per device, for example **QC Cues** (or **Kemper Cues**, or one named after your custom device) and **Whammy Cues**, and insert **PedalCues** on each. With one device, one track is enough.
-3. On each track, click the **I/O (routing)** button and under *MIDI Hardware Output* choose its output from the table above. Leave it on *Send to original channels*: PedalCues already puts each cue on the right pedal's channel.
-4. Drag QC (or Kemper) tiles onto that track and Whammy tiles onto the Whammy track.
-5. Turn **snap to grid** on so clips land exactly on bars. Optional: save the track(s) as a **track template** so every new song starts with them.
+2. Create one **cue track** per device, for example **QC Cues** (or **Kemper Cues**, or one named after your custom device) and **Whammy Cues**, with **no plugin on them**. With one device, one cue track is enough.
+3. On each cue track, click the **I/O (routing)** button and under *MIDI Hardware Output* choose its output from the table above. Leave it on *Send to original channels*: PedalCues already puts each cue on the right pedal's channel.
+4. Create one more track, **PedalCues**, and insert **PedalCues** on it. In its **I/O** window, **Add new send...** to each cue track and set the send's audio to **None** (MIDI stays on *All*): the tiles' play buttons and the Song Builder's Play then reach your devices through the cue tracks. Keep its master send on, so you hear the Song Builder's click and backing track.
+5. Drag QC (or Kemper) tiles from PedalCues onto the QC track and Whammy tiles onto the Whammy track.
+6. Turn **snap to grid** on so clips land exactly on bars. Optional: save the tracks as a **track template** so every new song starts with them.
 
-**Check it works:** click the round play button on a scene tile, and the QC should switch scene (on the Kemper page, a slot tile). Click one on a Whammy mode, and the Whammy's mode LED should move.
+> **Why not put PedalCues on the cue tracks?** The clips on a track pass through its plugins on their way out, and a **VST3** plugin can't receive Program Changes (the format has no way to hand one to a plugin), so preset changes would be lost while scenes, which are Control Changes, still work. The **AU** version (macOS) passes them on, but a plugin-free cue track works in every DAW and format. If your cue tracks already have PedalCues on them, remove it there (or bypass it) and add the PedalCues track.
 
-> With the daisy chain, a single track would also work, since both pedals share one cable and their channels keep the cues apart. Two tracks keep the arrangement easier to read and let you mute one pedal.
+**Check it works:** click the round play button on a scene tile, and the QC should switch scene (on the Kemper page, a slot tile). Click one on a Whammy mode, and the Whammy's mode LED should move. Then drag a preset tile onto the QC track and play it: the QC should load that preset.
+
+> With the daisy chain, a single cue track would also work, since both pedals share one cable and their channels keep the cues apart. Two tracks keep the arrangement easier to read and let you mute one pedal.
 
 **How to connect** (at the top of each page, or in the ☰ menu) shows the same steps for your devices:
 
@@ -842,11 +845,12 @@ PedalCues asks GitHub for the latest release when it opens; nothing else is sent
 | Problem | Fix |
 |---|---|
 | Nothing happens on the pedal | Check the track's MIDI output (Reaper: *MIDI Hardware Output*) and that the pedal's MIDI port is enabled in your DAW's MIDI preferences. Try a tile's play button. |
+| Scenes change but presets don't (or bypassing PedalCues fixes it) | PedalCues is on the cue track: its **VST3** version can't receive Program Changes, so the clips' preset changes are dropped. Remove the plugin from the cue tracks and put it on a track of its own ([Set up your DAW](#3-set-up-your-daw-once)); on a Mac, the **AU** version on the cue track also works. |
 | Sync from QC: "the loaded preset has unsaved changes" | Reading every preset loads each one, which would lose those edits. Save (or discard) them on the QC, then sync again. Or untick "every ticked preset" to import names and the loaded preset only. |
 | Sync from QC: "No Quad Cortex found" or "Couldn't open" | Connect the QC's **USB** port (not just MIDI) and switch it on. Quit **Cortex Control**, which keeps the USB connection to itself. Wait until the QC has fully started, then try again. On **Linux**, install the USB permission rule from [Install](#1-install) once. |
 | Standalone app: tiles do nothing | Pick the port your devices are on in **How to connect** (or **Options > MIDI Output**), then try **Test** at the top of the page. On Windows, close your DAW first; only one program can use a MIDI port at a time. |
 | Scene or stomp changes the wrong preset | **Load 1A first** is off, so tiles act on whatever preset the QC has loaded. Switch it on in the Scenes header so they load their own preset first. |
-| A stomp tile changes scenes | The QC is in Scene mode, where footswitch A-H select scenes. Put the QC in Stomp mode (or drop the **Stomp Mode** tile before your stomp cues). Before v0.4.2 the Scene Mode and Stomp Mode tiles were swapped; drag those clips in again. |
+| A stomp tile changes scenes | The QC is in Scene mode, where footswitch A-H select scenes. Put the QC in Stomp mode (or drop the **Stomp Mode** tile before your stomp cues). Before v0.11.7 the Scene Mode and Stomp Mode tiles sent each other's number (Stomp Mode switched to Scene mode); drag those clips in again. |
 | The QC stays in another setlist | Turn on **Switch to the preset's setlist** (under the preset list, or the **Setlists not sent: turn on** button above *Sync from QC*), check the preset's setlist number in *Edit preset*, then drag its clips into your DAW again: clips keep what they were dragged with. |
 | Wrong preset loads | Check setlist, bank and slot in *Edit preset*. If presets are in other setlists, turn on **Switch to the preset's setlist** under the preset list. Setlist numbers are as the QC shows them (Factory Presets = 0). Before v0.4.28 PedalCues sent one less, so if you added 1 to work around it, set them back. |
 | A change lands a little late, though the clip is on the grid | Your gear needs a moment to react. Move that clip a little to the left (a sixteenth or less, with the grid finer or snap off). A scene or stomp with **Load 1A first** on waits a sixteenth for its preset: drop it a sixteenth early (see [Timing](#timing-scenes-right-after-a-preset)). For Whammy treadle moves, set **Early by** instead and keep the clip snapped to the grid. |
